@@ -10,6 +10,10 @@ import {
   ChatAttachmentMetadata,
   FastGPTChatHistorySummary,
   FastGPTChatHistoryDetail,
+
+  ProductPreviewRequest,
+  ProductPreviewResponse,
+
 } from '@/types';
 import {
   getNormalizedEventKey,
@@ -46,6 +50,7 @@ interface SSEParsedEvent {
   id?: string;
   retry?: number;
 }
+
 
 const debugLog = (...args: any[]) => {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
@@ -670,6 +675,15 @@ export const chatService = {
       onEvent,
     });
   },
+
+};
+
+export const productPreviewService = {
+  async generatePreview(payload: ProductPreviewRequest): Promise<ProductPreviewResponse> {
+    const response = await api.post<ApiResponse<ProductPreviewResponse>>('/product-preview/generate', payload);
+    return response.data.data;
+  },
+
 };
 
 /**
