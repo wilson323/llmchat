@@ -6,7 +6,10 @@ import LoginPage from '@/components/admin/LoginPage';
 import AdminHome from '@/components/admin/AdminHome';
 import { useAuthStore } from '@/store/authStore';
 import { Toaster, toast } from '@/components/ui/Toast';
-import { useI18n } from '@/i18n';
+import { useI18n, I18nProvider } from '@/i18n';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { A11yAnnouncer } from '@/components/ui/A11yAnnouncer';
+import { GlobalKeyboardManager } from '@/components/ui/KeyboardShortcutsHelp';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const location = useLocation();
@@ -46,32 +49,46 @@ function App() {
   }, [restore]);
 
   return (
-    <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ChatApp />} />
-          <Route path="/login" element={<LoginRoute />} />
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <AdminHome />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/home/:tab"
-            element={
-              <ProtectedRoute>
-                <AdminHome />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      <Toaster />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            {/* 可访问性通知组件 */}
+            <A11yAnnouncer />
+
+            {/* 全局键盘管理器 */}
+            <GlobalKeyboardManager />
+
+            <Routes>
+              <Route path="/" element={<ChatApp />} />
+              <Route path="/login" element={<LoginRoute />} />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <ErrorBoundary>
+                      <AdminHome />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/home/:tab"
+                element={
+                  <ProtectedRoute>
+                    <ErrorBoundary>
+                      <AdminHome />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+          <Toaster />
+        </ThemeProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 

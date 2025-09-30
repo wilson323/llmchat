@@ -4,6 +4,19 @@ import { AgentConfig, Agent, AgentStatus, AgentHealthStatus } from '@/types';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 
+type AgentSeed = {
+  id: string;
+  name: string;
+  description: string;
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  provider: AgentConfig['provider'];
+  capabilities?: string[];
+  isActive?: boolean;
+  features?: Partial<AgentConfig['features']>;
+};
+
 type AgentDbRow = {
   id: string;
   name: string;
@@ -54,6 +67,38 @@ export class AgentConfigService {
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
   private loadingPromise: Promise<AgentConfig[]> | null = null;
   private snapshotWriting = false;
+  private readonly builtinSeeds: AgentSeed[] = [
+    {
+      id: 'product-scene-preview',
+      name: '产品现场预览 (示例)',
+      description: '演示用智能体，请在后台完成正式配置并更新端点/密钥。',
+      endpoint: 'https://example.com/agents/product-preview',
+      apiKey: 'demo-api-key',
+      model: 'demo-product-model',
+      provider: 'custom',
+      capabilities: ['scene-preview', 'image-compose'],
+      isActive: false,
+    },
+    {
+      id: 'voice-conversation-assistant',
+      name: '语音通话助手 (示例)',
+      description: '演示用智能体，需替换为真实语音模型的访问配置。',
+      endpoint: 'https://example.com/agents/voice-call',
+      apiKey: 'demo-api-key',
+      model: 'demo-voice-model',
+      provider: 'custom',
+      capabilities: ['speech-to-text', 'text-to-speech'],
+      isActive: false,
+      features: {
+        supportsStream: true,
+        supportsDetail: true,
+        streamingConfig: {
+          enabled: true,
+          statusEvents: true,
+        },
+      },
+    },
+  ];
 
   constructor(configPath?: string) {
     this.configPath = configPath ||
@@ -419,22 +464,54 @@ export class AgentConfigService {
   }
 
   private async backfillFromFile(): Promise<void> {
+    let seededFromFile = false;
     try {
       const file = await fs.readFile(this.configPath, 'utf-8');
       const parsed = JSON.parse(file);
       const list: AgentConfig[] = Array.isArray(parsed?.agents) ? parsed.agents : [];
-      if (list.length === 0) return;
-      for (const agent of list) {
-        if (this.validateAgentConfig(agent)) {
-          await this.insertAgent({
-            ...agent,
-            createdAt: agent.createdAt || new Date().toISOString(),
-            updatedAt: agent.updatedAt || new Date().toISOString(),
-          });
+      if (list.length > 0) {
+        for (const agent of list) {
+          if (this.validateAgentConfig(agent)) {
+            await this.insertAgent({
+              ...agent,
+              createdAt: agent.createdAt || new Date().toISOString(),
+              updatedAt: agent.updatedAt || new Date().toISOString(),
+            });
+            seededFromFile = true;
+          }
         }
       }
     } catch (error) {
       console.warn('从文件回填智能体失败:', error);
+    }
+
+    if (!seededFromFile && this.agents.size === 0) {
+      await this.seedDefaultAgents();
+    }
+  }
+
+  private async seedDefaultAgents(): Promise<void> {
+    const now = new Date().toISOString();
+    for (const seed of this.builtinSeeds) {
+      const features = this.ensureFeatureDefaults(seed.features as AgentConfig['features'] | undefined);
+      const config: AgentConfig = {
+        id: seed.id,
+        name: seed.name,
+        description: seed.description,
+        endpoint: seed.endpoint,
+        apiKey: seed.apiKey,
+        model: seed.model,
+        provider: seed.provider,
+        isActive: seed.isActive ?? false,
+        capabilities: seed.capabilities ?? [],
+        features,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      if (this.validateAgentConfig(config)) {
+        await this.insertAgent(config);
+      }
     }
   }
 

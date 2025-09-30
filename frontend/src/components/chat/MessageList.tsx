@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
 // 已移除 FastGPTStatusIndicator 导入，方案A最小化：仅去掉该UI块
 // import { FastGPTStatusIndicator } from './FastGPTStatusIndicator';
 import { useChatStore } from '@/store/chatStore';
@@ -22,6 +23,20 @@ export const MessageList: React.FC<MessageListProps> = memo(({
   onInteractiveFormSubmit,
   onRetryMessage,
 }) => {
+  // 当消息数量超过20条时使用虚拟滚动
+  const shouldUseVirtualization = messages.length > 20;
+
+  if (shouldUseVirtualization) {
+    return (
+      <VirtualizedMessageList
+        messages={messages}
+        isStreaming={isStreaming}
+        onInteractiveSelect={onInteractiveSelect}
+        onInteractiveFormSubmit={onInteractiveFormSubmit}
+        onRetryMessage={onRetryMessage}
+      />
+    );
+  }
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const { currentAgent, streamingStatus } = useChatStore();
@@ -35,9 +50,13 @@ export const MessageList: React.FC<MessageListProps> = memo(({
   }, [messages, isStreaming]);
 
   return (
-    <div 
+    <div
       ref={scrollRef}
       className="h-full overflow-y-auto bg-background"
+      role="main"
+      aria-label={t('聊天消息区域')}
+      aria-live="polite"
+      aria-atomic="false"
     >
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="space-y-6">
@@ -47,7 +66,7 @@ export const MessageList: React.FC<MessageListProps> = memo(({
             const isAssistantMessage = message.AI !== undefined;
             
             return (
-              <div key={index}>
+              <div key={index} role="article" aria-label={isAssistantMessage ? t('AI回复') : t('用户消息')}>
                 <MessageItem
                   message={message}
                   isStreaming={isStreaming && isLastMessage && isAssistantMessage}
@@ -59,7 +78,7 @@ export const MessageList: React.FC<MessageListProps> = memo(({
                 />
                 {/* 最后一个消息的占位元素 */}
                 {isLastMessage && (
-                  <div ref={lastMessageRef} className="h-1" />
+                  <div ref={lastMessageRef} className="h-1" aria-hidden="true" />
                 )}
               </div>
             );

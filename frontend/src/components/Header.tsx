@@ -12,7 +12,7 @@ export const Header: React.FC = () => {
   const { t } = useI18n();
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/90 border-b border-border/50 px-4 py-3">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/90 border-b border-border/50 px-4 py-3" role="banner">
       <div className="flex items-center justify-between max-w-none">
         {/* 左侧：菜单、智能体选择器 */}
         <div className="flex items-center gap-2 md:gap-4 flex-1">
@@ -21,6 +21,8 @@ export const Header: React.FC = () => {
             variant="glass"
             radius="lg"
             aria-label={t('切换侧边栏')}
+            aria-expanded={sidebarOpen}
+            aria-controls="sidebar"
           >
             <Menu className="h-5 w-5 text-brand drop-shadow-sm" />
           </IconButton>

@@ -53,7 +53,7 @@ interface SSEParsedEvent {
 
 
 const debugLog = (...args: any[]) => {
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV) {
     // eslint-disable-next-line no-console
     console.debug('[chatService]', ...args);
   }
@@ -406,7 +406,7 @@ export const agentService = {
   async checkAgentStatus(id: string) {
     debugLog('检查智能体状态', id);
     try {
-      const response = await api.get<ApiResponse>(`/agents/${id}/status`);
+      const response = await api.get<ApiResponse<any>>(`/agents/${id}/status`);
       debugLog('智能体状态响应', response.data);
       return response.data.data;
     } catch (error) {
@@ -507,7 +507,7 @@ export const chatService = {
   },
 
   async init(agentId: string, chatId?: string): Promise<any> {
-    const response = await api.get<ApiResponse>('/chat/init', {
+    const response = await api.get<ApiResponse<any>>('/chat/init', {
       params: {
         appId: agentId,
         ...(chatId ? { chatId } : {}),
