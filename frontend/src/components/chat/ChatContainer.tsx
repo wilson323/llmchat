@@ -7,6 +7,9 @@ import { Bot, Sparkles } from 'lucide-react';
 import { chatService } from '@/services/api';
 
 import { useI18n } from '@/i18n';
+import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
+import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
+import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 
 
 export const ChatContainer: React.FC = () => {
@@ -20,7 +23,7 @@ export const ChatContainer: React.FC = () => {
     updateLastMessage,
     setIsStreaming,
     createNewSession,
-
+    bindSessionId,
     stopStreaming,
     setStreamAbortController,
   } = useChatStore();

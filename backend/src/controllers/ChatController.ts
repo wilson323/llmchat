@@ -38,7 +38,7 @@ export class ChatController {
 
     this.historyService = new ChatHistoryService();
     this.uploadDir = path.resolve(__dirname, '../../uploads');
-
+  }
 
   /**
    * 聊天初始化请求验证Schema
@@ -1229,46 +1229,26 @@ export class ChatController {
    */
   clearChatHistories = async (req: Request, res: Response): Promise<void> => {
     try {
-
-      const { sessionId } = req.params;
-      const limitRaw = req.query.limit;
-      const offsetRaw = req.query.offset;
-      const roleRaw = req.query.role;
-
-      const limit = limitRaw ? parseInt(String(limitRaw), 10) : undefined;
-      const offset = offsetRaw ? parseInt(String(offsetRaw), 10) : undefined;
-      let roles: Array<'user' | 'assistant' | 'system'> | undefined;
-
-      if (roleRaw) {
-        const roleList = Array.isArray(roleRaw)
-          ? roleRaw
-          : String(roleRaw).split(',');
-        roles = roleList
-          .map((r) => r.trim())
-          .filter((r): r is 'user' | 'assistant' | 'system' =>
-            ['user', 'assistant', 'system'].includes(r)
-          );
-      }
-
-      const history = await this.historyService.getHistory(sessionId, {
-        limit,
-        offset,
-        roles,
-      });
-
-      if (!history.session) {
-        res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: `未找到会话: ${sessionId}`,
+      const { error, value } = this.historyDeleteSchema.validate(req.query);
+      if (error) {
+        const apiError: ApiError = {
+          code: 'VALIDATION_ERROR',
+          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
           timestamp: new Date().toISOString(),
-        });
+        };
+        res.status(400).json(apiError);
         return;
       }
 
-      res.json({
-        success: true,
-        data: history,
+      const { agentId } = value as { agentId: string };
+      await this.fastgptSessionService.clearHistories(agentId);
 
+      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
+    } catch (err: any) {
+      console.error('清空聊天历史失败:', err);
+      const apiError: ApiError = {
+        code: 'CLEAR_HISTORY_FAILED',
+        message: err instanceof Error ? err.message : '清空聊天历史失败',
         timestamp: new Date().toISOString(),
       };
       let status = 500;

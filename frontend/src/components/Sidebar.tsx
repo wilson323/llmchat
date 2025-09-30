@@ -18,6 +18,11 @@ import { useChatStore } from '@/store/chatStore';
 import { ChatSession } from '@/types';
 
 import { useI18n } from '@/i18n';
+import { chatService } from '@/services/api';
+import { mapHistoryDetailToMessages } from '@/lib/fastgpt';
+import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
+import { toast } from '@/components/ui/Toast';
+import { Dialog } from '@/components/ui/Dialog';
 
 interface SidebarProps {
   className?: string;
@@ -47,6 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [sessionPendingDelete, setSessionPendingDelete] = useState<ChatSession | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
 
@@ -57,11 +64,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   };
 
   const handleSwitchSession = async (session: ChatSession) => {
-      switchToSession(session.id);
+    switchToSession(session.id);
 
-      if (!currentAgent) return;
-      if (currentAgent.id === PRODUCT_PREVIEW_AGENT_ID || currentAgent.id === VOICE_CALL_AGENT_ID) return;
-      if (session.messages && session.messages.length > 0) return;
+    if (!currentAgent) return;
+    if (currentAgent.id === PRODUCT_PREVIEW_AGENT_ID || currentAgent.id === VOICE_CALL_AGENT_ID) return;
+    if (session.messages && session.messages.length > 0) return;
 
     try {
       const detail = await chatService.getHistoryDetail(currentAgent.id, session.id);
@@ -85,20 +92,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     setEditTitle('');
   };
 
-  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
+  const requestDeleteSession = (session: ChatSession, e: React.MouseEvent) => {
     e.stopPropagation();
+    setSessionPendingDelete(session);
+  };
 
-    if (confirm(t('确定要删除这个对话吗？'))) {
+  const closeDeleteDialog = () => {
+    if (isDeleting) return;
+    setSessionPendingDelete(null);
+  };
 
-      deleteSession(sessionId);
-      return;
-    }
+  const confirmDeleteSession = async () => {
+    if (!sessionPendingDelete || !currentAgent || isDeleting) return;
 
+    setIsDeleting(true);
     try {
-      await chatService.deleteHistory(currentAgent.id, sessionId);
-      deleteSession(sessionId);
+      await chatService.deleteHistory(currentAgent.id, sessionPendingDelete.id);
+      deleteSession(sessionPendingDelete.id);
+      toast({ type: 'success', title: t('对话已删除') });
     } catch (error) {
       console.error('删除聊天历史失败:', error);
+      toast({
+        type: 'error',
+        title: t('删除失败'),
+        description: t('删除对话时出现错误，请稍后重试。'),
+      });
+    } finally {
+      setIsDeleting(false);
+      setSessionPendingDelete(null);
     }
   };
 
@@ -257,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                       <Edit3 className="h-3 w-3" />
                     </IconButton>
                     <IconButton
-                      onClick={(e) => handleDeleteSession(session.id, e)}
+                      onClick={(e) => requestDeleteSession(session, e)}
                       variant="destructive"
                       radius="md"
                     >
@@ -359,8 +380,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         </div>
       </aside>
 
-      {/* 隐藏清空对话确认弹窗（不影响管理端） */}
-
+      <Dialog
+        open={!!sessionPendingDelete}
+        title={t('删除对话')}
+        description={t('删除后将无法恢复该对话记录，是否继续？')}
+        confirmText={isDeleting ? t('删除中…') : t('删除')}
+        cancelText={t('取消')}
+        destructive
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDeleteSession}
+      />
     </>
   );
 };

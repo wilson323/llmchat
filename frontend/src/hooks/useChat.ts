@@ -4,6 +4,9 @@ import { useChatStore } from '@/store/chatStore';
 
 import { ChatMessage, ChatOptions, OriginalChatMessage } from '@/types';
 import { useI18n } from '@/i18n';
+import { parseReasoningPayload } from '@/lib/reasoning';
+import { normalizeFastGPTEvent } from '@/lib/events';
+import { debugLog } from '@/lib/debug';
 
 export const useChat = () => {
   const { t } = useI18n();
@@ -139,13 +142,28 @@ export const useChat = () => {
   }, [sendMessage]);
 
   const retryMessage = useCallback(async (messageId: string) => {
+    const state = useChatStore.getState();
+    const {
+      currentAgent,
+      currentSession,
+      messages,
+      preferences,
+      updateMessageById,
+      setIsStreaming,
+      setStreamingStatus,
+      appendReasoningStep,
+      finalizeReasoning,
+      addMessage,
+      appendAssistantEvent,
+    } = state;
+
     if (!currentAgent || !currentSession) {
-      throw new Error('没有选择智能体或会话');
+      throw new Error(t('没有选择智能体或会话'));
     }
 
     const targetMessage = messages.find((msg) => msg.id === messageId);
     if (!targetMessage) {
-      throw new Error('未找到需要重新生成的消息');
+      throw new Error(t('未找到需要重新生成的消息'));
     }
 
     updateMessageById(messageId, (prev) => ({ ...prev, AI: '', reasoning: undefined }));
@@ -172,7 +190,7 @@ export const useChat = () => {
             try {
               addMessage({ interactive: interactiveData });
             } catch (e) {
-              console.warn('处理 retry interactive 事件失败:', e, interactiveData);
+              console.warn(t('处理 retry interactive 事件失败'), e, interactiveData);
             }
           },
           (cid) => {
@@ -201,24 +219,12 @@ export const useChat = () => {
       }
     } catch (error) {
       console.error('重新生成消息失败:', error);
-      updateMessageById(messageId, (prev) => ({ ...prev, AI: '抱歉，重新生成时出现错误。请稍后重试。' }));
+      updateMessageById(messageId, (prev) => ({ ...prev, AI: t('抱歉，重新生成时出现错误。请稍后重试。') }));
     } finally {
       setIsStreaming(false);
       setStreamingStatus(null);
     }
-  }, [
-    currentAgent,
-    currentSession,
-    messages,
-    preferences.streamingEnabled,
-    updateMessageById,
-    setIsStreaming,
-    setStreamingStatus,
-    appendReasoningStep,
-    finalizeReasoning,
-    addMessage,
-    appendAssistantEvent,
-  ]);
+  }, [t]);
 
   return {
     sendMessage,
