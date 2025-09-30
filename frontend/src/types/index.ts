@@ -61,6 +61,34 @@ export interface FastGPTEvent {
   stage?: 'start' | 'update' | 'complete';
 }
 
+export interface FastGPTChatHistorySummary {
+  chatId: string;
+  appId?: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  messageCount?: number;
+  tags?: string[];
+  raw?: any;
+}
+
+export interface FastGPTChatHistoryMessage {
+  id?: string;
+  dataId?: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  feedback?: 'good' | 'bad' | null;
+  raw?: any;
+}
+
+export interface FastGPTChatHistoryDetail {
+  chatId: string;
+  appId?: string;
+  title?: string;
+  messages: FastGPTChatHistoryMessage[];
+  metadata?: Record<string, any>;
+}
+
 export interface ProductPreviewBoundingBox {
   x: number;
   y: number;
