@@ -62,6 +62,12 @@ export const api = axios.create({
   },
 });
 
+/**
+ * Converts a Blob to a base64-encoded string by reading it as a data URL and returning the data portion.
+ *
+ * @param blob - The Blob or File to convert
+ * @returns The base64-encoded data extracted from the Blob's data URL
+ */
 async function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -666,6 +672,15 @@ export const chatService = {
   },
 };
 
+/**
+ * Uploads a file or blob as a chat attachment and returns its stored metadata.
+ *
+ * @param file - The File or Blob to upload.
+ * @param opts - Optional upload settings.
+ * @param opts.source - Origin of the attachment; `'upload'` or `'voice'`. Defaults to `'upload'`.
+ * @param opts.filename - Optional filename to use instead of the file's name.
+ * @returns The uploaded attachment's metadata
+ */
 export async function uploadAttachment(
   file: File | Blob,
   opts?: { source?: 'upload' | 'voice'; filename?: string }
