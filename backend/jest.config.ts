@@ -7,7 +7,13 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  collectCoverageFrom: ['src/utils/fastgptEvents.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/__tests__/**',
+  ],
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
+  },
 };
 
 export default config;
