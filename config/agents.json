@@ -2,7 +2,7 @@
   "agents": [
     {
       "id": "6708e788c6ba48baa62419a5",
-      "appId":"6708e788c6ba48baa62419a5",
+      "appId": "6708e788c6ba48baa62419a5",
       "name": "熵犇犇售后服务助手",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
       "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
@@ -36,7 +36,7 @@
     },
     {
       "id": "68940ff5c21f31d18b0732aa",
-      "appId":"68940ff5c21f31d18b0732aa",
+      "appId": "68940ff5c21f31d18b0732aa",
       "name": "配单智能应用",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
       "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
@@ -70,7 +70,7 @@
     },
     {
       "id": "689c7c46408874189187da89",
-      "appId":"689c7c46408874189187da89",
+      "appId": "689c7c46408874189187da89",
       "name": "需求分析",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
       "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",

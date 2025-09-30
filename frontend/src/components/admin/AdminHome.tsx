@@ -29,7 +29,6 @@ import { Input } from "@/components/ui/Input";
 
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
-import chinaMap from 'echarts/map/json/china.json?json';
 
 import { useAuthStore } from "@/store/authStore";
 import { logoutApi, changePasswordApi } from "@/services/authApi";
@@ -56,15 +55,28 @@ import {
   type AgentComparisonDataset,
 } from "@/services/analyticsApi";
 
+// 动态加载中国地图 GeoJSON 数据
 let hasRegisteredChinaMap = false;
-if (!hasRegisteredChinaMap && typeof window !== 'undefined') {
+const ensureChinaMap = async () => {
+  if (hasRegisteredChinaMap || typeof window === 'undefined') return;
+
   try {
-    echarts.registerMap('china', chinaMap as any);
+    const mapUrl = new URL('maps/china.json', window.location.origin).toString();
+    const response = await fetch(mapUrl, { cache: 'force-cache' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const chinaMap = await response.json();
+    echarts.registerMap('china', chinaMap);
     hasRegisteredChinaMap = true;
+    console.log('[AdminHome] 中国地图加载成功');
   } catch (error) {
-    console.warn('[AdminHome] register china map failed:', error);
+    console.warn('[AdminHome] 中国地图加载失败:', error);
   }
-}
+};
+
+void ensureChinaMap();
 
 export default function AdminHome() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -575,27 +587,33 @@ function ConversationsTrendCard({ analytics }: { analytics: DashboardConversatio
           <p className="text-xs text-muted-foreground">{t('展示指定时间范围内的请求次数变化，可按智能体筛选')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1" htmlFor="analytics-start-date">
             <span className="text-muted-foreground">{t('开始日期')}</span>
             <input
+              id="analytics-start-date"
+              name="analytics-start-date"
               type="date"
               value={filters.startDate}
               onChange={(e) => setDateFilter('startDate', e.target.value)}
               className="h-9 rounded-lg border border-border/50 bg-transparent px-3 text-sm"
             />
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1" htmlFor="analytics-end-date">
             <span className="text-muted-foreground">{t('结束日期')}</span>
             <input
+              id="analytics-end-date"
+              name="analytics-end-date"
               type="date"
               value={filters.endDate}
               onChange={(e) => setDateFilter('endDate', e.target.value)}
               className="h-9 rounded-lg border border-border/50 bg-transparent px-3 text-sm"
             />
           </label>
-          <label className="flex flex-col gap-1 min-w-[160px]">
+          <label className="flex flex-col gap-1 min-w-[160px]" htmlFor="analytics-agent-filter">
             <span className="text-muted-foreground">{t('智能体')}</span>
             <select
+              id="analytics-agent-filter"
+              name="analytics-agent-filter"
               value={filters.agentId}
               onChange={(e) => setAgentId(e.target.value)}
               className="h-9 rounded-lg border border-border/50 bg-transparent px-3 text-sm"
@@ -660,8 +678,39 @@ function AgentComparisonCard({ analytics }: { analytics: DashboardConversationAn
     if (!comparison || comparison.totals.length === 0) {
       return null;
     }
+
     const categories = comparison.totals.map((item) => item.name);
     const data = comparison.totals.map((item) => item.count);
+
+    const brandHex = (() => {
+      if (typeof window === 'undefined') return '#6cb33f';
+      const value = getComputedStyle(document.documentElement).getPropertyValue('--brand');
+      return value?.trim() || '#6cb33f';
+    })();
+
+    const brandTint = (() => {
+      if (!brandHex.startsWith('#')) {
+        return 'rgba(108, 179, 63, 0.35)';
+      }
+
+      const expand = (hex: string) => (hex.length === 1 ? hex + hex : hex);
+      const raw = brandHex.replace('#', '');
+      if (![3, 6].includes(raw.length)) {
+        return 'rgba(108, 179, 63, 0.35)';
+      }
+
+      const r = parseInt(expand(raw.slice(0, raw.length === 3 ? 1 : 2)), 16);
+      const g = parseInt(expand(raw.slice(raw.length === 3 ? 1 : 2, raw.length === 3 ? 2 : 4)), 16);
+      const b = parseInt(expand(raw.slice(raw.length === 3 ? 2 : 4)), 16);
+      return `rgba(${r}, ${g}, ${b}, 0.3)`;
+    })();
+
+    const createGradient = (primary: string, tint: string) =>
+      new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: primary },
+        { offset: 1, color: tint },
+      ]);
+
     return {
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       grid: { left: 40, right: 20, top: 40, bottom: 40 },
@@ -682,7 +731,19 @@ function AgentComparisonCard({ analytics }: { analytics: DashboardConversationAn
           name: t('请求次数'),
           type: 'bar',
           barMaxWidth: 36,
-          itemStyle: { color: 'var(--brand)' },
+          itemStyle: {
+            color: createGradient(brandHex, brandTint),
+            borderRadius: [8, 8, 4, 4],
+            shadowColor: brandTint,
+            shadowBlur: 12,
+          },
+          emphasis: {
+            itemStyle: {
+              color: createGradient(brandHex, brandHex),
+              shadowColor: brandTint,
+              shadowBlur: 18,
+            },
+          },
           data,
         },
       ],
@@ -899,45 +960,91 @@ type AnalyticsFilters = { startDate: string; endDate: string; agentId: string };
 
 function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: ProvinceHeatmapDataset | null; loading: boolean; height?: number; }) {
   const { t } = useI18n();
+
+  const heatmapData = useMemo(
+    () => (dataset?.points ?? []).map((item) => ({ name: item.province, value: item.count })),
+    [dataset]
+  );
+
   const maxValue = useMemo(() => {
-    if (!dataset || dataset.points.length === 0) return 0;
-    return dataset.points.reduce((max, item) => Math.max(max, item.count), 0);
-  }, [dataset]);
+    if (heatmapData.length === 0) return 0;
+    return heatmapData.reduce((max, item) => Math.max(max, Number(item.value) || 0), 0);
+  }, [heatmapData]);
+
+  const hasData = useMemo(
+    () => heatmapData.some((item) => Number(item.value) > 0),
+    [heatmapData]
+  );
 
   const option = useMemo(() => {
-    if (!dataset || dataset.points.length === 0) {
-      return null;
-    }
+    const visualPalette = ['#dbeafe', '#2563eb'];
+
     return {
       tooltip: {
         trigger: 'item',
+        borderRadius: 8,
+        padding: 12,
         formatter: (params: any) => {
           const value = Array.isArray(params?.value) ? params?.value?.[0] : params?.value;
           return `${params?.name || ''}<br/>${t('请求量')}: ${value ?? 0}`;
         },
+        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+        textStyle: { color: '#f8fafc' },
       },
-      visualMap: {
-        min: 0,
-        max: Math.max(maxValue, 1),
-        left: 'left',
-        bottom: 0,
-        text: [t('高'), t('低')],
-        inRange: { color: ['#e0f2ff', '#2563eb'] },
+      animation: true,
+      animationEasing: 'cubicOut',
+      animationDuration: 600,
+      animationDurationUpdate: 800,
+      animationEasingUpdate: 'cubicInOut',
+      geo: {
+        map: 'china',
+        roam: true,
+        zoom: 1.05,
+        scaleLimit: { min: 1, max: 5 },
+        itemStyle: {
+          areaColor: 'rgba(148, 163, 184, 0.08)',
+          borderColor: 'rgba(148, 163, 184, 0.35)',
+          shadowBlur: 14,
+          shadowColor: 'rgba(15, 23, 42, 0.28)',
+        },
+        emphasis: {
+          itemStyle: {
+            borderColor: 'rgba(59, 130, 246, 0.8)',
+            areaColor: 'rgba(59, 130, 246, 0.35)',
+          },
+          label: {
+            show: true,
+            color: '#fff',
+            fontWeight: 600,
+          },
+        },
       },
+      visualMap: hasData
+        ? {
+            min: 0,
+            max: Math.max(maxValue, 1),
+            left: 'left',
+            bottom: 0,
+            text: [t('高'), t('低')],
+            calculable: true,
+            inRange: { color: visualPalette },
+          }
+        : { show: false },
       series: [
         {
           name: t('请求量'),
           type: 'map',
-          map: 'china',
-          roam: true,
-          label: { show: false },
-          emphasis: { label: { color: '#fff', fontWeight: '600' } },
-          itemStyle: { borderColor: 'rgba(255,255,255,0.4)', borderWidth: 0.8 },
-          data: dataset.points.map((item) => ({ name: item.province, value: item.count })),
+          geoIndex: 0,
+          emphasis: { label: { color: '#fff', fontWeight: 600 } },
+          itemStyle: {
+            borderColor: 'rgba(255,255,255,0.5)',
+            borderWidth: 0.8,
+          },
+          data: heatmapData,
         },
       ],
-    } as any;
-  }, [dataset, maxValue, t]);
+    } as const;
+  }, [heatmapData, hasData, maxValue, t]);
 
   if (loading) {
     return (
@@ -950,18 +1057,25 @@ function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: Pro
     );
   }
 
-  if (!dataset || dataset.points.length === 0 || !option) {
-    return (
-      <div
-        className="flex items-center justify-center rounded-xl bg-muted/10 text-sm text-muted-foreground"
-        style={{ height }}
-      >
-        {t('暂无数据')}
-      </div>
-    );
-  }
-
-  return <ReactECharts option={option} style={{ height }} notMerge lazyUpdate />;
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-background via-background/95 to-muted/20 shadow-inner"
+      style={{ height }}
+    >
+      <ReactECharts option={option} style={{ height }} notMerge lazyUpdate className="h-full w-full" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/75 via-background/25 to-transparent" />
+      {!hasData && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <div className="rounded-full border border-brand/40 bg-brand/10 px-3 py-1 text-xs text-brand animate-pulse">
+            {t('等待新的请求数据')}
+          </div>
+          <p className="max-w-sm px-4 text-center text-xs text-muted-foreground/80 md:text-sm">
+            {t('当前时间范围内暂无省份请求记录，仍可自由缩放与浏览基础地图。')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function HeatmapSummary({ dataset, variant = 'default' }: { dataset: ProvinceHeatmapDataset | null; variant?: 'default' | 'compact'; }) {
@@ -1147,7 +1261,7 @@ function ServerParamsCard() {
   );
 }
 
-function ConversationsLineChart() {
+export function ConversationsLineChart() {
   // 生成近30天日期
   const dates = Array.from({ length: 30 }, (_, i) => {
     const d = new Date();
@@ -1238,8 +1352,14 @@ function LogsPanel() {
         <div className="p-6 rounded-2xl bg-background border border-border/50 shadow-sm">
           <div className="flex items-end gap-3 mb-4">
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">{t('级别')}</label>
-              <select value={level} onChange={e=>setLevel(e.target.value as any)} className="h-9 px-2 rounded-md bg-muted/30 border border-border/30">
+              <label className="block text-xs text-muted-foreground mb-1" htmlFor="log-level-select">{t('级别')}</label>
+              <select
+                id="log-level-select"
+                name="log-level-select"
+                value={level}
+                onChange={e=>setLevel(e.target.value as any)}
+                className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
+              >
                 <option value="">{t('全部')}</option>
                 <option value="INFO">INFO</option>
                 <option value="WARN">WARN</option>
@@ -1247,12 +1367,26 @@ function LogsPanel() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">{t('开始时间')}</label>
-              <input type="datetime-local" value={start} onChange={e=>setStart(e.target.value)} className="h-9 px-2 rounded-md bg-muted/30 border border-border/30" />
+              <label className="block text-xs text-muted-foreground mb-1" htmlFor="log-start-time">{t('开始时间')}</label>
+              <input
+                id="log-start-time"
+                name="log-start-time"
+                type="datetime-local"
+                value={start}
+                onChange={e=>setStart(e.target.value)}
+                className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
+              />
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">{t('结束时间')}</label>
-              <input type="datetime-local" value={end} onChange={e=>setEnd(e.target.value)} className="h-9 px-2 rounded-md bg-muted/30 border border-border/30" />
+              <label className="block text-xs text-muted-foreground mb-1" htmlFor="log-end-time">{t('结束时间')}</label>
+              <input
+                id="log-end-time"
+                name="log-end-time"
+                type="datetime-local"
+                value={end}
+                onChange={e=>setEnd(e.target.value)}
+                className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
+              />
             </div>
             <Button onClick={() => fetchData()}>{t('查询')}</Button>
             <Button variant="secondary" onClick={onExport}>{t('导出 CSV')}</Button>
@@ -2030,7 +2164,7 @@ function AgentsPanel() {
         onClose={() => setImportOpen(false)}
         onSubmit={handleImport}
       />
-      <Dialog
+      <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={t('删除智能体')}
         description={deleteTarget ? t('确认删除「{name}」？删除后该智能体将无法被用户选择。', { name: deleteTarget.name || deleteTarget.id || '' }) : undefined}
@@ -2044,6 +2178,70 @@ function AgentsPanel() {
         }}
       />
     </main>
+  );
+}
+
+interface ConfirmDialogProps {
+  open: boolean;
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  destructive?: boolean;
+  onConfirm?: () => void;
+  onClose?: () => void;
+}
+
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmText,
+  cancelText,
+  destructive,
+  onConfirm,
+  onClose,
+}: ConfirmDialogProps) {
+  const { t } = useI18n();
+  if (!open) return null;
+  const resolvedTitle = title ?? t('确认操作');
+  const resolvedConfirm = confirmText ?? t('确认');
+  const resolvedCancel = cancelText ?? t('取消');
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-[61] w-full max-w-sm mx-4 rounded-2xl border border-border bg-card shadow-2xl">
+        <div className="p-4 sm:p-5">
+          <div className="text-base font-semibold text-foreground">{resolvedTitle}</div>
+          {description && (
+            <div className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+              {description}
+            </div>
+          )}
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button
+              variant="secondary"
+              size="md"
+              radius="md"
+              onClick={onClose}
+              className="min-w-[84px]"
+            >
+              {resolvedCancel}
+            </Button>
+            <Button
+              variant={destructive ? 'destructive' : 'brand'}
+              size="md"
+              radius="md"
+              onClick={() => onConfirm?.()}
+              className="min-w-[84px]"
+            >
+              {resolvedConfirm}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

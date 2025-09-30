@@ -20,9 +20,39 @@ export type AgentStatus = 'active' | 'inactive' | 'error' | 'loading';
 /**
  * 聊天消息接口（按 huihua.md 要求的格式）
  */
+// 交互数据类型定义
+export interface InteractiveSelectOption {
+  key?: string;
+  value: string;
+}
+
+export interface InteractiveFormOption {
+  value: string;
+  label: string;
+}
+
+export interface InteractiveSelectParams {
+  description?: string;
+  varKey?: string;
+  userSelectOptions: InteractiveSelectOption[];
+}
+
+export interface InteractiveInputParams {
+  description?: string;
+  inputForm: InteractiveFormItem[];
+}
+
+export interface InteractiveFormItem {
+  type: 'input' | 'numberInput' | 'select';
+  key: string;
+  label: string;
+  list?: InteractiveFormOption[];
+  defaultValue?: string;
+}
+
 export type InteractiveData =
-  | { type: 'userSelect'; params: { description?: string; userSelectOptions: { key: string; value: string }[] } }
-  | { type: 'userInput'; params: { description?: string; inputForm: any[] } };
+  | { type: 'userSelect'; origin?: 'init' | 'chat'; params: InteractiveSelectParams }
+  | { type: 'userInput'; origin?: 'init' | 'chat'; params: InteractiveInputParams };
 
 export interface ReasoningStep {
   id: string;
@@ -119,6 +149,9 @@ export interface ChatMessage {
   id?: string;    // 响应数据ID（FastGPT responseChatItemId，用于点赞/点踩反馈）
   feedback?: 'good' | 'bad' | null; // 点赞/点踩的持久化状态（good=点赞，bad=点踩，null=无）
   interactive?: InteractiveData; // FastGPT 交互节点（流式 detail=true）
+  timestamp?: number; // 消息时间戳（用于显示正确的时间）
+  reasoning?: ReasoningState; // 推理状态
+  events?: FastGPTEvent[]; // FastGPT事件流
 
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
@@ -247,7 +280,7 @@ export interface UserPreferences {
 }
 
 /**
- * 聊天会话（严格按照 huihua.md 定义）
+ * 聊天会话
  */
 export interface ChatSession {
   id: string;              // 时间戳字符串(会话id)
@@ -255,9 +288,16 @@ export interface ChatSession {
   agentId: string;         // 关联的智能体ID
   messages: ChatMessage[]; // 消息列表 [{'AI': string, 'HUMAN': string}]
 
-  createdAt: number;       // 创建时间(时间戳)
-  updatedAt: number;       // 更新时间(时间戳)
+  createdAt: Date | number; // 创建时间(Date对象或时间戳)
+  updatedAt: Date | number; // 更新时间(Date对象或时间戳)
 
+  // 新增字段用于优化会话管理
+  lastAccessedAt?: number;   // 最后访问时间戳
+  messageCount?: number;     // 消息数量缓存
+  isPinned?: boolean;        // 是否置顶
+  tags?: string[];          // 会话标签
+  isArchived?: boolean;     // 是否已归档
+  metadata?: Record<string, any>; // 会话元数据（用于特殊智能体存储额外信息）
 }
 
 /**

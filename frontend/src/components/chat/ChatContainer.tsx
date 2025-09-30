@@ -27,7 +27,12 @@ export const ChatContainer: React.FC = () => {
     stopStreaming,
     setStreamAbortController,
   } = useChatStore();
-  const { sendMessage, continueInteractiveSelect, continueInteractiveForm } = useChat();
+  const {
+    sendMessage,
+    continueInteractiveSelect,
+    continueInteractiveForm,
+    retryMessage
+  } = useChat();
   const { t } = useI18n();
 
 
@@ -67,17 +72,16 @@ export const ChatContainer: React.FC = () => {
       // 多变量或非 select 类型 -> 合并为一个表单（userInput）
       const inputForm = vars.map((v: any, idx: number) => {
         const t = v.type;
-        const mappedType = t === 'number' || t === 'numberInput' ? 'numberInput' : (t === 'select' ? 'select' : 'input');
+        const mappedType = (t === 'number' || t === 'numberInput' ? 'numberInput' : (t === 'select' ? 'select' : 'input')) as 'input' | 'numberInput' | 'select';
         return {
           type: mappedType,
           key: v.key || `field_${idx}`,
           label: v.label || v.key || t('字段{index}', { index: idx + 1 }),
-          description: v.description || '',
-          value: v.defaultValue ?? '',
-          defaultValue: v.defaultValue ?? '',
-          valueType: v.valueType || (mappedType === 'numberInput' ? 'number' : 'string'),
-          required: !!v.required,
-          list: Array.isArray(v.list) ? v.list : []
+          list: Array.isArray(v.list) ? v.list.map((item: any) => ({
+            value: item.value || item,
+            label: item.label || item.value || item
+          })) : undefined,
+          defaultValue: v.defaultValue
         };
       });
 

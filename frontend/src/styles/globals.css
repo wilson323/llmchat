@@ -131,6 +131,62 @@
   --brand-hover: #5aa230;
 }
 
+/* Voice call workspace animations */
+@keyframes voice-breathe {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes voice-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes voice-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@layer utilities {
+  .voice-breathe {
+    animation: voice-breathe 3s ease-in-out infinite;
+  }
+
+  .voice-pulse {
+    animation: voice-pulse-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .voice-float {
+    animation: voice-float 5s ease-in-out infinite;
+  }
+
+  .voice-delay-500 {
+    animation-delay: 0.5s;
+  }
+
+  .voice-delay-1000 {
+    animation-delay: 1s;
+  }
+}
+
 /* 基础样式（采用语义 token） */
 @layer base {
   * {
@@ -489,6 +545,51 @@
 
 .dark .prose th {
   background-color: #1f2937;
+}
+
+/* 主题切换过渡动画 */
+:root {
+  --theme-transition-duration: 300ms;
+  --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing),
+              border-color var(--theme-transition-duration) var(--theme-transition-timing),
+              background var(--theme-transition-duration) var(--theme-transition-timing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* 为特定元素禁用过渡 */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* 主题切换时的特殊动画 */
+.theme-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.theme-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--theme-transition-duration) var(--theme-transition-timing),
+              transform var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+.theme-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.theme-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity var(--theme-transition-duration) var(--theme-transition-timing),
+              transform var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
 /* 响应式设计 */

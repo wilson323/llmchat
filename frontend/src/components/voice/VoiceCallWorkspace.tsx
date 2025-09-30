@@ -8,12 +8,14 @@ import {
   PhoneOff,
   User,
   Volume2,
+  type LucideIcon,
 } from 'lucide-react';
 import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { useChat } from '@/hooks/useChat';
 import { useChatStore } from '@/store/chatStore';
 import { cn } from '@/lib/utils';
+import avatarImg from '@/img/4.png';
 
 type CallStatus = 'idle' | 'connecting' | 'in-call' | 'ended';
 
@@ -57,6 +59,50 @@ const formatDuration = (milliseconds: number) => {
     .toString()
     .padStart(2, '0');
   return `${minutes}:${seconds}`;
+};
+
+interface CallStatusMeta {
+  label: string;
+  helper: string;
+  tone: string;
+  icon: LucideIcon;
+  iconTone: string;
+  helperTone: string;
+}
+
+const CALL_STATUS_META: Record<CallStatus, CallStatusMeta> = {
+  idle: {
+    label: '等待开始',
+    helper: '准备好后点击“开始通话”，系统将开启语音监听。',
+    tone: 'border-white/20 bg-white/5 text-muted-foreground',
+    icon: Phone,
+    iconTone: 'text-muted-foreground',
+    helperTone: 'text-muted-foreground',
+  },
+  connecting: {
+    label: '正在连接…',
+    helper: '请稍候，正在建立语音链路并初始化识别。',
+    tone: 'border-amber-400/40 bg-amber-500/10 text-amber-300',
+    icon: Loader2,
+    iconTone: 'text-amber-300 animate-spin',
+    helperTone: 'text-amber-200',
+  },
+  'in-call': {
+    label: '通话中',
+    helper: '助手会实时倾听与响应，可随时结束或继续对话。',
+    tone: 'border-brand/40 bg-brand/10 text-brand',
+    icon: Phone,
+    iconTone: 'text-brand voice-breathe',
+    helperTone: 'text-brand',
+  },
+  ended: {
+    label: '通话已结束',
+    helper: '可以回顾上方记录，或重新发起新的语音通话。',
+    tone: 'border-white/15 bg-white/5 text-muted-foreground',
+    icon: PhoneOff,
+    iconTone: 'text-muted-foreground',
+    helperTone: 'text-muted-foreground',
+  },
 };
 
 interface VoiceCallWorkspaceProps {
@@ -104,6 +150,10 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
       ),
     [messages]
   );
+
+  const agentAvatar = agent.avatar && agent.avatar.trim().length > 0 ? agent.avatar : avatarImg;
+  const statusMeta = CALL_STATUS_META[callStatus];
+  const StatusIcon = statusMeta.icon;
 
   useEffect(() => {
     setRecognitionSupported(!!getSpeechRecognition());
@@ -440,30 +490,111 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
     updateSession,
   ]);
 
-  const statusLabel: Record<CallStatus, string> = {
-    idle: '等待开始',
-    connecting: '正在连接…',
-    'in-call': '通话中',
-    ended: '通话已结束',
-  };
-
   const volumePercent = Math.round(Math.min(1, volume) * 100);
 
   return (
     <div className="flex h-full flex-col gap-6">
-      <div className="rounded-3xl border border-white/15 bg-gradient-to-br from-brand/15 via-background/80 to-background/60 p-6 shadow-2xl backdrop-blur-xl">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.3em] text-brand/80">实时语音通话</p>
-            <h2 className="text-2xl font-semibold text-foreground">{agent.name}</h2>
-            <p className="max-w-xl text-sm text-muted-foreground">{agent.description}</p>
+      <div className="relative rounded-3xl border border-white/15 bg-gradient-to-br from-brand/15 via-background/80 to-background/60 p-6 shadow-2xl backdrop-blur-xl overflow-hidden">
+        {/* 背景装饰：4.png 图片 */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -right-20 -top-20 h-64 w-64 opacity-10 voice-float">
+            <img
+              src={avatarImg}
+              alt=""
+              className="h-full w-full object-contain filter blur-sm"
+              aria-hidden
+            />
+          </div>
+          {callStatus === 'in-call' && (
+            <>
+              <div className="absolute left-10 top-10 h-32 w-32 opacity-5 voice-breathe">
+                <img
+                  src={avatarImg}
+                  alt=""
+                  className="h-full w-full object-contain"
+                  aria-hidden
+                />
+              </div>
+              <div className="absolute right-10 bottom-10 h-40 w-40 opacity-5 voice-float voice-delay-1000">
+                <img
+                  src={avatarImg}
+                  alt=""
+                  className="h-full w-full object-contain"
+                  aria-hidden
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          {/* 左侧：智能体信息 + 头像 */}
+          <div className="flex items-center gap-6">
+            {/* 头像区域 - 添加呼吸灯效果 */}
+            <div className="relative">
+              <div className={cn(
+                'h-24 w-24 overflow-hidden rounded-full border-4 transition-all duration-300',
+                callStatus === 'in-call'
+                  ? 'border-brand shadow-xl shadow-brand/50 voice-breathe'
+                  : 'border-white/20'
+              )}>
+                <img
+                  src={agentAvatar}
+                  alt={agent.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              {/* 脉冲圆环 - 仅在通话中显示 */}
+              {callStatus === 'in-call' && (
+                <>
+                  <div className="voice-pulse absolute inset-0 rounded-full border-4 border-brand" />
+                  <div className="voice-pulse voice-delay-1000 absolute inset-0 rounded-full border-4 border-brand" />
+                </>
+              )}
+              {/* 状态指示点 */}
+              <div className={cn(
+                'absolute bottom-2 right-2 h-5 w-5 rounded-full border-2 border-white',
+                callStatus === 'in-call'
+                  ? 'bg-green-500 voice-breathe'
+                  : callStatus === 'connecting'
+                    ? 'bg-yellow-500 animate-pulse'
+                    : 'bg-gray-400'
+              )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm uppercase tracking-[0.3em] text-brand/80">实时语音通话</p>
+              <h2 className="text-2xl font-semibold text-foreground">{agent.name}</h2>
+              <p className="max-w-xl text-sm text-muted-foreground">{agent.description}</p>
+            </div>
           </div>
 
+          {/* 右侧：状态和按钮 */}
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-end gap-2">
-              <span className="text-sm text-muted-foreground">{statusLabel[callStatus]}</span>
+            <div className="flex flex-col items-end gap-3 text-right">
+              <div
+                className={cn(
+                  'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium shadow-inner transition-colors',
+                  statusMeta.tone
+                )}
+              >
+                <StatusIcon className={cn('h-4 w-4', statusMeta.iconTone)} />
+                <span>{statusMeta.label}</span>
+              </div>
+              <p
+                className={cn(
+                  'max-w-[240px] text-xs leading-snug',
+                  statusMeta.helperTone
+                )}
+              >
+                {statusMeta.helper}
+              </p>
               {callStatus === 'in-call' && (
-                <span className="font-mono text-sm text-brand">{formatDuration(callDuration)}</span>
+                <span className="font-mono text-lg font-semibold text-brand voice-breathe">
+                  {formatDuration(callDuration)}
+                </span>
               )}
             </div>
 
@@ -501,32 +632,76 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-black/10 p-4 sm:grid-cols-2">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/20">
-              <Mic className="h-5 w-5 text-brand" />
+        <div className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-black/10 p-4 sm:grid-cols-2 backdrop-blur-sm">
+          {/* 麦克风状态卡片 */}
+          <div className="flex items-center gap-3 transition-all duration-300 hover:bg-white/5 rounded-xl p-2">
+            <div className={cn(
+              "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300",
+              listening ? "bg-brand/40 shadow-lg shadow-brand/30" : "bg-brand/20"
+            )}>
+              {listening && (
+                <div className="voice-pulse absolute inset-0 rounded-2xl border-2 border-brand opacity-75" />
+              )}
+              <Mic className={cn(
+                "h-6 w-6 transition-all duration-300",
+                listening ? "text-white scale-110" : "text-brand"
+              )} />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">麦克风状态</p>
-              <p className="text-xs text-muted-foreground">
-                {listening ? '正在倾听，请开始讲话…' : '待命中，点击开始通话后开始识别'}
+              <p className={cn(
+                "text-xs transition-colors duration-300",
+                listening ? "text-brand font-medium" : "text-muted-foreground"
+              )}>
+                {listening ? '🎤 正在倾听，请开始讲话…' : '待命中，点击开始通话后开始识别'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/20">
-              <Volume2 className="h-5 w-5 text-brand" />
+          {/* 音量监测卡片 */}
+          <div className="flex items-center gap-3 transition-all duration-300 hover:bg-white/5 rounded-xl p-2">
+            <div className={cn(
+              "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300",
+              volume > 0.3 ? "bg-brand/40 shadow-lg shadow-brand/30" : "bg-brand/20"
+            )}>
+              {volume > 0.5 && (
+                <div className="voice-pulse voice-delay-500 absolute inset-0 rounded-2xl border-2 border-brand opacity-75" />
+              )}
+              <Volume2 className={cn(
+                "h-6 w-6 transition-all duration-150",
+                volume > 0.3 ? "text-white" : "text-brand",
+                volume > 0.5 ? "scale-125" : volume > 0.3 ? "scale-110" : "scale-100"
+              )} />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">音量监测</p>
-              <div className="mt-2 h-2 rounded-full bg-white/10">
+              <div className="mt-2 h-3 rounded-full bg-white/10 overflow-hidden relative">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-brand via-brand/80 to-brand/60 transition-all"
+                  className={cn(
+                    "h-full rounded-full transition-all duration-150",
+                    volumePercent > 70 ? "bg-gradient-to-r from-green-500 via-yellow-500 to-red-500" :
+                    volumePercent > 40 ? "bg-gradient-to-r from-brand via-brand/80 to-brand/60" :
+                    "bg-gradient-to-r from-brand/60 to-brand/40"
+                  )}
                   style={{ width: `${volumePercent}%` }}
                 />
+                {/* 动态音量指示器 */}
+                {volume > 0.1 && (
+                  <div
+                    className="absolute top-0 h-full w-1 bg-white shadow-lg transition-all duration-150"
+                    style={{ left: `${volumePercent}%` }}
+                  />
+                )}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">当前输入电平：{volumePercent}%</p>
+              <p className={cn(
+                "mt-1 text-xs transition-colors duration-300 font-mono",
+                volumePercent > 70 ? "text-red-400 font-semibold" :
+                volumePercent > 40 ? "text-brand" :
+                "text-muted-foreground"
+              )}>
+                当前输入电平：{volumePercent}%
+                {volumePercent > 70 && " ⚠️"}
+              </p>
             </div>
           </div>
         </div>
