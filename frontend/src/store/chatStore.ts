@@ -1,61 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Agent, ChatMessage, StreamStatus, ChatSession, UserPreferences, AgentSessionsMap, ReasoningStepUpdate, FastGPTEvent } from '@/types';
-import { normalizeReasoningDisplay } from '@/lib/reasoning';
-import { debugLog } from '@/lib/debug';
-import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 
-const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
-  for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const message = messages[i];
-    if (message && message.AI !== undefined) {
-      return i;
-    }
-  }
-  return -1;
-};
+import { Agent, ChatMessage, StreamStatus, ChatSession, UserPreferences, AgentSessionsMap } from '@/types';
+import { translate } from '@/i18n';
 
-const mergeReasoningContent = (previous: string | undefined, incoming: string): string => {
-  if (!previous) return incoming;
-  if (!incoming) return previous;
-  if (incoming === previous) return previous;
-  if (incoming.startsWith(previous)) return incoming;
-  if (previous.endsWith(incoming)) return previous;
-  if (incoming.endsWith(previous)) return incoming;
-  return `${previous}${previous.endsWith('\n') ? '' : '\n'}${incoming}`;
-};
-
-const syncMessagesWithSession = (
-  state: {
-    currentSession: ChatSession | null;
-    currentAgent: Agent | null;
-    agentSessions: AgentSessionsMap;
-  },
-  messages: ChatMessage[]
-) => {
-  if (state.currentSession && state.currentAgent) {
-    const updatedAgentSessions = {
-      ...state.agentSessions,
-      [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
-        session.id === state.currentSession!.id
-          ? { ...session, messages, updatedAt: new Date() }
-          : session
-      )
-    };
-
-    return {
-      messages,
-      agentSessions: updatedAgentSessions,
-      currentSession: {
-        ...state.currentSession,
-        messages,
-        updatedAt: new Date(),
-      }
-    };
-  }
-
-  return { messages };
-};
 
 interface ChatState {
   // 智能体状态
@@ -70,6 +18,7 @@ interface ChatState {
   messages: ChatMessage[];             // 当前会话的消息列表
   isStreaming: boolean;
   streamingStatus: StreamStatus | null;
+  streamAbortController: AbortController | null;
 
   // 用户偏好
   preferences: UserPreferences;
@@ -92,6 +41,8 @@ interface ChatState {
   clearMessages: () => void;
   setIsStreaming: (streaming: boolean) => void;
   setStreamingStatus: (status: StreamStatus | null) => void;
+  setStreamAbortController: (controller: AbortController | null) => void;
+  stopStreaming: () => void;
   setAgentSelectorOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
@@ -122,6 +73,7 @@ export const useChatStore = create<ChatState>()(
       currentSession: null,
       isStreaming: false,
       streamingStatus: null,
+      streamAbortController: null,
       preferences: {
         theme: {
           mode: 'auto',
@@ -184,7 +136,7 @@ export const useChatStore = create<ChatState>()(
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages: updatedMessages, updatedAt: new Date() }
+                  ? { ...session, messages: updatedMessages, updatedAt: Date.now() }
                   : session
               )
             };
@@ -208,7 +160,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages: updatedMessages,
-                updatedAt: new Date()
+              updatedAt: Date.now()
               }
             };
           }
@@ -237,142 +189,40 @@ export const useChatStore = create<ChatState>()(
       // 更新最后一条消息（流式响应）- 修复实时更新问题
       updateLastMessage: (content) =>
         set((state) => {
-          debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
-          debugLog('📊 当前消息数量:', state.messages.length);
 
-          const targetIndex = findLastAssistantMessageIndex(state.messages);
-          if (targetIndex === -1) {
-            console.warn('⚠️ 未找到可更新的助手消息');
-            return state;
-          }
-
-          // 创建全新的messages数组，确保引用更新
           const messages = state.messages.map((msg, index) => {
-            if (index === targetIndex && msg.AI !== undefined) {
-              const updatedMessage = {
+            if (index === state.messages.length - 1 && msg.AI !== undefined) {
+              return {
+
                 ...msg,
                 AI: (msg.AI || '') + content,
-                _lastUpdate: Date.now() // 添加时间戳强制更新
+                _lastUpdate: Date.now(),
               } as ChatMessage;
-              debugLog('📝 消息更新:', {
-                beforeLength: msg.AI?.length || 0,
-                afterLength: (updatedMessage.AI || '').length,
-                addedContent: content.length
-              });
-              return updatedMessage;
+
             }
             return msg;
           });
 
-          debugLog('✅ 状态更新完成，最新消息长度:', (messages[messages.length - 1]?.AI || '').length);
 
-          return syncMessagesWithSession(state, messages);
-        }),
-
-      appendReasoningStep: (step) =>
-        set((state) => {
-          const targetIndex = findLastAssistantMessageIndex(state.messages);
-          if (targetIndex === -1) {
-            return state;
-          }
-
-          const messages = state.messages.map((msg, index) => {
-            if (index !== targetIndex || msg.AI === undefined) {
-              return msg;
-            }
-
-            const existingSteps = msg.reasoning?.steps ?? [];
-            const highestOrder = existingSteps.reduce((max, item) => {
-              if (typeof item.order === 'number' && Number.isFinite(item.order)) {
-                return Math.max(max, item.order);
-              }
-              return max;
-            }, 0);
-            const normalizedOrder = typeof step.order === 'number' && Number.isFinite(step.order)
-              ? step.order
-              : highestOrder + 1;
-
-            const trimmedContent = (step.content || '').trim();
-            if (!trimmedContent) {
-              return msg;
-            }
-
-            const normalized = normalizeReasoningDisplay(trimmedContent);
-            if (!normalized.body) {
-              return msg;
-            }
-
-            const nextSteps = [...existingSteps];
-            const existingIndex = nextSteps.findIndex((item) => item.order === normalizedOrder);
-
-            if (existingIndex >= 0) {
-              const previousStep = nextSteps[existingIndex];
-              const mergedContent = mergeReasoningContent(previousStep.content, normalized.body);
-              const merged = normalizeReasoningDisplay(mergedContent);
-              nextSteps[existingIndex] = {
-                ...previousStep,
-                content: merged.body,
-                title: step.title ?? normalized.title ?? previousStep.title ?? merged.title,
-                raw: step.raw ?? previousStep.raw,
-              };
-            } else {
-              const generatedId = `${msg.id || 'reasoning'}-${normalizedOrder}-${Date.now()}`;
-              nextSteps.push({
-                id: generatedId,
-                order: normalizedOrder,
-                content: normalized.body,
-                title: step.title ?? normalized.title ?? `步骤 ${normalizedOrder}`,
-                raw: step.raw,
-              });
-            }
-
-            nextSteps.sort((a, b) => {
-              const orderA = typeof a.order === 'number' && Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
-              const orderB = typeof b.order === 'number' && Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
-              return orderA - orderB;
-            });
-
-            const candidateTotal = typeof step.totalSteps === 'number' && Number.isFinite(step.totalSteps)
-              ? step.totalSteps
-              : msg.reasoning?.totalSteps;
-
-            const computedTotal = candidateTotal ?? (nextSteps.length > 0
-              ? nextSteps.reduce((max, item) => Math.max(max, item.order), 0)
-              : undefined);
+          if (state.currentSession && state.currentAgent) {
+            const updatedAgentSessions = {
+              ...state.agentSessions,
+              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
+                session.id === state.currentSession!.id
+                  ? { ...session, messages, updatedAt: Date.now() }
+                  : session
+              ),
+            };
 
             return {
-              ...msg,
-              reasoning: {
-                steps: nextSteps,
-                totalSteps: computedTotal,
-                finished: step.finished ? true : msg.reasoning?.finished ?? false,
-                lastUpdatedAt: Date.now(),
+              messages,
+              agentSessions: updatedAgentSessions,
+              currentSession: {
+                ...state.currentSession,
+                messages,
+                updatedAt: Date.now(),
               },
-            } as ChatMessage;
-          });
 
-          return syncMessagesWithSession(state, messages);
-        }),
-
-      appendAssistantEvent: (event) =>
-        set((state) => {
-          const targetIndex = findLastAssistantMessageIndex(state.messages);
-          if (targetIndex === -1) {
-            return state;
-          }
-
-          const messages = state.messages.map((msg, index) => {
-            if (index !== targetIndex || msg.AI === undefined) {
-              return msg;
-            }
-
-            const existingEvents = msg.events ?? [];
-
-            const mergePayload = (prev: any, incoming: any) => {
-              if (prev && incoming && typeof prev === 'object' && typeof incoming === 'object') {
-                return { ...prev, ...incoming };
-              }
-              return incoming ?? prev;
             };
 
             const mergeEvent = (prevEvent: FastGPTEvent, incomingEvent: FastGPTEvent): FastGPTEvent => ({
@@ -471,7 +321,7 @@ export const useChatStore = create<ChatState>()(
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages, updatedAt: new Date() }
+                  ? { ...session, messages, updatedAt: Date.now() }
                   : session
               )
             };
@@ -482,7 +332,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages,
-                updatedAt: new Date()
+                updatedAt: Date.now()
               }
             };
           }
@@ -491,8 +341,22 @@ export const useChatStore = create<ChatState>()(
         }),
 
       clearMessages: () => set({ messages: [] }),
-      setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+      setIsStreaming: (streaming) =>
+        set((state) => ({
+          isStreaming: streaming,
+          streamingStatus: streaming ? state.streamingStatus : null,
+        })),
       setStreamingStatus: (status) => set({ streamingStatus: status }),
+      setStreamAbortController: (controller) => set({ streamAbortController: controller }),
+      stopStreaming: () =>
+        set((state) => {
+          state.streamAbortController?.abort();
+          return {
+            isStreaming: false,
+            streamingStatus: null,
+            streamAbortController: null,
+          };
+        }),
       setAgentSelectorOpen: (open) => set({ agentSelectorOpen: open }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
@@ -509,11 +373,11 @@ export const useChatStore = create<ChatState>()(
         // huihua.md 要求：新建对话时添加空messages的会话到agentId数组中
         const newSession: ChatSession = {
           id: Date.now().toString(),        // 时间戳字符串作为会话id
-          title: '新对话',                   // 默认标题
+          title: translate('新对话'),       // 默认标题
           agentId: currentAgent.id,         // 关联的智能体ID
           messages: [],                     // 空的消息列表（huihua.md要求）
-          createdAt: new Date(),           // 创建时间
-          updatedAt: new Date(),           // 更新时间
+          createdAt: Date.now(),           // 创建时间
+          updatedAt: Date.now(),           // 更新时间
         };
         
         set((state) => {
@@ -590,7 +454,7 @@ export const useChatStore = create<ChatState>()(
             agentSessions: {
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(s => 
-                s.id === sessionId ? { ...s, title, updatedAt: new Date() } : s
+                s.id === sessionId ? { ...s, title, updatedAt: Date.now() } : s
               )
             }
           };

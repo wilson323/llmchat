@@ -91,9 +91,27 @@ export interface ChatMessage {
   id?: string;    // 响应数据ID（FastGPT responseChatItemId，用于点赞/点踩反馈）
   feedback?: 'good' | 'bad' | null; // 点赞/点踩的持久化状态（good=点赞，bad=点踩，null=无）
   interactive?: InteractiveData; // FastGPT 交互节点（流式 detail=true）
-  reasoning?: ReasoningState;    // 思维链信息
-  events?: FastGPTEvent[];       // FastGPT 扩展事件
-  metadata?: Record<string, any>; // 额外元数据（产品预览、语音通话等扩展使用）
+
+  attachments?: ChatAttachmentMetadata[];
+  voiceNote?: VoiceNoteMetadata | null;
+}
+
+export interface ChatAttachmentMetadata {
+  id: string;
+  url: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  source?: 'upload' | 'voice' | 'external';
+}
+
+export interface VoiceNoteMetadata {
+  id: string;
+  url: string;
+  duration: number;
+  mimeType: string;
+  size?: number;
+
 }
 
 /**
@@ -103,12 +121,14 @@ export interface OriginalChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: Date;
+  timestamp: number;
   metadata?: {
     model?: string;
     tokens?: number;
     provider?: string;
     agentId?: string;
+    attachments?: ChatAttachmentMetadata[];
+    voiceNote?: VoiceNoteMetadata | null;
   };
 }
 
@@ -124,6 +144,8 @@ export interface ChatOptions {
   // FastGPT 特有参数
   variables?: Record<string, any>; // 模块变量，会替换模块中输入框内容里的 [key]
   responseChatItemId?: string;     // 响应消息的 ID，FastGPT 会自动将该 ID 存入数据库
+  attachments?: ChatAttachmentMetadata[];
+  voiceNote?: VoiceNoteMetadata | null;
 }
 
 /**
@@ -204,46 +226,10 @@ export interface ChatSession {
   title: string;           // 会话标题（取自首条消息前30字符）
   agentId: string;         // 关联的智能体ID
   messages: ChatMessage[]; // 消息列表 [{'AI': string, 'HUMAN': string}]
-  createdAt: Date;         // 创建时间
-  updatedAt: Date;         // 更新时间
-  metadata?: Record<string, any>; // 会话扩展信息（例如产品预览参数、语音通话统计）
-}
 
-/**
- * FastGPT 会话摘要（前端使用）
- */
-export interface FastGPTChatHistorySummary {
-  chatId: string;
-  appId?: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-  messageCount?: number;
-  tags?: string[];
-  raw?: any;
-}
+  createdAt: number;       // 创建时间(时间戳)
+  updatedAt: number;       // 更新时间(时间戳)
 
-/**
- * FastGPT 历史消息（前端使用）
- */
-export interface FastGPTChatHistoryMessage {
-  id?: string;
-  dataId?: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  feedback?: 'good' | 'bad' | null;
-  raw?: any;
-}
-
-/**
- * FastGPT 会话详情（前端使用）
- */
-export interface FastGPTChatHistoryDetail {
-  chatId: string;
-  appId?: string;
-  title?: string;
-  messages: FastGPTChatHistoryMessage[];
-  metadata?: Record<string, any>;
 }
 
 /**
@@ -351,6 +337,8 @@ export interface ChatInputProps extends BaseComponentProps {
   disabled?: boolean;
   placeholder?: string;
   multiline?: boolean;
+  isStreaming?: boolean;
+  onStopStreaming?: () => void;
 }
 
 /**
@@ -391,7 +379,7 @@ export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): Original
         id: `${Date.now()}-${index}-user`,
         role: 'user',
         content: msg.HUMAN,
-        timestamp: new Date()
+        timestamp: Date.now()
       });
     }
     if (msg.AI) {
@@ -399,7 +387,7 @@ export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): Original
         id: `${Date.now()}-${index}-assistant`,
         role: 'assistant',
         content: msg.AI,
-        timestamp: new Date()
+        timestamp: Date.now()
       });
     }
   });
