@@ -4,22 +4,20 @@
   "description": "智能体切换聊天应用 - 类似ChatGPT官网的多智能体切换功能",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-    "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev",
-    "build": "npm run backend:build && npm run frontend:build",
-    "prebackend:build": "npm install --workspace backend --no-audit --prefer-offline",
-    "backend:build": "cd backend && npm run build",
-    "prefrontend:build": "npm install --workspace frontend --no-audit --prefer-offline",
-    "frontend:build": "cd frontend && npm run build",
-    "start": "cd backend && npm start",
-    "test": "npm run backend:test && npm run frontend:test",
-    "backend:test": "cd backend && npm test",
-    "frontend:test": "cd frontend && npm test",
-    "backend:lint": "cd backend && npm run lint",
-    "frontend:lint": "cd frontend && npm run lint",
-    "lint": "npm run backend:lint && npm run frontend:lint",
-    "lint:fix": "npm run backend:lint -- --fix && npm run frontend:lint -- --fix"
+    "dev": "concurrently \"pnpm --filter @llmchat/backend run dev\" \"pnpm --filter @llmchat/frontend run dev\"",
+    "backend:dev": "pnpm --filter @llmchat/backend run dev",
+    "frontend:dev": "pnpm --filter @llmchat/frontend run dev",
+    "build": "pnpm run backend:build && pnpm run frontend:build",
+    "backend:build": "pnpm --filter @llmchat/backend run build",
+    "frontend:build": "pnpm --filter @llmchat/frontend run build",
+    "start": "pnpm --filter @llmchat/backend start",
+    "test": "pnpm run backend:test && pnpm run frontend:test",
+    "backend:test": "pnpm --filter @llmchat/backend run test",
+    "frontend:test": "pnpm --filter @llmchat/frontend run test",
+    "backend:lint": "pnpm --filter @llmchat/backend run lint",
+    "frontend:lint": "pnpm --filter @llmchat/frontend run lint",
+    "lint": "pnpm run backend:lint && pnpm run frontend:lint",
+    "lint:fix": "pnpm --filter @llmchat/backend run lint:fix && pnpm --filter @llmchat/frontend run lint:fix"
   },
   "keywords": [
     "llm",
@@ -39,6 +37,10 @@
   },
   "workspaces": [
     "backend",
-    "frontend"
-  ]
+    "frontend",
+    "shared-types"
+  ],
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  }
 }

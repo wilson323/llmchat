@@ -15,6 +15,18 @@ export class SessionEventService {
   private maxEventsPerAgent = 10000; // 每个智能体最大事件数量
 
   /**
+   * 清理事件缓存（测试或重置时使用）
+   */
+  clear(agentId?: string): void {
+    if (agentId) {
+      this.events.delete(agentId);
+      return;
+    }
+
+    this.events.clear();
+  }
+
+  /**
    * 记录会话事件
    */
   async recordEvent(

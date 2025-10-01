@@ -8,14 +8,14 @@ jest.mock(
 
 import { AnalyticsService } from '@/services/AnalyticsService';
 
-type AgentRow = { id: string; name: string; is_active: boolean };
+type AgentRow = { id: string; name: string; is_active: boolean; app_id: string | null };
 type EventRow = { agent_id: string; created_at: Date };
 
 const dbState: { agents: AgentRow[]; events: EventRow[] } = {
   agents: [
-    { id: 'agent-1', name: 'Alpha', is_active: true },
-    { id: 'agent-2', name: 'Beta', is_active: true },
-    { id: 'agent-3', name: 'Gamma', is_active: false },
+    { id: 'agent-1', name: 'Alpha', is_active: true, app_id: null },
+    { id: 'agent-2', name: 'Beta', is_active: true, app_id: null },
+    { id: 'agent-3', name: 'Gamma', is_active: false, app_id: null },
   ],
   events: [],
 };
@@ -25,9 +25,15 @@ const cloneDate = (date: Date) => new Date(date.getTime());
 const mockQuery = jest.fn(async (query: string, params: any[] = []) => {
   const normalized = query.replace(/\s+/g, ' ').trim().toLowerCase();
 
-  if (normalized.startsWith('select id, name, is_active from agent_configs')) {
+  if (normalized.startsWith('select id, name, is_active, app_id from agent_configs')) {
     return {
       rows: dbState.agents.map((agent) => ({ ...agent })),
+    };
+  }
+
+  if (normalized.startsWith('select id, name, is_active from agent_configs')) {
+    return {
+      rows: dbState.agents.map(({ app_id: _appId, ...rest }) => ({ ...rest })),
     };
   }
 

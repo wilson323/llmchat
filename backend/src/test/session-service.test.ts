@@ -17,16 +17,102 @@ describe('FastGPTSessionService Enhanced Features', () => {
   let agentService: AgentConfigService;
   let eventService: SessionEventService;
   let mockAgentId: string;
+  let requestSpy: jest.SpyInstance;
+
+  const envOverrides: Record<string, string> = {
+    FASTGPT_AGENT_ID_1: 'test-agent-id',
+    FASTGPT_APP_ID_1: '0123456789abcdef01234567',
+    FASTGPT_AGENT_NAME_1: '测试智能体一号',
+    FASTGPT_AGENT_DESCRIPTION_1: '用于单元测试的第一个智能体',
+    FASTGPT_ENDPOINT_1: 'https://fastgpt.example.com/agent-1',
+    FASTGPT_API_KEY_1: 'fgpt-key-1',
+    FASTGPT_MODEL_1: 'fastgpt-pro',
+    FASTGPT_RATE_LIMIT_RPM_1: '60',
+    FASTGPT_RATE_LIMIT_TPM_1: '1000',
+    FASTGPT_AGENT_ID_2: 'non-existent-agent',
+    FASTGPT_APP_ID_2: '89abcdef0123456701234567',
+    FASTGPT_AGENT_NAME_2: '测试智能体二号',
+    FASTGPT_AGENT_DESCRIPTION_2: '用于单元测试的第二个智能体',
+    FASTGPT_ENDPOINT_2: 'https://fastgpt.example.com/agent-2',
+    FASTGPT_API_KEY_2: 'fgpt-key-2',
+    FASTGPT_MODEL_2: 'fastgpt-lite',
+    FASTGPT_RATE_LIMIT_RPM_2: '30',
+    FASTGPT_RATE_LIMIT_TPM_2: '500',
+    FASTGPT_AGENT_ID_3: 'archive-agent',
+    FASTGPT_APP_ID_3: 'fedcba987654321001234567',
+    FASTGPT_AGENT_NAME_3: '测试智能体三号',
+    FASTGPT_AGENT_DESCRIPTION_3: '用于单元测试的第三个智能体',
+    FASTGPT_ENDPOINT_3: 'https://fastgpt.example.com/agent-3',
+    FASTGPT_API_KEY_3: 'fgpt-key-3',
+    FASTGPT_MODEL_3: 'fastgpt-legacy',
+    FASTGPT_RATE_LIMIT_RPM_3: '15',
+    FASTGPT_RATE_LIMIT_TPM_3: '250',
+  };
+  const originalEnv = new Map<string, string | undefined>();
 
   beforeAll(() => {
+    Object.entries(envOverrides).forEach(([key, value]) => {
+      if (!originalEnv.has(key)) {
+        originalEnv.set(key, process.env[key]);
+      }
+      process.env[key] = value;
+    });
+
     // 初始化服务
     agentService = new AgentConfigService();
     sessionService = new FastGPTSessionService(agentService);
     eventService = new SessionEventService();
     mockAgentId = 'test-agent-id';
+
+    requestSpy = jest.spyOn(FastGPTSessionService.prototype as any, 'requestWithFallback')
+      .mockImplementation(async function mockRequest(this: FastGPTSessionService, ...args: any[]) {
+        const [_agent, attempts = [], options = {}] = args as [
+          any,
+          Array<{ path: string }>?,
+          { params?: { pageSize?: number; page?: number } }?
+        ];
+        const firstPath = attempts[0]?.path ?? '';
+        const pageSize = options.params?.pageSize;
+
+        if (firstPath.includes('listEnhanced') && pageSize !== 1000) {
+          const error: any = new Error('getaddrinfo EAI_AGAIN fastgpt.example.com');
+          error.code = 'EAI_AGAIN';
+          error.errno = -3001;
+          error.syscall = 'getaddrinfo';
+          throw error;
+        }
+
+        return {
+          data: {
+            code: 200,
+            data: {
+              list: [],
+              total: 0,
+              page: options.params?.page ?? 1,
+              pageSize: pageSize ?? 20,
+            },
+          },
+        };
+      });
+  });
+
+  afterAll(() => {
+    originalEnv.forEach((value, key) => {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
+
+    requestSpy.mockRestore();
   });
 
   describe('事件追踪服务', () => {
+    beforeEach(() => {
+      eventService.clear();
+    });
+
     it('应该能够记录会话事件', async () => {
       const sessionId = 'test-session-1';
       const event = await eventService.recordEvent(

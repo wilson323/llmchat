@@ -1,3 +1,5 @@
+import type { JsonValue } from '@llmchat/shared-types';
+
 /**
  * 智能体接口
  */
@@ -246,7 +248,7 @@ export interface StreamStatus {
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: JsonValue;
   timestamp: string;
 }
 

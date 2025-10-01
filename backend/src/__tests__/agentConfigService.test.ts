@@ -149,8 +149,47 @@ jest.mock('@/utils/db', () => ({
   withClient: (fn: (client: typeof mockClient) => Promise<any>) => mockWithClient(fn),
 }));
 
+const envOverrides: Record<string, string> = {
+  FASTGPT_AGENT_ID_1: 'test-agent-id',
+  FASTGPT_APP_ID_1: '0123456789abcdef01234567',
+  FASTGPT_AGENT_NAME_1: '测试智能体一号',
+  FASTGPT_AGENT_DESCRIPTION_1: '用于单元测试的第一个智能体',
+  FASTGPT_ENDPOINT_1: 'https://fastgpt.example.com/agent-1',
+  FASTGPT_API_KEY_1: 'fgpt-key-1',
+  FASTGPT_MODEL_1: 'fastgpt-pro',
+  FASTGPT_RATE_LIMIT_RPM_1: '60',
+  FASTGPT_RATE_LIMIT_TPM_1: '1000',
+  FASTGPT_AGENT_ID_2: 'non-existent-agent',
+  FASTGPT_APP_ID_2: '89abcdef0123456701234567',
+  FASTGPT_AGENT_NAME_2: '测试智能体二号',
+  FASTGPT_AGENT_DESCRIPTION_2: '用于单元测试的第二个智能体',
+  FASTGPT_ENDPOINT_2: 'https://fastgpt.example.com/agent-2',
+  FASTGPT_API_KEY_2: 'fgpt-key-2',
+  FASTGPT_MODEL_2: 'fastgpt-lite',
+  FASTGPT_RATE_LIMIT_RPM_2: '30',
+  FASTGPT_RATE_LIMIT_TPM_2: '500',
+  FASTGPT_AGENT_ID_3: 'archive-agent',
+  FASTGPT_APP_ID_3: 'fedcba987654321001234567',
+  FASTGPT_AGENT_NAME_3: '测试智能体三号',
+  FASTGPT_AGENT_DESCRIPTION_3: '用于单元测试的第三个智能体',
+  FASTGPT_ENDPOINT_3: 'https://fastgpt.example.com/agent-3',
+  FASTGPT_API_KEY_3: 'fgpt-key-3',
+  FASTGPT_MODEL_3: 'fastgpt-legacy',
+  FASTGPT_RATE_LIMIT_RPM_3: '15',
+  FASTGPT_RATE_LIMIT_TPM_3: '250',
+};
+
+const originalEnv = new Map<string, string | undefined>();
+Object.entries(envOverrides).forEach(([key, value]) => {
+  if (!originalEnv.has(key)) {
+    originalEnv.set(key, process.env[key]);
+  }
+  process.env[key] = value;
+});
+
 const agentsFixturePath = path.resolve(__dirname, '../../../config/agents.json');
-const fixtureAgents = JSON.parse(fs.readFileSync(agentsFixturePath, 'utf-8')).agents as Array<{ id: string; name: string }>;
+const fixtureRaw = fs.readFileSync(agentsFixturePath, 'utf-8');
+const fixtureAgents = JSON.parse(fixtureRaw.replace(/:\s*\$\{[^}]+\}/g, ': 0')).agents as Array<{ id: string; name: string }>;
 
 const createService = () => new AgentConfigService(agentsFixturePath);
 
@@ -161,13 +200,23 @@ describe('AgentConfigService with mocked database', () => {
     mockWithClient.mockClear();
   });
 
+  afterAll(() => {
+    originalEnv.forEach((value, key) => {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
+  });
+
   it('loads agents from JSON file when database is empty', async () => {
     const service = createService();
     const agents = await service.loadAgents();
 
     expect(agents).toHaveLength(fixtureAgents.length);
     expect(dbState.agentConfigs).toHaveLength(fixtureAgents.length);
-    expect(agents[0]?.id).toBe(fixtureAgents[0]?.id);
+    expect(agents[0]?.id).toBe(envOverrides.FASTGPT_AGENT_ID_1);
   });
 
   it('creates a new agent and persists it through the service', async () => {

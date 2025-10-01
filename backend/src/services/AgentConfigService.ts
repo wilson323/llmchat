@@ -3,6 +3,7 @@ import path from 'path';
 import { AgentConfig, Agent, AgentStatus, AgentHealthStatus } from '@/types';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
+import { deepReplaceEnvVariables, validateRequiredEnvVars, containsUnresolvedPlaceholders } from '@/utils/envHelper';
 
 type AgentSeed = {
   id: string;
@@ -284,7 +285,12 @@ export class AgentConfigService {
 
     if (!this.loadingPromise) {
       this.loadingPromise = this.loadAgentsFromDb()
-        .catch((error) => {
+        .catch(async (error) => {
+          if (this.isTransientDbError(error)) {
+            console.warn('[AgentConfigService] 数据库不可用，回退到文件加载:', error instanceof Error ? error.message : error);
+            return this.loadAgentsFromFileOnly();
+          }
+
           this.agents.clear();
           this.lastLoadTime = 0;
           throw error;
@@ -295,6 +301,20 @@ export class AgentConfigService {
     }
 
     return this.loadingPromise;
+  }
+
+  private isTransientDbError(error: unknown): boolean {
+    if (!error) {
+      return false;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return [
+      'DB_NOT_INITIALIZED',
+      'DATABASE_CONFIG_MISSING',
+      'ECONNREFUSED',
+      'ENOTFOUND',
+      'timeout'
+    ].some((token) => message.includes(token));
   }
 
   private async loadAgentsFromDb(): Promise<AgentConfig[]> {
@@ -320,12 +340,124 @@ export class AgentConfigService {
     return this.applyCacheFromRows(rows);
   }
 
+  private async loadAgentsFromFileOnly(): Promise<AgentConfig[]> {
+    try {
+      const raw = await fs.readFile(this.configPath, 'utf-8');
+      const sanitized = this.sanitizeNumericPlaceholders(raw);
+      const parsed = JSON.parse(sanitized);
+      const list = Array.isArray(parsed?.agents) ? parsed.agents : [];
+      const replaced = deepReplaceEnvVariables(list) as Array<Partial<AgentConfig> & Record<string, any>>;
+
+      const map = new Map<string, AgentConfig>();
+      const fallbackTimestamp = new Date().toISOString();
+
+      for (const item of replaced) {
+        if (!item) {
+          continue;
+        }
+
+        const config: AgentConfig = {
+          id: String(item.id || ''),
+          name: String(item.name || ''),
+          description: String(item.description || ''),
+          endpoint: String(item.endpoint || ''),
+          apiKey: String(item.apiKey || ''),
+          provider: (item.provider as AgentConfig['provider']) || 'custom',
+          model: String(item.model || 'unknown-model'),
+          capabilities: Array.isArray(item.capabilities) ? item.capabilities : [],
+          isActive: item.isActive ?? true,
+          features: this.ensureFeatureDefaults(item.features as AgentConfig['features'] | undefined),
+          createdAt: item.createdAt ? String(item.createdAt) : fallbackTimestamp,
+          updatedAt: item.updatedAt ? String(item.updatedAt) : fallbackTimestamp,
+        };
+
+        const appId = item.appId ? String(item.appId) : undefined;
+        if (appId) {
+          config.appId = appId;
+        }
+
+        if (typeof item.maxTokens === 'number') {
+          config.maxTokens = item.maxTokens;
+        }
+
+        if (typeof item.temperature === 'number') {
+          config.temperature = item.temperature;
+        }
+
+        if (item.systemPrompt) {
+          config.systemPrompt = String(item.systemPrompt);
+        }
+
+        if (item.rateLimit && typeof item.rateLimit === 'object') {
+          config.rateLimit = {
+            requestsPerMinute: Number((item.rateLimit as any).requestsPerMinute ?? 0),
+            tokensPerMinute: Number((item.rateLimit as any).tokensPerMinute ?? 0),
+          };
+        }
+
+        if (!this.validateAgentConfig(config, undefined, map)) {
+          continue;
+        }
+
+        map.set(config.id, config);
+      }
+
+      if (map.size === 0) {
+        console.warn('[AgentConfigService] 未能从配置文件加载有效的智能体，使用内置示例配置');
+        return this.loadDefaultAgentsInMemory();
+      }
+
+      this.agents = map;
+      this.lastLoadTime = Date.now();
+      return Array.from(map.values());
+    } catch (error) {
+      console.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置:', error);
+      return this.loadDefaultAgentsInMemory();
+    }
+  }
+
+  private sanitizeNumericPlaceholders(source: string): string {
+    return source.replace(/:\s*\$\{[^}]+\}/g, ': 0');
+  }
+
   private applyCacheFromRows(rows: AgentDbRow[]): AgentConfig[] {
     this.agents.clear();
     const configs = rows.map((row) => this.mapRowToConfig(row));
     configs.forEach((cfg) => this.agents.set(cfg.id, cfg));
     this.lastLoadTime = Date.now();
     return configs;
+  }
+
+  private loadDefaultAgentsInMemory(): AgentConfig[] {
+    const now = new Date().toISOString();
+    const map = new Map<string, AgentConfig>();
+
+    for (const seed of this.builtinSeeds) {
+      const config: AgentConfig = {
+        id: seed.id,
+        name: seed.name,
+        description: seed.description,
+        endpoint: seed.endpoint,
+        apiKey: seed.apiKey,
+        provider: seed.provider,
+        model: seed.model,
+        capabilities: seed.capabilities ?? [],
+        isActive: seed.isActive ?? false,
+        features: this.ensureFeatureDefaults(seed.features as AgentConfig['features'] | undefined),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      if (!this.validateAgentConfig(config, undefined, map)) {
+        continue;
+      }
+
+      map.set(config.id, config);
+    }
+
+    this.agents = map;
+    this.lastLoadTime = Date.now();
+    return Array.from(map.values());
   }
 
   private mapRowToConfig(row: AgentDbRow): AgentConfig {
@@ -469,8 +601,13 @@ export class AgentConfigService {
     let seededFromFile = false;
     try {
       const file = await fs.readFile(this.configPath, 'utf-8');
-      const parsed = JSON.parse(file);
-      const list: AgentConfig[] = Array.isArray(parsed?.agents) ? parsed.agents : [];
+      const sanitized = this.sanitizeNumericPlaceholders(file);
+      const parsed = JSON.parse(sanitized);
+      let list: AgentConfig[] = Array.isArray(parsed?.agents) ? parsed.agents : [];
+
+      // 🔐 安全增强：环境变量替换
+      list = deepReplaceEnvVariables(list) as AgentConfig[];
+
       if (list.length > 0) {
         for (const agent of list) {
           if (this.validateAgentConfig(agent)) {
@@ -532,7 +669,11 @@ export class AgentConfigService {
     }
   }
 
-  private validateAgentConfig(config: any, existingId?: string): config is AgentConfig {
+  private validateAgentConfig(
+    config: any,
+    existingId?: string,
+    collection: Map<string, AgentConfig> = this.agents
+  ): config is AgentConfig {
     const requiredFields = ['id', 'name', 'description', 'endpoint', 'apiKey', 'model', 'provider'];
 
     for (const field of requiredFields) {
@@ -542,7 +683,16 @@ export class AgentConfigService {
       }
     }
 
-    if (this.agents.has(config.id) && config.id !== existingId) {
+    // 🔐 安全检查：确保没有未解析的环境变量占位符
+    const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
+    for (const field of sensitiveFields) {
+      if (config[field] && typeof config[field] === 'string' && containsUnresolvedPlaceholders(config[field])) {
+        console.error(`智能体配置包含未解析的环境变量占位符: ${field} = ${config[field]}`);
+        return false;
+      }
+    }
+
+    if (collection.has(config.id) && config.id !== existingId) {
       console.error(`智能体ID重复: ${config.id}`);
       return false;
     }
