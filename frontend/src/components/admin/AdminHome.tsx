@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   Search,
+  Monitor,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/Button";
@@ -54,6 +56,8 @@ import {
   type ConversationSeriesDataset,
   type AgentComparisonDataset,
 } from "@/services/analyticsApi";
+import { SLADashboard } from "@/components/monitoring";
+import { SessionManagement } from "./SessionManagement";
 
 // 动态加载中国地图 GeoJSON 数据
 let hasRegisteredChinaMap = false;
@@ -81,7 +85,7 @@ void ensureChinaMap();
 export default function AdminHome() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeItem, setActiveItem] = useState<'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents'>('dashboard');
+  const [activeItem, setActiveItem] = useState<'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents'|'monitoring'|'sessions'>('dashboard');
   const [showChangePwd, setShowChangePwd] = useState(false);
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
@@ -91,7 +95,7 @@ export default function AdminHome() {
   useEffect(() => {
     const m = location.pathname.match(/^\/home\/?([^\/]+)?/);
     const tab = (m && m[1]) || 'dashboard';
-    const allowed = new Set(['dashboard','users','analytics','documents','settings','logs','agents']);
+    const allowed = new Set(['dashboard','users','analytics','documents','settings','logs','agents','monitoring','sessions']);
     setActiveItem(allowed.has(tab) ? (tab as any) : 'dashboard');
   }, [location.pathname]);
 
@@ -132,7 +136,9 @@ export default function AdminHome() {
             settings: t('系统设置'),
             logs: t('日志管理'),
             agents: t('智能体管理'),
-          }[activeItem]}
+            monitoring: t('SLA监控'),
+            sessions: t('会话管理'),
+          }[activeItem] || t('仪表板')}
           breadcrumb={[
             { label: t('首页'), to: '/home/dashboard' },
             { label: {
@@ -143,29 +149,35 @@ export default function AdminHome() {
               settings: t('系统设置'),
               logs: t('日志管理'),
               agents: t('智能体管理'),
-            }[activeItem] as string }
+              monitoring: t('SLA监控'),
+              sessions: t('会话管理'),
+            }[activeItem] || t('仪表板') }
           ]}
         />
         {activeItem === 'dashboard' && <DashboardContent sidebarCollapsed={sidebarCollapsed} />}
         {activeItem === 'users' && <UsersManagement />}
+        {activeItem === 'sessions' && <SessionManagement />}
         {activeItem === 'analytics' && <AnalyticsPanel />}
         {activeItem === 'documents' && <DocumentsPanel />}
         {activeItem === 'settings' && <SettingsPanel />}
         {activeItem === 'logs' && <LogsPanel />}
         {activeItem === 'agents' && <AgentsPanel />}
+        {activeItem === 'monitoring' && <SLADashboard />}
       </div>
       {showChangePwd && <ChangePasswordDialog onClose={() => setShowChangePwd(false)} onSuccess={() => { setShowChangePwd(false); onLogout(); }} />}
     </div>
   );
 }
 
-function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activeItem, onChangeActive, onLogout, onChangePassword }: { isOpen: boolean; onClose: () => void; collapsed: boolean; onToggleCollapse: () => void; username: string; activeItem: 'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents'; onChangeActive: (id: 'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents') => void; onLogout: () => void; onChangePassword: () => void; }) {
+function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activeItem, onChangeActive, onLogout, onChangePassword }: { isOpen: boolean; onClose: () => void; collapsed: boolean; onToggleCollapse: () => void; username: string; activeItem: 'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents'|'monitoring'|'sessions'; onChangeActive: (id: 'dashboard'|'users'|'analytics'|'documents'|'settings'|'logs'|'agents'|'monitoring'|'sessions') => void; onLogout: () => void; onChangePassword: () => void; }) {
   const { t } = useI18n();
 
   const navigationItems = [
     { id: "dashboard", name: t("仪表板"), icon: Home, badge: null },
     { id: "users", name: t("用户管理"), icon: Users, badge: null },
     { id: "agents", name: t("智能体管理"), icon: Users, badge: null },
+    { id: "sessions", name: t("会话管理"), icon: MessageSquare, badge: null },
+    { id: "monitoring", name: t("SLA监控"), icon: Monitor, badge: null },
     { id: "analytics", name: t("数据分析"), icon: BarChart3, badge: null },
     { id: "logs", name: t("日志管理"), icon: FileText, badge: null },
     { id: "documents", name: t("文档管理"), icon: FileText, badge: null },

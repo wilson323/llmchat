@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { ChatApp } from '@/components/ChatApp';
 import LoginPage from '@/components/admin/LoginPage';
 import AdminHome from '@/components/admin/AdminHome';
+import { AgentDetails } from '@/components/monitoring';
 import { useAuthStore } from '@/store/authStore';
 import { Toaster, toast } from '@/components/ui/Toast';
 import { useI18n, I18nProvider } from '@/i18n';
@@ -78,6 +79,16 @@ function App() {
                   <ProtectedRoute>
                     <ErrorBoundary>
                       <AdminHome />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/monitoring/agent/:id"
+                element={
+                  <ProtectedRoute>
+                    <ErrorBoundary>
+                      <AgentDetails />
                     </ErrorBoundary>
                   </ProtectedRoute>
                 }

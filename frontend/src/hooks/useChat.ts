@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { chatService } from '@/services/api';
 import { useChatStore } from '@/store/chatStore';
 
-import { ChatMessage, ChatOptions, OriginalChatMessage } from '@/types';
+import { ChatMessage, ChatOptions, OriginalChatMessage, ReasoningStepUpdate } from '@/types';
 import { useI18n } from '@/i18n';
 import { parseReasoningPayload } from '@/lib/reasoning';
 import { normalizeFastGPTEvent } from '@/lib/events';
@@ -200,7 +200,7 @@ export const useChat = () => {
             const parsed = parseReasoningPayload(reasoningEvent);
             if (!parsed) return;
 
-            parsed.steps.forEach((step) => appendReasoningStep(step));
+            parsed.steps.forEach((step: ReasoningStepUpdate) => appendReasoningStep(step));
 
             if (parsed.finished) {
               finalizeReasoning(parsed.totalSteps);
