@@ -284,3 +284,110 @@ export interface ProductPreviewResult {
   status?: string;
   raw?: any;
 }
+
+/**
+ * 增强的会话过滤和查询参数
+ */
+export interface SessionListParams {
+  page?: number;
+  pageSize?: number;
+  startDate?: string; // ISO 8601 日期字符串
+  endDate?: string;   // ISO 8601 日期字符串
+  tags?: string[];    // 标签过滤
+  minMessageCount?: number;
+  maxMessageCount?: number;
+  sortBy?: 'createdAt' | 'updatedAt' | 'messageCount' | 'title';
+  sortOrder?: 'asc' | 'desc';
+  searchKeyword?: string; // 在标题和内容中搜索
+}
+
+/**
+ * 分页响应
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+/**
+ * 批量操作选项
+ */
+export interface BatchOperationOptions {
+  sessionIds: string[];
+  operation: 'delete' | 'archive' | 'addTags' | 'removeTags';
+  tags?: string[]; // 用于标签操作
+}
+
+/**
+ * 会话导出选项
+ */
+export interface ExportOptions {
+  format: 'json' | 'csv' | 'excel';
+  includeMessages?: boolean;
+  includeMetadata?: boolean;
+  filters?: SessionListParams;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+}
+
+/**
+ * 会话事件类型
+ */
+export type SessionEventType =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'archived'
+  | 'restored'
+  | 'feedback_added'
+  | 'feedback_updated'
+  | 'message_added'
+  | 'tags_updated'
+  | 'exported';
+
+/**
+ * 会话事件记录
+ */
+export interface SessionEvent {
+  id: string;
+  sessionId: string;
+  agentId: string;
+  eventType: SessionEventType;
+  timestamp: string;
+  userId?: string;
+  metadata?: {
+    oldData?: any;
+    newData?: any;
+    reason?: string;
+    feedbackType?: 'good' | 'bad';
+    feedbackValue?: string;
+    tags?: string[];
+    exportFormat?: string;
+    [key: string]: any;
+  };
+  userAgent?: string;
+  ipAddress?: string;
+}
+
+/**
+ * 事件查询参数
+ */
+export interface EventQueryParams {
+  sessionIds?: string[];
+  agentId?: string;
+  eventTypes?: SessionEventType[];
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'timestamp';
+  sortOrder?: 'asc' | 'desc';
+}

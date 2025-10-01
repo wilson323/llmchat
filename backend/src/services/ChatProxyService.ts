@@ -10,6 +10,7 @@ import {
 import { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
+import { getProtectionService, ProtectedRequestContext } from './ProtectionService';
 import {
   getNormalizedEventKey,
   isChatIdEvent,
@@ -257,6 +258,7 @@ export class ChatProxyService {
   private httpClient: ReturnType<typeof axios.create>;
   private providers: Map<string, AIProvider> = new Map();
   private chatLog: ChatLogService = new ChatLogService();
+  private protectionService = getProtectionService();
 
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;
@@ -283,7 +285,8 @@ export class ChatProxyService {
   async sendMessage(
     agentId: string,
     messages: ChatMessage[],
-    options?: ChatOptions
+    options?: ChatOptions,
+    protectionContext?: ProtectedRequestContext
   ): Promise<ChatResponse> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -299,13 +302,14 @@ export class ChatProxyService {
       throw new Error(`不支持的提供商: ${config.provider}`);
     }
 
-    try {
+    // 创建受保护的请求操作
+    const protectedOperation = async (): Promise<ChatResponse> => {
       // 转换请求格式
       const requestData = provider.transformRequest(messages, config, false, options);
-      
+
       // 构建请求头
       const headers = provider.buildHeaders(config);
-      
+
       // 发送请求
       const response = await this.httpClient.post(
         config.endpoint,
@@ -329,6 +333,19 @@ export class ChatProxyService {
         });
       } catch {}
       return normalized;
+    };
+
+    try {
+      if (protectionContext) {
+        // 使用保护机制执行请求
+        return await this.protectionService.executeProtectedRequest(
+          protectionContext,
+          protectedOperation
+        );
+      } else {
+        // 直接执行请求（向后兼容）
+        return await protectedOperation();
+      }
     } catch (error) {
       console.error(`智能体 ${agentId} 请求失败:`, error);
       throw new Error(`智能体请求失败: ${getErrorMessage(error)}`);
@@ -344,7 +361,8 @@ export class ChatProxyService {
     onChunk: (chunk: string) => void,
     onStatus: (status: StreamStatus) => void,
     options?: ChatOptions,
-    onEvent?: (eventName: string, data: any) => void
+    onEvent?: (eventName: string, data: any) => void,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -364,13 +382,14 @@ export class ChatProxyService {
       throw new Error(`不支持的提供商: ${config.provider}`);
     }
 
-    try {
+    // 创建受保护的流式请求操作
+    const protectedOperation = async (): Promise<void> => {
       // 转换请求格式
       const requestData = provider.transformRequest(messages, config, true, options);
-      
+
       // 构建请求头
       const headers = provider.buildHeaders(config);
-      
+
       // 在发送请求前，将本次使用的 chatId 透传给上层（用于交互节点继续运行复用 chatId）
       let usedChatId: string | undefined;
       try {
@@ -411,6 +430,19 @@ export class ChatProxyService {
         onEvent,
         { agentId, endpoint: config.endpoint, provider: config.provider, ...(usedChatId ? { chatId: usedChatId } : {}) }
       );
+    };
+
+    try {
+      if (protectionContext) {
+        // 使用保护机制执行流式请求
+        await this.protectionService.executeProtectedRequest(
+          protectionContext,
+          protectedOperation
+        );
+      } else {
+        // 直接执行流式请求（向后兼容）
+        await protectedOperation();
+      }
     } catch (error) {
       console.error(`智能体 ${agentId} 流式请求失败:`, error);
       onStatus?.({

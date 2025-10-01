@@ -8,7 +8,9 @@ import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService } from '@/services/ChatHistoryService';
+import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { analyticsService } from '@/services/analyticsInstance';
+import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
 import {
   ChatMessage,
   ChatOptions,
@@ -16,6 +18,8 @@ import {
   StreamStatus,
   ChatAttachmentMetadata,
   VoiceNoteMetadata,
+  FastGPTChatHistorySummary,
+  FastGPTChatHistoryDetail,
 } from '@/types';
 import { generateId, formatFileSize } from '@/utils/helpers';
 
@@ -26,17 +30,17 @@ export class ChatController {
   private agentService: AgentConfigService;
   private chatService: ChatProxyService;
   private initService: ChatInitService;
-
   private historyService: ChatHistoryService;
+  private fastgptSessionService: FastGPTSessionService;
+  private protectionService = getProtectionService();
   private uploadDir: string;
-
 
   constructor() {
     this.agentService = new AgentConfigService();
     this.chatService = new ChatProxyService(this.agentService);
     this.initService = new ChatInitService(this.agentService);
-
     this.historyService = new ChatHistoryService();
+    this.fastgptSessionService = new FastGPTSessionService(this.agentService);
     this.uploadDir = path.resolve(__dirname, '../../uploads');
   }
 
@@ -198,12 +202,19 @@ export class ChatController {
     attachments?: ChatAttachmentMetadata[] | null,
     voiceNote?: VoiceNoteMetadata | null
   ): ChatMessage[] {
-    const list = (messages || []).map((msg) => ({
-      ...msg,
-      metadata: msg.metadata ? { ...msg.metadata } : undefined,
-      attachments: msg.attachments ? [...msg.attachments] : undefined,
-      voiceNote: msg.voiceNote ?? null,
-    }));
+    const list = (messages || []).map((msg) => {
+      const result: ChatMessage = {
+        ...msg,
+        ...(msg.metadata && { metadata: { ...msg.metadata } }),
+        ...(msg.attachments && { attachments: [...msg.attachments] }),
+      };
+
+      if (msg.voiceNote !== undefined) {
+        result.voiceNote = msg.voiceNote;
+      }
+
+      return result;
+    });
 
     if ((!attachments || attachments.length === 0) && !voiceNote) {
       return list;
@@ -215,6 +226,10 @@ export class ChatController {
     }
 
     const target = list[index];
+    if (!target) {
+      return list;
+    }
+
     const summary: string[] = [];
     const mergedAttachments: ChatAttachmentMetadata[] = target.attachments
       ? [...target.attachments]
@@ -239,14 +254,22 @@ export class ChatController {
       target.content = `${target.content}\n\n${summary.join('\n')}`.trim();
     }
 
-    target.attachments = mergedAttachments.length ? mergedAttachments : undefined;
+    if (mergedAttachments.length > 0) {
+      target.attachments = mergedAttachments;
+    }
+
     const finalVoice = voiceNote || target.voiceNote || null;
     target.voiceNote = finalVoice;
-    target.metadata = {
+
+    const newMetadata: ChatMessage['metadata'] = {
       ...(target.metadata || {}),
       ...(mergedAttachments.length ? { attachments: mergedAttachments } : {}),
       ...(finalVoice ? { voiceNote: finalVoice } : {}),
     };
+
+    if (Object.keys(newMetadata).length > 0) {
+      target.metadata = newMetadata;
+    }
 
     return list;
   }
@@ -262,13 +285,13 @@ export class ChatController {
 
   private findLastUserMessage(messages: ChatMessage[]): ChatMessage | null {
     const index = this.findLastUserMessageIndex(messages);
-    return index >= 0 ? messages[index] : null;
+    return index >= 0 && messages[index] ? messages[index] : null;
   }
 
   private resolveClientIp(req: Request): string | null {
     const forwarded = req.headers['x-forwarded-for'];
     if (Array.isArray(forwarded) && forwarded.length > 0) {
-      return forwarded[0];
+      return forwarded[0] || null;
     }
     if (typeof forwarded === 'string' && forwarded.trim()) {
       return forwarded;
@@ -276,7 +299,7 @@ export class ChatController {
 
     const realIp = req.headers['x-real-ip'];
     if (Array.isArray(realIp) && realIp.length > 0) {
-      return realIp[0];
+      return realIp[0] || null;
     }
     if (typeof realIp === 'string' && realIp.trim()) {
       return realIp;
@@ -328,20 +351,19 @@ export class ChatController {
     if (!lastUser) {
       return;
     }
-    const metadata = (attachments && attachments.length) || voiceNote
-      ? {
-          attachments: attachments && attachments.length ? attachments : undefined,
-          voiceNote: voiceNote || null,
-        }
-      : undefined;
     try {
       await this.historyService.appendMessage({
         sessionId,
         agentId,
         role: 'user',
         content: lastUser.content,
-        metadata,
-        messageId: lastUser.id,
+        ...(attachments && attachments.length || voiceNote ? {
+          metadata: {
+            attachments: attachments && attachments.length ? attachments : undefined,
+            voiceNote: voiceNote || null,
+          }
+        } : {}),
+        ...(lastUser.id ? { messageId: lastUser.id } : {}),
         titleHint: this.buildSessionTitle(messages),
       });
     } catch (error) {
@@ -438,6 +460,9 @@ export class ChatController {
         messagesCount: decoratedMessages.length,
       });
 
+      // 获取保护上下文
+      const protectionContext = (req as any).protectionContext as ProtectedRequestContext;
+
       // 处理流式请求
       if (stream) {
         await this.handleStreamRequest(
@@ -447,7 +472,8 @@ export class ChatController {
           normalizedOptions,
           sessionId,
           attachments,
-          voiceNote || null
+          voiceNote || null,
+          protectionContext
         );
       } else {
         await this.handleNormalRequest(
@@ -457,7 +483,8 @@ export class ChatController {
           normalizedOptions,
           sessionId,
           attachments,
-          voiceNote || null
+          voiceNote || null,
+          protectionContext
         );
       }
     } catch (error) {
@@ -492,10 +519,16 @@ export class ChatController {
     options: ChatOptions | undefined,
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
-    _voiceNote?: VoiceNoteMetadata | null
+    _voiceNote?: VoiceNoteMetadata | null,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     try {
-      const response = await this.chatService.sendMessage(agentId, messages, options);
+      const response = await this.chatService.sendMessage(
+        agentId,
+        messages,
+        options,
+        protectionContext
+      );
       const assistantContent =
         response?.choices?.[0]?.message?.content || '';
 
@@ -505,9 +538,9 @@ export class ChatController {
           agentId,
           role: 'assistant',
           content: assistantContent,
-          metadata: options?.responseChatItemId
-            ? { responseChatItemId: options.responseChatItemId }
-            : undefined,
+          ...(options?.responseChatItemId ? {
+            metadata: { responseChatItemId: options.responseChatItemId }
+          } : {}),
         });
       } catch (error) {
         console.warn('[ChatController] 记录助手消息失败:', error);
@@ -519,13 +552,22 @@ export class ChatController {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
+      console.error('普通聊天请求失败:', error);
+
+      // 检查是否是降级响应
+      if ((error as any).fallbackUsed) {
+        res.json((error as any).data);
+        return;
+      }
+
       const apiError: ApiError = {
-        code: 'CHAT_SERVICE_ERROR',
+        code: this.getErrorCode(error as Error),
         message: error instanceof Error ? error.message : '聊天服务错误',
         timestamp: new Date().toISOString(),
       };
 
-      res.status(500).json(apiError);
+      const statusCode = this.getErrorStatusCode(error as Error);
+      res.status(statusCode).json(apiError);
     }
   }
 
@@ -539,7 +581,8 @@ export class ChatController {
     options: ChatOptions | undefined,
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
-    _voiceNote?: VoiceNoteMetadata | null
+    _voiceNote?: VoiceNoteMetadata | null,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     try {
       // 标准 SSE 响应头
@@ -610,8 +653,9 @@ export class ChatController {
 
           console.log('📎 透传 FastGPT 事件:', eventName);
           this.sendSSEEvent(res, eventName, data);
-        }
-        );
+        },
+        protectionContext
+      );
 
       if (assistantContent) {
         try {
@@ -620,9 +664,9 @@ export class ChatController {
             agentId,
             role: 'assistant',
             content: assistantContent,
-            metadata: options?.responseChatItemId
-              ? { responseChatItemId: options.responseChatItemId }
-              : undefined,
+            ...(options?.responseChatItemId ? {
+              metadata: { responseChatItemId: options.responseChatItemId }
+            } : {}),
           });
         } catch (error) {
           console.warn('[ChatController] 记录流式助手消息失败:', error);
@@ -631,9 +675,16 @@ export class ChatController {
     } catch (error) {
       console.error('❌ 流式聊天请求失败:', error);
 
+      // 检查是否是降级响应
+      if ((error as any).fallbackUsed) {
+        this.sendSSEEvent(res, 'fallback', (error as any).data);
+        res.end();
+        return;
+      }
+
       // 发送错误事件
       this.sendSSEEvent(res, 'error', {
-        code: 'STREAM_ERROR',
+        code: this.getErrorCode(error as Error),
         message: error instanceof Error ? error.message : '流式响应错误',
         timestamp: new Date().toISOString(),
       });
@@ -1325,11 +1376,11 @@ export class ChatController {
       };
 
       if (stream) {
-        await this.handleStreamRequest(res, agentId, prepared.messages, options);
+        await this.handleStreamRequest(res, agentId, prepared.messages, options, chatId);
         return;
       }
 
-      await this.handleNormalRequest(res, agentId, prepared.messages, options);
+      await this.handleNormalRequest(res, agentId, prepared.messages, options, chatId);
     } catch (err) {
       console.error('重新生成聊天消息失败:', err);
 
@@ -1351,4 +1402,34 @@ export class ChatController {
       res.status(500).json(apiError);
     }
   };
+
+  /**
+   * 获取错误状态码
+   */
+  private getErrorStatusCode(error: Error): number {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('熔断器')) return 503;
+    if (message.includes('限流')) return 429;
+    if (message.includes('超时')) return 408;
+    if (message.includes('网络')) return 502;
+    if (message.includes('不可用')) return 503;
+
+    return 500;
+  }
+
+  /**
+   * 获取错误代码
+   */
+  private getErrorCode(error: Error): string {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('熔断器')) return 'CIRCUIT_BREAKER_OPEN';
+    if (message.includes('限流')) return 'RATE_LIMIT_EXCEEDED';
+    if (message.includes('超时')) return 'REQUEST_TIMEOUT';
+    if (message.includes('网络')) return 'NETWORK_ERROR';
+    if (message.includes('不可用')) return 'SERVICE_UNAVAILABLE';
+
+    return 'INTERNAL_ERROR';
+  }
 }
