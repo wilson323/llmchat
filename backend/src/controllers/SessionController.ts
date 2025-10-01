@@ -10,6 +10,8 @@ import {
   ApiError
 } from '@/types';
 import { getErrorMessage } from '@/utils/helpers';
+import { createErrorFromUnknown } from '@/types/errors';
+import { JsonValue } from '@/types/dynamic';
 
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
@@ -100,8 +102,8 @@ export class SessionController {
    * GET /api/sessions/:agentId/enhanced
    */
   listSessionsEnhanced = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { agentId } = req.params;
     try {
-      const { agentId } = req.params;
       const { error, value } = this.sessionListSchema.validate(req.query, { abortEarly: false });
 
       if (error) {
@@ -129,8 +131,15 @@ export class SessionController {
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      console.error('获取增强版会话列表失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'listSessionsEnhanced',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId },
+      });
+      console.error('获取增强版会话列表失败:', typedError.message);
       const apiError: ApiError = {
         code: 'LIST_SESSIONS_FAILED',
         message: '获取会话列表失败',
@@ -138,7 +147,10 @@ export class SessionController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = {
+          originalError: typedError.message,
+          stack: typedError.stack,
+        } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -187,8 +199,8 @@ export class SessionController {
         await this.sessionService.recordEvent(
           agentId,
           sessionId,
-          value.operation as any,
-          { operation: value.operation, tags: value.tags },
+          value.operation,
+          { operation: value.operation, tags: value.tags } as JsonValue,
           context
         );
       }
@@ -200,16 +212,21 @@ export class SessionController {
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      console.error('批量操作失败:', error);
-      res.status(500).json({
-        code: 'BATCH_OPERATION_FAILED',
-        message: '批量操作失败',
-        timestamp: new Date().toISOString(),
+      const { agentId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'batchOperation',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, operation: req.body.operation },
       });
+      console.error('批量操作失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -272,19 +289,24 @@ export class SessionController {
           includeMessages: value.includeMessages,
           includeMetadata: value.includeMetadata,
           filters: value.filters
-        },
+        } as JsonValue,
         context
       );
-    } catch (error) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      console.error('导出会话失败:', error);
-      res.status(500).json({
-        code: 'EXPORT_SESSIONS_FAILED',
-        message: '导出会话失败',
-        timestamp: new Date().toISOString(),
+      const { agentId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'exportSessions',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, format: req.body.format },
       });
+      console.error('导出会话失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -321,13 +343,18 @@ export class SessionController {
         data: stats,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      console.error('获取会话统计失败:', error);
-      res.status(500).json({
-        code: 'GET_SESSION_STATS_FAILED',
-        message: '获取会话统计失败',
-        timestamp: new Date().toISOString(),
+    } catch (unknownError) {
+      const { agentId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'getSessionStats',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, dateRange: req.query },
       });
+      console.error('获取会话统计失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -368,13 +395,18 @@ export class SessionController {
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      console.error('查询会话事件失败:', error);
-      res.status(500).json({
-        code: 'QUERY_EVENTS_FAILED',
-        message: '查询会话事件失败',
-        timestamp: new Date().toISOString(),
+    } catch (unknownError) {
+      const { agentId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'queryEvents',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, queryParams: req.query },
       });
+      console.error('查询会话事件失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -399,10 +431,10 @@ export class SessionController {
 
       // 记录访问事件
       const user = await ensureAdminAuth(req).catch(() => ({ userId: undefined }));
-      const eventData: any = {
+      const eventData = {
         action: 'view_detail'
-      };
-      const requestContext: any = {};
+      } as JsonValue;
+      const requestContext = {} as Record<string, unknown>;
 
       if (user.userId) {
         requestContext.userId = user.userId;
@@ -429,13 +461,18 @@ export class SessionController {
         data: detail,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      console.error('获取会话详情失败:', error);
-      res.status(500).json({
-        code: 'GET_SESSION_DETAIL_FAILED',
-        message: '获取会话详情失败',
-        timestamp: new Date().toISOString(),
+    } catch (unknownError) {
+      const { agentId, sessionId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'getSessionDetail',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, sessionId },
       });
+      console.error('获取会话详情失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -471,7 +508,7 @@ export class SessionController {
         agentId,
         sessionId,
         'deleted',
-        { reason: 'manual_delete' },
+        { reason: 'manual_delete' } as JsonValue,
         context
       );
 
@@ -482,16 +519,21 @@ export class SessionController {
         message: '会话删除成功',
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      console.error('删除会话失败:', error);
-      res.status(500).json({
-        code: 'DELETE_SESSION_FAILED',
-        message: '删除会话失败',
-        timestamp: new Date().toISOString(),
+      const { agentId, sessionId } = req.params;
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'SessionController',
+        operation: 'deleteSession',
+        url: req.originalUrl,
+        method: req.method,
+        context: { agentId, sessionId },
       });
+      console.error('删除会话失败:', typedError.message);
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 }

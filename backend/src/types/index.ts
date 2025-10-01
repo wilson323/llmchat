@@ -1,3 +1,6 @@
+import type { JsonValue } from './dynamic';
+import type { ErrorCategory, ErrorSeverity } from './errors';
+
 /**
  * 智能体配置接口
  */
@@ -84,7 +87,7 @@ export interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
   // FastGPT 特有参数
-  variables?: Record<string, any>; // 模块变量，会替换模块中输入框内容里的 [key]
+  variables?: Record<string, JsonValue>; // 模块变量，会替换模块中输入框内容里的 [key]
   responseChatItemId?: string;     // 响应消息的 ID，FastGPT 会自动将该 ID 存入数据库
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
@@ -122,13 +125,46 @@ export interface StreamStatus {
 }
 
 /**
+ * 聊天请求
+ */
+export interface ChatRequest {
+  agentId: string;
+  messages: ChatMessage[];
+  stream?: boolean;
+  options?: ChatOptions;
+  chatId?: string;
+  detail?: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  variables?: Record<string, JsonValue>;
+  responseChatItemId?: string;
+  attachments?: ChatAttachmentMetadata[];
+  voiceNote?: VoiceNoteMetadata | null;
+}
+
+/**
+ * 反馈请求
+ */
+export interface FeedbackRequest {
+  agentId: string;
+  chatId: string;
+  dataId: string;
+  userGoodFeedback?: boolean | undefined;
+  userBadFeedback?: boolean | undefined;
+}
+
+/**
  * API错误响应
  */
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  category?: ErrorCategory;
+  severity?: ErrorSeverity;
+  details?: JsonValue;
   timestamp: string;
+  userId?: string;
+  requestId?: string;
 }
 
 /**

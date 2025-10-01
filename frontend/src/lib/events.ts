@@ -1,5 +1,50 @@
 import { FastGPTEvent } from '@/types';
 import { getNormalizedEventKey, isReasoningEvent, isChunkLikeEvent } from './fastgptEvents';
+import type {
+  JsonObject,
+  JsonValue
+} from '@/types/dynamic';
+
+// 简化的类型守卫函数
+const isString = (value: unknown): value is string => typeof value === 'string';
+
+// 安全的 JsonValue 属性访问工具
+const safeGetProperty = (obj: JsonValue | undefined, key: string): JsonValue | undefined => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return undefined;
+  }
+  return (obj as Record<string, JsonValue>)[key];
+};
+
+const safeGetObject = (obj: JsonValue | undefined, key: string): JsonValue | undefined => {
+  const value = safeGetProperty(obj, key);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  return value;
+};
+
+const safeGetArray = (obj: JsonValue | undefined, key: string): JsonValue[] | undefined => {
+  const value = safeGetProperty(obj, key);
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  return value;
+};
+
+const toJsonValue = (value: unknown): JsonValue => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.map(toJsonValue);
+  if (typeof value === 'object') {
+    const result: { [key: string]: JsonValue } = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
+      result[key] = toJsonValue(val);
+    });
+    return result as JsonValue;
+  }
+  return String(value);
+};
 
 const truncateText = (value: string, max = 80): string => {
   if (typeof value !== 'string' || max <= 0) return '';
@@ -7,7 +52,7 @@ const truncateText = (value: string, max = 80): string => {
   return `${value.slice(0, Math.max(0, max - 1))}…`;
 };
 
-const safeJsonParse = <T = any>(input: unknown): T | null => {
+const safeJsonParse = <T extends JsonValue = JsonValue>(input: unknown): T | null => {
   if (typeof input !== 'string') return null;
   const attempts = [input];
   const trimmed = input.trim();
@@ -72,22 +117,41 @@ const TOOL_COMPLETE_EVENTS = new Set<string>([
   'toolfinish',
 ]);
 
-const collectToolParamsInfo = (state: ToolEventState) => {
+interface ToolParamsInfo {
+  raw: string | undefined;
+  parsed: JsonObject | null;
+  summary: string | undefined;
+  detail: string | undefined;
+}
+
+const collectToolParamsInfo = (state: ToolEventState): ToolParamsInfo => {
   if (!state.paramsChunks.length) {
     return {
-      raw: undefined as string | undefined,
-      parsed: undefined as any,
-      summary: undefined as string | undefined,
-      detail: undefined as string | undefined,
+      raw: undefined,
+      parsed: null,
+      summary: undefined,
+      detail: undefined,
     };
   }
 
   const raw = state.paramsChunks.join('').replace(/\s+/g, ' ').trim();
   if (!raw) {
-    return { raw: undefined, parsed: undefined, summary: undefined, detail: undefined };
+    return { raw: undefined, parsed: null, summary: undefined, detail: undefined };
   }
 
-  const parsed = safeJsonParse<Record<string, unknown>>(raw);
+  const parsed = safeJsonParse<JsonValue>(raw);
+
+const convertToJsonObject = (obj: JsonValue | null): JsonObject | null => {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return null;
+  }
+
+  const result: { [key: string]: JsonValue } = {};
+  Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
+    result[key] = toJsonValue(value);
+  });
+  return result as JsonObject;
+};
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return {
       raw,
@@ -123,7 +187,7 @@ const collectToolParamsInfo = (state: ToolEventState) => {
 
   return {
     raw,
-    parsed,
+    parsed: convertToJsonObject(parsed),
     summary: summaryParts.length > 0 ? summaryParts.join(' ｜ ') : truncateText(raw, 60),
     detail,
   };
@@ -131,15 +195,15 @@ const collectToolParamsInfo = (state: ToolEventState) => {
 
 const extractDatasetFromTextBlocks = (texts: string[]) => {
   for (const text of texts) {
-    const parsed = safeJsonParse<any>(text);
+    const parsed = safeJsonParse<JsonValue>(text);
     if (!parsed || typeof parsed !== 'object') continue;
 
-    const list = Array.isArray(parsed.data)
-      ? parsed.data
-      : Array.isArray(parsed.list)
-        ? parsed.list
-        : Array.isArray(parsed.records)
-          ? parsed.records
+    const list = Array.isArray(safeGetProperty(parsed, 'data'))
+      ? safeGetProperty(parsed, 'data')
+      : Array.isArray(safeGetProperty(parsed, 'list'))
+        ? safeGetProperty(parsed, 'list')
+        : Array.isArray(safeGetProperty(parsed, 'records'))
+          ? safeGetProperty(parsed, 'records')
           : null;
 
     if (list && Array.isArray(list)) {
@@ -149,12 +213,19 @@ const extractDatasetFromTextBlocks = (texts: string[]) => {
   return null;
 };
 
-const buildToolResponseInfo = (response: any) => {
+interface ToolResponseInfo {
+  summary: string | undefined;
+  detail: string | undefined;
+  payload: JsonValue | undefined;
+  isError: boolean;
+}
+
+const buildToolResponseInfo = (response: unknown): ToolResponseInfo => {
   if (!response) {
     return {
-      summary: undefined as string | undefined,
-      detail: undefined as string | undefined,
-      payload: undefined as any,
+      summary: undefined,
+      detail: undefined,
+      payload: undefined,
       isError: false,
     };
   }
@@ -164,31 +235,41 @@ const buildToolResponseInfo = (response: any) => {
     : undefined;
 
   const parsedResponse = typeof response === 'string'
-    ? safeJsonParse<any>(response) ?? response
-    : response;
+    ? safeJsonParse<JsonValue>(response) ?? toJsonValue(response)
+    : toJsonValue(response);
 
   if (!parsedResponse || typeof parsedResponse !== 'object' || Array.isArray(parsedResponse)) {
     return {
       summary: rawString ? truncateText(rawString, 100) : undefined,
       detail: undefined,
-      payload: rawString,
+      payload: toJsonValue(rawString),
       isError: false,
     };
   }
 
-  if (parsedResponse.isError) {
+  const responseObj = parsedResponse as Record<string, unknown>;
+  if (responseObj.isError) {
     return {
-      summary: parsedResponse.errorMessage || parsedResponse.message || '工具调用失败',
-      detail: parsedResponse?.stack ?? undefined,
-      payload: parsedResponse,
+      summary: isString(responseObj.errorMessage)
+        ? responseObj.errorMessage
+        : isString(responseObj.message)
+          ? responseObj.message
+          : '工具调用失败',
+      detail: isString(responseObj.stack) ? responseObj.stack : undefined,
+      payload: toJsonValue(responseObj),
       isError: true,
     };
   }
 
-  const textBlocks = Array.isArray(parsedResponse.content)
-    ? parsedResponse.content
-        .filter((block: any) => block && block.type === 'text' && typeof block.text === 'string')
-        .map((block: any) => block.text as string)
+  const textBlocks = Array.isArray(responseObj.content)
+    ? responseObj.content
+        .filter((block: unknown): block is { type: string; text: string } =>
+          block !== null &&
+          typeof block === 'object' &&
+          (block as { type?: unknown }).type === 'text' &&
+          typeof (block as { text?: unknown }).text === 'string'
+        )
+        .map((block: { type: string; text: string }) => block.text)
     : [];
 
   const dataset = extractDatasetFromTextBlocks(textBlocks);
@@ -197,17 +278,18 @@ const buildToolResponseInfo = (response: any) => {
     const { items } = dataset;
     const count = items.length;
     const first = items[0] || {};
-    const title = first.title || first.name || first.q || first.question || first.productName;
-    const source = first.sourceName || first.source || first.datasetName;
+    const title = safeGetProperty(first, 'title') || safeGetProperty(first, 'name') || safeGetProperty(first, 'q') || safeGetProperty(first, 'question') || safeGetProperty(first, 'productName');
+    const source = safeGetProperty(first, 'sourceName') || safeGetProperty(first, 'source') || safeGetProperty(first, 'datasetName');
 
     const summaryParts: string[] = [`命中 ${count} 条知识库内容`];
     if (title) summaryParts.push(`示例：${truncateText(String(title), 24)}`);
     if (source) summaryParts.push(`来源：${truncateText(String(source), 24)}`);
 
     const detail = items.slice(0, 3)
-      .map((item: any, index: number) => {
-        const itemTitle = item.title || item.name || item.q || item.question || item.productName || '记录';
-        const itemSource = item.sourceName || item.source || item.datasetName;
+      .map((item: JsonValue, index: number) => {
+        if (!item || typeof item !== 'object') return `${index + 1}. 记录`;
+        const itemTitle = safeGetProperty(item, 'title') || safeGetProperty(item, 'name') || safeGetProperty(item, 'q') || safeGetProperty(item, 'question') || safeGetProperty(item, 'productName') || '记录';
+        const itemSource = safeGetProperty(item, 'sourceName') || safeGetProperty(item, 'source') || safeGetProperty(item, 'datasetName');
         return `${index + 1}. ${truncateText(String(itemTitle), 40)}${itemSource ? `（${truncateText(String(itemSource), 20)}）` : ''}`;
       })
       .join('\n');
@@ -232,7 +314,9 @@ const buildToolResponseInfo = (response: any) => {
     };
   }
 
-  const fallback = parsedResponse.result || parsedResponse.message || parsedResponse.summary;
+  const fallback = safeGetProperty(parsedResponse, 'result') ||
+                   safeGetProperty(parsedResponse, 'message') ||
+                   safeGetProperty(parsedResponse, 'summary');
   if (typeof fallback === 'string') {
     return {
       summary: truncateText(fallback.replace(/\s+/g, ' ').trim(), 100),
@@ -250,25 +334,28 @@ const buildToolResponseInfo = (response: any) => {
   };
 };
 
-const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: any): FastGPTEvent | null => {
-  const tool = payload?.tool;
-  if (!tool || typeof tool.id !== 'string') {
+const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: JsonValue): FastGPTEvent | null => {
+  const tool = safeGetObject(payload, 'tool');
+  if (!tool || typeof safeGetProperty(tool, 'id') !== 'string') {
     return null;
   }
 
-  const toolId = tool.id;
+  const toolId = String(safeGetProperty(tool, 'id'));
   const state = getToolState(toolId);
 
-  if (typeof tool.toolName === 'string' && tool.toolName.trim()) {
-    state.toolName = tool.toolName.trim();
+  const toolName = safeGetProperty(tool, 'toolName');
+  if (typeof toolName === 'string' && toolName.trim()) {
+    state.toolName = toolName.trim();
   }
 
-  if (typeof tool.functionName === 'string' && tool.functionName.trim()) {
-    state.functionName = tool.functionName.trim();
+  const functionName = safeGetProperty(tool, 'functionName');
+  if (typeof functionName === 'string' && functionName.trim()) {
+    state.functionName = functionName.trim();
   }
 
-  if (typeof tool.params === 'string' && tool.params.trim()) {
-    state.paramsChunks.push(tool.params);
+  const params = safeGetProperty(tool, 'params');
+  if (typeof params === 'string' && params.trim()) {
+    state.paramsChunks.push(params);
   }
 
   const paramsInfo = collectToolParamsInfo(state);
@@ -276,7 +363,7 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: a
   const labelCandidates = [state.toolName, state.functionName, '工具调用'].filter((value): value is string => !!value && value.trim().length > 0);
   const label = labelCandidates[0] ?? '工具调用';
 
-  const basePayload: Record<string, any> = {
+  const basePayload: Record<string, JsonValue> = {
     toolId,
     toolName: state.toolName ?? null,
     functionName: state.functionName ?? null,
@@ -311,7 +398,8 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: a
   }
 
   if (TOOL_COMPLETE_EVENTS.has(normalizedKey)) {
-    const responseInfo = buildToolResponseInfo(tool.response ?? payload?.response);
+    const toolResponse = safeGetProperty(tool, 'response') ?? safeGetProperty(payload, 'response');
+    const responseInfo = buildToolResponseInfo(toolResponse);
     baseEvent.stage = 'complete';
     baseEvent.level = responseInfo.isError ? 'error' : 'success';
     baseEvent.summary = responseInfo.summary ?? (responseInfo.isError ? '工具调用失败' : '工具调用完成');
@@ -319,7 +407,7 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: a
     baseEvent.payload = {
       ...basePayload,
       response: responseInfo.payload,
-      rawResponsePreview: typeof tool.response === 'string' ? truncateText(tool.response.replace(/\s+/g, ' ').trim(), 400) : undefined,
+      rawResponsePreview: typeof toolResponse === 'string' ? truncateText(toolResponse.replace(/\s+/g, ' ').trim(), 400) : undefined,
     };
     toolEventStates.delete(toolId);
     return baseEvent;
@@ -328,23 +416,20 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: a
   return baseEvent;
 };
 
-const datasetSummary = (payload: any): string | undefined => {
-  const dataSource = payload?.data ?? payload?.list ?? payload;
-  const items: any[] = Array.isArray(dataSource)
-    ? dataSource
-    : Array.isArray(payload?.records)
-      ? payload.records
-      : Array.isArray(payload?.citations)
-        ? payload.citations
-        : [];
+const datasetSummary = (payload: JsonValue): string | undefined => {
+  const dataSource = safeGetArray(payload, 'data') ?? safeGetArray(payload, 'list') ?? (Array.isArray(payload) ? payload : undefined);
+  const items: JsonValue[] = dataSource ?? safeGetArray(payload, 'records') ?? safeGetArray(payload, 'citations') ?? [];
 
   if (items.length === 0 && typeof payload === 'string') {
     return payload.slice(0, 80);
   }
 
   const titles = items
-    .map((item) => item?.title || item?.name || item?.source || item?.datasetName)
-    .filter((title) => typeof title === 'string' && title.trim().length > 0)
+    .map((item) => {
+      if (!item || typeof item !== 'object') return undefined;
+      return safeGetProperty(item, 'title') || safeGetProperty(item, 'name') || safeGetProperty(item, 'source') || safeGetProperty(item, 'datasetName');
+    })
+    .filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
     .slice(0, 3);
 
   if (titles.length > 0) {
@@ -355,12 +440,12 @@ const datasetSummary = (payload: any): string | undefined => {
   return items.length > 0 ? `引用 ${items.length} 条知识库内容` : undefined;
 };
 
-const summarySummary = (payload: any): string | undefined => {
-  const candidate = payload?.content
-    ?? payload?.summary
-    ?? payload?.text
-    ?? payload?.message
-    ?? payload?.result;
+const summarySummary = (payload: JsonValue): string | undefined => {
+  const candidate = safeGetProperty(payload, 'content')
+    ?? safeGetProperty(payload, 'summary')
+    ?? safeGetProperty(payload, 'text')
+    ?? safeGetProperty(payload, 'message')
+    ?? safeGetProperty(payload, 'result');
 
   if (typeof candidate === 'string') {
     return candidate.trim().slice(0, 120);
@@ -369,10 +454,10 @@ const summarySummary = (payload: any): string | undefined => {
   return undefined;
 };
 
-const toolSummary = (payload: any): string | undefined => {
-  const name = payload?.toolName || payload?.name || payload?.pluginName;
-  const action = payload?.action || payload?.method || payload?.type;
-  const description = payload?.description || payload?.result || payload?.output || payload?.message;
+const toolSummary = (payload: JsonValue): string | undefined => {
+  const name = safeGetProperty(payload, 'toolName') || safeGetProperty(payload, 'name') || safeGetProperty(payload, 'pluginName');
+  const action = safeGetProperty(payload, 'action') || safeGetProperty(payload, 'method') || safeGetProperty(payload, 'type');
+  const description = safeGetProperty(payload, 'description') || safeGetProperty(payload, 'result') || safeGetProperty(payload, 'output') || safeGetProperty(payload, 'message');
 
   const parts = [
     typeof name === 'string' ? name : null,
@@ -392,11 +477,13 @@ const toolSummary = (payload: any): string | undefined => {
   return undefined;
 };
 
-const usageSummary = (payload: any): string | undefined => {
-  const usage = payload?.usage || payload;
-  const prompt = usage?.prompt_tokens ?? usage?.promptTokens;
-  const completion = usage?.completion_tokens ?? usage?.completionTokens;
-  const total = usage?.total_tokens ?? usage?.totalTokens;
+const usageSummary = (payload: JsonValue): string | undefined => {
+  const usage = safeGetObject(payload, 'usage') ?? payload;
+  if (!usage || typeof usage !== 'object') return undefined;
+
+  const prompt = safeGetProperty(usage, 'prompt_tokens') ?? safeGetProperty(usage, 'promptTokens');
+  const completion = safeGetProperty(usage, 'completion_tokens') ?? safeGetProperty(usage, 'completionTokens');
+  const total = safeGetProperty(usage, 'total_tokens') ?? safeGetProperty(usage, 'totalTokens');
 
   const parts: string[] = [];
   if (typeof prompt === 'number') parts.push(`提示 ${prompt}`);
@@ -410,17 +497,17 @@ const usageSummary = (payload: any): string | undefined => {
   return undefined;
 };
 
-const fallbackSummary = (payload: any): string | undefined => {
+const fallbackSummary = (payload: JsonValue): string | undefined => {
   if (typeof payload === 'string') {
     const trimmed = payload.trim();
     return trimmed.length > 0 ? trimmed.slice(0, 120) : undefined;
   }
 
-  const candidate = payload?.content
-    ?? payload?.text
-    ?? payload?.message
-    ?? payload?.detail
-    ?? payload?.description;
+  const candidate = safeGetProperty(payload, 'content')
+    ?? safeGetProperty(payload, 'text')
+    ?? safeGetProperty(payload, 'message')
+    ?? safeGetProperty(payload, 'detail')
+    ?? safeGetProperty(payload, 'description');
 
   if (typeof candidate === 'string') {
     const trimmed = candidate.trim();
@@ -439,7 +526,7 @@ const fallbackSummary = (payload: any): string | undefined => {
   return undefined;
 };
 
-const EVENT_METADATA_ENTRIES: Array<[string, { label: string; level: FastGPTEvent['level']; summary?: (payload: any) => string | undefined }]> = [
+const EVENT_METADATA_ENTRIES: Array<[string, { label: string; level: FastGPTEvent['level']; summary?: (payload: JsonValue) => string | undefined }]> = [
   ['datasetQuote', { label: '知识库引用', level: 'info', summary: datasetSummary }],
   ['datasetCite', { label: '知识库引用', level: 'info', summary: datasetSummary }],
   ['dataset', { label: '知识库引用', level: 'info', summary: datasetSummary }],
@@ -460,8 +547,8 @@ const EVENT_METADATA_ENTRIES: Array<[string, { label: string; level: FastGPTEven
   ['usage', { label: 'Token 用量', level: 'info', summary: usageSummary }],
   ['flowResponses', { label: '流程执行完成', level: 'success', summary: summarySummary }],
   // 友好映射：工作流耗时/开始/结束
-  ['workflowDuration', { label: '工作流耗时', level: 'success', summary: (payload: any) => {
-    const seconds = typeof payload === 'number' ? payload : (payload?.durationSeconds ?? payload?.seconds ?? payload?.duration);
+  ['workflowDuration', { label: '工作流耗时', level: 'success', summary: (payload: JsonValue) => {
+    const seconds = typeof payload === 'number' ? payload : (safeGetProperty(payload, 'durationSeconds') ?? safeGetProperty(payload, 'seconds') ?? safeGetProperty(payload, 'duration'));
     if (typeof seconds === 'number' && isFinite(seconds)) {
       const s = Math.round(seconds * 100) / 100;
       const mins = Math.floor(s / 60);
@@ -470,21 +557,21 @@ const EVENT_METADATA_ENTRIES: Array<[string, { label: string; level: FastGPTEven
     }
     return fallbackSummary(payload);
   } }],
-  ['start', { label: '开始', level: 'info', summary: (payload: any) => {
-    const id = payload?.id ?? payload?.requestId;
-    const agent = payload?.agentId ?? payload?.appId;
+  ['start', { label: '开始', level: 'info', summary: (payload: JsonValue) => {
+    const id = safeGetProperty(payload, 'id') ?? safeGetProperty(payload, 'requestId');
+    const agent = safeGetProperty(payload, 'agentId') ?? safeGetProperty(payload, 'appId');
     return [id ? `请求ID：${truncateText(String(id), 24)}` : undefined, agent ? `Agent：${truncateText(String(agent), 24)}` : undefined]
       .filter(Boolean)
       .join('，') || fallbackSummary(payload);
   } }],
-  ['end', { label: '结束', level: 'success', summary: (payload: any) => fallbackSummary(payload) }],
+  ['end', { label: '结束', level: 'success', summary: (payload: JsonValue) => fallbackSummary(payload) }],
 ];
 
-const EVENT_METADATA: Record<string, { label: string; level: FastGPTEvent['level']; summary?: (payload: any) => string | undefined }> =
+const EVENT_METADATA: Record<string, { label: string; level: FastGPTEvent['level']; summary?: (payload: JsonValue) => string | undefined }> =
   EVENT_METADATA_ENTRIES.reduce((acc, [name, meta]) => {
     acc[getNormalizedEventKey(name)] = meta;
     return acc;
-  }, {} as Record<string, { label: string; level: FastGPTEvent['level']; summary?: (payload: any) => string | undefined }>);
+  }, {} as Record<string, { label: string; level: FastGPTEvent['level']; summary?: (payload: JsonValue) => string | undefined }>);
 
 const IGNORED_EVENTS = new Set(
   [
@@ -514,7 +601,7 @@ const IGNORED_EVENTS = new Set(
 
 const generateEventId = (key: string) => `${key}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
-export const normalizeFastGPTEvent = (eventName: string, payload: any): FastGPTEvent | null => {
+export const normalizeFastGPTEvent = (eventName: string, payload: JsonValue): FastGPTEvent | null => {
   if (!eventName) return null;
   const key = getNormalizedEventKey(eventName);
 

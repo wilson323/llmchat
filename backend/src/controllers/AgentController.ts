@@ -4,6 +4,7 @@ import Joi from 'joi';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ApiError, AgentConfig } from '@/types';
+import { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
@@ -131,7 +132,7 @@ export class AgentController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -185,7 +186,7 @@ export class AgentController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -258,7 +259,7 @@ export class AgentController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -295,7 +296,7 @@ export class AgentController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -343,7 +344,7 @@ export class AgentController {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
       res.status(500).json(apiError);
