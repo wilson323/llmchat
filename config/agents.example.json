@@ -1,0 +1,40 @@
+{
+  "_comment": "这是一个示例配置文件，展示如何使用环境变量占位符",
+  "_security_notice": "不要在此文件中包含真实的 API 密钥或敏感信息",
+  "agents": [
+    {
+      "id": "${FASTGPT_AGENT_ID_1}",
+      "appId": "${FASTGPT_APP_ID_1}",
+      "name": "${FASTGPT_AGENT_NAME_1}",
+      "description": "${FASTGPT_AGENT_DESCRIPTION_1}",
+      "endpoint": "${FASTGPT_ENDPOINT_1}",
+      "apiKey": "${FASTGPT_API_KEY_1}",
+      "model": "${FASTGPT_MODEL_1}",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
+      "capabilities": [],
+      "rateLimit": {
+        "requestsPerMinute": ${FASTGPT_RATE_LIMIT_RPM_1},
+        "tokensPerMinute": ${FASTGPT_RATE_LIMIT_TPM_1}
+      },
+      "provider": "fastgpt",
+      "isActive": true,
+      "features": {
+        "supportsChatId": true,
+        "supportsStream": true,
+        "supportsDetail": true,
+        "supportsFiles": true,
+        "supportsImages": true,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": true,
+          "flowNodeStatus": true
+        }
+      },
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    }
+  ]
+}

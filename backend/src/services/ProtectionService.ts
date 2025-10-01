@@ -57,10 +57,10 @@ export interface ProtectionMetrics {
  * 保护服务主类
  */
 export class ProtectionService {
-  protected circuitBreakerManager: CircuitBreakerManager;
-  protected multiDimensionRateLimiter: MultiDimensionRateLimiter;
+  public circuitBreakerManager: CircuitBreakerManager;
+  public multiDimensionRateLimiter: MultiDimensionRateLimiter;
   private retryService: RetryService;
-  protected monitoringService: MonitoringService;
+  public monitoringService: MonitoringService;
   private config: ProtectionConfig;
 
   constructor(config?: Partial<ProtectionConfig>) {

@@ -1,20 +1,20 @@
 {
   "agents": [
     {
-      "id": "6708e788c6ba48baa62419a5",
-      "appId": "6708e788c6ba48baa62419a5",
-      "name": "熵犇犇售后服务助手",
-      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-kTSgkXkhPdVF5XupUr7CbtzWbSa8U6VO4Ceh5VuMpoUn3RDRVkC17BgpkKOv",
-      "model": "FastAI-4k",
+      "id": "${FASTGPT_AGENT_ID_1}",
+      "appId": "${FASTGPT_APP_ID_1}",
+      "name": "${FASTGPT_AGENT_NAME_1}",
+      "description": "${FASTGPT_AGENT_DESCRIPTION_1}",
+      "endpoint": "${FASTGPT_ENDPOINT_1}",
+      "apiKey": "${FASTGPT_API_KEY_1}",
+      "model": "${FASTGPT_MODEL_1}",
       "maxTokens": 4096,
       "temperature": 0.7,
       "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
       "capabilities": [],
       "rateLimit": {
-        "requestsPerMinute": 60,
-        "tokensPerMinute": 40000
+        "requestsPerMinute": ${FASTGPT_RATE_LIMIT_RPM_1},
+        "tokensPerMinute": ${FASTGPT_RATE_LIMIT_TPM_1}
       },
       "provider": "fastgpt",
       "isActive": true,
@@ -35,20 +35,20 @@
       "updatedAt": "2024-01-01T00:00:00Z"
     },
     {
-      "id": "68940ff5c21f31d18b0732aa",
-      "appId": "68940ff5c21f31d18b0732aa",
-      "name": "配单智能应用",
-      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-zG9XvwctI2krmQMzwVn1RVFnsCEf5eTWV6vCxVIG9RDVfkgbH9tLd",
-      "model": "FastAI-4k",
+      "id": "${FASTGPT_AGENT_ID_2}",
+      "appId": "${FASTGPT_APP_ID_2}",
+      "name": "${FASTGPT_AGENT_NAME_2}",
+      "description": "${FASTGPT_AGENT_DESCRIPTION_2}",
+      "endpoint": "${FASTGPT_ENDPOINT_2}",
+      "apiKey": "${FASTGPT_API_KEY_2}",
+      "model": "${FASTGPT_MODEL_2}",
       "maxTokens": 4096,
       "temperature": 0.7,
       "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
       "capabilities": [],
       "rateLimit": {
-        "requestsPerMinute": 60,
-        "tokensPerMinute": 40000
+        "requestsPerMinute": ${FASTGPT_RATE_LIMIT_RPM_2},
+        "tokensPerMinute": ${FASTGPT_RATE_LIMIT_TPM_2}
       },
       "provider": "fastgpt",
       "isActive": true,
@@ -69,20 +69,20 @@
       "updatedAt": "2024-01-01T00:00:00Z"
     },
     {
-      "id": "689c7c46408874189187da89",
-      "appId": "689c7c46408874189187da89",
-      "name": "需求分析",
-      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-mUEf7WAyVG8gZ3S7PoRTeK7uJ56iI4vAyzjr9S6Q9V8zCpRUDpFng9jsP9Gt",
-      "model": "FastAI-4k",
+      "id": "${FASTGPT_AGENT_ID_3}",
+      "appId": "${FASTGPT_APP_ID_3}",
+      "name": "${FASTGPT_AGENT_NAME_3}",
+      "description": "${FASTGPT_AGENT_DESCRIPTION_3}",
+      "endpoint": "${FASTGPT_ENDPOINT_3}",
+      "apiKey": "${FASTGPT_API_KEY_3}",
+      "model": "${FASTGPT_MODEL_3}",
       "maxTokens": 4096,
       "temperature": 0.7,
       "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
       "capabilities": [],
       "rateLimit": {
-        "requestsPerMinute": 60,
-        "tokensPerMinute": 40000
+        "requestsPerMinute": ${FASTGPT_RATE_LIMIT_RPM_3},
+        "tokensPerMinute": ${FASTGPT_RATE_LIMIT_TPM_3}
       },
       "provider": "fastgpt",
       "isActive": true,

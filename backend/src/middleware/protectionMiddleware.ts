@@ -5,6 +5,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
+import { createErrorFromUnknown } from '@/types/errors';
+import { JsonValue } from '@/types/dynamic';
 
 /**
  * 保护中间件
@@ -15,11 +17,11 @@ export function protectionMiddleware() {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // 添加保护服务到请求对象
-      req.protectionService = protectionService;
+      (req as Request & { protectionService?: typeof protectionService }).protectionService = protectionService;
 
       // 生成请求上下文
       const userAgent = req.get('User-Agent');
-      const userId = (req as any).user?.id;
+      const userId = (req as Request & { user?: { id: string } }).user?.id;
       const context: ProtectedRequestContext = {
         requestId: generateRequestId(),
         agentId: req.body?.agentId || req.params?.agentId || req.query?.agentId as string || 'unknown',
@@ -30,14 +32,20 @@ export function protectionMiddleware() {
       };
 
       // 添加上下文到请求对象
-      req.protectionContext = context;
+      (req as Request & { protectionContext?: ProtectedRequestContext }).protectionContext = context;
 
       // 添加请求ID到响应头
       res.setHeader('X-Request-ID', context.requestId);
 
       next();
-    } catch (error) {
-      console.error('保护中间件错误:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ProtectionMiddleware',
+        operation: 'protectionMiddleware',
+        url: req.originalUrl,
+        method: req.method,
+      });
+      console.error('保护中间件错误:', typedError.message);
       // 出错时继续处理请求，避免影响正常服务
       next();
     }
@@ -98,8 +106,15 @@ export function protectedApiMiddleware() {
       }
 
       next();
-    } catch (error) {
-      console.error('受保护API中间件错误:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ProtectionMiddleware',
+        operation: 'protectedApiMiddleware',
+        url: req.originalUrl,
+        method: req.method,
+        context: { context: context?.requestId },
+      });
+      console.error('受保护API中间件错误:', typedError.message);
       // 出错时继续处理请求
       next();
     }
@@ -136,29 +151,37 @@ export function protectedChatMiddleware() {
         // 实际的聊天逻辑将在聊天控制器中使用保护服务
         return new Promise<void>((resolve) => {
           // 标记请求为受保护
-          (req as any).isProtected = true;
+          (req as Request & { isProtected?: boolean }).isProtected = true;
           next();
           resolve();
         });
       });
-    } catch (error) {
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ProtectionMiddleware',
+        operation: 'protectedChatMiddleware',
+        url: req.originalUrl,
+        method: req.method,
+        context: { requestId: context.requestId, agentId: context.agentId },
+      });
       console.error('受保护聊天中间件错误:', {
         requestId: context.requestId,
         agentId: context.agentId,
-        error: (error as Error).message
+        error: typedError.message
       });
 
       // 如果是降级响应，返回成功状态
-      if ((error as any).fallbackUsed) {
-        res.json((error as any).data);
+      const fallbackError = typedError as { fallbackUsed?: boolean; data?: JsonValue };
+      if (fallbackError.fallbackUsed) {
+        res.json(fallbackError.data);
         return;
       }
 
       // 返回错误响应
-      const statusCode = getErrorStatusCode(error as Error);
+      const statusCode = getErrorStatusCode(typedError);
       res.status(statusCode).json({
-        code: getErrorCode(error as Error),
-        message: (error as Error).message,
+        code: getErrorCode(typedError),
+        message: typedError.message,
         requestId: context.requestId,
         timestamp: new Date().toISOString(),
       });
@@ -169,7 +192,7 @@ export function protectedChatMiddleware() {
 /**
  * 检查限流
  */
-async function checkRateLimit(req: Request, protectionService: any): Promise<{
+async function checkRateLimit(req: Request, protectionService: { multiDimensionRateLimiter: { isAllowed: (req: Request) => { allowed: boolean; results?: Array<{ allowed?: boolean; remaining?: number; retryAfter?: number; resetTime?: Date }> } } }): Promise<{
   allowed: boolean;
   reason?: string;
   retryAfter?: number;
@@ -183,7 +206,7 @@ async function checkRateLimit(req: Request, protectionService: any): Promise<{
       ip: req.ip || req.connection.remoteAddress || 'unknown',
       method: req.method,
       path: req.path,
-      user: (req as any).user,
+      user: (req as Request & { user?: unknown }).user,
       route: req.route,
       get: (header: string) => req.headers[header.toLowerCase()],
       header: (header: string) => req.headers[header.toLowerCase()],
@@ -192,12 +215,12 @@ async function checkRateLimit(req: Request, protectionService: any): Promise<{
       acceptsEncodings: (encodings: string[]) => false, // 简化实现
       acceptsLanguages: (languages: string[]) => false, // 简化实现
       is: (type: string) => false, // 简化实现
-      param: (name: string) => (req as any).params?.[name],
-      query: (name: string) => (req as any).query?.[name],
-      cookies: (req as any).cookies || {},
-      signedCookies: (req as any).signedCookies || {},
-      body: (req as any).body || {},
-      files: (req as any).files || {},
+      param: (name: string) => (req as Request & { params?: Record<string, unknown> }).params?.[name],
+      query: (name: string) => (req as Request & { query?: Record<string, unknown> }).query?.[name],
+      cookies: (req as Request & { cookies?: Record<string, unknown> }).cookies || {},
+      signedCookies: (req as Request & { signedCookies?: Record<string, unknown> }).signedCookies || {},
+      body: (req as Request & { body?: unknown }).body || {},
+      files: (req as Request & { files?: unknown }).files || {},
       protocol: req.protocol || 'http',
       secure: req.secure || false,
       xhr: req.xhr || false,
@@ -205,7 +228,7 @@ async function checkRateLimit(req: Request, protectionService: any): Promise<{
       originalUrl: req.originalUrl || req.url,
       baseUrl: req.baseUrl || '',
       url: req.url || '',
-      app: (req as any).app,
+      app: (req as Request & { app?: unknown }).app,
       // 添加必要的Express Request属性
       headers: req.headers,
       connection: req.connection,
@@ -218,27 +241,44 @@ async function checkRateLimit(req: Request, protectionService: any): Promise<{
       rawTrailers: [],
       upgrade: false,
       // 方法
-      res: undefined as any,
-      next: undefined as any
+      res: undefined as unknown,
+      next: undefined as unknown
     } as unknown as Request;
 
     const checkResult = protectionService.multiDimensionRateLimiter.isAllowed(mockReq);
 
     if (!checkResult.allowed) {
-      const failedResult = checkResult.results.find((r: any) => !r.allowed);
-      return {
+      const failedResult = checkResult.results?.find((r: { allowed?: boolean; remaining?: number; retryAfter?: number; resetTime?: Date }) => !r.allowed);
+      const result: {
+        allowed: boolean;
+        reason?: string;
+        retryAfter?: number;
+        limit?: number;
+        remaining?: number;
+        resetTime?: Date;
+      } = {
         allowed: false,
         reason: `维度限制触发: ${failedResult?.remaining || 0}`,
-        retryAfter: failedResult?.retryAfter,
-        limit: failedResult?.remaining ? failedResult.remaining + (failedResult?.allowed ? 0 : 1) : undefined,
-        remaining: failedResult?.remaining,
-        resetTime: failedResult?.resetTime
+        ...(failedResult?.retryAfter !== undefined && { retryAfter: failedResult.retryAfter }),
+        ...(failedResult?.remaining !== undefined && { remaining: failedResult.remaining }),
+        ...(failedResult?.resetTime !== undefined && { resetTime: failedResult.resetTime })
       };
+
+      if (failedResult?.remaining !== undefined) {
+        result.limit = failedResult.remaining + (failedResult?.allowed ? 0 : 1);
+      }
+
+      return result;
     }
 
     return { allowed: true };
-  } catch (error) {
-    console.error('限流检查失败:', error);
+  } catch (unknownError) {
+    const typedError = createErrorFromUnknown(unknownError, {
+      component: 'ProtectionMiddleware',
+      operation: 'checkRateLimit',
+      context: { ip: req.ip, method: req.method, path: req.path },
+    });
+    console.error('限流检查失败:', typedError.message);
     // 出错时允许请求通过
     return { allowed: true };
   }
@@ -247,7 +287,7 @@ async function checkRateLimit(req: Request, protectionService: any): Promise<{
 /**
  * 检查熔断器健康状态
  */
-function checkCircuitBreakerHealth(agentId: string, protectionService: any): {
+function checkCircuitBreakerHealth(agentId: string, protectionService: { circuitBreakerManager: { getHealthStatus: () => Array<{ name: string; healthy: boolean; message?: string }> } }): {
   healthy: boolean;
   message: string;
 } {
@@ -255,18 +295,23 @@ function checkCircuitBreakerHealth(agentId: string, protectionService: any): {
     const circuitBreakerManager = protectionService.circuitBreakerManager;
     const healthStatus = circuitBreakerManager.getHealthStatus();
 
-    const agentCircuitBreaker = healthStatus.find((cb: any) => cb.name === `agent_${agentId}`);
+    const agentCircuitBreaker = healthStatus.find((cb: { name: string; healthy: boolean; message?: string }) => cb.name === `agent_${agentId}`);
 
     if (agentCircuitBreaker && !agentCircuitBreaker.healthy) {
       return {
         healthy: false,
-        message: agentCircuitBreaker.message
+        message: agentCircuitBreaker.message || '熔断器状态未知'
       };
     }
 
     return { healthy: true, message: '服务正常' };
-  } catch (error) {
-    console.error('熔断器健康检查失败:', error);
+  } catch (unknownError) {
+    const typedError = createErrorFromUnknown(unknownError, {
+      component: 'ProtectionMiddleware',
+      operation: 'checkCircuitBreakerHealth',
+      context: { agentId },
+    });
+    console.error('熔断器健康检查失败:', typedError.message);
     // 出错时假设健康
     return { healthy: true, message: '健康检查异常' };
   }
