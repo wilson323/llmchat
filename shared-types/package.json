@@ -1,0 +1,16 @@
+{
+  "name": "@llmchat/shared-types",
+  "version": "1.0.0",
+  "description": "LLMChat 前后端共享类型定义",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "files": ["dist"],
+  "keywords": ["typescript", "types", "shared"],
+  "author": "LLMChat Team",
+  "license": "MIT"
+}
