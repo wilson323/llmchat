@@ -94,7 +94,9 @@ export class AgentConfigService {
         supportsDetail: true,
         streamingConfig: {
           enabled: true,
+          endpoint: 'same' as const,
           statusEvents: true,
+          flowNodeStatus: false,
         },
       },
     },

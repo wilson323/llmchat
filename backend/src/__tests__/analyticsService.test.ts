@@ -69,6 +69,11 @@ const mockQuery = jest.fn(async (query: string, params: any[] = []) => {
     return { rows };
   }
 
+  // Mock agent_configs query
+  if (normalized.startsWith('select id, name, is_active, app_id from agent_configs')) {
+    return { rows: [] };
+  }
+
   throw new Error(`Unhandled query: ${normalized}`);
 });
 
