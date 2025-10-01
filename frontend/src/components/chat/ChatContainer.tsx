@@ -10,6 +10,7 @@ import { useI18n } from '@/i18n';
 import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
 import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
+import { useResponsive } from '@/hooks/useResponsive';
 
 
 export const ChatContainer: React.FC = () => {
@@ -34,6 +35,7 @@ export const ChatContainer: React.FC = () => {
     retryMessage
   } = useChat();
   const { t } = useI18n();
+  const { isMobile, isTablet } = useResponsive();
 
 
   // 避免重复触发同一会话/智能体的开场白
@@ -236,19 +238,19 @@ export const ChatContainer: React.FC = () => {
     return <VoiceCallWorkspace agent={currentAgent} />;
   }
 
-  // 无智能体时的提示界面
+  // 无智能体时的提示界面 - 响应式优化
   if (!currentAgent) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-brand to-brand/70 rounded-2xl
-            flex items-center justify-center">
-            <Bot className="h-8 w-8 text-white" />
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="text-center max-w-md px-4">
+          <div className={`${isMobile ? 'w-12 h-12 mb-4' : 'w-16 h-16 mb-6'} mx-auto bg-gradient-to-r from-brand to-brand/70 rounded-2xl
+            flex items-center justify-center`}>
+            <Bot className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-white`} />
           </div>
-          <h2 className="text-2xl font-semibold text-foreground mb-3">
+          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-semibold text-foreground mb-3`}>
             {t('欢迎使用 LLMChat')}
           </h2>
-          <p className="text-muted-foreground mb-6">
+          <p className={`text-muted-foreground ${isMobile ? 'text-sm mb-4' : 'mb-6'}`}>
             {t('请选择一个智能体开始您的对话之旅')}
           </p>
         </div>
@@ -256,43 +258,45 @@ export const ChatContainer: React.FC = () => {
     );
   }
 
-  // 无消息时的欢迎界面（在副作用触发期间短暂显示）
+  // 无消息时的欢迎界面 - 响应式优化
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col">
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center max-w-2xl">
-            <div className="w-20 h-20 mx-auto mb-8 bg-gradient-to-r from-brand to-brand/70 rounded-3xl
-              flex items-center justify-center shadow-lg">
-              <Sparkles className="h-10 w-10 text-white" />
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
+          <div className="text-center max-w-2xl w-full px-4">
+            <div className={`${isMobile ? 'w-14 h-14 mb-4' : 'w-20 h-20 mb-8'} mx-auto bg-gradient-to-r from-brand to-brand/70
+              ${isMobile ? 'rounded-2xl' : 'rounded-3xl'} flex items-center justify-center shadow-lg`}>
+              <Sparkles className={`${isMobile ? 'h-7 w-7' : 'h-10 w-10'} text-white`} />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className={`${isMobile ? 'text-xl' : isTablet ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900 dark:text-white mb-3 sm:mb-4`}>
               {t('与 {name} 对话', { name: currentAgent.name })}
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+            <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-gray-600 dark:text-gray-400 mb-4 sm:mb-6 md:mb-8`}>
               {currentAgent.description}
             </p>
 
-            {/* 示例提示 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="p-4 bg-background rounded-xl border border-border hover:bg-brand/10 transition-colors cursor-pointer"
+            {/* 示例提示 - 移动端单列，平板/桌面双列 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
+              <div className={`${isMobile ? 'p-3' : 'p-4'} bg-background rounded-xl border border-border hover:bg-brand/10
+                transition-colors cursor-pointer active:scale-95`}
                 onClick={() => sendMessage(t('你好，请介绍一下你的能力'))}
               >
-                <h3 className="font-medium text-foreground mb-2">
+                <h3 className={`font-medium text-foreground ${isMobile ? 'mb-1 text-sm' : 'mb-2'}`}>
                   👋 {t('介绍与能力')}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   {t('了解智能体的功能与特点')}
                 </p>
               </div>
 
-              <div className="p-4 bg-background rounded-xl border border-border hover:bg-brand/10 transition-colors cursor-pointer"
+              <div className={`${isMobile ? 'p-3' : 'p-4'} bg-background rounded-xl border border-border hover:bg-brand/10
+                transition-colors cursor-pointer active:scale-95`}
                 onClick={() => sendMessage(t('你能帮我做什么？'))}
               >
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                <h3 className={`font-medium text-gray-900 dark:text-white ${isMobile ? 'mb-1 text-sm' : 'mb-2'}`}>
                   ❓ {t('探索功能')}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400`}>
                   {t('发现更多实用功能')}
                 </p>
               </div>
@@ -300,8 +304,8 @@ export const ChatContainer: React.FC = () => {
           </div>
         </div>
 
-        {/* 输入区域 */}
-        <div className="border-t border-border/50 bg-background p-4">
+        {/* 输入区域 - 移动端优化 */}
+        <div className={`border-t border-border/50 bg-background ${isMobile ? 'p-2' : 'p-4'}`}>
           <div className="max-w-4xl mx-auto">
             {!hideComposer && (
               <MessageInput
@@ -317,10 +321,11 @@ export const ChatContainer: React.FC = () => {
     );
   }
 
-  // 有消息时的正常聊天界面
+  // 有消息时的正常聊天界面 - 响应式优化
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="flex-1 overflow-hidden pt-[37px] sm:pt-0">
+      {/* 消息列表区域 - 移动端适配顶部偏移 */}
+      <div className={`flex-1 overflow-hidden ${isMobile ? 'pt-[60px]' : 'pt-[37px] sm:pt-0'}`}>
         <MessageList
           messages={messages}
           isStreaming={isStreaming}
@@ -329,7 +334,9 @@ export const ChatContainer: React.FC = () => {
           onRetryMessage={retryMessage}
         />
       </div>
-      <div className="border-t border-border/50 bg-background p-4">
+
+      {/* 输入区域 - 移动端紧凑布局 */}
+      <div className={`border-t border-border/50 bg-background ${isMobile ? 'p-2' : 'p-4'}`}>
         <div className="max-w-4xl mx-auto">
           {!hideComposer && (
             <MessageInput

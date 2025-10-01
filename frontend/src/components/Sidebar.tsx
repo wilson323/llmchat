@@ -27,6 +27,7 @@ import { Dialog } from '@/components/ui/Dialog';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { useOptimisticSessionSwitch } from '@/hooks/useOptimisticSessionSwitch';
 import { SessionSwitchingFeedback } from '@/components/chat/SessionSwitchingFeedback';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface SidebarProps {
   className?: string;
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     updateSessionTitleIntelligently,
   } = useChatStore();
   const { t, locale } = useI18n();
+  const { isMobile, isTablet } = useResponsive();
 
   // 乐观会话切换
   const {
@@ -425,15 +427,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         />
       )}
 
-      {/* 侧边栏 */}
+      {/* 侧边栏 - 响应式优化 */}
       <aside
         id="sidebar"
         ref={sidebarRef}
-        className={`fixed left-0 top-0 h-full w-80 bg-sidebar text-sidebar-foreground border-r border-sidebar-border
+        className={`fixed left-0 top-0 h-full
+          ${isMobile ? 'w-[85vw] max-w-[320px]' : isTablet ? 'w-72' : 'w-80'}
+          bg-sidebar text-sidebar-foreground border-r border-sidebar-border
           transform transition-transform duration-300 ease-in-out z-50 flex flex-col
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:relative lg:translate-x-0 lg:z-auto ${sidebarOpen ? 'lg:flex' : 'lg:hidden'} ${className}
-          sm:w-72 md:w-80
           touch-pan-y
           select-none
           overscroll-y-contain`}
@@ -443,32 +446,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         role="navigation"
         aria-label={t('会话列表')}
       >
-        {/* 头部 */}
-        <div className="p-4 border-b border-border/50">
+        {/* 头部 - 移动端优化 */}
+        <div className={`${isMobile ? 'p-2' : 'p-4'} border-b border-border/50`}>
           <Button
             onClick={createNewSession}
             variant="brand"
-            size="lg"
+            size={isMobile ? 'md' : 'lg'}
             radius="lg"
             className="w-full flex items-center gap-3 font-medium"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
             {t('新建对话')}
           </Button>
 
           {/* 隐藏清空对话按钮（业务要求不展示） */}
         </div>
 
-        {/* 搜索 */}
-        <div className="p-4 border-b border-border/50">
+        {/* 搜索 - 移动端优化 */}
+        <div className={`${isMobile ? 'p-2' : 'p-4'} border-b border-border/50`}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`} />
             <input
               type="text"
               placeholder={t('搜索对话...')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus:border-transparent"
+              className={`w-full ${isMobile ? 'pl-9 pr-3 py-1.5 text-sm' : 'pl-10 pr-4 py-2'} rounded-xl border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus:border-transparent`}
               aria-label={t('搜索对话')}
             />
             {/* 搜索状态指示器 */}
@@ -489,8 +492,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           )}
         </div>
 
-        {/* 会话列表 */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* 会话列表 - 移动端优化 */}
+        <div className={`flex-1 overflow-y-auto ${isMobile ? 'p-2' : 'p-4'}`}>
           {sessionsToDisplay.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />

@@ -203,8 +203,25 @@ export default {
         xs: '2px',
       },
       screens: {
-        'xs': '475px',
-        '3xl': '1920px',
+        // 与 useResponsive hook 同步的断点系统
+        'xs': '0px',      // 移动端（超小屏幕）
+        'sm': '640px',    // 移动端（小屏幕）
+        'md': '768px',    // 平板端（中等屏幕）
+        'lg': '1024px',   // 桌面端（大屏幕）
+        'xl': '1280px',   // 桌面端（超大屏幕）
+        '2xl': '1536px',  // 桌面端（2K屏幕）
+        '3xl': '1920px',  // 桌面端（4K屏幕）
+      },
+      // 容器查询支持
+      container: {
+        center: true,
+        padding: {
+          DEFAULT: '1rem',
+          sm: '2rem',
+          lg: '4rem',
+          xl: '5rem',
+          '2xl': '6rem',
+        },
       },
     },
   },
