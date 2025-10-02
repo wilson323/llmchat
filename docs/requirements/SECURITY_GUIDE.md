@@ -11,10 +11,20 @@
 1. **API 密钥泄露** - ✅ 已修复
    - 原问题：`config/agents.json` 文件包含真实的 API 密钥
    - 修复方案：使用环境变量占位符 `${VARIABLE_NAME}` 替换真实密钥
+   - 影响范围：所有智能体配置
 
-2. **配置文件安全** - ✅ 已修复
+2. **数据库密码明文存储** - ✅ 已修复
+   - 原问题：`config/config.jsonc` 文件包含明文数据库密码
+   - 修复方案：使用环境变量占位符 `${DB_PASSWORD}` 等
+   - 影响范围：数据库连接配置、Redis 连接配置
+
+3. **配置文件安全** - ✅ 已修复
    - 原问题：`.env.example` 缺少安全配置说明
-   - 修复方案：添加完整的安全配置模板和说明
+   - 修复方案：添加完整的安全配置模板和说明，包括数据库、Redis、Token 等所有敏感配置
+
+4. **环境变量验证** - ✅ 已加强
+   - 实现：`envHelper.ts` 工具提供环境变量解析、验证和安全检查
+   - 功能：自动替换占位符、检测未解析的占位符、验证必需变量
 
 ## 🔑 环境变量配置
 
@@ -60,10 +70,45 @@ FASTGPT_RATE_LIMIT_RPM_3=60
 FASTGPT_RATE_LIMIT_TPM_3=40000
 ```
 
+### 数据库配置（PostgreSQL）
+
+```bash
+# PostgreSQL 连接配置
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=your_db_user
+DB_PASSWORD=your_secure_db_password_here
+DB_NAME=llmchat
+
+# 连接池配置（可选）
+DB_POOL_MAX=20
+DB_POOL_MIN=5
+DB_POOL_IDLE_TIMEOUT=10000
+```
+
+### Redis 配置（Token 管理）
+
+```bash
+# Redis 连接配置
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password_here
+REDIS_DB=0
+
+# Redis 连接选项（可选）
+REDIS_MAX_RETRIES=10
+REDIS_RETRY_DELAY=1000
+```
+
 ### 安全认证配置
 
 ```bash
-# JWT 令牌配置
+# Token 配置
+TOKEN_SECRET=your_super_secure_token_secret_key_here_minimum_32_characters
+TOKEN_TTL=86400
+REFRESH_TOKEN_TTL=2592000
+
+# JWT 令牌配置（如使用 JWT）
 JWT_SECRET=your_super_secure_jwt_secret_key_here_minimum_32_characters
 JWT_EXPIRES_IN=7d
 JWT_REFRESH_EXPIRES_IN=30d
@@ -172,6 +217,19 @@ curl http://localhost:3001/api/agents
 # - endpoint 是完整的 URL
 # - apiKey 不包含 ${} 占位符
 # - 所有字段正确填充
+```
+
+### 4. 环境变量占位符检查
+
+```bash
+# 检查配置文件中是否有未解析的环境变量占位符
+grep -r '\${' config/
+
+# 确认输出中所有占位符都对应存在的环境变量
+# 例如：如果看到 ${FASTGPT_API_KEY_1}，确保 .env 中定义了 FASTGPT_API_KEY_1
+
+# 检查日志中是否有环境变量警告
+tail -f backend/log/app.log | grep "环境变量未定义"
 ```
 
 ## 🚨 故障排除
