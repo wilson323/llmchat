@@ -17,6 +17,7 @@ import { rateLimiter } from '@/middleware/rateLimiter';
 
 import { initDB, closeDB } from '@/utils/db';
 import { initializeProtectionService, getProtectionService } from '@/services/ProtectionService';
+import logger from '@/utils/logger';
 import {
   protectionMiddleware,
   protectedApiMiddleware,
@@ -127,63 +128,66 @@ initDB()
     try {
       initializeProtectionService();
       const protectionService = getProtectionService();
-      console.log('🛡️ 保护服务初始化成功');
-      console.log(`   - 熔断器阈值: ${process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || 5}`);
-      console.log(`   - 限流阈值: ${process.env.RATE_LIMIT_POINTS || 100} 请求/分钟`);
-      console.log(`   - 重试次数: ${process.env.RETRY_MAX_RETRIES || 3}`);
-      console.log(`   - 监控状态: ${process.env.MONITORING_ENABLED === 'true' ? '启用' : '禁用'}`);
+      logger.info('🛡️ 保护服务初始化成功', {
+        circuitBreakerThreshold: process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || 5,
+        rateLimitPoints: process.env.RATE_LIMIT_POINTS || 100,
+        retryMaxRetries: process.env.RETRY_MAX_RETRIES || 3,
+        monitoringEnabled: process.env.MONITORING_ENABLED === 'true'
+      });
     } catch (error) {
-      console.error('保护服务初始化失败:', error);
+      logger.error('保护服务初始化失败', { error });
       // 保护服务初始化失败不应阻止服务器启动，但需要记录警告
-      console.warn('⚠️ 服务将在无保护机制下启动');
+      logger.warn('⚠️ 服务将在无保护机制下启动');
     }
 
     server = app.listen(PORT, () => {
-      console.log(`🚀 LLMChat后端服务启动成功`);
-      console.log(`📡 服务地址: http://localhost:${PORT}`);
-      console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`⏰ 启动时间: ${new Date().toLocaleString()}`);
-      console.log(`🛡️ 保护状态: 已启用`);
+      logger.info('🚀 LLMChat后端服务启动成功', {
+        port: PORT,
+        address: `http://localhost:${PORT}`,
+        environment: process.env.NODE_ENV || 'development',
+        startTime: new Date().toLocaleString(),
+        protectionEnabled: true
+      });
     });
   })
   .catch((err) => {
-    console.error('数据库初始化失败:', err);
+    logger.error('数据库初始化失败', { error: err });
     process.exit(1);
   });
 
 // 优雅关闭
 process.on('SIGTERM', () => {
-  console.log('收到SIGTERM信号，开始优雅关闭...');
+  logger.info('收到SIGTERM信号，开始优雅关闭...');
   server?.close(async () => {
     try {
       // 清理保护服务
       const protectionService = getProtectionService();
       protectionService?.destroy();
-      console.log('🛡️ 保护服务已清理');
+      logger.info('🛡️ 保护服务已清理');
     } catch (error) {
-      console.warn('清理保护服务时出错:', error);
+      logger.warn('清理保护服务时出错', { error });
     }
 
     await closeDB().catch(() => void 0);
-    console.log('服务器已关闭');
+    logger.info('服务器已关闭');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('收到SIGINT信号，开始优雅关闭...');
+  logger.info('收到SIGINT信号，开始优雅关闭...');
   server?.close(async () => {
     try {
       // 清理保护服务
       const protectionService = getProtectionService();
       protectionService?.destroy();
-      console.log('🛡️ 保护服务已清理');
+      logger.info('🛡️ 保护服务已清理');
     } catch (error) {
-      console.warn('清理保护服务时出错:', error);
+      logger.warn('清理保护服务时出错', { error });
     }
 
     await closeDB().catch(() => void 0);
-    console.log('服务器已关闭');
+    logger.info('服务器已关闭');
     process.exit(0);
   });
 });
