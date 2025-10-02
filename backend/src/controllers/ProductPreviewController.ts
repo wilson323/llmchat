@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Joi from 'joi';
 import { ProductPreviewService } from '@/services/ProductPreviewService';
 import { ApiError, ProductPreviewRequest } from '@/types';
+import logger from '@/utils/logger';
 
 export class ProductPreviewController {
   private service: ProductPreviewService;
@@ -52,7 +53,7 @@ export class ProductPreviewController {
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
-      console.error('调用豆包图片生成接口失败:', err);
+      logger.error('调用豆包图片生成接口失败', { error: err });
       const apiError: ApiError = {
         code: 'DOUBAO_IMAGE_GENERATE_FAILED',
         message: err?.response?.data?.message || err?.message || '生成现场预览失败',

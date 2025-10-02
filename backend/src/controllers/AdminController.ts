@@ -3,6 +3,7 @@ import os from 'os';
 import { authService } from '@/services/authInstance';
 import { withClient, hashPassword } from '@/utils/db';
 import { analyticsService } from '@/services/analyticsInstance';
+import logger from '@/utils/logger';
 
 // 使用全局单例的 authService（见 services/authInstance.ts）
 
@@ -225,7 +226,7 @@ export class AdminController {
           timestamp: new Date().toISOString(),
         });
       }
-      console.error('[AdminController] provinceHeatmap failed:', error);
+      logger.error('[AdminController] provinceHeatmap failed', { error });
       return res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: '获取地域热点数据失败',
@@ -303,7 +304,7 @@ export class AdminController {
           timestamp: new Date().toISOString(),
         });
       }
-      console.error('[AdminController] conversationSeries failed:', error);
+      logger.error('[AdminController] conversationSeries failed', { error });
       return res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: '获取智能体对话趋势失败',
@@ -377,7 +378,7 @@ export class AdminController {
           timestamp: new Date().toISOString(),
         });
       }
-      console.error('[AdminController] conversationAgents failed:', error);
+      logger.error('[AdminController] conversationAgents failed', { error });
       return res.status(500).json({
         code: 'INTERNAL_ERROR',
         message: '获取智能体会话对比失败',

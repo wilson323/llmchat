@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { readJsonc } from '@/utils/config';
+import logger from '@/utils/logger';
 
 export interface PgConfig {
   database?: {
@@ -210,7 +211,7 @@ async function seedAgentsFromFile(): Promise<void> {
         break;
       }
     } catch (e) {
-      console.warn('[initDB] 读取智能体配置文件失败:', e);
+      logger.warn('[initDB] 读取智能体配置文件失败', { error: e });
     }
   }
 
@@ -222,7 +223,7 @@ async function seedAgentsFromFile(): Promise<void> {
   try {
     parsed = JSON.parse(fileContent);
   } catch (e) {
-    console.warn('[initDB] 解析 agents.json 失败:', e);
+    logger.warn('[initDB] 解析 agents.json 失败', { error: e });
     return;
   }
 
@@ -290,7 +291,7 @@ async function seedAgentsFromFile(): Promise<void> {
           'json',
         ]);
       } catch (e) {
-        console.warn('[initDB] 导入智能体失败:', agent?.id, e);
+        logger.warn('[initDB] 导入智能体失败', { agentId: agent?.id, error: e });
       }
     }
   });
