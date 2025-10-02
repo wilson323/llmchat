@@ -4,6 +4,7 @@ import Joi from 'joi';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ApiError, AgentConfig } from '@/types';
+import logger from '@/utils/logger';
 import { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 async function ensureAdminAuth(req: Request) {
@@ -124,7 +125,7 @@ export class AgentController {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('获取智能体列表失败:', error);
+      logger.error('获取智能体列表失败', { error });
       const apiError: ApiError = {
         code: 'GET_AGENTS_FAILED',
         message: '获取智能体列表失败',
@@ -178,7 +179,7 @@ export class AgentController {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('获取智能体信息失败:', error);
+      logger.error('获取智能体信息失败', { error });
       const apiError: ApiError = {
         code: 'GET_AGENT_FAILED',
         message: '获取智能体信息失败',
@@ -216,7 +217,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      console.error('创建智能体失败:', error);
+      logger.error('创建智能体失败', { error });
       res.status(500).json({
         code: 'CREATE_AGENT_FAILED',
         message: '创建智能体失败',
@@ -251,7 +252,7 @@ export class AgentController {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('检查智能体状态失败:', error);
+      logger.error('检查智能体状态失败', { error });
       const apiError: ApiError = {
         code: 'GET_AGENT_STATUS_FAILED',
         message: '检查智能体状态失败',
@@ -288,7 +289,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      console.error('重新加载智能体配置失败:', error);
+      logger.error('重新加载智能体配置失败', { error });
       const apiError: ApiError = {
         code: 'RELOAD_AGENTS_FAILED',
         message: '重新加载智能体配置失败',
@@ -335,7 +336,7 @@ export class AgentController {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('验证智能体配置失败:', error);
+      logger.error('验证智能体配置失败', { error });
 
       const apiError: ApiError = {
         code: 'VALIDATE_AGENT_FAILED',
@@ -383,7 +384,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      console.error('更新智能体失败:', error);
+      logger.error('更新智能体失败', { error });
       res.status(500).json({ code: 'UPDATE_AGENT_FAILED', message: '更新智能体失败', timestamp: new Date().toISOString() });
     }
   };
@@ -406,7 +407,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      console.error('删除智能体失败:', error);
+      logger.error('删除智能体失败', { error });
       res.status(500).json({ code: 'DELETE_AGENT_FAILED', message: '删除智能体失败', timestamp: new Date().toISOString() });
     }
   };
@@ -433,7 +434,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      console.error('导入智能体失败:', error);
+      logger.error('导入智能体失败', { error });
       res.status(500).json({ code: 'IMPORT_AGENT_FAILED', message: '导入智能体失败', timestamp: new Date().toISOString() });
     }
   };

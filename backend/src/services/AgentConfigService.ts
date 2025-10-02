@@ -4,6 +4,7 @@ import { AgentConfig, Agent, AgentStatus, AgentHealthStatus } from '@/types';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { deepReplaceEnvVariables, validateRequiredEnvVars, containsUnresolvedPlaceholders } from '@/utils/envHelper';
+import logger from '@/utils/logger';
 
 type AgentSeed = {
   id: string;
@@ -287,7 +288,7 @@ export class AgentConfigService {
       this.loadingPromise = this.loadAgentsFromDb()
         .catch(async (error) => {
           if (this.isTransientDbError(error)) {
-            console.warn('[AgentConfigService] 数据库不可用，回退到文件加载:', error instanceof Error ? error.message : error);
+            logger.warn('[AgentConfigService] 数据库不可用，回退到文件加载', { error: error instanceof Error ? error.message : error });
             return this.loadAgentsFromFileOnly();
           }
 
@@ -403,7 +404,7 @@ export class AgentConfigService {
       }
 
       if (map.size === 0) {
-        console.warn('[AgentConfigService] 未能从配置文件加载有效的智能体，使用内置示例配置');
+        logger.warn('[AgentConfigService] 未能从配置文件加载有效的智能体，使用内置示例配置');
         return this.loadDefaultAgentsInMemory();
       }
 
@@ -411,7 +412,7 @@ export class AgentConfigService {
       this.lastLoadTime = Date.now();
       return Array.from(map.values());
     } catch (error) {
-      console.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置:', error);
+      logger.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置', { error });
       return this.loadDefaultAgentsInMemory();
     }
   }
@@ -621,7 +622,7 @@ export class AgentConfigService {
         }
       }
     } catch (error) {
-      console.warn('从文件回填智能体失败:', error);
+      logger.warn('从文件回填智能体失败', { error });
     }
 
     if (!seededFromFile && this.agents.size === 0) {
@@ -663,7 +664,7 @@ export class AgentConfigService {
       };
       await fs.writeFile(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
     } catch (error) {
-      console.warn('写入智能体快照失败:', error);
+      logger.warn('写入智能体快照失败', { error });
     } finally {
       this.snapshotWriting = false;
     }
@@ -678,7 +679,7 @@ export class AgentConfigService {
 
     for (const field of requiredFields) {
       if (!config[field]) {
-        console.error(`智能体配置缺少必需字段: ${field}`);
+        logger.error('智能体配置缺少必需字段', { field });
         return false;
       }
     }
@@ -687,26 +688,26 @@ export class AgentConfigService {
     const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
     for (const field of sensitiveFields) {
       if (config[field] && typeof config[field] === 'string' && containsUnresolvedPlaceholders(config[field])) {
-        console.error(`智能体配置包含未解析的环境变量占位符: ${field} = ${config[field]}`);
+        logger.error('智能体配置包含未解析的环境变量占位符', { field, value: config[field] });
         return false;
       }
     }
 
     if (collection.has(config.id) && config.id !== existingId) {
-      console.error(`智能体ID重复: ${config.id}`);
+      logger.error('智能体ID重复', { agentId: config.id });
       return false;
     }
 
     if (config.provider === 'fastgpt') {
       if (!config.appId || typeof config.appId !== 'string' || !/^[a-fA-F0-9]{24}$/.test(config.appId)) {
-        console.error(`FastGPT 配置缺少有效的 appId（需要 24 位十六进制字符串）: ${config.id}`);
+        logger.error('FastGPT 配置缺少有效的 appId（需要 24 位十六进制字符串）', { agentId: config.id });
         return false;
       }
     }
 
     const validProviders = ['fastgpt', 'openai', 'anthropic', 'custom'];
     if (!validProviders.includes(config.provider)) {
-      console.error(`不支持的provider: ${config.provider}`);
+      logger.error('不支持的provider', { provider: config.provider });
       return false;
     }
 
@@ -716,7 +717,7 @@ export class AgentConfigService {
         : `https://${config.endpoint}`;
       new URL(endpointUrl);
     } catch {
-      console.error(`无效的endpoint URL: ${config.endpoint}`);
+      logger.error('无效的endpoint URL', { endpoint: config.endpoint });
       return false;
     }
 

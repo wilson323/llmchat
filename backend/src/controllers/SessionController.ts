@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { AgentConfigService } from '@/services/AgentConfigService';
+import logger from '@/utils/logger';
 import {
   SessionListParams,
   BatchOperationOptions,
@@ -139,7 +140,7 @@ export class SessionController {
         method: req.method,
         context: { agentId },
       });
-      console.error('获取增强版会话列表失败:', typedError.message);
+      logger.error('获取增强版会话列表失败', { error: typedError.message });
       const apiError: ApiError = {
         code: 'LIST_SESSIONS_FAILED',
         message: '获取会话列表失败',
@@ -224,7 +225,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, operation: req.body.operation },
       });
-      console.error('批量操作失败:', typedError.message);
+      logger.error('批量操作失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -304,7 +305,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, format: req.body.format },
       });
-      console.error('导出会话失败:', typedError.message);
+      logger.error('导出会话失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -352,7 +353,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, dateRange: req.query },
       });
-      console.error('获取会话统计失败:', typedError.message);
+      logger.error('获取会话统计失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -404,7 +405,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, queryParams: req.query },
       });
-      console.error('查询会话事件失败:', typedError.message);
+      logger.error('查询会话事件失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -470,7 +471,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, sessionId },
       });
-      console.error('获取会话详情失败:', typedError.message);
+      logger.error('获取会话详情失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -531,7 +532,7 @@ export class SessionController {
         method: req.method,
         context: { agentId, sessionId },
       });
-      console.error('删除会话失败:', typedError.message);
+      logger.error('删除会话失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }

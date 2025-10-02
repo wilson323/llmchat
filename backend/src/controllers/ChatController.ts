@@ -17,6 +17,7 @@ import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import Joi from 'joi';
+import logger from '@/utils/logger';
 
 /**
  * Joi错误提取工具
@@ -436,7 +437,7 @@ export class ChatController {
         operation: 'recordGeoSnapshot',
         agentId,
       });
-      console.warn('[ChatController] 记录地域分析失败:', typedError.message);
+      logger.warn('[ChatController] 记录地域分析失败', { error: typedError.message });
     }
   }
 
@@ -485,7 +486,7 @@ export class ChatController {
         sessionId,
         agentId,
       });
-      console.warn('[ChatController] 记录用户消息失败:', typedError.message);
+      logger.warn('[ChatController] 记录用户消息失败', { error: typedError.message });
     }
   }
 
@@ -571,7 +572,7 @@ export class ChatController {
         voiceNote
       );
 
-      console.log('🧪 [chatCompletions] 入参(归一化): ', {
+      logger.debug('🧪 [chatCompletions] 入参(归一化)', {
         agentId,
         stream,
         options: normalizedOptions,
@@ -613,7 +614,7 @@ export class ChatController {
         method: req.method,
       });
 
-      console.error('聊天请求处理失败:', typedError);
+      logger.error('聊天请求处理失败', { error: typedError });
 
       // 如果响应头已发送（流式响应中），不能再发送JSON响应
       if (res.headersSent) {
@@ -674,7 +675,7 @@ export class ChatController {
           sessionId,
           agentId,
         });
-        console.warn('[ChatController] 记录助手消息失败:', typedError.message);
+        logger.warn('[ChatController] 记录助手消息失败', { error: typedError.message });
       }
 
       res.json({
@@ -690,7 +691,7 @@ export class ChatController {
         agentId,
       });
 
-      console.error('普通聊天请求失败:', typedError.message);
+      logger.error('普通聊天请求失败', { error: typedError.message });
 
       // 检查是否是降级响应
       if (typeof unknownError === 'object' && unknownError !== null && 'fallbackUsed' in unknownError) {
@@ -734,7 +735,7 @@ export class ChatController {
         extendedRes.flushHeaders();
       }
 
-      console.log('🚀 开始处理流式请求，智能体:', agentId);
+      logger.debug('🚀 开始处理流式请求', { agentId });
 
       // 发送初始化事件
       this.sendSSEEvent(res, 'chatId', { chatId: sessionId } as JsonValue);
@@ -752,18 +753,18 @@ export class ChatController {
         messages,
         // 内容回调 - 确保正确调用
         (chunk: string) => {
-          console.log('📨 收到内容块:', chunk.substring(0, 50));
+          logger.debug('📨 收到内容块', { preview: chunk.substring(0, 50) });
           assistantContent += chunk;
           this.sendSSEEvent(res, 'chunk', { content: chunk } as JsonValue);
         },
         // 状态回调 - 确保正确调用
         (status: StreamStatus) => {
-          console.log('📊 收到状态更新:', status);
+          logger.debug('📊 收到状态更新', { status });
           this.sendSSEEvent(res, 'status', DynamicDataConverter.toSafeJsonValue(status));
 
           // 如果是完成或错误状态，结束响应
           if (status.type === 'complete' || status.type === 'error') {
-            console.log('✅ 流式响应完成');
+            logger.debug('✅ 流式响应完成');
             this.sendSSEEvent(res, 'end', {
               timestamp: new Date().toISOString(),
             } as JsonValue);
@@ -776,7 +777,7 @@ export class ChatController {
           if (!eventName) return;
 
           if (eventName === 'interactive') {
-            console.log('🧩 收到交互节点事件 interactive，payload 预览:',
+            logger.debug('🧩 收到交互节点事件 interactive', { payloadPreview:
               (() => { try { return JSON.stringify(data).slice(0, 300); } catch { return '[Unserializable payload]'; } })()
             );
             this.sendSSEEvent(res, 'interactive', DynamicDataConverter.toSafeJsonValue(data));
@@ -784,12 +785,12 @@ export class ChatController {
           }
 
           if (eventName === 'chatId') {
-            console.log('🆔 透传本次使用的 chatId:', (data && (data.chatId || data.id)) || data);
+            logger.debug('🆔 透传本次使用的 chatId', { chatId: (data && (data.chatId || data.id)) || data });
             this.sendSSEEvent(res, 'chatId', DynamicDataConverter.toSafeJsonValue(data));
             return;
           }
 
-          console.log('📎 透传 FastGPT 事件:', eventName);
+          logger.debug('📎 透传 FastGPT 事件', { eventName });
           this.sendSSEEvent(res, eventName, DynamicDataConverter.toSafeJsonValue(data));
         },
         protectionContext
@@ -813,7 +814,7 @@ export class ChatController {
             sessionId,
             agentId,
           });
-          console.warn('[ChatController] 记录流式助手消息失败:', typedError.message);
+          logger.warn('[ChatController] 记录流式助手消息失败', { error: typedError.message });
         }
       }
     } catch (unknownError) {
@@ -824,7 +825,7 @@ export class ChatController {
         agentId,
       });
 
-      console.error('❌ 流式聊天请求失败:', typedError.message);
+      logger.error('❌ 流式聊天请求失败', { error: typedError.message });
 
       // 检查是否是降级响应
       if (typeof unknownError === 'object' && unknownError !== null && 'fallbackUsed' in unknownError) {
@@ -860,7 +861,7 @@ export class ChatController {
         operation: 'sendSSEEvent',
         context: { event, dataType: typeof data },
       });
-      console.error('发送SSE事件失败:', typedError.message);
+      logger.error('发送SSE事件失败', { error: typedError.message });
     }
   }
 
@@ -884,7 +885,7 @@ export class ChatController {
 
       const { appId, chatId, stream } = value;
 
-      console.log(`🚀 处理聊天初始化请求: appId=${appId}, chatId=${chatId}, stream=${stream}`);
+      logger.debug('🚀 处理聊天初始化请求', { appId, chatId, stream });
 
       // 检查智能体是否存在且激活
       const agent = await this.agentService.getAgent(appId);
@@ -925,7 +926,7 @@ export class ChatController {
         method: req.method,
       });
 
-      console.error('聊天初始化请求处理失败:', typedError.message);
+      logger.error('聊天初始化请求处理失败', { error: typedError.message });
 
       // 如果响应头已发送（流式响应中），不能再发送JSON响应
       if (res.headersSent) {
@@ -998,8 +999,8 @@ export class ChatController {
         extendedRes.flushHeaders();
       }
 
-      console.log('🚀 开始处理流式初始化请求，应用:', appId);
-      console.log('ℹ️ 初始化流仅包含 start/chunk/complete/end 事件，不包含 interactive 事件');
+      logger.debug('🚀 开始处理流式初始化请求', { appId });
+      logger.debug('ℹ️ 初始化流仅包含 start/chunk/complete/end 事件，不包含 interactive 事件');
 
       // 发送初始化事件
       this.sendSSEEvent(res, 'start', {
@@ -1020,7 +1021,7 @@ export class ChatController {
         },
         // 完成回调 - 返回完整初始化数据
         (initData) => {
-          console.log('✅ 初始化数据获取完成');
+          logger.debug('✅ 初始化数据获取完成');
           this.sendSSEEvent(res, 'complete', DynamicDataConverter.toSafeJsonValue({
             data: initData,
             timestamp: new Date().toISOString()
@@ -1037,7 +1038,7 @@ export class ChatController {
             operation: 'initDataStream',
             context: { appId, chatId },
           });
-          console.error('❌ 初始化流式处理失败:', typedError.message);
+          logger.error('❌ 初始化流式处理失败', { error: typedError.message });
           this.sendSSEEvent(res, 'error', {
             code: typedError.code,
             message: typedError.message,
@@ -1058,7 +1059,7 @@ export class ChatController {
         method: res.req?.method,
         context: { appId, chatId },
       });
-      console.error('❌ 流式初始化请求处理失败:', typedError.message);
+      logger.error('❌ 流式初始化请求处理失败', { error: typedError.message });
 
       if (!res.headersSent) {
         const apiError = typedError.toApiError();
@@ -1118,7 +1119,7 @@ export class ChatController {
         url: req.originalUrl,
         method: req.method,
       });
-      console.error('提交点赞/点踩反馈失败:', typedError.message);
+      logger.error('提交点赞/点踩反馈失败', { error: typedError.message });
 
       const apiError = typedError.toApiError();
       let status = this.getErrorStatusCode(typedError);
@@ -1216,7 +1217,7 @@ export class ChatController {
         url: req.originalUrl,
         method: req.method,
       });
-      console.error('获取聊天历史列表失败:', typedError.message);
+      logger.error('获取聊天历史列表失败', { error: typedError.message });
 
       const apiError = typedError.toApiError();
       let status = this.getErrorStatusCode(typedError);
@@ -1310,7 +1311,7 @@ export class ChatController {
         timestamp: new Date().toISOString(),
       });
     } catch (err: unknown) {
-      console.error('获取聊天历史失败:', err);
+      logger.error('获取聊天历史失败', { error: err });
       const apiError: ApiError = {
         code: 'GET_HISTORY_FAILED',
         message: err instanceof Error ? err.message : '获取聊天历史失败',
@@ -1373,7 +1374,7 @@ export class ChatController {
 
       res.json({ success: true, data: null, timestamp: new Date().toISOString() });
     } catch (err: unknown) {
-      console.error('删除聊天历史失败:', err);
+      logger.error('删除聊天历史失败', { error: err });
       const apiError: ApiError = {
         code: 'DELETE_HISTORY_FAILED',
         message: err instanceof Error ? err.message : '删除聊天历史失败',
@@ -1413,7 +1414,7 @@ export class ChatController {
         operation: 'ensureUploadDirectory',
         context: { uploadDir: this.uploadDir },
       });
-      console.warn('[ChatController] 创建上传目录失败:', typedError.message);
+      logger.warn('[ChatController] 创建上传目录失败', { error: typedError.message });
     }
   }
 
@@ -1482,7 +1483,7 @@ export class ChatController {
         url: req.originalUrl,
         method: req.method,
       });
-      console.error('[ChatController] 上传附件失败:', typedError.message);
+      logger.error('[ChatController] 上传附件失败', { error: typedError.message });
       const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
@@ -1512,7 +1513,7 @@ export class ChatController {
 
       res.json({ success: true, data: null, timestamp: new Date().toISOString() });
     } catch (err: unknown) {
-      console.error('清空聊天历史失败:', err);
+      logger.error('清空聊天历史失败', { error: err });
       const apiError: ApiError = {
         code: 'CLEAR_HISTORY_FAILED',
         message: err instanceof Error ? err.message : '清空聊天历史失败',
@@ -1605,7 +1606,7 @@ export class ChatController {
         method: req.method,
         context: { stream, sessionId: chatId, agentId },
       });
-      console.error('重新生成聊天消息失败:', typedError.message);
+      logger.error('重新生成聊天消息失败', { error: typedError.message });
 
       if (stream && res.headersSent) {
         this.sendSSEEvent(res, 'error', {

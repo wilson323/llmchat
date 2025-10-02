@@ -3,6 +3,8 @@
  * 实现智能重试机制、优雅降级和请求去重
  */
 
+import logger from '@/utils/logger';
+
 export interface RetryConfig {
   maxRetries: number;                    // 最大重试次数
   baseDelay: number;                     // 基础延迟时间（毫秒）
@@ -72,7 +74,7 @@ export class RequestDeduplicator {
       this.cleanup();
     }, this.config.deduplicationWindow);
 
-    console.info('请求去重器初始化完成', {
+    logger.info('请求去重器初始化完成', {
       enabled: this.config.enabled,
       deduplicationWindow: this.config.deduplicationWindow,
       maxConcurrentRequests: this.config.maxConcurrentRequests
@@ -93,7 +95,7 @@ export class RequestDeduplicator {
     // 检查是否已有相同请求在进行
     const existingRequest = this.pendingRequests.get(key);
     if (existingRequest) {
-      console.debug(`请求去重: ${key}，复用现有请求`);
+      logger.debug('请求去重，复用现有请求', { key });
       return existingRequest;
     }
 
@@ -179,7 +181,7 @@ export class RequestDeduplicator {
     }
 
     if (cleanedMetrics > 0) {
-      console.debug(`清理了 ${cleanedMetrics} 个过期的请求指标`);
+      logger.debug('清理过期的请求指标', { count: cleanedMetrics });
     }
   }
 
@@ -246,7 +248,7 @@ export class RetryService {
       this.retryConfig.retryableStatusCodes = [408, 429, 500, 502, 503, 504];
     }
 
-    console.info('重试服务初始化完成', {
+    logger.info('重试服务初始化完成', {
       maxRetries: this.retryConfig.maxRetries,
       baseDelay: this.retryConfig.baseDelay,
       fallbackEnabled: this.fallbackConfig.enabled
@@ -270,7 +272,7 @@ export class RetryService {
 
         // 成功时记录指标
         const duration = Date.now() - startTime;
-        console.debug(`请求成功`, {
+        logger.debug('请求成功', {
           context,
           attempt: attempt + 1,
           duration,
@@ -299,7 +301,7 @@ export class RetryService {
         // 调用重试回调
         this.retryConfig.onRetry?.(attempt + 1, lastError, delay);
 
-        console.warn(`请求失败，准备重试`, {
+        logger.warn('请求失败，准备重试', {
           context,
           attempt: attempt + 1,
           maxRetries: this.retryConfig.maxRetries + 1,
@@ -327,7 +329,7 @@ export class RetryService {
 
     // 重试失败且无降级处理
     const duration = Date.now() - startTime;
-    console.error(`请求最终失败`, {
+    logger.error('请求最终失败', {
       context,
       totalAttempts: this.retryConfig.maxRetries + 1,
       duration,
@@ -427,7 +429,7 @@ export class RetryService {
    * 执行降级处理
    */
   private async executeFallback<T>(error: Error): Promise<T> {
-    console.warn(`执行降级处理`, {
+    logger.warn('执行降级处理', {
       error: error.message,
       fallbackProvider: this.fallbackConfig.fallbackProvider
     });
@@ -438,7 +440,7 @@ export class RetryService {
       const cached = this.fallbackCache.get(cacheKey);
 
       if (cached && (Date.now() - cached.timestamp) < this.fallbackConfig.cacheTTL) {
-        console.debug('使用缓存的降级响应');
+        logger.debug('使用缓存的降级响应');
         return cached.data;
       }
     }

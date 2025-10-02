@@ -111,7 +111,7 @@ export class PerformanceMonitor {
       this.collectMetrics();
     }, 60000);
 
-    console.info('性能监控器启动');
+    logger.info('性能监控器启动');
   }
 
   /**
@@ -225,22 +225,22 @@ export class PerformanceMonitor {
   private checkThresholdAlerts(metrics: PerformanceMetrics): void {
     // CPU使用率告警
     if (metrics.cpu.usage > 80) {
-      console.warn(`CPU使用率过高: ${metrics.cpu.usage.toFixed(2)}%`);
+      logger.warn('CPU使用率过高', { usage: `${metrics.cpu.usage.toFixed(2)}%` });
     }
 
     // 内存使用率告警
     if (metrics.memory.usagePercentage > 85) {
-      console.warn(`内存使用率过高: ${metrics.memory.usagePercentage.toFixed(2)}%`);
+      logger.warn('内存使用率过高', { usage: `${metrics.memory.usagePercentage.toFixed(2)}%` });
     }
 
     // 错误率告警
     if (metrics.errors.rate > 10) {
-      console.warn(`错误率过高: ${metrics.errors.rate.toFixed(2)}%`);
+      logger.warn('错误率过高', { rate: `${metrics.errors.rate.toFixed(2)}%` });
     }
 
     // 响应时间告警
     if (metrics.requests.averageResponseTime > 5000) {
-      console.warn(`平均响应时间过长: ${metrics.requests.averageResponseTime}ms`);
+      logger.warn('平均响应时间过长', { responseTime: `${metrics.requests.averageResponseTime}ms` });
     }
   }
 
@@ -272,7 +272,7 @@ export class AlertManager {
 
   constructor() {
     this.initializeDefaultRules();
-    console.info('告警管理器启动');
+    logger.info('告警管理器启动');
   }
 
   /**
@@ -342,7 +342,7 @@ export class AlertManager {
    */
   addRule(rule: AlertRule): void {
     this.rules.set(rule.id, rule);
-    console.info(`添加告警规则: ${rule.name}`);
+    logger.info('添加告警规则', { ruleName: rule.name });
   }
 
   /**
@@ -423,7 +423,7 @@ export class AlertManager {
     // 发送告警通知
     this.sendAlert(alert, rule);
 
-    console.warn(`告警触发: ${rule.name}`, {
+    logger.warn('告警触发', { ruleName: rule.name,
       message: alert.message,
       severity: rule.severity,
       metricValue,
@@ -443,7 +443,7 @@ export class AlertManager {
       alert.resolved = true;
       alert.resolvedAt = new Date();
 
-      console.info(`告警已解决: ${rule.name}`, {
+      logger.info('告警已解决', { ruleName: rule.name,
         alertId: alert.id,
         duration: alert.resolvedAt.getTime() - alert.timestamp.getTime()
       });
@@ -459,7 +459,7 @@ export class AlertManager {
 
       switch (channel.type) {
         case 'console':
-          console.error(`🚨 ${alert.ruleName} [${alert.severity.toUpperCase()}]`, alert.message);
+          logger.error(`🚨 ${alert.ruleName} [${alert.severity.toUpperCase()}]`, { message: alert.message });
           break;
         case 'webhook':
           this.sendWebhookAlert(channel.config, alert);
@@ -489,10 +489,10 @@ export class AlertManager {
       });
 
       if (!response.ok) {
-        console.error('Webhook告警发送失败:', response.statusText);
+        logger.error('Webhook告警发送失败', { status: response.statusText });
       }
     } catch (error) {
-      console.error('Webhook告警发送异常:', error);
+      logger.error('Webhook告警发送异常', { error });
     }
   }
 
@@ -501,7 +501,7 @@ export class AlertManager {
    */
   private sendEmailAlert(config: any, alert: Alert): void {
     // 这里应该实现邮件发送逻辑
-    console.info('邮件告警功能待实现', { alert, config });
+    logger.info('邮件告警功能待实现', { alert, config });
   }
 
   /**
@@ -509,7 +509,7 @@ export class AlertManager {
    */
   private sendSlackAlert(config: any, alert: Alert): void {
     // 这里应该实现Slack通知逻辑
-    console.info('Slack告警功能待实现', { alert, config });
+    logger.info('Slack告警功能待实现', { alert, config });
   }
 
   /**
@@ -552,7 +552,7 @@ export class SLAMonitor {
       this.updateSLAMetrics();
     }, 60000);
 
-    console.info('SLA监控器启动');
+    logger.info('SLA监控器启动');
   }
 
   /**
@@ -658,7 +658,7 @@ export class SystemHealthChecker {
       this.checkSystemHealth();
     }, 60000);
 
-    console.info('系统健康检查器启动');
+    logger.info('系统健康检查器启动');
   }
 
   /**
@@ -737,7 +737,7 @@ export class SystemHealthChecker {
     };
 
     if (status !== 'healthy') {
-      console.warn(`系统健康状态: ${status}`, {
+      logger.warn('系统健康状态', { status,
         score,
         components,
         activeAlerts: activeAlerts.length
@@ -776,7 +776,7 @@ export class MonitoringService {
       rateLimitService
     );
 
-    console.info('监控服务启动完成');
+    logger.info('监控服务启动完成');
   }
 
   /**
