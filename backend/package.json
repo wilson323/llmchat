@@ -12,7 +12,11 @@
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "validate-config": "ts-node -r tsconfig-paths/register scripts/validate-config.ts"
+    "validate-config": "ts-node -r tsconfig-paths/register scripts/validate-config.ts",
+    "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate.ts",
+    "migrate:up": "npm run migrate up",
+    "migrate:down": "npm run migrate down",
+    "migrate:status": "npm run migrate status"
   },
   "dependencies": {
     "@llmchat/shared-types": "workspace:*",

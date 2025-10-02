@@ -156,6 +156,39 @@ llmchat/
 - 健康检查：`GET /health`
 - 优雅关闭：处理 SIGTERM/SIGINT，关闭 HTTP 与 DB 连接
 
+### 数据库迁移
+
+项目使用版本化的数据库迁移系统管理 PostgreSQL schema:
+
+```bash
+cd backend
+
+# 查看迁移状态
+npm run migrate:status
+
+# 执行所有待执行的迁移
+npm run migrate:up
+
+# 回滚最后一次迁移
+npm run migrate:down
+```
+
+详细说明请参阅 [DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md)
+
+### 数据存储架构
+
+**重要**: LLMChat 采用**混合存储架构**：
+- **第三方智能体**（FastGPT、Dify）- 消息内容由其平台管理，本地仅存储会话元数据
+- **自研智能体**（语音电话、产品预览）- 消息内容存储在本地数据库
+
+这种设计的优势：
+- ✅ 遵循数据所有权原则，避免重复存储
+- ✅ 降低存储成本和数据库压力
+- ✅ 简化GDPR合规要求（用户数据删除）
+- ✅ 保持自研功能的完整性
+
+详细说明请参阅 [ARCHITECTURE_DATA_STORAGE.md](docs/ARCHITECTURE_DATA_STORAGE.md)
+
 ### API 前缀与路由
 
 所有业务接口均以 `/api` 为前缀：
