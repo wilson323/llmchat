@@ -8,6 +8,7 @@ import { CircuitBreakerManager, CircuitBreakerConfig, CircuitState } from './Cir
 import { MultiDimensionRateLimiter, RateLimitConfig } from './RateLimitService';
 import { RetryService, RetryConfig, FallbackConfig, RequestDeduplicationConfig } from './RetryService';
 import { MonitoringService } from './MonitoringService';
+import logger from '@/utils/logger';
 
 export interface ProtectionConfig {
   circuitBreaker: CircuitBreakerConfig;
@@ -97,7 +98,7 @@ export class ProtectionService {
       this.multiDimensionRateLimiter
     );
 
-    console.info('保护服务初始化完成', {
+    logger.info('保护服务初始化完成', {
       circuitBreaker: this.config.circuitBreaker,
       rateLimit: this.config.rateLimit,
       retry: this.config.retry,
@@ -129,7 +130,7 @@ export class ProtectionService {
         this.config.circuitBreaker,
         {
           onFailure: (err, metrics) => {
-            console.warn(`熔断器触发`, {
+            logger.warn('熔断器触发', {
               agentId: context.agentId,
               error: err.message,
               state: metrics.state,
@@ -137,7 +138,7 @@ export class ProtectionService {
             });
           },
           onSuccess: (responseTime, metrics) => {
-            console.debug(`熔断器请求成功`, {
+            logger.debug('熔断器请求成功', {
               agentId: context.agentId,
               responseTime,
               state: metrics.state
@@ -275,7 +276,7 @@ export class ProtectionService {
           return chatHandler(req, res);
         });
       } catch (error) {
-        console.error('受保护请求失败:', {
+        logger.error('受保护请求失败', {
           requestId: context.requestId,
           agentId: context.agentId,
           error: (error as Error).message

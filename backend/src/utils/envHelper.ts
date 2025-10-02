@@ -3,6 +3,8 @@
  * 提供安全的环境变量替换和验证功能
  */
 
+import logger from '@/utils/logger';
+
 /**
  * 替换字符串中的环境变量占位符
  * 支持 ${VARIABLE_NAME} 格式的占位符
@@ -18,7 +20,7 @@ export function replaceEnvVariables(input: string, defaultValue?: string): strin
         return defaultValue;
       }
       // 如果没有默认值，返回原始占位符（保持向后兼容）
-      console.warn(`环境变量未定义: ${envVar}`);
+      logger.warn('环境变量未定义', { envVar });
       return match;
     }
     return value;

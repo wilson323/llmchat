@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { AgentConfigService } from './AgentConfigService';
+import logger from '@/utils/logger';
 import {
   AgentConfig,
   ChatMessage,
@@ -616,7 +617,7 @@ export class FastGPTSessionService {
       };
     } catch (error) {
       // 如果增强API不可用，回退到基础API并应用本地处理
-      console.warn('增强版会话API不可用，使用基础API + 本地处理:', error);
+      logger.warn('增强版会话API不可用，使用基础API + 本地处理', { error });
       const allSessions = await this.listHistories(agentId, { page: 1, pageSize: 1000 });
       return this.applyLocalFilteringAndPagination(allSessions, params);
     }
@@ -785,7 +786,7 @@ export class FastGPTSessionService {
         results.failed++;
         const errorMsg = `会话 ${sessionId} 操作失败: ${getErrorMessage(error)}`;
         results.errors.push(errorMsg);
-        console.error(errorMsg);
+        logger.error(errorMsg);
       }
     }
 
@@ -806,7 +807,7 @@ export class FastGPTSessionService {
     // 这里需要根据FastGPT的具体API来实现
     // 由于当前API可能不直接支持标签操作，可以使用updateUserFeedback的变体
     // 或者通过其他API端点来实现
-    console.log(`为会话 ${sessionId} 添加标签:`, tags);
+    logger.debug('为会话添加标签', { sessionId, tags });
     // 实际实现需要调用相应的FastGPT API
   }
 
@@ -818,7 +819,7 @@ export class FastGPTSessionService {
     sessionId: string,
     tags: string[]
   ): Promise<void> {
-    console.log(`从会话 ${sessionId} 移除标签:`, tags);
+    logger.debug('从会话移除标签', { sessionId, tags });
     // 实际实现需要调用相应的FastGPT API
   }
 
@@ -906,9 +907,9 @@ export class FastGPTSessionService {
         try {
           // 这里需要获取会话详情，但需要知道agentId
           // 暂时跳过，实际实现时需要传入agentId
-          console.log(`获取会话 ${session.chatId} 的详细消息`);
+          logger.debug('获取会话的详细消息', { chatId: session.chatId });
         } catch (error) {
-          console.warn(`获取会话 ${session.chatId} 消息失败:`, error);
+          logger.warn('获取会话消息失败', { chatId: session.chatId, error });
         }
       }
 
@@ -1003,7 +1004,7 @@ export class FastGPTSessionService {
         context
       );
     } catch (error) {
-      console.error('记录会话事件失败:', error);
+      logger.error('记录会话事件失败', { error });
       // 事件记录失败不应该影响主要功能
     }
   }
@@ -1018,7 +1019,7 @@ export class FastGPTSessionService {
     try {
       return await this.eventService.queryEvents(agentId, params);
     } catch (error) {
-      console.error('查询会话事件失败:', error);
+      logger.error('查询会话事件失败', { error });
       // 返回空结果而不是抛出错误
       return {
         data: [],

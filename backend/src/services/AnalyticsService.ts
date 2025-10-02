@@ -2,6 +2,7 @@ import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { geoService } from '@/services/GeoService';
 import { withMongo, ObjectId } from '@/utils/mongo';
+import logger from '@/utils/logger';
 
 export interface ProvinceHeatmapPoint {
   province: string;
@@ -95,7 +96,7 @@ export class AnalyticsService {
         );
       });
     } catch (error) {
-      console.warn('[AnalyticsService] recordAgentRequest failed:', error);
+      logger.warn('[AnalyticsService] recordAgentRequest failed', { error });
     }
   }
 
@@ -247,7 +248,7 @@ export class AnalyticsService {
           agentsWithActivity.add(agentKey);
         });
       } catch (error) {
-        console.warn('[AnalyticsService] Mongo 聚合失败，回退到 PostgreSQL 统计:', error);
+        logger.warn('[AnalyticsService] Mongo 聚合失败，回退到 PostgreSQL 统计', { error });
       }
     }
 
@@ -384,7 +385,7 @@ export class AnalyticsService {
           countMap.set(agent.id, (countMap.get(agent.id) ?? 0) + count);
         });
       } catch (error) {
-        console.warn('[AnalyticsService] Mongo 聚合失败，使用 PostgreSQL 计数:', error);
+        logger.warn('[AnalyticsService] Mongo 聚合失败，使用 PostgreSQL 计数', { error });
       }
     }
 

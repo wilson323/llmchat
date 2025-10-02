@@ -3,6 +3,8 @@
  * 实现三种状态：CLOSED、OPEN、HALF_OPEN
  */
 
+import logger from '@/utils/logger';
+
 export enum CircuitState {
   CLOSED = 'CLOSED',     // 正常状态，允许请求通过
   OPEN = 'OPEN',         // 熔断状态，拒绝所有请求
@@ -185,18 +187,18 @@ export class CircuitBreaker {
         this.nextAttempt = Date.now() + this.config.resetTimeout;
         this.circuitOpenCount++;
         this.metrics.circuitOpenCount = this.circuitOpenCount;
-        console.warn(`熔断器 ${this.name} 打开，下次尝试时间: ${new Date(this.nextAttempt).toISOString()}`);
+        logger.warn('熔断器打开', { name: this.name, nextAttemptTime: new Date(this.nextAttempt).toISOString() });
         break;
 
       case CircuitState.CLOSED:
         this.failureCount = 0;
         this.successCount = 0;
-        console.info(`熔断器 ${this.name} 关闭，恢复正常服务`);
+        logger.info('熔断器关闭，恢复正常服务', { name: this.name });
         break;
 
       case CircuitState.HALF_OPEN:
         this.successCount = 0;
-        console.info(`熔断器 ${this.name} 进入半开状态，开始测试服务`);
+        logger.info('熔断器进入半开状态，开始测试服务', { name: this.name });
         break;
     }
 

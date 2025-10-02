@@ -11,6 +11,7 @@ import { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
 import { getProtectionService, ProtectedRequestContext } from './ProtectionService';
+import logger from '@/utils/logger';
 import {
   getNormalizedEventKey,
   isChatIdEvent,
@@ -79,7 +80,7 @@ export class FastGPTProvider implements AIProvider {
       });
     }
 
-    console.log('FastGPT 请求数据:', JSON.stringify(request, null, 2));
+    logger.debug('FastGPT 请求数据', { request });
     return request;
   }
 
@@ -347,7 +348,7 @@ export class ChatProxyService {
         return await protectedOperation();
       }
     } catch (error) {
-      console.error(`智能体 ${agentId} 请求失败:`, error);
+      logger.error('智能体请求失败', { agentId, error });
       throw new Error(`智能体请求失败: ${getErrorMessage(error)}`);
     }
   }
@@ -444,7 +445,7 @@ export class ChatProxyService {
         await protectedOperation();
       }
     } catch (error) {
-      console.error(`智能体 ${agentId} 流式请求失败:`, error);
+      logger.error('智能体流式请求失败', { agentId, error });
       onStatus?.({
         type: 'error',
         status: 'error',
@@ -587,7 +588,7 @@ export class ChatProxyService {
       try {
         onEvent(name, data);
       } catch (emitError) {
-        console.warn('事件回调执行失败:', emitError);
+        logger.warn('事件回调执行失败', { error: emitError });
       }
     };
 
@@ -702,7 +703,7 @@ export class ChatProxyService {
       let buffer = '';
       let completed = false;
 
-      console.log('开始处理流式响应，提供商:', config.provider);
+      logger.debug('开始处理流式响应', { provider: config.provider });
 
       const flushEventBlock = (rawBlock: string) => {
         const parsed = this.parseSSEEventBlock(rawBlock.replace(/\r/g, ''));
@@ -720,7 +721,7 @@ export class ChatProxyService {
             return;
           }
           completed = true;
-          console.log('流式响应完成 [DONE]');
+          logger.debug('流式响应完成 [DONE]');
           this.logStreamEvent(ctx, 'complete', { done: true });
           onStatus?.({ type: 'complete', status: 'completed' });
           resolve();
@@ -734,7 +735,7 @@ export class ChatProxyService {
             try {
               payload = JSON.parse(rawData);
             } catch (parseError) {
-              console.warn('解析 SSE 数据失败:', parseError, '原始数据:', rawData);
+              logger.warn('解析 SSE 数据失败', { parseError, rawData });
               payload = rawData;
             }
           }
@@ -767,7 +768,7 @@ export class ChatProxyService {
 
         if (!completed) {
           completed = true;
-          console.log('流式响应结束');
+          logger.debug('流式响应结束');
           this.logStreamEvent(ctx, 'complete', { ended: true });
           onStatus?.({ type: 'complete', status: 'completed' });
           resolve();
@@ -775,7 +776,7 @@ export class ChatProxyService {
       });
 
       stream.on('error', (error: Error) => {
-        console.error('流式响应错误:', error);
+        logger.error('流式响应错误', { error });
         this.logStreamEvent(ctx, 'error', { message: error.message });
         onStatus?.({ type: 'error', status: 'error', error: error.message });
         if (!completed) {

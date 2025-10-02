@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { stripJsonComments } from './config';
+import logger from '@/utils/logger';
 
 export interface LoggingExporterConfig {
   type: 'http' | 'elasticsearch' | 'clickhouse';
@@ -54,7 +55,7 @@ export function loadAppConfig(): AppConfig {
       const stripped = stripJsonComments(raw);
       return JSON.parse(stripped) as AppConfig;
     } catch (error) {
-      console.warn('[AppConfig] Failed to parse configuration:', file, error);
+      logger.warn('[AppConfig] Failed to parse configuration', { file, error });
     }
   }
   return {};
@@ -90,7 +91,7 @@ function parseHeadersEnv(headers?: string | null): Record<string, string> | unde
       }, {});
     }
   } catch (error) {
-    console.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env:', error);
+    logger.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env', { error });
   }
   return undefined;
 }

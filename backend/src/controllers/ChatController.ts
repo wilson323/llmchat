@@ -777,9 +777,11 @@ export class ChatController {
           if (!eventName) return;
 
           if (eventName === 'interactive') {
-            logger.debug('🧩 收到交互节点事件 interactive', { payloadPreview:
-              (() => { try { return JSON.stringify(data).slice(0, 300); } catch { return '[Unserializable payload]'; } })()
-            );
+            let payloadPreview = '[Unserializable]';
+            try {
+              payloadPreview = JSON.stringify(data).slice(0, 300);
+            } catch { /* ignored */ }
+            logger.debug('🧩 收到交互节点事件 interactive', { payloadPreview });
             this.sendSSEEvent(res, 'interactive', DynamicDataConverter.toSafeJsonValue(data));
             return;
           }
@@ -1016,7 +1018,6 @@ export class ChatController {
         chatId,
         // 内容回调 - 流式输出开场白
         (chunk: string) => {
-          // console.log('📨 收到开场白内容块:', chunk.substring(0, 20));
           this.sendSSEEvent(res, 'chunk', { content: chunk } as JsonValue);
         },
         // 完成回调 - 返回完整初始化数据

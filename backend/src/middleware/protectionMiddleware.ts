@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
 import { createErrorFromUnknown } from '@/types/errors';
+import logger from '@/utils/logger';
 import { JsonValue } from '@/types/dynamic';
 
 /**
@@ -45,7 +46,7 @@ export function protectionMiddleware() {
         url: req.originalUrl,
         method: req.method,
       });
-      console.error('保护中间件错误:', typedError.message);
+      logger.error('保护中间件错误', { error: typedError.message });
       // 出错时继续处理请求，避免影响正常服务
       next();
     }
@@ -114,7 +115,7 @@ export function protectedApiMiddleware() {
         method: req.method,
         context: { context: context?.requestId },
       });
-      console.error('受保护API中间件错误:', typedError.message);
+      logger.error('受保护API中间件错误', { error: typedError.message });
       // 出错时继续处理请求
       next();
     }
@@ -164,7 +165,7 @@ export function protectedChatMiddleware() {
         method: req.method,
         context: { requestId: context.requestId, agentId: context.agentId },
       });
-      console.error('受保护聊天中间件错误:', {
+      logger.error('受保护聊天中间件错误', {
         requestId: context.requestId,
         agentId: context.agentId,
         error: typedError.message
@@ -278,7 +279,7 @@ async function checkRateLimit(req: Request, protectionService: { multiDimensionR
       operation: 'checkRateLimit',
       context: { ip: req.ip, method: req.method, path: req.path },
     });
-    console.error('限流检查失败:', typedError.message);
+    logger.error('限流检查失败', { error: typedError.message });
     // 出错时允许请求通过
     return { allowed: true };
   }
@@ -311,7 +312,7 @@ function checkCircuitBreakerHealth(agentId: string, protectionService: { circuit
       operation: 'checkCircuitBreakerHealth',
       context: { agentId },
     });
-    console.error('熔断器健康检查失败:', typedError.message);
+    logger.error('熔断器健康检查失败', { error: typedError.message });
     // 出错时假设健康
     return { healthy: true, message: '健康检查异常' };
   }

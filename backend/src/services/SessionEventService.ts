@@ -5,6 +5,7 @@ import {
   EventQueryParams,
   PaginatedResponse
 } from '@/types';
+import logger from '@/utils/logger';
 
 /**
  * 会话事件追踪服务
@@ -75,7 +76,7 @@ export class SessionEventService {
       agentEvents.splice(0, excessCount);
     }
 
-    console.log(`[事件记录] Agent: ${agentId}, Session: ${sessionId}, Type: ${eventType}`);
+    logger.debug('[事件记录]', { agentId, sessionId, eventType });
 
     return event;
   }
@@ -274,7 +275,7 @@ export class SessionEventService {
     const deletedCount = originalCount - filteredEvents.length;
 
     if (deletedCount > 0) {
-      console.log(`清理旧事件: Agent ${agentId}, 删除 ${deletedCount} 个事件`);
+      logger.debug('清理旧事件', { agentId, deletedCount });
     }
 
     return deletedCount;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '@/types';
+import logger from '@/utils/logger';
 import { createErrorFromUnknown, BaseError } from '@/types/errors';
 import { JsonValue, SafeAccess } from '@/types/dynamic';
 
@@ -33,7 +34,7 @@ export const errorHandler = (
   });
 
   // 结构化日志记录
-  console.error('统一错误处理:', {
+  logger.error('统一错误处理', {
     errorId: typedError.id,
     code: typedError.code,
     message: typedError.message,
@@ -204,10 +205,10 @@ export const logErrorEvent = (
   };
 
   if (error.severity === 'critical' || error.severity === 'high') {
-    console.error('🚨 高优先级错误:', logData);
+    logger.error('🚨 高优先级错误', logData);
   } else if (error.severity === 'medium') {
-    console.warn('⚠️ 中等优先级错误:', logData);
+    logger.warn('⚠️ 中等优先级错误', logData);
   } else {
-    console.info('ℹ️ 低优先级错误:', logData);
+    logger.info('ℹ️ 低优先级错误', logData);
   }
 };

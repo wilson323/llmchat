@@ -4,6 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import logger from '@/utils/logger';
 
 export interface RateLimitConfig {
   windowMs: number;        // 时间窗口（毫秒）
@@ -56,7 +57,7 @@ export class SlidingWindowRateLimiter {
       this.cleanup();
     }, this.config.windowMs);
 
-    console.info(`滑动窗口限流器 ${this.name} 初始化完成`, {
+    logger.info('滑动窗口限流器初始化完成', { name: this.name,
       windowMs: this.config.windowMs,
       maxRequests: this.config.maxRequests
     });
@@ -169,7 +170,7 @@ export class SlidingWindowRateLimiter {
     });
 
     if (cleanedCount > 0) {
-      console.debug(`限流器 ${this.name} 清理了 ${cleanedCount} 个过期条目`);
+      logger.debug('限流器清理过期条目', { name: this.name, count: cleanedCount });
     }
   }
 
@@ -395,7 +396,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
 
       next();
     } catch (error) {
-      console.error('限流中间件错误:', error);
+      logger.error('限流中间件错误', { error });
       // 出错时允许请求通过，避免影响正常服务
       next();
     }
@@ -453,7 +454,7 @@ export function createMultiDimensionRateLimitMiddleware(
 
       next();
     } catch (error) {
-      console.error('多维度限流中间件错误:', error);
+      logger.error('多维度限流中间件错误', { error });
       next();
     }
   };
