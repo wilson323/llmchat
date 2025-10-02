@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { authService } from '@/services/authInstance';
+import { logAudit } from '@/middleware/auditMiddleware';
+import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -13,9 +15,37 @@ export class AuthController {
         });
       }
       const result = await authService.login(username, password);
+      
+      // 记录审计日志 - 登录成功
+      await logAudit({
+        req,
+        action: AuditAction.LOGIN,
+        resourceType: ResourceType.USER,
+        resourceId: result.user?.id || username,
+        details: {
+          username,
+          role: result.user?.role,
+        },
+        status: AuditStatus.SUCCESS,
+      });
+      
       return res.json(result);
-    } catch (e: any) {
-      if (e?.message === 'INVALID_CREDENTIALS') {
+    } catch (e: unknown) {
+      const error = e as { message?: string };
+      
+      // 记录审计日志 - 登录失败
+      await logAudit({
+        req,
+        action: AuditAction.LOGIN_FAILED,
+        resourceType: ResourceType.USER,
+        details: {
+          username: req.body?.username,
+        },
+        status: AuditStatus.FAILURE,
+        errorMessage: error?.message || String(e),
+      });
+      
+      if (error?.message === 'INVALID_CREDENTIALS') {
         return res.status(401).json({
           code: 'UNAUTHORIZED',
           message: '用户名或密码错误',
@@ -55,8 +85,18 @@ export class AuthController {
       const auth = req.headers['authorization'];
       const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
       if (token) await authService.logout(token);
+      
+      // 记录审计日志 - 登出成功
+      await logAudit({
+        req,
+        action: AuditAction.LOGOUT,
+        resourceType: ResourceType.USER,
+        status: AuditStatus.SUCCESS,
+      });
+      
       return res.json({ ok: true });
     } catch (e) {
+      // 即使失败也返回成功（安全考虑）
       return res.json({ ok: true });
     }
   }

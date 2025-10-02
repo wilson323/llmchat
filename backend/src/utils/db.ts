@@ -110,6 +110,42 @@ export async function initDB(): Promise<void> {
       );
     `);
 
+    // 审计日志表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        user_id TEXT,
+        username TEXT,
+        action TEXT NOT NULL,
+        resource_type TEXT,
+        resource_id TEXT,
+        details JSONB,
+        ip_address TEXT,
+        user_agent TEXT,
+        status TEXT NOT NULL DEFAULT 'SUCCESS',
+        error_message TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // 审计日志索引
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (
         id TEXT PRIMARY KEY,

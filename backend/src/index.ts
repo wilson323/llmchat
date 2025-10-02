@@ -11,6 +11,7 @@ import { authRoutes } from '@/routes/auth';
 import { adminRoutes } from '@/routes/admin';
 import { productPreviewRoutes } from '@/routes/productPreview';
 import sessionRoutes from '@/routes/sessionRoutes';
+import auditRoutes from '@/routes/audit';
 import { errorHandler } from '@/middleware/errorHandler';
 import { requestLogger } from '@/middleware/requestLogger';
 import { rateLimiter } from '@/middleware/rateLimiter';
@@ -107,6 +108,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/product-preview', productPreviewRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/audit', auditRoutes); // 审计日志接口
 
 // 404处理
 app.use('*', (req, res) => {

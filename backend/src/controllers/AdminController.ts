@@ -4,6 +4,8 @@ import { authService } from '@/services/authInstance';
 import { withClient, hashPassword } from '@/utils/db';
 import { analyticsService } from '@/services/analyticsInstance';
 import logger from '@/utils/logger';
+import { logAudit } from '@/middleware/auditMiddleware';
+import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 
 // 使用全局单例的 authService（见 services/authInstance.ts）
 
