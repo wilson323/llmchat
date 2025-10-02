@@ -1,0 +1,10 @@
+---
+description: Zustand store 结构与最佳实践
+---
+# Zustand store 规范
+
+- 位置： [frontend/src/store](mdc:frontend/src/store)；每个域单独 slice，导出选择器。
+- 选择器：组件仅订阅必要字段；避免整 store 订阅；使用浅比较。
+- 持久化：仅持久化必要字段；版本化并提供迁移；敏感数据不持久化。
+- 异步流：在 store 内封装副作用，组件调用方法，不直接操作状态。
+- 类型：导出 Store 类型与选择器类型，避免 `any`；提供初始化状态工厂。

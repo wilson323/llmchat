@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 推送前执行类型检查与测试
+pnpm run type-check
+pnpm run test
+

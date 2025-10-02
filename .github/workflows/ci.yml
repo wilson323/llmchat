@@ -30,6 +30,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type check (TypeScript)
+        run: pnpm run type-check
+
+      - name: Setup Python
+        if: ${{ hashFiles('**/*.py') != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install mypy
+        if: ${{ hashFiles('**/*.py') != '' }}
+        run: pip install mypy
+
+      - name: Run mypy
+        if: ${{ hashFiles('**/*.py') != '' }}
+        run: mypy --config-file mypy.ini .
+
       - name: Lint backend
         run: pnpm run backend:lint
 

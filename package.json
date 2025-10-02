@@ -11,13 +11,15 @@
     "backend:build": "pnpm --filter @llmchat/backend run build",
     "frontend:build": "pnpm --filter @llmchat/frontend run build",
     "start": "pnpm --filter @llmchat/backend start",
+    "type-check": "pnpm --filter @llmchat/backend run type-check && pnpm --filter @llmchat/frontend run type-check",
     "test": "pnpm run backend:test && pnpm run frontend:test",
     "backend:test": "pnpm --filter @llmchat/backend run test",
     "frontend:test": "pnpm --filter @llmchat/frontend run test",
     "backend:lint": "pnpm --filter @llmchat/backend run lint",
     "frontend:lint": "pnpm --filter @llmchat/frontend run lint",
     "lint": "pnpm run backend:lint && pnpm run frontend:lint",
-    "lint:fix": "pnpm --filter @llmchat/backend run lint:fix && pnpm --filter @llmchat/frontend run lint:fix"
+    "lint:fix": "pnpm --filter @llmchat/backend run lint:fix && pnpm --filter @llmchat/frontend run lint:fix",
+    "prepare": "husky"
   },
   "keywords": [
     "llm",
@@ -33,7 +35,9 @@
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.55.1",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.10"
   },
   "workspaces": [
     "backend",
@@ -42,5 +46,9 @@
   ],
   "dependencies": {
     "date-fns": "^4.1.0"
+  },
+  "lint-staged": {
+    "*.ts": ["eslint --fix", "tsc --noEmit"],
+    "*.tsx": ["eslint --fix", "tsc --noEmit"]
   }
 }

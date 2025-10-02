@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint src/**/*.{ts,tsx}",
     "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "test": "echo \"前端暂未提供自动化测试\""
   },
   "dependencies": {
