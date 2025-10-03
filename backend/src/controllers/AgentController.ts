@@ -9,12 +9,25 @@ import { ApiError, AgentConfig } from '@/types';
 import logger from '@/utils/logger';
 import { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
+import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
   const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) throw new Error('UNAUTHORIZED');
+  if (!token) {
+    throw new AuthenticationError({
+      message: '未提供认证令牌',
+      code: 'UNAUTHORIZED'
+    });
+  }
   const user = await authService.profile(token);
-  if (!user || user.role !== 'admin') throw new Error('UNAUTHORIZED');
+  if (!user || user.role !== 'admin') {
+    throw new AuthorizationError({
+      message: '需要管理员权限',
+      code: 'FORBIDDEN',
+      resource: 'admin',
+      action: 'access'
+    });
+  }
   return user;
 }
 
@@ -515,7 +528,11 @@ export class AgentController {
         // 因为我们的tempAgent没有在数据库中，所以需要先注册或直接使用appId
         // 这里我们需要修改实现：直接使用appId调用API
         if (!appId) {
-          throw new Error('FastGPT需要提供appId');
+          throw new ValidationError({
+            message: 'FastGPT需要提供appId',
+            code: 'MISSING_APP_ID',
+            field: 'appId'
+          });
         }
 
         // 临时注册agent用于API调用

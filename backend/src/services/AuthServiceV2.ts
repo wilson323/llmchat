@@ -20,6 +20,7 @@ import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { EnvManager } from '@/config/EnvManager';
 import logger from '@/utils/logger';
+import { AuthenticationError, ValidationError, ResourceError, BusinessLogicError } from '@/types/errors';
 
 // ==================== 类型定义 ====================
 
@@ -150,13 +151,20 @@ export class AuthServiceV2 {
     
     if (!dbUser) {
       logger.warn('登录失败：用户不存在', { username, ip });
-      throw new Error('INVALID_CREDENTIALS');
+      throw new AuthenticationError({
+        message: '用户名或密码错误',
+        code: 'INVALID_CREDENTIALS'
+      });
     }
 
     // 2. 检查账号状态
     if (dbUser.status !== 'active') {
       logger.warn('登录失败：账号未激活', { username, status: dbUser.status, ip });
-      throw new Error('ACCOUNT_INACTIVE');
+      throw new BusinessLogicError({
+        message: '账号未激活',
+        code: 'ACCOUNT_INACTIVE',
+        rule: 'account_status'
+      });
     }
 
     // 3. 检查账号锁定
@@ -167,10 +175,15 @@ export class AuthServiceV2 {
       logger.warn('登录失败：账号已锁定', {
         username,
         lockedUntil: dbUser.locked_until,
-        remainingMinutes,
-        ip,
-      });
-      throw new Error(`ACCOUNT_LOCKED:${remainingMinutes}`);
+      remainingMinutes,
+      ip,
+    });
+    throw new BusinessLogicError({
+      message: `账号已被锁定，请在 ${remainingMinutes} 分钟后重试`,
+      code: 'ACCOUNT_LOCKED',
+      rule: 'max_login_attempts',
+      data: { remainingMinutes }
+    });
     }
 
     // 4. 验证密码
@@ -179,7 +192,10 @@ export class AuthServiceV2 {
     if (!passwordValid) {
       await this.handleFailedLogin(dbUser.id);
       logger.warn('登录失败：密码错误', { username, ip });
-      throw new Error('INVALID_CREDENTIALS');
+      throw new AuthenticationError({
+        message: '用户名或密码错误',
+        code: 'INVALID_CREDENTIALS'
+      });
     }
 
     // 5. 重置失败计数
@@ -295,10 +311,15 @@ export class AuthServiceV2 {
       const payload = jwt.verify(refreshToken, this.tokenSecret) as JWTPayload;
 
       // 重新查询用户确保状态正确
-      const dbUser = await this.findUserById(payload.sub);
-      if (!dbUser || dbUser.status !== 'active') {
-        throw new Error('USER_NOT_FOUND_OR_INACTIVE');
-      }
+    const dbUser = await this.findUserById(payload.sub);
+    if (!dbUser || dbUser.status !== 'active') {
+      throw new ResourceError({
+        message: '用户不存在或未激活',
+        code: 'USER_NOT_FOUND_OR_INACTIVE',
+        resourceType: 'user',
+        resourceId: payload.sub
+      });
+    }
 
       const user: AuthUser = {
         id: dbUser.id,
@@ -318,7 +339,10 @@ export class AuthServiceV2 {
       };
     } catch (error: any) {
       logger.error('Token刷新失败', { error: error.message });
-      throw new Error('REFRESH_TOKEN_INVALID');
+      throw new AuthenticationError({
+        message: 'Refresh Token 无效或已过期',
+        code: 'REFRESH_TOKEN_INVALID'
+      });
     }
   }
 
@@ -333,13 +357,21 @@ export class AuthServiceV2 {
     // 1. 查询用户
     const dbUser = await this.findUserById(userId);
     if (!dbUser) {
-      throw new Error('USER_NOT_FOUND');
+      throw new ResourceError({
+        message: '用户不存在',
+        code: 'USER_NOT_FOUND',
+        resourceType: 'user',
+        resourceId: userId
+      });
     }
 
     // 2. 验证旧密码
     const oldPasswordValid = await bcrypt.compare(oldPassword, dbUser.password_hash);
     if (!oldPasswordValid) {
-      throw new Error('INVALID_OLD_PASSWORD');
+      throw new AuthenticationError({
+        message: '原密码错误',
+        code: 'INVALID_OLD_PASSWORD'
+      });
     }
 
     // 3. 验证新密码强度
@@ -380,7 +412,12 @@ export class AuthServiceV2 {
     // 2. 检查用户名是否已存在
     const existingUser = await this.findUserByUsername(username);
     if (existingUser) {
-      throw new Error('USERNAME_ALREADY_EXISTS');
+      throw new BusinessLogicError({
+        message: '用户名已存在',
+        code: 'USERNAME_ALREADY_EXISTS',
+        rule: 'unique_username',
+        data: { username }
+      });
     }
 
     // 3. 生成密码哈希
@@ -412,7 +449,10 @@ export class AuthServiceV2 {
   async profile(token: string): Promise<AuthUser> {
     const result = await this.validateToken(token);
     if (!result.valid || !result.user) {
-      throw new Error(result.error || 'UNAUTHORIZED');
+      throw new AuthenticationError({
+        message: 'Token 验证失败',
+        code: result.error || 'UNAUTHORIZED'
+      });
     }
     return result.user;
   }
@@ -538,19 +578,39 @@ export class AuthServiceV2 {
 
   private validatePasswordStrength(password: string): void {
     if (password.length < 8) {
-      throw new Error('PASSWORD_TOO_SHORT');
+      throw new ValidationError({
+        message: '密码长度至少8位',
+        code: 'PASSWORD_TOO_SHORT',
+        field: 'password'
+      });
     }
     if (!/[A-Z]/.test(password)) {
-      throw new Error('PASSWORD_MISSING_UPPERCASE');
+      throw new ValidationError({
+        message: '密码必须包含大写字母',
+        code: 'PASSWORD_MISSING_UPPERCASE',
+        field: 'password'
+      });
     }
     if (!/[a-z]/.test(password)) {
-      throw new Error('PASSWORD_MISSING_LOWERCASE');
+      throw new ValidationError({
+        message: '密码必须包含小写字母',
+        code: 'PASSWORD_MISSING_LOWERCASE',
+        field: 'password'
+      });
     }
     if (!/[0-9]/.test(password)) {
-      throw new Error('PASSWORD_MISSING_NUMBER');
+      throw new ValidationError({
+        message: '密码必须包含数字',
+        code: 'PASSWORD_MISSING_NUMBER',
+        field: 'password'
+      });
     }
     if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-      throw new Error('PASSWORD_MISSING_SPECIAL_CHAR');
+      throw new ValidationError({
+        message: '密码必须包含特殊字符',
+        code: 'PASSWORD_MISSING_SPECIAL_CHAR',
+        field: 'password'
+      });
     }
   }
 
