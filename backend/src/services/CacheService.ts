@@ -62,7 +62,7 @@ export class CacheService {
       this.client = new Redis({
         host: redisHost,
         port: redisPort,
-        password: redisPassword,
+        ...(redisPassword ? { password: redisPassword } : {}),
         retryStrategy: (times) => {
           if (times > 10) {
             logger.error('Redis 重连次数超过限制');
@@ -257,7 +257,7 @@ export class CacheService {
     try {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.expire(fullKey, ttl);
-      return result;
+      return result === 1;
     } catch (error) {
       logger.error('设置缓存过期时间失败', { key, ttl, error });
       return false;
