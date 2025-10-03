@@ -153,20 +153,28 @@ class RateLimiterManager {
     let limiter: RateLimiterRedis | RateLimiterMemory;
 
     if (this.isRedisAvailable && this.redis) {
-      limiter = new RateLimiterRedis({
+      const redisOptions: any = {
         storeClient: this.redis,
         points: config.points,
         duration: config.duration,
-        blockDuration: config.blockDuration,
-        keyPrefix: config.keyPrefix,
-      });
+      };
+      if (config.blockDuration !== undefined) {
+        redisOptions.blockDuration = config.blockDuration;
+      }
+      if (config.keyPrefix !== undefined) {
+        redisOptions.keyPrefix = config.keyPrefix;
+      }
+      limiter = new RateLimiterRedis(redisOptions);
       logger.debug('创建Redis RateLimiter', { config });
     } else {
-      limiter = new RateLimiterMemory({
+      const memoryOptions: any = {
         points: config.points,
         duration: config.duration,
-        blockDuration: config.blockDuration,
-      });
+      };
+      if (config.blockDuration !== undefined) {
+        memoryOptions.blockDuration = config.blockDuration;
+      }
+      limiter = new RateLimiterMemory(memoryOptions);
       logger.debug('创建Memory RateLimiter (降级模式)', { config });
     }
 
@@ -217,7 +225,7 @@ export function createRateLimiter(options: RateLimitOptions = {}) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // 检查白名单
-      if (config.whitelist && isWhitelisted(req, config.whitelist)) {
+      if ('whitelist' in config && config.whitelist && isWhitelisted(req, config.whitelist)) {
         return next();
       }
 
@@ -269,7 +277,8 @@ function defaultKeyGenerator(req: Request): string {
              req.headers['x-real-ip'] || 
              req.socket.remoteAddress ||
              'anonymous';
-  return Array.isArray(ip) ? ip[0] : ip;
+  const finalIp = Array.isArray(ip) ? ip[0] : ip;
+  return finalIp || 'anonymous';
 }
 
 /**

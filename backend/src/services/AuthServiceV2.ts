@@ -26,8 +26,8 @@ import logger from '@/utils/logger';
 export interface AuthUser {
   id: string;
   username: string;
-  email?: string;
-  role?: string;
+  email: string;
+  role: string;
 }
 
 export interface LoginResult {
@@ -40,7 +40,7 @@ export interface LoginResult {
 export interface JWTPayload {
   sub: string;       // user id
   username: string;
-  role?: string;
+  role: string;
   iat: number;       // issued at
   exp: number;       // expires at
   jti?: string;      // JWT ID (用于黑名单)
@@ -192,8 +192,8 @@ export class AuthServiceV2 {
     const user: AuthUser = {
       id: dbUser.id,
       username: dbUser.username,
-      email: dbUser.email || undefined,
-      role: dbUser.role || undefined,
+      email: dbUser.email || '',
+      role: dbUser.role || 'user',
     };
 
     const token = await this.generateToken(user);
@@ -237,6 +237,7 @@ export class AuthServiceV2 {
         id: payload.sub,
         username: payload.username,
         role: payload.role,
+        email: '',
       };
 
       return { valid: true, user };
@@ -302,8 +303,8 @@ export class AuthServiceV2 {
       const user: AuthUser = {
         id: dbUser.id,
         username: dbUser.username,
-        email: dbUser.email || undefined,
-        role: dbUser.role || undefined,
+        email: dbUser.email || '',
+        role: dbUser.role || 'user',
       };
 
       const newToken = await this.generateToken(user);
@@ -400,9 +401,20 @@ export class AuthServiceV2 {
     return {
       id: userId,
       username,
-      email,
+      email: email || '',
       role: 'user',
     };
+  }
+
+  /**
+   * 获取用户信息（通过token）
+   */
+  async profile(token: string): Promise<AuthUser> {
+    const result = await this.verifyToken(token);
+    if (!result.valid || !result.user) {
+      throw new Error(result.error || 'UNAUTHORIZED');
+    }
+    return result.user;
   }
 
   // ==================== 私有辅助方法 ====================
@@ -412,7 +424,7 @@ export class AuthServiceV2 {
     const payload: JWTPayload = {
       sub: user.id,
       username: user.username,
-      role: user.role,
+      role: user.role || 'user',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + this.tokenTTL,
       jti,
@@ -425,7 +437,7 @@ export class AuthServiceV2 {
     const payload: JWTPayload = {
       sub: user.id,
       username: user.username,
-      role: user.role,
+      role: user.role || 'user',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_TTL,
     };

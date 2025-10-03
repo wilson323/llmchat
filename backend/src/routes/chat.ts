@@ -30,5 +30,5 @@ router.post('/feedback', chatController.updateUserFeedback);
 // 上传附件（文件/语音）
 router.post('/attachments', chatController.uploadAttachment);
 
+export default router;
 export { router as chatRoutes };
-

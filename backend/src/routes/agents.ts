@@ -44,5 +44,5 @@ router.put('/:id', agentController.updateAgent);
 // 删除智能体
 router.delete('/:id', agentController.deleteAgent);
 
-
+export default router;
 export { router as agentRoutes };

@@ -44,7 +44,7 @@ export function initSentry(app: Express) {
       profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
       // 数据清理
-      beforeSend(event, hint) {
+      beforeSend(event: any, hint: any) {
         // 移除敏感数据
         if (event.request) {
           delete event.request.cookies;
