@@ -57,6 +57,8 @@ import {
   validateTemperature,
   validateMaxTokens,
 } from "@/utils/agentValidation";
+import { HelpIcon } from "@/components/ui/Tooltip";
+import { getFieldTooltip } from "@/utils/agentFieldHelp";
 import {
   getProvinceHeatmap,
   getConversationSeries,
@@ -2594,7 +2596,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('提供方 *')}</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                {t('提供方 *')}
+                <HelpIcon content={getFieldTooltip('provider')} />
+              </label>
               <Input
                 value={form.provider}
                 onChange={(event) => setForm((prev) => ({ ...prev, provider: event.target.value }))}
@@ -2603,7 +2608,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <p className="text-xs text-muted-foreground">{t('支持 fastgpt 和 dify 自动获取配置')}</p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('接口地址 *')}</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                {t('接口地址 *')}
+                <HelpIcon content={getFieldTooltip('endpoint')} />
+              </label>
               <Input
                 value={form.endpoint}
                 onChange={(event) => setForm((prev) => ({ ...prev, endpoint: event.target.value }))}
@@ -2621,7 +2629,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('访问密钥 {suffix}', { suffix: mode === 'create' ? '*' : t('(留空则不变)') })}</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                {t('访问密钥 {suffix}', { suffix: mode === 'create' ? '*' : t('(留空则不变)') })}
+                <HelpIcon content={getFieldTooltip('apiKey')} />
+              </label>
               <Input
                 type="password"
                 value={form.apiKey}
@@ -2635,8 +2646,9 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
                 {t('App ID')} {form.provider === 'fastgpt' && <span className="text-red-500">*</span>}
+                <HelpIcon content={getFieldTooltip('appId')} />
               </label>
               <Input
                 value={form.appId}
@@ -2653,7 +2665,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('温度')}</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                {t('温度')}
+                <HelpIcon content={getFieldTooltip('temperature')} />
+              </label>
               <Input
                 value={form.temperature}
                 onChange={(event) => setForm((prev) => ({ ...prev, temperature: event.target.value }))}
@@ -2666,7 +2681,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('最大 Token')}</label>
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
+                {t('最大 Token')}
+                <HelpIcon content={getFieldTooltip('maxTokens')} />
+              </label>
               <Input
                 value={form.maxTokens}
                 onChange={(event) => setForm((prev) => ({ ...prev, maxTokens: event.target.value }))}
