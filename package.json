@@ -4,10 +4,11 @@
   "description": "智能体切换聊天应用 - 类似ChatGPT官网的多智能体切换功能",
   "main": "index.js",
   "scripts": {
+    "postinstall": "pnpm --filter @llmchat/shared-types run build",
     "dev": "concurrently \"pnpm --filter @llmchat/backend run dev\" \"pnpm --filter @llmchat/frontend run dev\"",
     "backend:dev": "pnpm --filter @llmchat/backend run dev",
     "frontend:dev": "pnpm --filter @llmchat/frontend run dev",
-    "build": "pnpm run backend:build && pnpm run frontend:build",
+    "build": "pnpm --filter @llmchat/shared-types run build && pnpm run backend:build && pnpm run frontend:build",
     "backend:build": "pnpm --filter @llmchat/backend run build",
     "frontend:build": "pnpm --filter @llmchat/frontend run build",
     "start": "pnpm --filter @llmchat/backend start",
