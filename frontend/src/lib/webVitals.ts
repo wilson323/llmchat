@@ -9,7 +9,7 @@
  * - TTFB (Time to First Byte): 首字节时间
  */
 
-import { onCLS, onFID, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
+import { onCLS, onINP, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
 import { addBreadcrumb } from './sentry';
 
 /**
@@ -89,7 +89,7 @@ export function initWebVitals(onReport: ReportCallback = defaultReportHandler) {
 
   try {
     onCLS(onReport);
-    onFID(onReport);
+    onINP(onReport); // FID已被INP(Interaction to Next Paint)替代
     onFCP(onReport);
     onLCP(onReport);
     onTTFB(onReport);

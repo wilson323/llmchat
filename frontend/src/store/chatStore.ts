@@ -329,9 +329,12 @@ export const useChatStore = create<ChatState>()(
               const generatedId = `${msg.id || 'reasoning'}-${normalizedOrder}-${Date.now()}`;
               nextSteps.push({
                 id: generatedId,
+                index: normalizedOrder,
                 order: normalizedOrder,
                 content: normalized.body,
+                text: normalized.body,
                 title: step.title ?? normalized.title ?? `步骤 ${normalizedOrder}`,
+                status: 'completed',
                 raw: step.raw,
               });
             }

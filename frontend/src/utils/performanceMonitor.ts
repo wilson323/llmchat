@@ -5,7 +5,8 @@
  * 支持统计分析（min/max/avg/p50/p95/p99）
  */
 
-interface PerformanceMetric {
+// 用于记录性能指标
+export interface PerformanceMetric {
   name: string;
   duration: number;
   timestamp: number;

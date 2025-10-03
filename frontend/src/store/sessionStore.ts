@@ -300,14 +300,14 @@ export const useSessionStore = create<SessionState>()(
             return;
           }
 
-          const newTitle = updateSessionTitleIfNeeded(
-            session.title,
+          const result = updateSessionTitleIfNeeded(
             session.messages,
-            session.createdAt
+            session.title,
+            typeof session.createdAt === 'number' ? session.createdAt : session.createdAt.getTime()
           );
 
-          if (newTitle && newTitle !== session.title) {
-            get().renameSession(agentId, sessionId, newTitle);
+          if (result.shouldUpdate && result.newTitle !== session.title) {
+            get().renameSession(agentId, sessionId, result.newTitle);
           }
         });
       },

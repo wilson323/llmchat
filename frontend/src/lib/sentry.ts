@@ -160,7 +160,7 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
 /**
  * 添加面包屑（用于调试）
  */
-export function addBreadcrumb(message: string, category: string, level: Sentry.SeverityLevel = 'info') {
+export function addBreadcrumb(message: string, category: string, level: 'info' | 'warning' | 'error' | 'debug' = 'info') {
   Sentry.addBreadcrumb({
     message,
     category,

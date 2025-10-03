@@ -12,6 +12,7 @@ export interface Agent {
   status: AgentStatus;
   capabilities: string[];
   provider: string;
+  isActive?: boolean;
 }
 
 /**
@@ -96,9 +97,12 @@ export type InteractiveData =
 
 export interface ReasoningStep {
   id: string;
+  index: number; // 添加index用于排序
   order: number;
   content: string;
+  text: string; // 添加text字段
   title?: string;
+  status?: 'pending' | 'running' | 'completed' | 'error';
   raw?: any;
 }
 
@@ -110,10 +114,13 @@ export interface ReasoningState {
 }
 
 export interface ReasoningStepUpdate {
+  index?: number; // index可选
   content: string;
+  text?: string; // text可选
   order?: number;
   totalSteps?: number;
   title?: string;
+  status?: 'pending' | 'running' | 'completed' | 'error';
   raw?: any;
   finished?: boolean;
 }

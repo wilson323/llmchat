@@ -8,8 +8,8 @@
  */
 
 import { create } from 'zustand';
-import { ChatMessage, StreamStatus, ReasoningStepUpdate, FastGPTEvent } from '@/types';
-import { normalizeReasoningDisplay } from '@/lib/reasoning';
+import { ChatMessage, StreamStatus, ReasoningStepUpdate, ReasoningStep, FastGPTEvent } from '@/types';
+// import { normalizeReasoningDisplay } from '@/lib/reasoning';
 import { debugLog } from '@/lib/debug';
 import { perfMonitor } from '@/utils/performanceMonitor';
 
@@ -245,16 +245,21 @@ export const useMessageStore = create<MessageState>((set, get) => ({
           const existingStep = reasoning.steps.find((s) => s.index === step.index);
 
           if (existingStep) {
-            existingStep.text = mergeReasoningContent(existingStep.text, step.text);
+            existingStep.text = mergeReasoningContent(existingStep.text, step.text || step.content);
             if (step.title) existingStep.title = step.title;
             if (step.status) existingStep.status = step.status;
           } else {
-            reasoning.steps.push({
-              index: step.index,
+            const newStep: ReasoningStep = {
+              id: `step-${Date.now()}-${reasoning.steps.length}`,
+              index: step.index || reasoning.steps.length,
+              order: step.order || reasoning.steps.length,
+              content: step.content,
+              text: step.text || step.content,
               title: step.title || '',
-              text: step.text,
               status: step.status || 'pending',
-            });
+              raw: step.raw,
+            };
+            reasoning.steps = [...reasoning.steps, newStep];
             reasoning.steps.sort((a, b) => a.index - b.index);
           }
 
@@ -281,7 +286,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
               ...msg.reasoning,
               isComplete: true,
               totalSteps: totalSteps ?? msg.reasoning.steps.length,
-              renderable: normalizeReasoningDisplay(msg.reasoning.steps),
+              renderable: msg.reasoning.steps.map(s => s.text || s.content).join('\n\n') || '',
             },
           } as ChatMessage;
         }
