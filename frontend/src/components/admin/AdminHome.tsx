@@ -70,24 +70,43 @@ import {
 import { SLADashboard } from "@/components/monitoring";
 import { SessionManagement } from "./SessionManagement";
 
-// 动态加载中国地图 GeoJSON 数据
+// 动态加载中国地图 GeoJSON 数据（带降级策略）
 let hasRegisteredChinaMap = false;
+let mapLoadFailed = false;
+
 const ensureChinaMap = async () => {
-  if (hasRegisteredChinaMap || typeof window === 'undefined') return;
+  if (hasRegisteredChinaMap || mapLoadFailed || typeof window === 'undefined') return;
 
   try {
     const mapUrl = new URL('maps/china.json', window.location.origin).toString();
-    const response = await fetch(mapUrl, { cache: 'force-cache' });
+    const response = await fetch(mapUrl, { 
+      cache: 'force-cache',
+      signal: AbortSignal.timeout(5000) // 5秒超时
+    });
+    
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: 地图资源加载失败`);
     }
 
     const chinaMap = await response.json();
+    
+    // 验证地图数据完整性
+    if (!chinaMap || !chinaMap.features || !Array.isArray(chinaMap.features)) {
+      throw new Error('地图数据格式无效');
+    }
+
     echarts.registerMap('china', chinaMap);
     hasRegisteredChinaMap = true;
-    console.log('[AdminHome] 中国地图加载成功');
+    console.log('[AdminHome] ✅ 中国地图加载成功');
   } catch (error) {
-    console.warn('[AdminHome] 中国地图加载失败:', error);
+    mapLoadFailed = true;
+    const errorMsg = error instanceof Error ? error.message : '未知错误';
+    console.warn(`[AdminHome] ⚠️ 地图加载失败: ${errorMsg}，将使用降级方案（柱状图）`);
+    
+    // 提示用户（可选，避免过度打扰）
+    if (process.env.NODE_ENV === 'development') {
+      console.info('[AdminHome] 💡 降级方案已启用：地理分布将显示为柱状图');
+    }
   }
 };
 

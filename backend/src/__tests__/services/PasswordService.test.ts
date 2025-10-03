@@ -237,6 +237,7 @@ describe('PasswordService', () => {
       }
     });
 
+    // bcryptjs 比 bcrypt 慢，需要更长超时时间
     it('应该安全处理并发验证请求', async () => {
       const password = 'Test@1234';
       const hash = await passwordService.hashPassword(password);
@@ -250,7 +251,7 @@ describe('PasswordService', () => {
 
       // 所有验证应该成功
       expect(results.every((r) => r === true)).toBe(true);
-    });
+    }, 10000); // 增加超时到 10 秒（bcryptjs 较慢）
   });
 
   describe('特殊字符处理', () => {

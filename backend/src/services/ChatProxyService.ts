@@ -35,13 +35,27 @@ interface SSEParsedEvent {
 }
 
 /**
+ * AI 提供商请求数据格式（通用）
+ */
+export interface ProviderRequestData {
+  [key: string]: unknown; // 允许提供商特定字段
+}
+
+/**
+ * AI 提供商响应数据格式（通用）
+ */
+export interface ProviderResponseData {
+  [key: string]: unknown;
+}
+
+/**
  * AI提供商适配器接口
  */
 export interface AIProvider {
   name: string;
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean, options?: ChatOptions): any;
-  transformResponse(response: any): ChatResponse;
-  transformStreamResponse(chunk: any): string;
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean, options?: ChatOptions): ProviderRequestData;
+  transformResponse(response: ProviderResponseData): ChatResponse;
+  transformStreamResponse(chunk: Record<string, unknown>): string;
   validateConfig(config: AgentConfig): boolean;
   buildHeaders(config: AgentConfig): RequestHeaders;
 }
