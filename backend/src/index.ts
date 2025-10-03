@@ -37,7 +37,7 @@ import healthRouter from './routes/health';
 // 工具
 import { logger } from './utils/logger';
 
-const app = express();
+const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
 
 // 初始化Sentry（必须在所有中间件之前）

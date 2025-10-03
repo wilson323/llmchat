@@ -90,23 +90,24 @@ export function initSentry(app: Express): void {
 
 /**
  * Express请求处理器（必须在所有路由之前）
+ * v10中已自动集成到 expressIntegration，这里保留为空中间件以兼容
  */
 export function sentryRequestHandler() {
-  return Sentry.requestDataIntegration();
+  return (_req: any, _res: any, next: any) => next();
 }
 
 /**
  * Express追踪处理器（必须在所有路由之前）
+ * v10中已集成到 expressIntegration 中
  */
 export function sentryTracingHandler() {
-  // v10中已集成到 expressIntegration 中
   return (_req: any, _res: any, next: any) => next();
 }
 
 /**
  * Express错误处理器（必须在所有路由之后）
  */
-export function sentryErrorHandler() {
+export function sentryErrorHandler(): any {
   return Sentry.expressErrorHandler();
 }
 

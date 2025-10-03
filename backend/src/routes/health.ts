@@ -2,9 +2,9 @@
  * 健康检查路由
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, type Router as RouterType } from 'express';
 
-const router = Router();
+const router: RouterType = Router();
 
 /**
  * 基本健康检查
