@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { ChatController } from '@/controllers/ChatController';
 
-const router = Router();
+const router: RouterType = Router();
 const chatController = new ChatController();
 
 // 发送聊天请求（支持流式和非流式）

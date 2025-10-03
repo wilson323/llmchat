@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { AgentController } from '@/controllers/AgentController';
 
-const router = Router();
+const router: RouterType = Router();
 const agentController = new AgentController();
 
 // 创建智能体

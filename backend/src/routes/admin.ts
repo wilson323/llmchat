@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { AdminController } from '@/controllers/AdminController';
 
-export const adminRoutes = Router();
+export const adminRoutes: RouterType = Router();
 
 adminRoutes.get('/system-info', AdminController.systemInfo);
 adminRoutes.get('/users', AdminController.users);

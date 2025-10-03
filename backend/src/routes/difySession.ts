@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { DifySessionController } from '@/controllers/DifySessionController';
 
-const router = Router();
+const router: RouterType = Router();
 
 /**
  * Dify 会话管理路由

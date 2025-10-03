@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { auditController } from '@/controllers/AuditController';
 import { adminGuard } from '@/middleware/adminGuard';
 
-const router = Router();
+const router: RouterType = Router();
 
 /**
  * 审计日志路由
