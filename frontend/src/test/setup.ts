@@ -4,7 +4,7 @@
  * 此文件在所有测试运行前执行，用于配置全局测试环境
  */
 
-import { expect, afterEach, vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
