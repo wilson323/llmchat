@@ -12,6 +12,7 @@ import { adminRoutes } from '@/routes/admin';
 import { productPreviewRoutes } from '@/routes/productPreview';
 import sessionRoutes from '@/routes/sessionRoutes';
 import auditRoutes from '@/routes/audit';
+import difySessionRoutes from '@/routes/difySession';
 import { errorHandler } from '@/middleware/errorHandler';
 import { requestLogger } from '@/middleware/requestLogger';
 import { rateLimiter } from '@/middleware/rateLimiter';
@@ -109,6 +110,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/product-preview', productPreviewRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/audit', auditRoutes); // 审计日志接口
+app.use('/api/dify', difySessionRoutes); // Dify 会话管理接口
 
 // 404处理
 app.use('*', (req, res) => {
