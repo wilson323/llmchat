@@ -19,10 +19,25 @@ describe('DifyInitService', () => {
     model: 'gpt-4o-mini',
     isActive: true,
     capabilities: ['chat', 'completion'],
-    rateLimit: {},
-    features: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    rateLimit: {
+      requestsPerMinute: 60,
+      tokensPerMinute: 100000,
+    },
+    features: {
+      supportsChatId: true,
+      supportsStream: true,
+      supportsDetail: false,
+      supportsFiles: false,
+      supportsImages: false,
+      streamingConfig: {
+        enabled: true,
+        endpoint: 'same',
+        statusEvents: false,
+        flowNodeStatus: false,
+      },
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   beforeEach(() => {
