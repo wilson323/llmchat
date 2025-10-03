@@ -25,6 +25,7 @@ import {
   isToolEvent,
   isUsageEvent,
 } from '@/utils/fastgptEvents';
+import { ValidationError, ResourceError, ExternalServiceError } from '@/types/errors';
 
 interface SSEParsedEvent {
   event: string;
@@ -272,7 +273,10 @@ export class DifyProvider implements AIProvider {
     // 提取最后一条用户消息作为 query
     const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
     if (!lastUserMessage) {
-      throw new Error('Dify 请求必须包含至少一条用户消息');
+      throw new ValidationError({
+        message: 'Dify 请求必须包含至少一条用户消息',
+        code: 'MISSING_USER_MESSAGE'
+      });
     }
 
     const request: any = {
@@ -367,10 +371,14 @@ export class DifyProvider implements AIProvider {
       logger.error('Dify 流式响应错误', {
         component: 'DifyProvider',
         status: chunk.status,
-        code: chunk.code,
-        message: chunk.message
-      });
-      throw new Error(`Dify 错误: ${chunk.message || '未知错误'}`);
+      code: chunk.code,
+      message: chunk.message
+    });
+    throw new ExternalServiceError({
+      message: `Dify 错误: ${chunk.message || '未知错误'}`,
+      code: 'DIFY_STREAM_ERROR',
+      service: 'Dify'
+    });
     }
 
     // message_file 事件（文件消息）
@@ -473,16 +481,27 @@ export class ChatProxyService {
   ): Promise<ChatResponse> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
-      throw new Error(`智能体不存在: ${agentId}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${agentId}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: agentId
+      });
     }
 
     if (!config.isActive) {
-      throw new Error(`智能体未激活: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体未激活: ${agentId}`,
+        code: 'AGENT_INACTIVE'
+      });
     }
 
     const provider = this.getProvider(config.provider);
     if (!provider) {
-      throw new Error(`不支持的提供商: ${config.provider}`);
+      throw new ValidationError({
+        message: `不支持的提供商: ${config.provider}`,
+        code: 'UNSUPPORTED_PROVIDER'
+      });
     }
 
     // 创建受保护的请求操作
@@ -531,7 +550,12 @@ export class ChatProxyService {
       }
     } catch (error) {
       logger.error('智能体请求失败', { agentId, error });
-      throw new Error(`智能体请求失败: ${getErrorMessage(error)}`);
+      throw new ExternalServiceError({
+        message: `智能体请求失败: ${getErrorMessage(error)}`,
+        code: 'AGENT_REQUEST_FAILED',
+        service: config.provider,
+        originalError: error
+      });
     }
   }
 
@@ -549,20 +573,34 @@ export class ChatProxyService {
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
-      throw new Error(`智能体不存在: ${agentId}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${agentId}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: agentId
+      });
     }
 
     if (!config.isActive) {
-      throw new Error(`智能体未激活: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体未激活: ${agentId}`,
+        code: 'AGENT_INACTIVE'
+      });
     }
 
     if (!config.features.streamingConfig.enabled) {
-      throw new Error(`智能体不支持流式响应: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体不支持流式响应: ${agentId}`,
+        code: 'STREAM_NOT_SUPPORTED'
+      });
     }
 
     const provider = this.getProvider(config.provider);
     if (!provider) {
-      throw new Error(`不支持的提供商: ${config.provider}`);
+      throw new ValidationError({
+        message: `不支持的提供商: ${config.provider}`,
+        code: 'UNSUPPORTED_PROVIDER'
+      });
     }
 
     // 创建受保护的流式请求操作
@@ -588,10 +626,16 @@ export class ChatProxyService {
               eventType: 'chatId',
               data: { chatId: usedChatId },
             });
-          } catch {}
+          } catch (logError) {
+            // 日志记录失败不影响主流程
+            console.warn('[ChatProxyService] chatId 日志记录失败:', logError);
+          }
           onEvent?.('chatId', { chatId: usedChatId });
         }
-      } catch (_) {}
+      } catch (chatIdError) {
+        // chatId 提取失败不影响主流程
+        console.warn('[ChatProxyService] chatId 提取失败:', chatIdError);
+      }
 
       // 发送流式请求
       const response = await this.httpClient.post(
@@ -633,7 +677,12 @@ export class ChatProxyService {
         status: 'error',
         error: getErrorMessage(error),
       });
-      throw new Error(`智能体流式请求失败: ${getErrorMessage(error)}`);
+      throw new ExternalServiceError({
+        message: `智能体流式请求失败: ${getErrorMessage(error)}`,
+        code: 'AGENT_STREAM_REQUEST_FAILED',
+        service: config.provider,
+        originalError: error
+      });
     }
   }
 
