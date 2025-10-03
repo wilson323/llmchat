@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { readJsonc } from '@/utils/config';
+import { deepReplaceEnvVariables } from '@/utils/envHelper';
 import logger from '@/utils/logger';
 
 export interface PgConfig {
@@ -31,7 +32,9 @@ export function getPool(): Pool {
 }
 
 export async function initDB(): Promise<void> {
-  const cfg = await readJsonc<PgConfig>('config/config.jsonc');
+  const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
+  // 替换配置中的环境变量占位符
+  const cfg = deepReplaceEnvVariables(rawCfg);
   const pg = cfg.database?.postgres;
   if (!pg) {
     throw new Error('DATABASE_CONFIG_MISSING');
