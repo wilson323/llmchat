@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
 // 主要页面懒加载
 const ChatApp = lazy(() => import('@/components/ChatApp'));
-const LoginPage = lazy(() => import('@/components/auth/LoginPage'));
+const LoginPage = lazy(() => import('@/components/admin/LoginPage'));
 const AdminHome = lazy(() => import('@/components/admin/AdminHome'));
 
 // 加载占位组件

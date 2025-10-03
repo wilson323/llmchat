@@ -3,7 +3,7 @@
  * 提供统一的缓存接口，支持多实例共享状态
  */
 
-import { createClient, RedisClientType } from 'redis';
+import Redis from 'ioredis';
 import logger from '@/utils/logger';
 
 export interface CacheOptions {
@@ -25,7 +25,7 @@ export interface CacheStats {
  * Redis 缓存服务类
  */
 export class CacheService {
-  private client: RedisClientType | null = null;
+  private client: Redis | null = null;
   private connected = false;
   private stats: CacheStats = {
     hits: 0,
@@ -59,19 +59,18 @@ export class CacheService {
     }
 
     try {
-      this.client = createClient({
-        socket: {
-          host: redisHost,
-          port: redisPort,
-          reconnectStrategy: (retries) => {
-            if (retries > 10) {
-              logger.error('Redis 重连次数超过限制');
-              return new Error('Redis reconnect attempts exhausted');
-            }
-            return Math.min(retries * 100, 3000);
-          },
-        },
+      this.client = new Redis({
+        host: redisHost,
+        port: redisPort,
         password: redisPassword,
+        retryStrategy: (times) => {
+          if (times > 10) {
+            logger.error('Redis 重连次数超过限制');
+            return null;
+          }
+          return Math.min(times * 100, 3000);
+        },
+        maxRetriesPerRequest: 3,
       });
 
       this.client.on('error', (err) => {
@@ -84,7 +83,7 @@ export class CacheService {
         this.connected = true;
       });
 
-      this.client.on('disconnect', () => {
+      this.client.on('close', () => {
         logger.warn('Redis 连接断开');
         this.connected = false;
       });
@@ -93,11 +92,16 @@ export class CacheService {
         logger.info('Redis 重新连接中...');
       });
 
-      await this.client.connect();
+      // ioredis 自动连接，不需要显式调用 connect()
+      // 等待连接完成
+      await this.client.ping();
+      this.connected = true;
+      
       logger.info('✓ Redis 缓存服务已启动', { prefix: this.prefix, defaultTTL: this.defaultTTL });
     } catch (error) {
       logger.error('Redis 连接失败', { error });
       this.client = null;
+      this.connected = false;
     }
   }
 
@@ -105,7 +109,7 @@ export class CacheService {
    * 断开 Redis 连接
    */
   async disconnect(): Promise<void> {
-    if (this.client && this.connected) {
+    if (this.client) {
       await this.client.quit();
       this.connected = false;
       logger.info('Redis 连接已关闭');
@@ -163,14 +167,11 @@ export class CacheService {
 
       if (options?.nx) {
         // 仅当 key 不存在时设置（用于分布式锁）
-        const result = await this.client.set(fullKey, serialized, {
-          EX: ttl,
-          NX: true,
-        });
+        const result = await this.client.set(fullKey, serialized, 'EX', ttl, 'NX');
         this.stats.sets++;
         return result === 'OK';
       } else {
-        await this.client.setEx(fullKey, ttl, serialized);
+        await this.client.setex(fullKey, ttl, serialized);
         this.stats.sets++;
         return true;
       }

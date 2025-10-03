@@ -5,46 +5,9 @@
 
 import { Router, Request, Response, type Router as RouterType } from 'express';
 import { getPool } from '@/utils/db';
-import { createClient } from 'redis';
 import logger from '@/utils/logger';
 
 const router: RouterType = Router();
-
-// Redis 客户端（全局单例）
-let redisClient: ReturnType<typeof createClient> | null = null;
-
-/**
- * 初始化 Redis 客户端
- */
-async function getRedisClient(): Promise<ReturnType<typeof createClient> | null> {
-  if (redisClient && redisClient.isOpen) {
-    return redisClient;
-  }
-
-  if (!process.env.REDIS_HOST) {
-    return null; // Redis 未配置
-  }
-
-  try {
-    redisClient = createClient({
-      socket: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      },
-      password: process.env.REDIS_PASSWORD,
-    });
-
-    redisClient.on('error', (err) => {
-      logger.error('Redis 客户端错误', { error: err });
-    });
-
-    await redisClient.connect();
-    return redisClient;
-  } catch (error) {
-    logger.error('Redis 连接失败', { error });
-    return null;
-  }
-}
 
 /**
  * 检查数据库健康状态
@@ -76,20 +39,22 @@ async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number;
   const startTime = Date.now();
   
   try {
-    const client = await getRedisClient();
+    // 使用 CacheService 检查 Redis
+    const { getCacheService } = await import('@/services/CacheService');
+    const cacheService = getCacheService();
     
-    if (!client) {
+    if (!cacheService.isConnected()) {
       return {
         healthy: false,
-        error: 'Redis not configured',
+        error: 'Redis not configured or not connected',
       };
     }
 
-    await client.ping();
+    const pingResult = await cacheService.ping();
     const latency = Date.now() - startTime;
     
     return {
-      healthy: true,
+      healthy: pingResult,
       latency,
     };
   } catch (error) {

@@ -43,6 +43,9 @@ import { initCacheService } from './services/CacheService';
 const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
 
+// 声明 server 变量（必须在使用前声明）
+let server: ReturnType<typeof app.listen>;
+
 // 初始化Sentry（必须在所有中间件之前）
 initSentry(app);
 
@@ -170,8 +173,6 @@ async function startServer() {
 startServer();
 
 // 优雅关闭
-let server: ReturnType<typeof app.listen>;
-
 const gracefulShutdown = async (signal: string): Promise<void> => {
   logger.info(`收到 ${signal} 信号，开始优雅关闭...`);
 
@@ -218,17 +219,10 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   try {
     // 4. 关闭 Redis 连接（如果存在）
     if (process.env.REDIS_HOST) {
-      const { createClient } = await import('redis');
-      const redis = createClient({
-        socket: {
-          host: process.env.REDIS_HOST,
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-        },
-      });
-      if (redis.isOpen) {
-        await redis.quit();
-        logger.info('✓ Redis 连接已关闭');
-      }
+      const { getCacheService } = await import('./services/CacheService');
+      const cacheService = getCacheService();
+      await cacheService.disconnect();
+      logger.info('✓ Redis 连接已关闭');
     }
   } catch (error) {
     logger.error('关闭 Redis 连接失败', { error });
