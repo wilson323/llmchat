@@ -38,6 +38,7 @@ import healthRouter from './routes/health';
 
 // 工具
 import { logger } from './utils/logger';
+import { initCacheService } from './services/CacheService';
 
 const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
