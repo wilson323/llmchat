@@ -11,6 +11,7 @@ import { useI18n, I18nProvider } from '@/i18n';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { A11yAnnouncer } from '@/components/ui/A11yAnnouncer';
 import { GlobalKeyboardManager } from '@/components/ui/KeyboardShortcutsHelp';
+import PerformanceComparisonDemo from '@/components/demo/PerformanceComparisonDemo';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const location = useLocation();
@@ -91,6 +92,15 @@ function App() {
                       <AgentDetails />
                     </ErrorBoundary>
                   </ProtectedRoute>
+                }
+              />
+              {/* 性能测试页面（开发用） */}
+              <Route
+                path="/demo/perf"
+                element={
+                  <ErrorBoundary>
+                    <PerformanceComparisonDemo />
+                  </ErrorBoundary>
                 }
               />
               <Route path="*" element={<Navigate to="/" replace />} />
