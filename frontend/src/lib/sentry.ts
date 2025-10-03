@@ -18,9 +18,11 @@ let BrowserTracing: any = null;
 let sentryAvailable = false;
 
 try {
-  // @ts-ignore - 可选依赖
+  // @ts-expect-error - 可选依赖
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const sentryModule = require('@sentry/react');
-  // @ts-ignore - 可选依赖
+  // @ts-expect-error - 可选依赖
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const tracingModule = require('@sentry/tracing');
   
   Sentry = sentryModule;

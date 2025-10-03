@@ -54,7 +54,8 @@
     "date-fns": "^4.1.0"
   },
   "lint-staged": {
-    "*.ts": ["eslint --fix", "tsc --noEmit"],
-    "*.tsx": ["eslint --fix", "tsc --noEmit"]
+    "backend/**/*.ts": "pnpm --filter @llmchat/backend run lint:fix",
+    "frontend/**/*.{ts,tsx}": "pnpm --filter @llmchat/frontend run lint:fix",
+    "shared-types/**/*.ts": "eslint --fix"
   }
 }

@@ -100,6 +100,7 @@ export function createAuthServiceAdapter(
  * 获取适配后的认证服务
  */
 export function getAuthServiceAdapter(): IAuthServiceAdapter {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { authService, isAuthV2 } = require('./authInstance');
   return createAuthServiceAdapter(authService, isAuthV2);
 }

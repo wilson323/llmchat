@@ -12,5 +12,8 @@
   "files": ["dist"],
   "keywords": ["typescript", "types", "shared"],
   "author": "LLMChat Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
 }
