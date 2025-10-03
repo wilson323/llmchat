@@ -216,12 +216,17 @@ describe('FastGPTSessionService Enhanced Features', () => {
 
     it('应该优雅地处理网络错误', async () => {
       // 这里可以模拟网络错误的情况
-      // 由于我们的实现有回退机制，应该能够优雅处理
-      const result = await sessionService.listHistoriesEnhanced('non-existent-agent');
-
-      // 应该返回空结果而不是抛出错误
-      expect(result.data).toBeDefined();
-      expect(Array.isArray(result.data)).toBe(true);
+      // 对于不存在的智能体应该抛出NOT_FOUND错误
+      try {
+        await sessionService.listHistoriesEnhanced('non-existent-agent');
+        // 如果没有抛出错误，测试失败
+        fail('Expected error to be thrown for non-existent agent');
+      } catch (error: any) {
+        // 应该抛出NOT_FOUND错误
+        expect(error).toBeDefined();
+        expect(error.code).toBe('NOT_FOUND');
+        expect(error.message).toContain('智能体不存在');
+      }
     });
   });
 });
