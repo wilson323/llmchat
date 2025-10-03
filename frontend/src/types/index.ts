@@ -15,6 +15,44 @@ export interface Agent {
 }
 
 /**
+ * 智能体配置接口（完整配置，用于批量导入等）
+ */
+export interface AgentConfig {
+  id: string;
+  appId?: string;
+  name: string;
+  description: string;
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  maxTokens?: number;
+  temperature?: number;
+  systemPrompt?: string;
+  capabilities?: string[];
+  rateLimit?: {
+    requestsPerMinute: number;
+    tokensPerMinute: number;
+  };
+  provider: string;
+  isActive?: boolean;
+  features?: {
+    supportsChatId?: boolean;
+    supportsStream?: boolean;
+    supportsDetail?: boolean;
+    supportsFiles?: boolean;
+    supportsImages?: boolean;
+    streamingConfig?: {
+      enabled: boolean;
+      endpoint?: string;
+      statusEvents?: boolean;
+      flowNodeStatus?: boolean;
+    };
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
  * 智能体状态
  */
 export type AgentStatus = 'active' | 'inactive' | 'error' | 'loading';

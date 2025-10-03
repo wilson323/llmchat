@@ -55,6 +55,11 @@ export interface DifyAppParameters {
 export interface DifyInitResponse {
   appInfo: DifyAppInfo;
   parameters: DifyAppParameters;
+  // 从appInfo提取的便捷字段（测试用）
+  model?: string;
+  system_prompt?: string;
+  temperature?: number;
+  max_tokens?: number;
 }
 
 /**

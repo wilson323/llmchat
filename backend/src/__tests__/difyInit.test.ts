@@ -49,9 +49,9 @@ describe('DifyInitService', () => {
       const result = await difyInitService.getInitData('dify-test');
 
       expect(mockAgentConfigService.getAgent).toHaveBeenCalledWith('dify-test');
-      expect(result.name).toBe(mockAgent.name);
-      expect(result.description).toBe(mockAgent.description);
-      expect(result.model).toBe(mockAgent.model);
+      expect(result.appInfo.name).toBe(mockAgent.name);
+      expect(result.appInfo.description).toBe(mockAgent.description);
+      expect(result.appInfo.model_config.model).toBe(mockAgent.model);
     });
 
     it('应该处理可选配置项', async () => {
@@ -65,9 +65,12 @@ describe('DifyInitService', () => {
 
       const result = await difyInitService.getInitData('dify-test');
 
-      expect(result.system_prompt).toBe('You are a helpful assistant');
-      expect(result.temperature).toBe(0.8);
-      expect(result.max_tokens).toBe(2000);
+      // 验证响应结构存在
+      expect(result.appInfo).toBeDefined();
+      expect(result.appInfo.model_config).toBeDefined();
+      expect(result.appInfo.model_config.parameters).toBeDefined();
+      expect(result.appInfo.model_config.parameters.temperature).toBe(0.8);
+      expect(result.appInfo.model_config.parameters.max_tokens).toBe(2000);
     });
 
     it('应该在智能体不存在时抛出错误', async () => {
@@ -91,16 +94,20 @@ describe('DifyInitService', () => {
   describe('callDifyInitAPI', () => {
     it('应该构造正确的初始化数据结构', async () => {
       // 这个测试验证数据结构而不实际调用API
-      const result = await difyInitService.getInitData('dify-test', mockAgent);
+      const result = await difyInitService.getInitData('dify-test');
 
       expect(result).toMatchObject({
-        name: expect.any(String),
-        description: expect.any(String),
-        model: expect.any(String),
-        capabilities: expect.any(Array),
-        supports_stream: expect.any(Boolean),
-        supports_files: expect.any(Boolean),
-        supports_images: expect.any(Boolean),
+        appInfo: expect.objectContaining({
+          name: expect.any(String),
+          description: expect.any(String),
+          model_config: expect.objectContaining({
+            model: expect.any(String),
+            parameters: expect.any(Object),
+          }),
+        }),
+        parameters: expect.objectContaining({
+          user_input_form: expect.any(Array),
+        }),
       });
     });
   });

@@ -20,14 +20,15 @@ import { chatService } from '@/services/api';
 import { useMessageStore } from '@/store/messageStore';
 import { useAgentStore } from '@/store/agentStore';
 import { useSessionStore } from '@/store/sessionStore';
-import { usePreferenceStore } from '@/store/preferenceStore';
+import type { InteractiveData } from '@/types';
+// import { usePreferenceStore } from '@/store/preferenceStore'; // 未使用，已注释
 
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
 import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
 import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
-import { useResponsive } from '@/hooks/useResponsive';
+// import { useResponsive } from '@/hooks/useResponsive'; // 未使用，已注释
 import { perfMonitor } from '@/utils/performanceMonitor';
 
 export const ChatContainer: React.FC = () => {
@@ -41,10 +42,7 @@ export const ChatContainer: React.FC = () => {
   const currentAgent = useAgentStore((state) => state.currentAgent);
   
   const currentSession = useSessionStore((state) => state.currentSession);
-  const createNewSession = useSessionStore((state) => state.createNewSession);
   const bindSessionId = useSessionStore((state) => state.bindSessionId);
-  
-  const preferences = usePreferenceStore((state) => state.preferences);
 
   const {
     sendMessage,
@@ -54,7 +52,7 @@ export const ChatContainer: React.FC = () => {
   } = useChat();
 
   const { t } = useI18n();
-  const { isMobile, isTablet } = useResponsive();
+  // const { isMobile, isTablet } = useResponsive(); // 未使用，已注释
 
   // 避免重复触发同一会话/智能体的开场白
   const welcomeTriggeredKeyRef = useRef<string | null>(null);
@@ -97,13 +95,12 @@ export const ChatContainer: React.FC = () => {
           }
         });
 
-        const interactive = {
-          type: 'form' as const,
-          content: {
-            title: t('请填写以下信息'),
-            fields,
-            submitText: t('继续'),
-            origin: 'init',
+        const interactive: InteractiveData = {
+          type: 'userInput',
+          origin: 'init',
+          params: {
+            description: t('请填写以下信息'),
+            inputForm: fields,
           },
         };
         addMessage({ interactive });
@@ -172,7 +169,7 @@ export const ChatContainer: React.FC = () => {
       if (messages.length === 0 && currentAgent.provider === 'fastgpt') {
         perfMonitor.measureAsync('ChatContainer.fetchWelcome', async () => {
           try {
-            const response = await chatService.initChatSession(currentAgent.id, { detail: true });
+            const response = await chatService.init(currentAgent.id);
             const chatId = response.chatId;
 
             if (chatId && currentSession.id !== chatId) {
@@ -196,11 +193,11 @@ export const ChatContainer: React.FC = () => {
 
   // 特殊智能体的专用工作区
   if (currentAgent?.id === PRODUCT_PREVIEW_AGENT_ID) {
-    return <ProductPreviewWorkspace />;
+    return currentAgent ? <ProductPreviewWorkspace agent={currentAgent} /> : null;
   }
 
   if (currentAgent?.id === VOICE_CALL_AGENT_ID) {
-    return <VoiceCallWorkspace />;
+    return currentAgent ? <VoiceCallWorkspace agent={currentAgent} /> : null;
   }
 
   // 常规智能体聊天界面

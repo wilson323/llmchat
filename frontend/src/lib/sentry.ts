@@ -6,21 +6,46 @@
  * - React错误边界集成
  * - 性能监控
  * - 用户上下文追踪
+ * 
+ * 高可用设计:
+ * - 可选依赖，缺失时自动禁用
+ * - 不影响应用启动
  */
 
-import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
+// 尝试导入Sentry（可选依赖）
+let Sentry: any = null;
+let BrowserTracing: any = null;
+let sentryAvailable = false;
+
+try {
+  // @ts-ignore - 可选依赖
+  const sentryModule = require('@sentry/react');
+  // @ts-ignore - 可选依赖
+  const tracingModule = require('@sentry/tracing');
+  
+  Sentry = sentryModule;
+  BrowserTracing = tracingModule.BrowserTracing;
+  sentryAvailable = true;
+} catch (error) {
+  console.info('ℹ️  Sentry未安装，错误追踪功能禁用');
+  sentryAvailable = false;
+}
 
 /**
  * 初始化Sentry
  */
 export function initSentry() {
+  // 检查Sentry是否可用
+  if (!sentryAvailable || !Sentry) {
+    return;
+  }
+
   // 仅在生产环境或明确启用时初始化
   if (import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === 'true') {
     const dsn = import.meta.env.VITE_SENTRY_DSN;
     
     if (!dsn) {
-      console.warn('Sentry DSN未配置，错误追踪已禁用');
+      console.warn('⚠️  Sentry DSN未配置，错误追踪已禁用');
       return;
     }
 
@@ -46,8 +71,8 @@ export function initSentry() {
         }),
       ],
 
-      // 性能监控
-      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0, // 生产环境10%采样
+      // 性能监控（低延时：仅采样部分请求）
+      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0, // 生产环境10%采样，降低开销
       
       // Session回放
       replaysSessionSampleRate: 0.1, // 10%的会话
