@@ -1,24 +1,29 @@
 {
   "agents": [
     {
-      "id": "product-scene-preview",
-      "name": "产品现场预览 (示例)",
-      "description": "演示用智能体，请在后台完成正式配置并更新端点/密钥。",
-      "endpoint": "https://example.com/agents/product-preview",
-      "apiKey": "demo-api-key",
-      "model": "demo-product-model",
-      "provider": "custom",
-      "isActive": false,
-      "capabilities": [
-        "scene-preview",
-        "image-compose"
-      ],
+      "id": "6708e788c6ba48baa62419a5",
+      "appId": "${FASTGPT_APP_ID_1}",
+      "name": "熵犇犇售后服务助手",
+      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_1}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "systemPrompt": "你是一个基于知识库的智能助手,可以帮助用户解答问题。",
+      "capabilities": [],
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "tokensPerMinute": 40000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
       "features": {
         "supportsChatId": true,
         "supportsStream": true,
         "supportsDetail": true,
         "supportsFiles": true,
-        "supportsImages": false,
+        "supportsImages": true,
         "streamingConfig": {
           "enabled": true,
           "endpoint": "same",
@@ -26,37 +31,76 @@
           "flowNodeStatus": true
         }
       },
-      "createdAt": "2025-10-03T07:10:27.892Z",
-      "updatedAt": "2025-10-03T07:10:27.892Z"
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     },
     {
-      "id": "voice-conversation-assistant",
-      "name": "语音通话助手 (示例)",
-      "description": "演示用智能体，需替换为真实语音模型的访问配置。",
-      "endpoint": "https://example.com/agents/voice-call",
-      "apiKey": "demo-api-key",
-      "model": "demo-voice-model",
-      "provider": "custom",
-      "isActive": false,
-      "capabilities": [
-        "speech-to-text",
-        "text-to-speech"
-      ],
+      "id": "68940ff5c21f31d18b0732aa",
+      "appId": "${FASTGPT_APP_ID_2}",
+      "name": "配单智能应用",
+      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_2}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
+      "capabilities": [],
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "tokensPerMinute": 40000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
       "features": {
         "supportsChatId": true,
         "supportsStream": true,
         "supportsDetail": true,
         "supportsFiles": true,
-        "supportsImages": false,
+        "supportsImages": true,
         "streamingConfig": {
           "enabled": true,
           "endpoint": "same",
           "statusEvents": true,
-          "flowNodeStatus": false
+          "flowNodeStatus": true
         }
       },
-      "createdAt": "2025-10-03T07:10:27.892Z",
-      "updatedAt": "2025-10-03T07:10:27.892Z"
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
+    },
+    {
+      "id": "689c7c46408874189187da89",
+      "appId": "${FASTGPT_APP_ID_3}",
+      "name": "需求分析",
+      "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_3}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
+      "capabilities": [],
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "tokensPerMinute": 40000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
+      "features": {
+        "supportsChatId": true,
+        "supportsStream": true,
+        "supportsDetail": true,
+        "supportsFiles": true,
+        "supportsImages": true,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": true,
+          "flowNodeStatus": true
+        }
+      },
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     }
   ]
 }

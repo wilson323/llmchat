@@ -153,8 +153,8 @@ class EnvValidator {
    */
   private async validateConfigPlaceholders(): Promise<void> {
     const configFiles = [
-      'config/agents.json',
-      'config/config.jsonc',
+      '../config/agents.json',
+      '../config/config.jsonc',
     ];
 
     for (const file of configFiles) {
@@ -302,20 +302,30 @@ class EnvValidator {
 
 // 执行验证
 async function main() {
-  const validator = new EnvValidator();
-  const result = await validator.validate();
+  console.log('🚀 启动环境变量验证脚本...');
+  
+  try {
+    const validator = new EnvValidator();
+    const result = await validator.validate();
 
-  // 退出码: 0=成功, 1=失败
-  process.exit(result.passed ? 0 : 1);
-}
-
-// 仅当直接运行时执行
-if (require.main === module) {
-  main().catch(error => {
-    console.error('❌ 验证脚本执行失败:', error);
+    // 退出码: 0=成功, 1=失败
+    process.exit(result.passed ? 0 : 1);
+  } catch (error: any) {
+    console.error('\n❌ 验证过程发生严重错误:');
+    console.error(error.message);
+    if (error.stack) {
+      console.error('\n堆栈跟踪:');
+      console.error(error.stack);
+    }
     process.exit(1);
-  });
+  }
 }
+
+// 立即执行（不检查模块状态）
+main().catch(error => {
+  console.error('❌ 脚本启动失败:', error);
+  process.exit(1);
+});
 
 export { EnvValidator };
 

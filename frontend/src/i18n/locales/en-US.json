@@ -1,0 +1,60 @@
+{
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "agent": {
+    "title": "Agent Management",
+    "add": "Add Agent",
+    "edit": "Edit Agent",
+    "delete": "Delete Agent",
+    "fetchInfo": "Auto Fetch",
+    "name": "Name",
+    "description": "Description",
+    "provider": "Provider",
+    "endpoint": "Endpoint",
+    "apiKey": "API Key",
+    "appId": "App ID",
+    "model": "Model",
+    "temperature": "Temperature",
+    "maxTokens": "Max Tokens",
+    "systemPrompt": "System Prompt",
+    "capabilities": "Capabilities",
+    "isActive": "Active",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "validation": {
+      "nameRequired": "Name is required",
+      "endpointInvalid": "Invalid endpoint format",
+      "apiKeyRequired": "API Key is required",
+      "appIdRequired": "App ID is required (FastGPT)"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "newChat": "New Chat",
+    "sendMessage": "Send Message",
+    "inputPlaceholder": "Type a message...",
+    "thinking": "Thinking...",
+    "error": "Failed to send, please retry"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "dashboard": "Dashboard",
+    "agents": "Agent Management",
+    "users": "User Management",
+    "settings": "Settings",
+    "logout": "Logout"
+  }
+}
+

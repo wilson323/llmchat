@@ -1,0 +1,60 @@
+{
+  "common": {
+    "confirm": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "search": "搜索",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "信息"
+  },
+  "agent": {
+    "title": "智能体管理",
+    "add": "添加智能体",
+    "edit": "编辑智能体",
+    "delete": "删除智能体",
+    "fetchInfo": "自动获取",
+    "name": "名称",
+    "description": "描述",
+    "provider": "提供方",
+    "endpoint": "接口地址",
+    "apiKey": "访问密钥",
+    "appId": "应用ID",
+    "model": "模型",
+    "temperature": "温度",
+    "maxTokens": "最大Token",
+    "systemPrompt": "系统提示词",
+    "capabilities": "能力标签",
+    "isActive": "启用状态",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "validation": {
+      "nameRequired": "名称不能为空",
+      "endpointInvalid": "接口地址格式不正确",
+      "apiKeyRequired": "访问密钥不能为空",
+      "appIdRequired": "应用ID不能为空（FastGPT必填）"
+    }
+  },
+  "chat": {
+    "title": "聊天",
+    "newChat": "新建会话",
+    "sendMessage": "发送消息",
+    "inputPlaceholder": "输入消息...",
+    "thinking": "思考中...",
+    "error": "发送失败，请重试"
+  },
+  "admin": {
+    "title": "管理员面板",
+    "dashboard": "仪表板",
+    "agents": "智能体管理",
+    "users": "用户管理",
+    "settings": "系统设置",
+    "logout": "登出"
+  }
+}
+
