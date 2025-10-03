@@ -27,8 +27,8 @@ import {
   enhancedHealthCheckMiddleware
 } from '@/middleware/protectionMiddleware';
 
-// 加载环境变量
-dotenv.config();
+// 加载环境变量 - 显式指定 .env 文件路径
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
