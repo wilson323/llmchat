@@ -410,7 +410,7 @@ export class AuthServiceV2 {
    * 获取用户信息（通过token）
    */
   async profile(token: string): Promise<AuthUser> {
-    const result = await this.verifyToken(token);
+    const result = await this.validateToken(token);
     if (!result.valid || !result.user) {
       throw new Error(result.error || 'UNAUTHORIZED');
     }

@@ -6,16 +6,18 @@
  * - Express中间件集成
  * - 性能监控
  * - 请求上下文追踪
+ * 
+ * 注意：适配 Sentry v10+ API
  */
 
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
-import type { Express, Request, Response, NextFunction } from 'express';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import type { Express } from 'express';
 
 /**
  * 初始化Sentry
  */
-export function initSentry(app: Express) {
+export function initSentry(app: Express): void {
   // 仅在生产环境或明确启用时初始化
   if (process.env.NODE_ENV === 'production' || process.env.SENTRY_ENABLED === 'true') {
     const dsn = process.env.SENTRY_DSN;
@@ -30,13 +32,11 @@ export function initSentry(app: Express) {
       environment: process.env.NODE_ENV || 'development',
       release: process.env.APP_VERSION || 'unknown',
       
-      // 集成
+      // 集成（Sentry v10+ 使用函数式API）
       integrations: [
-        // Express自动集成
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.Express({ app }),
-        // CPU profiling
-        new ProfilingIntegration(),
+        Sentry.httpIntegration(),
+        Sentry.expressIntegration(),
+        nodeProfilingIntegration(),
       ],
 
       // 性能监控
@@ -44,7 +44,7 @@ export function initSentry(app: Express) {
       profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
       // 数据清理
-      beforeSend(event: any, hint: any) {
+      beforeSend(event: Sentry.ErrorEvent, hint: Sentry.EventHint): Sentry.ErrorEvent | null {
         // 移除敏感数据
         if (event.request) {
           delete event.request.cookies;
@@ -92,54 +92,65 @@ export function initSentry(app: Express) {
  * Express请求处理器（必须在所有路由之前）
  */
 export function sentryRequestHandler() {
-  return Sentry.Handlers.requestHandler();
+  return Sentry.requestDataIntegration();
 }
 
 /**
  * Express追踪处理器（必须在所有路由之前）
  */
 export function sentryTracingHandler() {
-  return Sentry.Handlers.tracingHandler();
+  // v10中已集成到 expressIntegration 中
+  return (_req: any, _res: any, next: any) => next();
 }
 
 /**
  * Express错误处理器（必须在所有路由之后）
  */
 export function sentryErrorHandler() {
-  return Sentry.Handlers.errorHandler();
+  return Sentry.expressErrorHandler();
 }
 
 /**
  * 设置用户上下文
  */
-export function setSentryUser(user: { id: string; email?: string; username?: string }) {
-  Sentry.setUser({
+export function setSentryUser(user: { id: string; email?: string; username?: string }): void {
+  const userData: Sentry.User = {
     id: user.id,
-    email: user.email,
-    username: user.username,
-  });
+  };
+  if (user.email) userData.email = user.email;
+  if (user.username) userData.username = user.username;
+  
+  Sentry.setUser(userData);
 }
 
 /**
  * 清除用户上下文
  */
-export function clearSentryUser() {
+export function clearSentryUser(): void {
   Sentry.setUser(null);
 }
 
 /**
  * 手动捕获错误
  */
-export function captureError(error: Error, context?: Record<string, unknown>) {
-  Sentry.captureException(error, {
-    extra: context,
-  });
+export function captureError(error: Error, context?: Record<string, unknown>): void {
+  if (context) {
+    Sentry.captureException(error, {
+      extra: context,
+    });
+  } else {
+    Sentry.captureException(error);
+  }
 }
 
 /**
  * 添加面包屑
  */
-export function addBreadcrumb(message: string, category: string, level: Sentry.SeverityLevel = 'info') {
+export function addBreadcrumb(
+  message: string, 
+  category: string, 
+  level: Sentry.SeverityLevel = 'info'
+): void {
   Sentry.addBreadcrumb({
     message,
     category,
@@ -149,31 +160,15 @@ export function addBreadcrumb(message: string, category: string, level: Sentry.S
 }
 
 /**
- * 性能追踪中间件
+ * 性能追踪中间件（简化版，v10推荐使用自动追踪）
  */
 export function performanceMiddleware(name: string) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const transaction = Sentry.startTransaction({
-      op: 'http.server',
-      name: `${req.method} ${req.path}`,
-      data: {
-        customName: name,
-      },
-    });
-
-    // 将transaction附加到请求对象
-    (req as any).sentryTransaction = transaction;
-
-    // 响应结束时完成transaction
-    res.on('finish', () => {
-      transaction.setHttpStatus(res.statusCode);
-      transaction.finish();
-    });
-
+  return (_req: any, _res: any, next: any) => {
+    // v10中由 expressIntegration 自动处理
+    // 这里保留接口兼容性但不做实际操作
     next();
   };
 }
 
 // 导出Sentry实例供高级使用
 export { Sentry };
-
