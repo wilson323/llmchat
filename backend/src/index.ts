@@ -27,8 +27,17 @@ import {
   enhancedHealthCheckMiddleware
 } from '@/middleware/protectionMiddleware';
 
-// 加载环境变量 - 显式指定 .env 文件路径
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// 加载环境变量 - 使用process.cwd()确保路径正确
+// 在开发环境下，cwd是项目根目录，所以backend/.env是正确的路径
+const envPath = path.resolve(process.cwd(), 'backend/.env');
+dotenv.config({ path: envPath });
+
+// 调试：打印环境变量加载情况
+if (process.env.NODE_ENV !== 'production') {
+  console.log('[ENV] Loading from:', envPath);
+  console.log('[ENV] DB_HOST:', process.env.DB_HOST || 'NOT_SET');
+  console.log('[ENV] DB_PORT:', process.env.DB_PORT || 'NOT_SET');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
