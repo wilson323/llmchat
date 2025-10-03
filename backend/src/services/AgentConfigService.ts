@@ -5,6 +5,7 @@ import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { deepReplaceEnvVariables, validateRequiredEnvVars, containsUnresolvedPlaceholders } from '@/utils/envHelper';
 import logger from '@/utils/logger';
+import { ResourceError, ValidationError } from '@/types/errors';
 
 type AgentSeed = {
   id: string;
@@ -195,7 +196,12 @@ export class AgentConfigService {
     await this.ensureCache();
     const config = await this.getAgent(id);
     if (!config) {
-      throw new Error(`智能体不存在: ${id}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${id}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: id
+      });
     }
 
     const updatedConfig: AgentConfig = {
@@ -205,7 +211,11 @@ export class AgentConfigService {
     };
 
     if (!this.validateAgentConfig(updatedConfig, id)) {
-      throw new Error('更新后的配置验证失败');
+      throw new ValidationError({
+        message: '更新后的配置验证失败',
+        code: 'INVALID_AGENT_CONFIG',
+        field: 'agentConfig'
+      });
     }
 
     await this.persistAgent(updatedConfig);
@@ -238,7 +248,11 @@ export class AgentConfigService {
     };
 
     if (!this.validateAgentConfig(config)) {
-      throw new Error('智能体配置验证失败');
+      throw new ValidationError({
+        message: '智能体配置验证失败',
+        code: 'INVALID_AGENT_CONFIG',
+        field: 'agentConfig'
+      });
     }
 
     await this.insertAgent(config);

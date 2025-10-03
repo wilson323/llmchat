@@ -11,17 +11,27 @@ import {
   ApiError
 } from '@/types';
 import { getErrorMessage } from '@/utils/helpers';
-import { createErrorFromUnknown } from '@/types/errors';
+import { createErrorFromUnknown, AuthenticationError } from '@/types/errors';
 import { JsonValue } from '@/types/dynamic';
 
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
   const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) throw new Error('UNAUTHORIZED');
+  if (!token) {
+    throw new AuthenticationError({
+      message: '未提供认证令牌',
+      code: 'UNAUTHORIZED'
+    });
+  }
 
   // 这里应该调用认证服务验证token
   // const user = await authService.profile(token);
-  // if (!user || user.role !== 'admin') throw new Error('UNAUTHORIZED');
+  // if (!user || user.role !== 'admin') {
+  //   throw new AuthorizationError({
+  //     message: '需要管理员权限',
+  //     code: 'FORBIDDEN'
+  //   });
+  // }
 
   // 暂时跳过认证，实际生产环境需要实现
   return { userId: 'admin' };

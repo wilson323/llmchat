@@ -6,19 +6,32 @@ import { analyticsService } from '@/services/analyticsInstance';
 import logger from '@/utils/logger';
 import { logAudit } from '@/middleware/auditMiddleware';
 import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
+import { AuthenticationError, AuthorizationError, BusinessLogicError } from '@/types/errors';
 
 // 使用全局单例的 authService（见 services/authInstance.ts）
 
 async function ensureAuth(req: Request) {
   const auth = req.headers['authorization'];
   const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
-  if (!token) throw new Error('UNAUTHORIZED');
+  if (!token) {
+    throw new AuthenticationError({
+      message: '未提供认证令牌',
+      code: 'UNAUTHORIZED'
+    });
+  }
   return await authService.profile(token);
 }
 
 async function ensureAdminAuth(req: Request) {
   const user = await ensureAuth(req);
-  if (!user || user.role !== 'admin') throw new Error('UNAUTHORIZED');
+  if (!user || user.role !== 'admin') {
+    throw new AuthorizationError({
+      message: '需要管理员权限',
+      code: 'FORBIDDEN',
+      resource: 'admin',
+      action: 'access'
+    });
+  }
   return user;
 }
 
@@ -400,7 +413,11 @@ export class AdminController {
       const data = await withClient(async (client) => {
         const exists = await client.query('SELECT 1 FROM users WHERE username=$1 LIMIT 1', [username]);
         if (exists.rowCount && exists.rowCount > 0) {
-          throw new Error('USER_EXISTS');
+          throw new BusinessLogicError({
+            message: '用户名已存在',
+            code: 'USER_EXISTS',
+            rule: 'unique_username'
+          });
         }
         const salt = '';
         const hash = '';

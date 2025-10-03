@@ -3,6 +3,7 @@ import { AgentConfigService } from './AgentConfigService';
 import { AgentConfig } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import logger from '@/utils/logger';
+import { ResourceError, ValidationError, ExternalServiceError } from '@/types/errors';
 
 /**
  * Dify应用信息接口
@@ -107,11 +108,21 @@ export class DifyInitService {
     // 获取智能体配置
     const agent = await this.agentService.getAgent(agentId);
     if (!agent) {
-      throw new Error(`智能体不存在: ${agentId}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${agentId}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: agentId
+      });
     }
 
     if (agent.provider !== 'dify') {
-      throw new Error(`智能体 ${agentId} 不是Dify类型，无法获取初始化数据`);
+      throw new ValidationError({
+        message: `智能体 ${agentId} 不是Dify类型，无法获取初始化数据`,
+        code: 'INVALID_PROVIDER_TYPE',
+        field: 'provider',
+        value: agent.provider
+      });
     }
 
     // 并行调用Dify API
@@ -161,7 +172,13 @@ export class DifyInitService {
         const axiosError = error as any;
         const message = axiosError.response?.data?.message || axiosError.message;
         const statusCode = axiosError.response?.status;
-        throw new Error(`Dify Info API调用失败 (${statusCode || 'unknown'}): ${message}`);
+        throw new ExternalServiceError({
+          message: `Dify Info API调用失败 (${statusCode || 'unknown'}): ${message}`,
+          code: 'DIFY_INFO_API_ERROR',
+          service: 'Dify',
+          endpoint: `${agent.endpoint}/info`,
+          originalError: axiosError
+        });
       }
       throw error;
     }
@@ -197,7 +214,13 @@ export class DifyInitService {
         const axiosError = error as any;
         const message = axiosError.response?.data?.message || axiosError.message;
         const statusCode = axiosError.response?.status;
-        throw new Error(`Dify Parameters API调用失败 (${statusCode || 'unknown'}): ${message}`);
+        throw new ExternalServiceError({
+          message: `Dify Parameters API调用失败 (${statusCode || 'unknown'}): ${message}`,
+          code: 'DIFY_PARAMETERS_API_ERROR',
+          service: 'Dify',
+          endpoint: `${agent.endpoint}/parameters`,
+          originalError: axiosError
+        });
       }
       throw error;
     }
@@ -334,7 +357,12 @@ export class DifyInitService {
         const axiosError = error as any;
         const message = axiosError.response?.data?.message || axiosError.message;
         const statusCode = axiosError.response?.status;
-        throw new Error(`Dify API调用失败 (${statusCode || 'unknown'}): ${message}`);
+        throw new ExternalServiceError({
+          message: `Dify API调用失败 (${statusCode || 'unknown'}): ${message}`,
+          code: 'DIFY_API_ERROR',
+          service: 'Dify',
+          originalError: axiosError
+        });
       }
       throw error;
     }
