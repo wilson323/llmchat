@@ -42,6 +42,9 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 })) as any;
 
+// Mock Element.scrollIntoView（jsdom 不支持）
+Element.prototype.scrollIntoView = vi.fn();
+
 // Mock console 方法（减少测试输出噪音）
 if (process.env.NODE_ENV === 'test') {
   global.console = {
