@@ -347,7 +347,9 @@ export class AgentConfigService {
       const sanitized = this.sanitizeNumericPlaceholders(raw);
       const parsed = JSON.parse(sanitized);
       const list = Array.isArray(parsed?.agents) ? parsed.agents : [];
-      const replaced = deepReplaceEnvVariables(list) as Array<Partial<AgentConfig> & Record<string, any>>;
+      
+      // 对于示例智能体使用静默模式，不记录环境变量警告
+      const replaced = deepReplaceEnvVariables(list, true) as Array<Partial<AgentConfig> & Record<string, any>>;
 
       const map = new Map<string, AgentConfig>();
       const fallbackTimestamp = new Date().toISOString();
@@ -684,12 +686,19 @@ export class AgentConfigService {
       }
     }
 
-    // 🔐 安全检查：确保没有未解析的环境变量占位符
-    const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
-    for (const field of sensitiveFields) {
-      if (config[field] && typeof config[field] === 'string' && containsUnresolvedPlaceholders(config[field])) {
-        logger.error('智能体配置包含未解析的环境变量占位符', { field, value: config[field] });
-        return false;
+    // 🔐 安全检查：对于激活的智能体，确保没有未解析的环境变量占位符
+    // 示例/未激活的智能体可以包含占位符
+    if (config.isActive) {
+      const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
+      for (const field of sensitiveFields) {
+        if (config[field] && typeof config[field] === 'string' && containsUnresolvedPlaceholders(config[field])) {
+          logger.error('激活的智能体配置包含未解析的环境变量占位符', { 
+            agentId: config.id,
+            field, 
+            value: config[field] 
+          });
+          return false;
+        }
       }
     }
 

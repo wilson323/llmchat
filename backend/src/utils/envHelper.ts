@@ -10,9 +10,10 @@ import logger from '@/utils/logger';
  * 支持 ${VARIABLE_NAME} 格式的占位符
  * @param input 包含环境变量占位符的字符串
  * @param defaultValue 当环境变量未定义时的默认值
+ * @param silent 是否静默模式（不记录警告）
  * @returns 替换后的字符串
  */
-export function replaceEnvVariables(input: string, defaultValue?: string): string {
+export function replaceEnvVariables(input: string, defaultValue?: string, silent: boolean = false): string {
   return input.replace(/\$\{([^}]+)\}/g, (match, envVar) => {
     const value = process.env[envVar];
     if (value === undefined) {
@@ -20,7 +21,10 @@ export function replaceEnvVariables(input: string, defaultValue?: string): strin
         return defaultValue;
       }
       // 如果没有默认值，返回原始占位符（保持向后兼容）
-      logger.warn('环境变量未定义', { envVar });
+      // 只有非静默模式才记录警告
+      if (!silent) {
+        logger.debug('环境变量未定义', { envVar });
+      }
       return match;
     }
     return value;
@@ -30,21 +34,22 @@ export function replaceEnvVariables(input: string, defaultValue?: string): strin
 /**
  * 递归替换对象中的所有环境变量占位符
  * @param obj 需要处理的对象
+ * @param silent 是否静默模式（不记录警告）
  * @returns 处理后的对象
  */
-export function deepReplaceEnvVariables<T>(obj: T): T {
+export function deepReplaceEnvVariables<T>(obj: T, silent: boolean = false): T {
   if (typeof obj === 'string') {
-    return replaceEnvVariables(obj) as T;
+    return replaceEnvVariables(obj, undefined, silent) as T;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => deepReplaceEnvVariables(item)) as T;
+    return obj.map(item => deepReplaceEnvVariables(item, silent)) as T;
   }
 
   if (obj && typeof obj === 'object') {
     const result: any = {};
     for (const [key, value] of Object.entries(obj)) {
-      result[key] = deepReplaceEnvVariables(value);
+      result[key] = deepReplaceEnvVariables(value, silent);
     }
     return result;
   }
