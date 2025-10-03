@@ -6,6 +6,7 @@
  */
 
 import type {
+  ApiSuccessResponse,
   JsonArray,
   JsonObject,
   JsonValue,
@@ -21,6 +22,7 @@ export type {
   UnknownValue,
   DataPayload,
   ApiRequestPayload,
+  ApiSuccessResponse,
   ApiResponsePayload,
   ExternalServiceResponse,
   PaginationParams,
@@ -41,6 +43,10 @@ export {
   DynamicDataConverter,
   SafeAccess
 } from '@llmchat/shared-types';
+
+export type ApiSuccessPayload<TData> = Omit<ApiSuccessResponse<JsonValue>, 'data'> & {
+  data: TData;
+};
 
 // ============================================================================
 // 前端特有的扩展类型

@@ -3,6 +3,7 @@ import Joi from 'joi';
 import { ProductPreviewService } from '@/services/ProductPreviewService';
 import { ApiError, ProductPreviewRequest } from '@/types';
 import logger from '@/utils/logger';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 
 export class ProductPreviewController {
   private service: ProductPreviewService;
@@ -47,10 +48,9 @@ export class ProductPreviewController {
 
     try {
       const result = await this.service.generatePreview(value);
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '生成现场预览成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (err: any) {
       logger.error('调用豆包图片生成接口失败', { error: err });

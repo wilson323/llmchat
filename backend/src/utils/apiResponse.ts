@@ -1,42 +1,23 @@
 import { Response } from 'express';
-import { JsonValue, DynamicTypeGuard } from '@/types/dynamic';
+import { ApiSuccessResponse, JsonObject, JsonValue, DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
 import { createErrorFromUnknown } from '@/types/errors';
 import { ApiError } from '@/types';
 
-/**
- * 成功响应接口
- */
-export interface SuccessResponse<T = JsonValue> {
-  success: true;
-  data: T;
-  message?: string;
-  timestamp: string;
-  requestId?: string;
-  metadata?: {
-    version: string;
-    duration?: number;
-    pagination?: {
-      page: number;
-      pageSize: number;
-      total: number;
-      totalPages: number;
-    };
-  };
+type PaginationMetadata = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+};
+
+interface SuccessMetadata {
+  pagination?: PaginationMetadata;
+  extra?: unknown;
 }
 
-/**
- * 分页响应接口
- */
-export interface PaginatedResponse<T = JsonValue> extends SuccessResponse<T[]> {
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
+type SendSuccessOptions = Exclude<Parameters<typeof ApiResponseHandler.sendSuccess>[2], undefined>;
 
 /**
  * 类型安全的API响应处理工具
@@ -55,19 +36,21 @@ export class ApiResponseHandler {
   /**
    * 发送成功响应
    */
-  static sendSuccess<T = JsonValue>(
+  static sendSuccess<T = unknown>(
     res: Response,
     data: T,
     options: {
       message?: string;
+      code?: string;
       statusCode?: number;
       requestId?: string;
-      metadata?: Omit<SuccessResponse<T>['metadata'], 'version'>;
+      metadata?: SuccessMetadata;
       startTime?: number;
     } = {}
   ): void {
     const {
-      message,
+      message = 'success',
+      code = 'OK',
       statusCode = 200,
       requestId,
       metadata,
@@ -75,7 +58,9 @@ export class ApiResponseHandler {
     } = options;
 
     // 验证响应数据类型
-    if (!DynamicTypeGuard.isJsonValue(data)) {
+    const safeData = DynamicDataConverter.toSafeJsonValue(data);
+
+    if (!DynamicTypeGuard.isJsonValue(safeData)) {
       const error = createErrorFromUnknown(
         new Error('Response data is not a valid JSON value'),
         {
@@ -88,17 +73,22 @@ export class ApiResponseHandler {
       return this.sendError(res, error, requestId ? { requestId } : {});
     }
 
-    const responseData: SuccessResponse<T> = {
-      success: true,
-      data,
+    const metadataPayload: ApiSuccessResponse<JsonValue>['metadata'] = {
+      version: this.API_VERSION,
+      ...(startTime ? { duration: Date.now() - startTime } : {}),
+      ...(metadata?.pagination ? { pagination: metadata.pagination } : {}),
+      ...(metadata?.extra
+        ? this.getMetadataExtra(metadata.extra)
+        : {}),
+    };
+
+    const responseData: ApiSuccessResponse<JsonValue> = {
+      code,
+      message,
+      data: safeData as JsonValue,
       timestamp: new Date().toISOString(),
-      ...(message && { message }),
-      ...(requestId && { requestId }),
-      metadata: {
-        version: this.API_VERSION,
-        ...(startTime && { duration: Date.now() - startTime }),
-        ...metadata,
-      },
+      ...(requestId ? { requestId } : {}),
+      metadata: metadataPayload,
     };
 
     // 设置响应头
@@ -113,7 +103,7 @@ export class ApiResponseHandler {
   /**
    * 发送分页响应
    */
-  static sendPaginated<T = JsonValue>(
+  static sendPaginated<T = unknown>(
     res: Response,
     data: T[],
     pagination: {
@@ -125,6 +115,7 @@ export class ApiResponseHandler {
       message?: string;
       requestId?: string;
       startTime?: number;
+      metadata?: SuccessMetadata;
     } = {}
   ): void {
     const totalPages = Math.ceil(pagination.total / pagination.pageSize);
@@ -139,11 +130,14 @@ export class ApiResponseHandler {
     };
 
     this.sendSuccess(res, data, {
-      ...(options.message && { message: options.message }),
-      ...(options.requestId && { requestId: options.requestId }),
-      ...(options.startTime && { startTime: options.startTime }),
+      ...(options.message ? { message: options.message } : {}),
+      ...(options.requestId ? { requestId: options.requestId } : {}),
+      ...(options.startTime ? { startTime: options.startTime } : {}),
       metadata: {
         pagination: paginationData,
+        ...(options.metadata?.extra
+          ? this.getMetadataExtra(options.metadata.extra)
+          : {}),
       },
     });
   }
@@ -194,12 +188,35 @@ export class ApiResponseHandler {
   /**
    * 发送创建成功响应 (201)
    */
-  static sendCreated<T = JsonValue>(
+  static sendCreated<T = unknown>(
     res: Response,
     data: T,
-    options: Omit<Parameters<typeof ApiResponseHandler.sendSuccess>[2], 'statusCode'> = {}
+    options: Omit<SendSuccessOptions, 'statusCode'> = {}
   ): void {
-    this.sendSuccess(res, data, { ...options, statusCode: 201 });
+    const nextOptions: SendSuccessOptions = {
+      ...(options ?? {}),
+      statusCode: 201,
+    };
+
+    if (!options?.code) {
+      nextOptions.code = 'CREATED';
+    }
+
+    this.sendSuccess(res, data, nextOptions);
+  }
+
+  private static getMetadataExtra(extra: unknown): Partial<{ extra: JsonObject }> {
+    const safeExtra = DynamicDataConverter.toSafeJsonValue(extra);
+
+    if (safeExtra && typeof safeExtra === 'object' && !Array.isArray(safeExtra)) {
+      return { extra: safeExtra as JsonObject };
+    }
+
+    if (safeExtra === null || safeExtra === undefined) {
+      return {};
+    }
+
+    return { extra: { value: safeExtra } as JsonObject };
   }
 
   /**
@@ -344,12 +361,10 @@ export class ApiResponseHandler {
       });
 
       return JSON.stringify({
-        success: false,
-        error: {
-          code: 'SERIALIZATION_ERROR',
-          message: '数据序列化失败',
-          timestamp: new Date().toISOString(),
-        }
+        code: 'SERIALIZATION_ERROR',
+        message: '数据序列化失败',
+        data: null,
+        timestamp: new Date().toISOString(),
       });
     }
   }

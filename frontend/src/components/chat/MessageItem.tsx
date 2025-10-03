@@ -10,6 +10,7 @@ import rehypeRaw from 'rehype-raw';
 import { ChatMessage, Agent, StreamStatus, InteractiveSelectParams, InteractiveInputParams, InteractiveFormItem } from '@/types';
 import 'highlight.js/styles/github-dark.css';
 import { useChatStore } from '@/store/chatStore';
+import { useMessageStore } from '@/store/messageStore';
 import { chatService } from '@/services/api';
 import { ReasoningTrail } from './ReasoningTrail';
 import { EventTrail } from './EventTrail';
@@ -221,7 +222,8 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   const content = isUser ? message.HUMAN : message.AI;
 
   // 从全局store获取当前会话和反馈更新方法
-  const { currentSession, setMessageFeedback } = useChatStore();
+  const currentSession = useChatStore((state) => state.currentSession);
+  const setMessageFeedback = useMessageStore((state) => state.setMessageFeedback);
   const agent = currentAgent; // 已通过props传入
   const canFeedback = !isUser && !!message.id && agent?.provider === 'fastgpt';
 

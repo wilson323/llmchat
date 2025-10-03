@@ -18,6 +18,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import Joi from 'joi';
 import logger from '@/utils/logger';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 
 /**
  * Joi错误提取工具
@@ -678,10 +679,8 @@ export class ChatController {
         logger.warn('[ChatController] 记录助手消息失败', { error: typedError.message });
       }
 
-      res.json({
-        success: true,
-        data: { ...response, chatId: sessionId },
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, { ...response, chatId: sessionId }, {
+        message: '聊天请求成功',
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
@@ -697,7 +696,9 @@ export class ChatController {
       if (typeof unknownError === 'object' && unknownError !== null && 'fallbackUsed' in unknownError) {
         const fallbackError = unknownError as { fallbackUsed?: boolean; data?: JsonValue };
         if (fallbackError.fallbackUsed) {
-          res.json({ success: true, data: fallbackError.data });
+          ApiResponseHandler.sendSuccess(res, fallbackError.data ?? null, {
+            message: '已返回降级响应',
+          });
           return;
         }
       }
@@ -727,8 +728,6 @@ export class ChatController {
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // 兼容反向代理
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
       // 立即刷新头部，避免缓冲
       const extendedRes = res as ExtendedResponse;
       if (typeof extendedRes.flushHeaders === 'function') {
@@ -959,10 +958,8 @@ export class ChatController {
     try {
       const initData = await this.initService.getInitData(appId, chatId);
 
-      res.json({
-        success: true,
-        data: initData,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, initData, {
+        message: '初始化数据获取成功',
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
@@ -992,8 +989,6 @@ export class ChatController {
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
       // 立即刷新头部
       const extendedRes = res as ExtendedResponse;
@@ -1112,7 +1107,10 @@ export class ChatController {
 
       await this.fastgptSessionService.updateUserFeedback(agentId, feedbackData);
 
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '反馈提交成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
         component: 'ChatController',
@@ -1206,10 +1204,20 @@ export class ChatController {
         pagination
       );
 
-      res.json({
-        success: true,
-        data: histories,
-        timestamp: new Date().toISOString(),
+      const extraMetadata: Record<string, JsonValue> = {};
+      if (typeof pagination.page === 'number') {
+        extraMetadata.page = pagination.page;
+      }
+      if (typeof pagination.pageSize === 'number') {
+        extraMetadata.pageSize = pagination.pageSize;
+      }
+
+      ApiResponseHandler.sendSuccess(res, histories, {
+        message: '获取聊天历史成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+        ...(Object.keys(extraMetadata).length
+          ? { metadata: { extra: extraMetadata } }
+          : {}),
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
@@ -1306,10 +1314,9 @@ export class ChatController {
 
       const detail: FastGPTChatHistoryDetail = await this.fastgptSessionService.getHistoryDetail(agentId, chatId);
 
-      res.json({
-        success: true,
-        data: detail,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, detail, {
+        message: '获取聊天历史详情成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (err: unknown) {
       logger.error('获取聊天历史失败', { error: err });
@@ -1373,7 +1380,10 @@ export class ChatController {
       const { agentId } = value as { agentId: string };
       await this.fastgptSessionService.deleteHistory(agentId, chatId);
 
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '聊天历史删除成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
     } catch (err: unknown) {
       logger.error('删除聊天历史失败', { error: err });
       const apiError: ApiError = {
@@ -1472,10 +1482,9 @@ export class ChatController {
         source: value.source || 'upload',
       };
 
-      res.json({
-        success: true,
-        data: metadata,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, metadata, {
+        message: '附件上传成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
@@ -1512,7 +1521,10 @@ export class ChatController {
       const { agentId } = value as { agentId: string };
       await this.fastgptSessionService.clearHistories(agentId);
 
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '聊天历史已清空',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
     } catch (err: unknown) {
       logger.error('清空聊天历史失败', { error: err });
       const apiError: ApiError = {

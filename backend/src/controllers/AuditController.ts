@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { auditService } from '@/services/AuditService';
 import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 import logger from '@/utils/logger';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 
 /**
  * 审计日志控制器
@@ -48,9 +49,9 @@ export class AuditController {
       
       const result = await auditService.query(queryParams);
 
-      res.json({
-        success: true,
-        data: result,
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '查询审计日志成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to query audit logs', {
@@ -91,9 +92,9 @@ export class AuditController {
       
       const result = await auditService.getUserAuditLogs(userId, options);
 
-      return res.json({
-        success: true,
-        data: result,
+      return ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取用户审计日志成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to get user audit logs', {
@@ -137,9 +138,9 @@ export class AuditController {
         options
       );
 
-      return res.json({
-        success: true,
-        data: result,
+      return ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取资源审计日志成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to get resource audit logs', {
@@ -168,9 +169,9 @@ export class AuditController {
         limit ? parseInt(limit as string, 10) : undefined
       );
 
-      res.json({
-        success: true,
-        data: logs,
+      ApiResponseHandler.sendSuccess(res, logs, {
+        message: '获取最近审计日志成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to get recent audit logs', {
@@ -202,9 +203,9 @@ export class AuditController {
       
       const result = await auditService.getFailedLogs(options);
 
-      res.json({
-        success: true,
-        data: result,
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取失败审计日志成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to get failed audit logs', {
@@ -282,9 +283,9 @@ export class AuditController {
       
       const statistics = await auditService.getStatistics(options);
 
-      res.json({
-        success: true,
-        data: statistics,
+      ApiResponseHandler.sendSuccess(res, statistics, {
+        message: '获取审计统计成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('Failed to get audit statistics', {

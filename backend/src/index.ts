@@ -96,8 +96,11 @@ app.use('/api/chat', chatRouter);
 // 404处理
 app.use((req, res) => {
   res.status(404).json({
-    success: false,
+    code: 'NOT_FOUND',
     message: `路由 ${req.method} ${req.path} 不存在`,
+    data: null,
+    timestamp: new Date().toISOString(),
+    ...(req.requestId ? { requestId: req.requestId } : {}),
   });
 });
 

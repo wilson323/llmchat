@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
 import { ValidationError, SystemError } from '@/types/errors';
 
 /**
@@ -16,6 +16,8 @@ export interface PasswordStrengthResult {
  */
 export class PasswordService {
   private readonly saltRounds = 12;
+  private readonly keyLength = 64;
+  private readonly saltSize = 16; // bytes
   private readonly minLength = 8;
   private readonly maxLength = 128;
 
@@ -26,8 +28,19 @@ export class PasswordService {
    */
   async hashPassword(plainPassword: string): Promise<string> {
     this.validatePasswordFormat(plainPassword);
-    const salt = await bcrypt.genSalt(this.saltRounds);
-    return bcrypt.hash(plainPassword, salt);
+    try {
+      const salt = randomBytes(this.saltSize).toString('hex');
+      const hashBuffer = await this.deriveKey(plainPassword, salt);
+
+      const hash = hashBuffer.toString('hex');
+      return `scrypt$${salt}$${hash}`;
+    } catch (error) {
+      throw new SystemError({
+        message: 'Password hashing failed',
+        code: 'PASSWORD_HASH_ERROR',
+        originalError: error,
+      });
+    }
   }
 
   /**
@@ -38,7 +51,28 @@ export class PasswordService {
    */
   async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     try {
-      return await bcrypt.compare(plainPassword, hashedPassword);
+      if (!hashedPassword || typeof hashedPassword !== 'string') {
+        return false;
+      }
+
+      const parts = hashedPassword.split('$');
+      if (parts.length !== 3 || parts[0] !== 'scrypt') {
+        return false;
+      }
+
+      const [, salt, hash] = parts;
+      if (!salt || !hash) {
+        return false;
+      }
+
+      const derivedKey = await this.deriveKey(plainPassword, salt);
+
+      const storedKey = Buffer.from(hash, 'hex');
+      if (storedKey.length !== derivedKey.length) {
+        return false;
+      }
+
+      return timingSafeEqual(derivedKey, storedKey);
     } catch (error) {
       throw new SystemError({
         message: 'Password verification failed',
@@ -121,6 +155,25 @@ export class PasswordService {
         code: 'INVALID_PASSWORD_LENGTH'
       });
     }
+  }
+
+  private deriveKey(password: string, salt: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      scryptCallback(
+        password,
+        salt,
+        this.keyLength,
+        { N: 1 << Math.min(20, Math.max(1, this.saltRounds)), r: 8, p: 1 },
+        (error, derivedKey) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve(derivedKey as Buffer);
+        }
+      );
+    });
   }
 }
 
