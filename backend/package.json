@@ -15,6 +15,7 @@
     "validate-config": "ts-node -r tsconfig-paths/register scripts/validate-config.ts",
     "validate:env": "ts-node -r tsconfig-paths/register src/scripts/validate-env.ts",
     "sanitize:config": "ts-node -r tsconfig-paths/register src/scripts/sanitize-config.ts",
+    "migrate:passwords": "ts-node -r tsconfig-paths/register src/scripts/migrate-passwords.ts",
     "prestart": "npm run validate:env",
     "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate.ts",
     "migrate:up": "npm run migrate up",

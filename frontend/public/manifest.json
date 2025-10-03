@@ -1,0 +1,48 @@
+{
+  "name": "LLMChat - 智能体切换聊天应用",
+  "short_name": "LLMChat",
+  "description": "支持多个AI提供商的智能体管理和聊天应用",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "shortcuts": [
+    {
+      "name": "新建聊天",
+      "short_name": "新聊天",
+      "description": "快速开始新的对话",
+      "url": "/chat/new",
+      "icons": []
+    },
+    {
+      "name": "管理智能体",
+      "short_name": "智能体",
+      "description": "管理AI智能体",
+      "url": "/admin",
+      "icons": []
+    }
+  ],
+  "prefer_related_applications": false
+}
+
