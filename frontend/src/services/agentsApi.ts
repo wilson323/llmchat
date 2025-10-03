@@ -79,3 +79,26 @@ export async function validateAgent(id: string): Promise<{ agentId: string; isVa
   return data.data;
 }
 
+export interface FetchAgentInfoParams {
+  provider: 'fastgpt' | 'dify';
+  endpoint: string;
+  apiKey: string;
+  appId?: string;
+}
+
+export interface AgentInfo {
+  name: string;
+  description: string;
+  model: string;
+  systemPrompt: string;
+  temperature: number;
+  maxTokens: number;
+  capabilities: Array<string>;
+  features: Record<string, any>;
+}
+
+export async function fetchAgentInfo(params: FetchAgentInfoParams): Promise<{ success: boolean; data: AgentInfo }> {
+  const { data } = await api.post<{ success: boolean; data: AgentInfo }>('/agents/fetch-info', params);
+  return data;
+}
+

@@ -48,6 +48,7 @@ import {
 } from "@/services/agentsApi";
 import { toast } from "@/components/ui/Toast";
 import { useI18n } from "@/i18n";
+import { useAgentAutoFetch } from "@/hooks/useAgentAutoFetch";
 import {
   getProvinceHeatmap,
   getConversationSeries,
@@ -2287,6 +2288,47 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   const [capabilitiesInput, setCapabilitiesInput] = useState("");
   const [featuresInput, setFeaturesInput] = useState("");
   const [isActive, setIsActive] = useState(true);
+  
+  // 自动获取智能体信息功能
+  const { fetchAgentInfo, loading: fetching, error: fetchError } = useAgentAutoFetch();
+  const [showAutoFetch, setShowAutoFetch] = useState(false);
+  
+  // 检测是否可以自动获取（FastGPT或Dify且有必填信息）
+  const canAutoFetch = 
+    (form.provider === 'fastgpt' || form.provider === 'dify') &&
+    form.endpoint.trim() &&
+    form.apiKey.trim() &&
+    (form.provider === 'dify' || form.appId.trim());
+
+  const handleAutoFetch = async () => {
+    if (!canAutoFetch) return;
+    
+    try {
+      const info = await fetchAgentInfo({
+        provider: form.provider as 'fastgpt' | 'dify',
+        endpoint: form.endpoint.trim(),
+        apiKey: form.apiKey.trim(),
+        appId: form.appId.trim() || undefined,
+      });
+      
+      if (info) {
+        setForm(prev => ({
+          ...prev,
+          name: info.name || prev.name,
+          description: info.description || prev.description,
+          model: info.model || prev.model,
+          systemPrompt: info.systemPrompt || prev.systemPrompt,
+          temperature: info.temperature != null ? String(info.temperature) : prev.temperature,
+          maxTokens: info.maxTokens != null ? String(info.maxTokens) : prev.maxTokens,
+        }));
+        setCapabilitiesInput(info.capabilities?.join(', ') || capabilitiesInput);
+        setFeaturesInput(info.features ? JSON.stringify(info.features, null, 2) : featuresInput);
+        setLocalError(null);
+      }
+    } catch (err) {
+      setLocalError(fetchError || '自动获取失败');
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -2387,6 +2429,27 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
             </p>
           </div>
 
+          {canAutoFetch && (
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 mb-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  {t('检测到 FastGPT/Dify 智能体，可自动获取配置信息')}
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleAutoFetch}
+                  disabled={fetching}
+                  className="text-xs"
+                >
+                  {fetching ? t('获取中...') : t('自动获取')}
+                </Button>
+              </div>
+              {fetchError && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fetchError}</p>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('名称 *')}</label>
@@ -2409,8 +2472,9 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <Input
                 value={form.provider}
                 onChange={(event) => setForm((prev) => ({ ...prev, provider: event.target.value }))}
-                placeholder={t('OpenAI / Azure / 自研')}
+                placeholder={t('fastgpt / dify / openai / anthropic / custom')}
               />
+              <p className="text-xs text-muted-foreground">{t('支持 fastgpt 和 dify 自动获取配置')}</p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('接口地址 *')}</label>
@@ -2430,12 +2494,17 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">{t('App ID')}</label>
+              <label className="text-sm font-medium text-foreground">
+                {t('App ID')} {form.provider === 'fastgpt' && <span className="text-red-500">*</span>}
+              </label>
               <Input
                 value={form.appId}
                 onChange={(event) => setForm((prev) => ({ ...prev, appId: event.target.value }))}
-                placeholder={t('可选')}
+                placeholder={form.provider === 'fastgpt' ? t('FastGPT 应用ID（必填）') : t('可选')}
               />
+              {form.provider === 'fastgpt' && (
+                <p className="text-xs text-muted-foreground">{t('FastGPT 智能体必须提供 App ID')}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('温度')}</label>

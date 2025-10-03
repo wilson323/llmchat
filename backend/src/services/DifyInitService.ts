@@ -129,7 +129,7 @@ export class DifyInitService {
   /**
    * 调用Dify应用信息API
    */
-  private async callDifyInfoAPI(agent: AgentConfig): Promise<DifyAppInfo> {
+  async callDifyInfoAPI(agent: AgentConfig): Promise<DifyAppInfo> {
     try {
       // 构建Dify API URL
       const baseUrl = agent.endpoint.replace(/\/v1\/chat-messages$/, '');
@@ -165,7 +165,7 @@ export class DifyInitService {
   /**
    * 调用Dify应用参数API
    */
-  private async callDifyParametersAPI(agent: AgentConfig): Promise<DifyAppParameters> {
+  async callDifyParametersAPI(agent: AgentConfig): Promise<DifyAppParameters> {
     try {
       // 构建Dify API URL
       const baseUrl = agent.endpoint.replace(/\/v1\/chat-messages$/, '');
@@ -272,7 +272,25 @@ export class DifyInitService {
         model: appInfo.model_config.model,
       });
 
-      return {
+      const result: {
+        name: string;
+        description: string;
+        model: string;
+        temperature?: number;
+        maxTokens?: number;
+        capabilities: string[];
+        features: AgentConfig['features'];
+        variables?: Array<{
+          name: string;
+          label: string;
+          required: boolean;
+          type: string;
+        }>;
+        fileUpload?: {
+          enabled: boolean;
+          allowedTypes: string[];
+        };
+      } = {
         name: appInfo.name,
         description: appInfo.description || `Dify应用: ${appInfo.name}`,
         model: appInfo.model_config.model,
@@ -293,8 +311,14 @@ export class DifyInitService {
           },
         },
         variables,
-        fileUpload,
       };
+
+      // 只有在fileUpload存在时才添加
+      if (fileUpload) {
+        result.fileUpload = fileUpload;
+      }
+
+      return result;
 
     } catch (error) {
       logger.error('❌ Dify应用信息获取失败', { 

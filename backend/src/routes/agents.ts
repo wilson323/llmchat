@@ -16,6 +16,11 @@ router.get('/', agentController.getAgents);
 // POST /api/agents/reload
 router.post('/reload', agentController.reloadAgents);
 
+// 自动获取智能体信息（管理员功能）
+// POST /api/agents/fetch-info
+// Body: { provider: 'fastgpt' | 'dify', endpoint: string, apiKey: string, appId?: string }
+router.post('/fetch-info', agentController.fetchAgentInfo);
+
 // 批量导入智能体
 router.post('/import', agentController.importAgents);
 
