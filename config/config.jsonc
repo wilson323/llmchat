@@ -17,25 +17,21 @@
     },
     // 导出到可观测平台（可选）
     "exporters": []
-  }
-  ,
+  },
   "database": {
     // 后台管理改用 PostgreSQL；不再从 auth.defaultAccounts 读取登录账号
     // 实际配置通过环境变量提供，此处为默认值
     "postgres": {
       "host": "${DB_HOST}",
-      "port": ${DB_PORT},
+      "port": "${DB_PORT}",
       "user": "${DB_USER}",
       "password": "${DB_PASSWORD}",
       "database": "${DB_NAME}",
-      "ssl": ${DB_SSL}
+      "ssl": "${DB_SSL}"
     }
-  }
-
-,
+  },
   "auth": {
     // token 有效期（秒），默认 24h
     "tokenTTLSeconds": 86400
   }
-
 }

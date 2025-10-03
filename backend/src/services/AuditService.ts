@@ -22,10 +22,16 @@ import { SystemError } from '@/types/errors';
  * - 支持审计日志导出
  */
 export class AuditService {
-  private pool: Pool;
+  /**
+   * 延迟获取数据库连接池
+   * 避免在模块导入时调用 getPool()，确保 initDB() 已执行
+   */
+  private get pool(): Pool {
+    return getPool();
+  }
 
   constructor() {
-    this.pool = getPool();
+    // 构造函数不再初始化 pool，改为使用 getter 延迟获取
   }
 
   /**

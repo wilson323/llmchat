@@ -26,7 +26,14 @@ export class TokenService {
   private secret: string;
   private ttl: number;
   private refreshTtl: number;
-  private pool: Pool;
+
+  /**
+   * 延迟获取数据库连接池
+   * 避免在模块导入时调用 getPool()，确保 initDB() 已执行
+   */
+  private get pool(): Pool {
+    return getPool();
+  }
 
   constructor() {
     const redisConfig: {
@@ -58,7 +65,7 @@ export class TokenService {
     this.secret = process.env.JWT_SECRET || this.generateSecret();
     this.ttl = parseInt(process.env.TOKEN_TTL || '604800', 10); // 7 天
     this.refreshTtl = parseInt(process.env.REFRESH_TOKEN_TTL || '2592000', 10); // 30 天
-    this.pool = getPool();
+    // ✅ 不再在构造函数中调用 getPool()，改为使用 getter 延迟获取
 
     // 监听 Redis 连接事件
     this.redis.on('error', (err) => {

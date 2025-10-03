@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -28,7 +28,7 @@ import {
 
 // 注意：环境变量已经在 dotenv-loader.ts 中预加载（见 package.json dev 命令）
 
-const app = express();
+const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
 // 基础中间件

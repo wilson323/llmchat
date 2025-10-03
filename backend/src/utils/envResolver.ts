@@ -92,11 +92,11 @@ export function resolveEnvInObject<T>(obj: T): T {
  * @returns 解析后的配置文本
  */
 export function resolveEnvInJsonc(configText: string): string {
-  // 匹配 ${VAR_NAME} 格式
-  const envVarPattern = /\$\{([^}]+)\}/g;
+  // 匹配 ${VAR_NAME} 格式，只允许字母、数字、下划线
+  const envVarPattern = /\$\{([A-Z_][A-Z0-9_]*)\}/g;
   
   return configText.replace(envVarPattern, (match, envVarName) => {
-    const envValue = process.env[envVarName];
+    const envValue = process.env[envVarName.trim()]; // 额外保险：trim
     
     if (envValue !== undefined) {
       // 检查上下文，判断是否应该返回原始值（不带引号）
@@ -104,9 +104,9 @@ export function resolveEnvInJsonc(configText: string): string {
       return envValue;
     }
     
-    logger.warn(`Environment variable ${envVarName} not set, keeping placeholder`, {
+    logger.warn(`Environment variable ${envVarName.trim()} not set, keeping placeholder`, {
       component: 'envResolver',
-      envVarName,
+      envVarName: envVarName.trim(),
     });
     return `"${match}"`; // 保持为字符串格式
   });

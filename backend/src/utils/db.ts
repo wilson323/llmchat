@@ -32,13 +32,70 @@ export function getPool(): Pool {
 }
 
 export async function initDB(): Promise<void> {
+  logger.info('[initDB] 开始初始化数据库...');
+  
   const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
+  logger.info('[initDB] 配置文件加载成功');
+  
   // 替换配置中的环境变量占位符
   const cfg = deepReplaceEnvVariables(rawCfg);
   const pg = cfg.database?.postgres;
+  
   if (!pg) {
+    logger.error('[initDB] 数据库配置缺失');
     throw new Error('DATABASE_CONFIG_MISSING');
   }
+  
+  logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
+
+  // 先连接到 postgres 默认数据库，检查并创建目标数据库
+  logger.info('[initDB] 连接到 postgres 默认数据库...');
+  const tempPool = new Pool({
+    host: pg.host,
+    port: pg.port ?? 5432,
+    user: pg.user,
+    password: pg.password,
+    database: 'postgres', // 先连接到默认数据库
+    ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
+  });
+
+  try {
+    const client = await tempPool.connect();
+    logger.info('[initDB] 成功连接到 postgres 数据库');
+    
+    try {
+      // 检查数据库是否存在
+      logger.info(`[initDB] 检查数据库 "${pg.database}" 是否存在...`);
+      const result = await client.query(
+        `SELECT 1 FROM pg_database WHERE datname = $1`,
+        [pg.database]
+      );
+      
+      if (result.rows.length === 0) {
+        // 数据库不存在，创建它
+        logger.info(`🔨 数据库 "${pg.database}" 不存在，正在创建...`);
+        await client.query(`CREATE DATABASE "${pg.database}"`);
+        logger.info(`✅ 数据库 "${pg.database}" 创建成功`);
+      } else {
+        logger.info(`✅ 数据库 "${pg.database}" 已存在`);
+      }
+    } catch (checkError) {
+      logger.error('[initDB] 检查/创建数据库时出错', { error: checkError });
+      throw checkError;
+    } finally {
+      client.release();
+      logger.info('[initDB] 释放临时连接');
+    }
+  } catch (tempPoolError) {
+    logger.error('[initDB] 连接到 postgres 数据库失败', { error: tempPoolError });
+    throw tempPoolError;
+  } finally {
+    await tempPool.end();
+    logger.info('[initDB] 关闭临时连接池');
+  }
+
+  // 现在连接到目标数据库
+  logger.info(`[initDB] 连接到目标数据库 "${pg.database}"...`);
   pool = new Pool({
     host: pg.host,
     port: pg.port ?? 5432,
@@ -50,6 +107,8 @@ export async function initDB(): Promise<void> {
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
   });
+  
+  logger.info('[initDB] 数据库连接池创建成功');
 
   // 建表（若不存在）
   await withClient(async (client) => {
