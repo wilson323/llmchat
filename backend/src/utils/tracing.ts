@@ -6,12 +6,9 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_DEPLOYMENT_ENVIRONMENT } from '@opentelemetry/semantic-conventions';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import logger from '@/utils/logger';
 
 let sdk: NodeSDK | null = null;
@@ -36,11 +33,13 @@ export function initOpenTelemetry(): NodeSDK | null {
     });
 
     // 配置资源（服务标识）
-    const resource = new Resource({
-      [SemanticResourceAttributes.SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'llmchat-backend',
-      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
-      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
-    });
+    const resource = defaultResource().merge(
+      resourceFromAttributes({
+        [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'llmchat-backend',
+        [ATTR_SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
+        [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+      })
+    );
 
     // 初始化 SDK
     sdk = new NodeSDK({
@@ -55,7 +54,7 @@ export function initOpenTelemetry(): NodeSDK | null {
         getNodeAutoInstrumentations({
           '@opentelemetry/instrumentation-http': {
             enabled: true,
-            requestHook: (span, request) => {
+            requestHook: (span: any, request: any) => {
               span.setAttribute('http.request_id', request.headers['x-request-id'] as string);
             },
           },
@@ -65,9 +64,6 @@ export function initOpenTelemetry(): NodeSDK | null {
           '@opentelemetry/instrumentation-pg': {
             enabled: true,
             enhancedDatabaseReporting: true,
-          },
-          '@opentelemetry/instrumentation-redis-4': {
-            enabled: true,
           },
         }),
       ],
@@ -85,7 +81,7 @@ export function initOpenTelemetry(): NodeSDK | null {
     process.on('SIGTERM', () => {
       sdk?.shutdown()
         .then(() => logger.info('OpenTelemetry 已关闭'))
-        .catch((error) => logger.error('OpenTelemetry 关闭失败', { error }));
+        .catch((error: any) => logger.error('OpenTelemetry 关闭失败', { error }));
     });
 
     return sdk;
