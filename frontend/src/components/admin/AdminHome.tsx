@@ -50,6 +50,14 @@ import { toast } from "@/components/ui/Toast";
 import { useI18n } from "@/i18n";
 import { useAgentAutoFetch } from "@/hooks/useAgentAutoFetch";
 import {
+  validateEndpoint,
+  validateApiKey,
+  validateAppId,
+  validateModel,
+  validateTemperature,
+  validateMaxTokens,
+} from "@/utils/agentValidation";
+import {
   getProvinceHeatmap,
   getConversationSeries,
   getAgentComparison,
@@ -2289,6 +2297,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   const [featuresInput, setFeaturesInput] = useState("");
   const [isActive, setIsActive] = useState(true);
   
+  // 字段验证状态
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [validating, setValidating] = useState<Record<string, boolean>>({});
+  
   // 自动获取智能体信息功能
   const { fetchAgentInfo, loading: fetching, error: fetchError } = useAgentAutoFetch();
   const [showAutoFetch, setShowAutoFetch] = useState(false);
@@ -2299,6 +2311,114 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
     form.endpoint.trim() &&
     form.apiKey.trim() &&
     (form.provider === 'dify' || form.appId.trim());
+  
+  // 实时验证endpoint
+  const handleEndpointBlur = async () => {
+    if (!form.endpoint.trim()) return;
+    
+    setValidating(prev => ({ ...prev, endpoint: true }));
+    const result = await validateEndpoint(form.endpoint);
+    setValidating(prev => ({ ...prev, endpoint: false }));
+    
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, endpoint: result.message || '接口地址无效' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.endpoint;
+        return next;
+      });
+      // 显示警告信息（如CORS）
+      if (result.message) {
+        setFieldErrors(prev => ({ ...prev, endpoint: result.message || '' }));
+      }
+    }
+  };
+  
+  // 实时验证API Key
+  const handleApiKeyBlur = () => {
+    if (!form.apiKey.trim() && mode === 'edit') return; // 编辑模式可选
+    if (!form.apiKey.trim()) return;
+    
+    const result = validateApiKey(form.apiKey, form.provider);
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, apiKey: result.message || 'API密钥格式不正确' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.apiKey;
+        return next;
+      });
+    }
+  };
+  
+  // 实时验证App ID
+  const handleAppIdBlur = () => {
+    if (form.provider !== 'fastgpt') return;
+    if (!form.appId.trim()) {
+      setFieldErrors(prev => ({ ...prev, appId: 'FastGPT必须提供App ID' }));
+      return;
+    }
+    
+    const result = validateAppId(form.appId);
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, appId: result.message || 'App ID格式不正确' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.appId;
+        return next;
+      });
+    }
+  };
+  
+  // 实时验证Model
+  const handleModelBlur = () => {
+    if (!form.model.trim()) return;
+    
+    const result = validateModel(form.model);
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, model: result.message || '模型名称无效' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.model;
+        return next;
+      });
+    }
+  };
+  
+  // 实时验证Temperature
+  const handleTemperatureBlur = () => {
+    if (!form.temperature.trim()) return;
+    
+    const result = validateTemperature(form.temperature);
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, temperature: result.message || '温度值无效' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.temperature;
+        return next;
+      });
+    }
+  };
+  
+  // 实时验证MaxTokens
+  const handleMaxTokensBlur = () => {
+    if (!form.maxTokens.trim()) return;
+    
+    const result = validateMaxTokens(form.maxTokens);
+    if (!result.valid) {
+      setFieldErrors(prev => ({ ...prev, maxTokens: result.message || '最大Token无效' }));
+    } else {
+      setFieldErrors(prev => {
+        const next = { ...prev };
+        delete next.maxTokens;
+        return next;
+      });
+    }
+  };
 
   const handleAutoFetch = async () => {
     if (!canAutoFetch) return;
@@ -2333,6 +2453,7 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   useEffect(() => {
     if (!open) return;
     setLocalError(null);
+    setFieldErrors({}); // 清空字段错误
     setForm({
       id: agent?.id || "",
       name: agent?.name || "",
@@ -2464,8 +2585,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <Input
                 value={form.model}
                 onChange={(event) => setForm((prev) => ({ ...prev, model: event.target.value }))}
+                onBlur={handleModelBlur}
                 placeholder={t('gpt-4o-mini')}
+                className={fieldErrors.model ? 'border-red-500' : ''}
               />
+              {fieldErrors.model && (
+                <p className="text-xs text-red-600">{fieldErrors.model}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('提供方 *')}</label>
@@ -2481,8 +2607,18 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <Input
                 value={form.endpoint}
                 onChange={(event) => setForm((prev) => ({ ...prev, endpoint: event.target.value }))}
+                onBlur={handleEndpointBlur}
                 placeholder={t('https://api.example.com/v1/chat')}
+                className={fieldErrors.endpoint ? 'border-red-500' : ''}
               />
+              {validating.endpoint && (
+                <p className="text-xs text-blue-600">{t('验证中...')}</p>
+              )}
+              {fieldErrors.endpoint && (
+                <p className={`text-xs ${fieldErrors.endpoint.includes('⚠️') ? 'text-yellow-600' : 'text-red-600'}`}>
+                  {fieldErrors.endpoint}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('访问密钥 {suffix}', { suffix: mode === 'create' ? '*' : t('(留空则不变)') })}</label>
@@ -2490,8 +2626,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
                 type="password"
                 value={form.apiKey}
                 onChange={(event) => setForm((prev) => ({ ...prev, apiKey: event.target.value }))}
+                onBlur={handleApiKeyBlur}
                 placeholder={mode === "create" ? t('sk-...') : t('不修改则留空')}
+                className={fieldErrors.apiKey ? 'border-red-500' : ''}
               />
+              {fieldErrors.apiKey && (
+                <p className="text-xs text-red-600">{fieldErrors.apiKey}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
@@ -2500,10 +2641,15 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <Input
                 value={form.appId}
                 onChange={(event) => setForm((prev) => ({ ...prev, appId: event.target.value }))}
+                onBlur={handleAppIdBlur}
                 placeholder={form.provider === 'fastgpt' ? t('FastGPT 应用ID（必填）') : t('可选')}
+                className={fieldErrors.appId ? 'border-red-500' : ''}
               />
-              {form.provider === 'fastgpt' && (
-                <p className="text-xs text-muted-foreground">{t('FastGPT 智能体必须提供 App ID')}</p>
+              {form.provider === 'fastgpt' && !fieldErrors.appId && (
+                <p className="text-xs text-muted-foreground">{t('FastGPT 智能体必须提供 App ID（24位十六进制）')}</p>
+              )}
+              {fieldErrors.appId && (
+                <p className="text-xs text-red-600">{fieldErrors.appId}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -2511,16 +2657,26 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               <Input
                 value={form.temperature}
                 onChange={(event) => setForm((prev) => ({ ...prev, temperature: event.target.value }))}
+                onBlur={handleTemperatureBlur}
                 placeholder={t('0-2，可选')}
+                className={fieldErrors.temperature ? 'border-red-500' : ''}
               />
+              {fieldErrors.temperature && (
+                <p className="text-xs text-red-600">{fieldErrors.temperature}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('最大 Token')}</label>
               <Input
                 value={form.maxTokens}
                 onChange={(event) => setForm((prev) => ({ ...prev, maxTokens: event.target.value }))}
-                placeholder={t('可选')}
+                onBlur={handleMaxTokensBlur}
+                placeholder={t('1-32768，可选')}
+                className={fieldErrors.maxTokens ? 'border-red-500' : ''}
               />
+              {fieldErrors.maxTokens && (
+                <p className="text-xs text-red-600">{fieldErrors.maxTokens}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">{t('限流 - 次数/分钟')}</label>
