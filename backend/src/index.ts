@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import path from 'path';
 
 import { agentRoutes } from '@/routes/agents';
 import { chatRoutes } from '@/routes/chat';

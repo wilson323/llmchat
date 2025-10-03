@@ -54,7 +54,7 @@ export function adminGuard() {
     }
     
     // 权限检查通过
-    next();
+    return next();
   };
 }
 

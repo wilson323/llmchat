@@ -73,6 +73,14 @@ export class AuditController {
   async getUserLogs(req: Request, res: Response) {
     try {
       const { userId } = req.params;
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_USER_ID',
+          message: '用户ID不能为空',
+        });
+      }
+
       const { limit, offset, startDate, endDate } = req.query;
 
       const options: any = {};
@@ -83,7 +91,7 @@ export class AuditController {
       
       const result = await auditService.getUserAuditLogs(userId, options);
 
-      res.json({
+      return res.json({
         success: true,
         data: result,
       });
@@ -94,7 +102,7 @@ export class AuditController {
         userId: req.params.userId,
       });
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to get user audit logs',
         error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
@@ -109,6 +117,14 @@ export class AuditController {
   async getResourceLogs(req: Request, res: Response) {
     try {
       const { resourceType, resourceId } = req.params;
+      if (!resourceType || !resourceId) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_PARAMETERS',
+          message: '资源类型和资源ID不能为空',
+        });
+      }
+
       const { limit, offset } = req.query;
 
       const options: any = {};
@@ -121,7 +137,7 @@ export class AuditController {
         options
       );
 
-      res.json({
+      return res.json({
         success: true,
         data: result,
       });
@@ -133,7 +149,7 @@ export class AuditController {
         resourceId: req.params.resourceId,
       });
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Failed to get resource audit logs',
         error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
@@ -259,11 +275,12 @@ export class AuditController {
   async getStatistics(req: Request, res: Response) {
     try {
       const { startDate, endDate } = req.query;
-
-      const statistics = await auditService.getStatistics({
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-      });
+      
+      const options: { startDate?: Date; endDate?: Date } = {};
+      if (startDate) options.startDate = new Date(startDate as string);
+      if (endDate) options.endDate = new Date(endDate as string);
+      
+      const statistics = await auditService.getStatistics(options);
 
       res.json({
         success: true,

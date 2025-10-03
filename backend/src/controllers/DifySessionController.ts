@@ -177,6 +177,16 @@ export class DifySessionController {
         return;
       }
 
+      if (!messageId) {
+        res.status(400).json({
+          success: false,
+          code: 'INVALID_MESSAGE_ID',
+          message: '消息ID不能为空',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       const result = await difySessionService.getMessageDetail(
         agent,
         messageId,
@@ -233,6 +243,16 @@ export class DifySessionController {
         res.status(400).json({
           code: 'INVALID_PROVIDER',
           message: '仅 Dify 智能体支持此接口',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (!conversationId) {
+        res.status(400).json({
+          success: false,
+          code: 'INVALID_CONVERSATION_ID',
+          message: '对话ID不能为空',
           timestamp: new Date().toISOString(),
         });
         return;
@@ -366,6 +386,16 @@ export class DifySessionController {
         res.status(400).json({
           code: 'INVALID_PROVIDER',
           message: '仅 Dify 智能体支持此接口',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (!messageId) {
+        res.status(400).json({
+          success: false,
+          code: 'INVALID_MESSAGE_ID',
+          message: '消息ID不能为空',
           timestamp: new Date().toISOString(),
         });
         return;

@@ -117,15 +117,20 @@ export class MigrationManager {
         }
         
         const upSQL = upPart.replace(/-- UP/i, '').trim();
-        const downSQL = parts[1] ? parts[1].trim() : undefined;
+        const downSQL = parts[1]?.trim();
 
-        migrations.push({
+        const migration: Migration = {
           version,
           name: name.replace(/_/g, ' '),
           up: upSQL,
-          down: downSQL,
           timestamp: new Date(),
-        });
+        };
+        
+        if (downSQL) {
+          migration.down = downSQL;
+        }
+
+        migrations.push(migration);
       }
 
       return migrations;
