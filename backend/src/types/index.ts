@@ -20,7 +20,7 @@ export interface AgentConfig {
     requestsPerMinute: number;
     tokensPerMinute: number;
   };
-  provider: 'fastgpt' | 'openai' | 'anthropic' | 'custom';
+  provider: 'fastgpt' | 'openai' | 'anthropic' | 'dify' | 'custom';
   isActive: boolean;
   features: {
     supportsChatId: boolean;
@@ -91,6 +91,13 @@ export interface ChatOptions {
   responseChatItemId?: string;     // 响应消息的 ID，FastGPT 会自动将该 ID 存入数据库
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
+  // Dify 特有参数
+  userId?: string;                 // 用户标识，用于区分不同用户
+  files?: Array<{                  // 文件列表
+    type?: string;
+    transfer_method?: string;
+    url: string;
+  }>;
 }
 
 /**
@@ -110,6 +117,12 @@ export interface ChatResponse {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
+  };
+  // Provider 特有元数据
+  metadata?: {
+    conversation_id?: string;        // Dify: 会话 ID
+    retriever_resources?: any[];     // Dify: 知识库检索结果
+    [key: string]: any;              // 其他 Provider 特有字段
   };
 }
 

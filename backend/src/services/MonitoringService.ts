@@ -7,6 +7,7 @@ import * as os from 'os';
 import { CircuitBreakerMetrics } from './CircuitBreakerService';
 import { RateLimitMetrics } from './RateLimitService';
 import { RequestMetrics } from './RetryService';
+import logger from '@/utils/logger';
 
 export interface PerformanceMetrics {
   timestamp: Date;

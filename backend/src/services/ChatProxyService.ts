@@ -252,6 +252,187 @@ export class AnthropicProvider implements AIProvider {
 }
 
 /**
+ * Dify 提供商适配器
+ * 
+ * Dify API 规范:
+ * - 端点: POST /v1/chat-messages
+ * - 认证: Bearer {api_key}
+ * - 请求格式: { query, response_mode, conversation_id, user, inputs, files }
+ * - SSE 事件: message, message_end, message_file, error, ping
+ */
+export class DifyProvider implements AIProvider {
+  name = 'Dify';
+
+  /**
+   * 转换请求格式
+   * 
+   * Dify 使用 query 字段而非 messages 数组，需要提取最后一条用户消息
+   */
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+    // 提取最后一条用户消息作为 query
+    const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
+    if (!lastUserMessage) {
+      throw new Error('Dify 请求必须包含至少一条用户消息');
+    }
+
+    const request: any = {
+      query: lastUserMessage.content,
+      response_mode: stream && config.features.streamingConfig.enabled ? 'streaming' : 'blocking',
+      user: options?.userId || 'default-user',
+    };
+
+    // 添加会话 ID（Dify 使用 conversation_id）
+    if (options?.chatId) {
+      request.conversation_id = options.chatId;
+    }
+
+    // 添加输入变量（Dify 特有）
+    if (options?.variables) {
+      request.inputs = options.variables;
+    }
+
+    // 添加文件（Dify 特有）
+    if (options?.files && Array.isArray(options.files)) {
+      request.files = options.files.map((file: any) => ({
+        type: file.type || 'file',
+        transfer_method: file.transfer_method || 'remote_url',
+        url: file.url,
+      }));
+    }
+
+    logger.debug('Dify 请求数据', { 
+      component: 'DifyProvider', 
+      request,
+      originalMessagesCount: messages.length
+    });
+    
+    return request;
+  }
+
+  /**
+   * 转换响应格式
+   * 
+   * Dify 响应格式转换为统一的 ChatResponse 格式
+   */
+  transformResponse(response: any): ChatResponse {
+    return {
+      id: response.message_id || generateId(),
+      object: 'chat.completion',
+      created: response.created_at || generateTimestamp(),
+      model: response.mode || 'dify',
+      choices: [{
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: response.answer || '',
+        },
+        finish_reason: 'stop',
+      }],
+      usage: response.metadata?.usage || {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+      },
+      // Dify 特有元数据
+      metadata: {
+        conversation_id: response.conversation_id,
+        retriever_resources: response.metadata?.retriever_resources || [],
+      },
+    };
+  }
+
+  /**
+   * 转换流式响应
+   * 
+   * Dify SSE 事件处理
+   */
+  transformStreamResponse(chunk: any): string {
+    // Dify 流式响应事件类型：message, message_end, message_file, error, ping
+    if (chunk.event === 'message' && chunk.answer) {
+      return chunk.answer;
+    }
+    
+    // message_end 事件不返回内容，但包含元数据
+    if (chunk.event === 'message_end') {
+      logger.debug('Dify 消息结束', {
+        component: 'DifyProvider',
+        messageId: chunk.id,
+        conversationId: chunk.conversation_id,
+        metadata: chunk.metadata
+      });
+    }
+
+    // error 事件
+    if (chunk.event === 'error') {
+      logger.error('Dify 流式响应错误', {
+        component: 'DifyProvider',
+        status: chunk.status,
+        code: chunk.code,
+        message: chunk.message
+      });
+      throw new Error(`Dify 错误: ${chunk.message || '未知错误'}`);
+    }
+
+    // message_file 事件（文件消息）
+    if (chunk.event === 'message_file') {
+      logger.info('Dify 文件消息', {
+        component: 'DifyProvider',
+        type: chunk.type,
+        url: chunk.url
+      });
+      // 可以在这里处理文件消息的特殊逻辑
+      return `[文件: ${chunk.type}]`;
+    }
+
+    // ping 事件用于保持连接，不返回内容
+    return '';
+  }
+
+  /**
+   * 验证配置
+   * 
+   * Dify API Key 格式: app-xxx
+   */
+  validateConfig(config: AgentConfig): boolean {
+    const isValidProvider = config.provider === 'dify';
+    const hasValidApiKey = Boolean(config.apiKey && (config.apiKey.startsWith('app-') || config.apiKey.includes('dify')));
+    const hasValidEndpoint = Boolean(config.endpoint && config.endpoint.length > 0);
+
+    if (!isValidProvider) {
+      logger.warn('Dify 配置验证失败: provider 不匹配', {
+        component: 'DifyProvider',
+        provider: config.provider
+      });
+    }
+    if (!hasValidApiKey) {
+      logger.warn('Dify 配置验证失败: API Key 格式不正确', {
+        component: 'DifyProvider',
+        apiKeyPrefix: config.apiKey?.substring(0, 4)
+      });
+    }
+    if (!hasValidEndpoint) {
+      logger.warn('Dify 配置验证失败: endpoint 缺失', {
+        component: 'DifyProvider'
+      });
+    }
+
+    return isValidProvider && hasValidApiKey && hasValidEndpoint;
+  }
+
+  /**
+   * 构建请求头
+   * 
+   * Dify 使用 Bearer token 认证
+   */
+  buildHeaders(config: AgentConfig): RequestHeaders {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${config.apiKey}`,
+    };
+  }
+}
+
+/**
  * 聊天代理服务
  */
 export class ChatProxyService {
@@ -271,6 +452,7 @@ export class ChatProxyService {
     this.registerProvider(new FastGPTProvider());
     this.registerProvider(new OpenAIProvider());
     this.registerProvider(new AnthropicProvider());
+    this.registerProvider(new DifyProvider());
   }
 
   /**

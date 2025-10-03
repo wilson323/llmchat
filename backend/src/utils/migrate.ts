@@ -98,12 +98,25 @@ export class MigrationManager {
         }
 
         const [, version, name] = match;
+        
+        if (!version || !name) {
+          logger.warn(`迁移文件解析失败: ${file}`, { component: 'MigrationManager' });
+          continue;
+        }
+        
         const filePath = path.join(this.migrationsDir, file);
         const content = await fs.readFile(filePath, 'utf-8');
 
         // 支持 -- UP 和 -- DOWN 分隔符
         const parts = content.split(/-- DOWN/i);
-        const upSQL = parts[0].replace(/-- UP/i, '').trim();
+        const upPart = parts[0];
+        
+        if (!upPart) {
+          logger.warn(`迁移文件缺少 UP 部分: ${file}`, { component: 'MigrationManager' });
+          continue;
+        }
+        
+        const upSQL = upPart.replace(/-- UP/i, '').trim();
         const downSQL = parts[1] ? parts[1].trim() : undefined;
 
         migrations.push({

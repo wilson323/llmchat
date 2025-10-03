@@ -27,23 +27,26 @@ export class AuditController {
         orderDirection,
       } = req.query;
 
-      const result = await auditService.query({
-        userId: userId as string | undefined,
-        action: action
-          ? Array.isArray(action)
-            ? (action as AuditAction[])
-            : (action as AuditAction)
-          : undefined,
-        resourceType: resourceType as ResourceType | undefined,
-        resourceId: resourceId as string | undefined,
-        status: status as AuditStatus | undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-        limit: limit ? parseInt(limit as string, 10) : undefined,
-        offset: offset ? parseInt(offset as string, 10) : undefined,
-        orderBy: (orderBy as 'timestamp' | 'action' | 'status') || undefined,
-        orderDirection: (orderDirection as 'ASC' | 'DESC') || undefined,
-      });
+      const queryParams: any = {};
+      
+      // 只添加非 undefined 的属性
+      if (userId) queryParams.userId = userId as string;
+      if (action) {
+        queryParams.action = Array.isArray(action)
+          ? (action as AuditAction[])
+          : (action as AuditAction);
+      }
+      if (resourceType) queryParams.resourceType = resourceType as ResourceType;
+      if (resourceId) queryParams.resourceId = resourceId as string;
+      if (status) queryParams.status = status as AuditStatus;
+      if (startDate) queryParams.startDate = new Date(startDate as string);
+      if (endDate) queryParams.endDate = new Date(endDate as string);
+      if (limit) queryParams.limit = parseInt(limit as string, 10);
+      if (offset) queryParams.offset = parseInt(offset as string, 10);
+      if (orderBy) queryParams.orderBy = orderBy as 'timestamp' | 'action' | 'status';
+      if (orderDirection) queryParams.orderDirection = orderDirection as 'ASC' | 'DESC';
+      
+      const result = await auditService.query(queryParams);
 
       res.json({
         success: true,
@@ -72,12 +75,13 @@ export class AuditController {
       const { userId } = req.params;
       const { limit, offset, startDate, endDate } = req.query;
 
-      const result = await auditService.getUserAuditLogs(userId, {
-        limit: limit ? parseInt(limit as string, 10) : undefined,
-        offset: offset ? parseInt(offset as string, 10) : undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-      });
+      const options: any = {};
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
+      if (startDate) options.startDate = new Date(startDate as string);
+      if (endDate) options.endDate = new Date(endDate as string);
+      
+      const result = await auditService.getUserAuditLogs(userId, options);
 
       res.json({
         success: true,
@@ -107,13 +111,14 @@ export class AuditController {
       const { resourceType, resourceId } = req.params;
       const { limit, offset } = req.query;
 
+      const options: any = {};
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
+      
       const result = await auditService.getResourceAuditLogs(
         resourceType as ResourceType,
         resourceId,
-        {
-          limit: limit ? parseInt(limit as string, 10) : undefined,
-          offset: offset ? parseInt(offset as string, 10) : undefined,
-        }
+        options
       );
 
       res.json({
@@ -173,12 +178,13 @@ export class AuditController {
     try {
       const { limit, offset, startDate, endDate } = req.query;
 
-      const result = await auditService.getFailedLogs({
-        limit: limit ? parseInt(limit as string, 10) : undefined,
-        offset: offset ? parseInt(offset as string, 10) : undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-      });
+      const options: any = {};
+      if (limit) options.limit = parseInt(limit as string, 10);
+      if (offset) options.offset = parseInt(offset as string, 10);
+      if (startDate) options.startDate = new Date(startDate as string);
+      if (endDate) options.endDate = new Date(endDate as string);
+      
+      const result = await auditService.getFailedLogs(options);
 
       res.json({
         success: true,
@@ -214,19 +220,20 @@ export class AuditController {
         endDate,
       } = req.query;
 
-      const csv = await auditService.exportToCSV({
-        userId: userId as string | undefined,
-        action: action
-          ? Array.isArray(action)
-            ? (action as AuditAction[])
-            : (action as AuditAction)
-          : undefined,
-        resourceType: resourceType as ResourceType | undefined,
-        resourceId: resourceId as string | undefined,
-        status: status as AuditStatus | undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-      });
+      const queryParams: any = {};
+      if (userId) queryParams.userId = userId as string;
+      if (action) {
+        queryParams.action = Array.isArray(action)
+          ? (action as AuditAction[])
+          : (action as AuditAction);
+      }
+      if (resourceType) queryParams.resourceType = resourceType as ResourceType;
+      if (resourceId) queryParams.resourceId = resourceId as string;
+      if (status) queryParams.status = status as AuditStatus;
+      if (startDate) queryParams.startDate = new Date(startDate as string);
+      if (endDate) queryParams.endDate = new Date(endDate as string);
+      
+      const csv = await auditService.exportToCSV(queryParams);
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="audit_logs.csv"');

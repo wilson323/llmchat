@@ -48,11 +48,15 @@ export function auditMiddleware(
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // 初始化审计上下文
-    req.audit = {
-      action,
-      resourceType,
+    const auditContext: AuditContext = {
       skipAudit: false,
     };
+    
+    // 只添加非 undefined 的属性
+    if (action) auditContext.action = action;
+    if (resourceType) auditContext.resourceType = resourceType;
+    
+    req.audit = auditContext;
 
     // 保存原始的 res.json 方法
     const originalJson = res.json.bind(res);
@@ -118,18 +122,22 @@ async function recordAudit(req: Request, res: Response, responseBody: unknown) {
     };
 
     // 记录审计日志
-    await auditService.log({
-      userId,
-      username,
+    const logParams: any = {
       action,
-      resourceType: req.audit?.resourceType,
-      resourceId: req.audit?.resourceId,
       details,
-      ipAddress,
-      userAgent,
       status,
-      errorMessage,
-    });
+    };
+    
+    // 只添加非 undefined 的属性
+    if (userId) logParams.userId = userId;
+    if (username) logParams.username = username;
+    if (req.audit?.resourceType) logParams.resourceType = req.audit.resourceType;
+    if (req.audit?.resourceId) logParams.resourceId = req.audit.resourceId;
+    if (ipAddress) logParams.ipAddress = ipAddress;
+    if (userAgent) logParams.userAgent = userAgent;
+    if (errorMessage) logParams.errorMessage = errorMessage;
+    
+    await auditService.log(logParams);
   } catch (error) {
     // 审计失败不应该影响正常请求
     logger.error('Failed to record audit log', {
@@ -222,17 +230,26 @@ export async function logAudit(params: {
 }) {
   const { req, action, resourceType, resourceId, details, status, errorMessage } = params;
 
-  await auditService.log({
-    userId: req.user?.id,
-    username: req.user?.username,
+  const logParams: any = {
     action,
-    resourceType,
-    resourceId,
-    details,
-    ipAddress: extractIPAddress(req),
-    userAgent: req.get('user-agent'),
     status: status || AuditStatus.SUCCESS,
-    errorMessage,
-  });
+  };
+  
+  // 只添加非 undefined 的属性
+  if (req.user?.id) logParams.userId = req.user.id;
+  if (req.user?.username) logParams.username = req.user.username;
+  if (resourceType) logParams.resourceType = resourceType;
+  if (resourceId) logParams.resourceId = resourceId;
+  if (details) logParams.details = details;
+  
+  const ipAddress = extractIPAddress(req);
+  if (ipAddress) logParams.ipAddress = ipAddress;
+  
+  const userAgent = req.get('user-agent');
+  if (userAgent) logParams.userAgent = userAgent;
+  
+  if (errorMessage) logParams.errorMessage = errorMessage;
+  
+  await auditService.log(logParams);
 }
 
