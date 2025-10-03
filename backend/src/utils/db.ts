@@ -103,9 +103,11 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    max: 20,                          // 连接池最大20个连接（平衡性能和资源）
+    min: 2,                           // 最小保持2个连接
+    idleTimeoutMillis: 30_000,        // 30秒空闲超时
+    connectionTimeoutMillis: 10_000,  // 10秒连接超时
+    maxUses: 7500,                    // 每个连接最多使用7500次后回收
   });
   
   logger.info('[initDB] 数据库连接池创建成功');

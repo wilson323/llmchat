@@ -145,16 +145,29 @@ app.use(sentryErrorHandler());
 // 全局错误处理
 app.use(errorHandler);
 
-// 启动服务器
-server = app.listen(PORT, () => {
-  logger.info(`🚀 服务器启动成功`);
-  logger.info(`📍 端口: ${PORT}`);
-  logger.info(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`✅ Sentry: ${process.env.SENTRY_ENABLED === 'true' ? '已启用' : '已禁用'}`);
-  logger.info(`🔒 CSRF: ${process.env.NODE_ENV === 'production' ? '已启用' : '开发模式'}`);
-  logger.info(`🛡️ CSP: ${process.env.NODE_ENV === 'production' ? '已启用' : '开发模式'}`);
-  logger.info(`📊 监控: 完整集成`);
-});
+// 启动服务器（异步初始化）
+async function startServer() {
+  try {
+    // 初始化缓存服务
+    await initCacheService();
+    
+    server = app.listen(PORT, () => {
+      logger.info(`🚀 服务器启动成功`);
+      logger.info(`📍 端口: ${PORT}`);
+      logger.info(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`✅ Sentry: ${process.env.SENTRY_ENABLED === 'true' ? '已启用' : '已禁用'}`);
+      logger.info(`🔒 CSRF: ${process.env.NODE_ENV === 'production' ? '已启用' : '开发模式'}`);
+      logger.info(`🛡️ CSP: ${process.env.NODE_ENV === 'production' ? '已启用' : '开发模式'}`);
+      logger.info(`💾 Redis: ${process.env.REDIS_HOST ? '已连接' : '未配置'}`);
+      logger.info(`📊 监控: 完整集成`);
+    });
+  } catch (error) {
+    logger.error('服务器启动失败', { error });
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // 优雅关闭
 let server: ReturnType<typeof app.listen>;
