@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import dotenv from 'dotenv';
-import path from 'path';
 
 import { agentRoutes } from '@/routes/agents';
 import { chatRoutes } from '@/routes/chat';
@@ -27,17 +25,7 @@ import {
   enhancedHealthCheckMiddleware
 } from '@/middleware/protectionMiddleware';
 
-// 加载环境变量 - 使用process.cwd()确保路径正确
-// 在开发环境下，cwd是项目根目录，所以backend/.env是正确的路径
-const envPath = path.resolve(process.cwd(), 'backend/.env');
-dotenv.config({ path: envPath });
-
-// 调试：打印环境变量加载情况
-if (process.env.NODE_ENV !== 'production') {
-  console.log('[ENV] Loading from:', envPath);
-  console.log('[ENV] DB_HOST:', process.env.DB_HOST || 'NOT_SET');
-  console.log('[ENV] DB_PORT:', process.env.DB_PORT || 'NOT_SET');
-}
+// 注意：环境变量已经在 dotenv-loader.ts 中预加载（见 package.json dev 命令）
 
 const app = express();
 const PORT = process.env.PORT || 3001;

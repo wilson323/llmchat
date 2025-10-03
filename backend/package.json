@@ -4,7 +4,7 @@
   "description": "LLMChat后端服务 - 智能体配置管理和聊天代理",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only -r ./src/dotenv-loader.ts -r tsconfig-paths/register src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit -p tsconfig.json",
