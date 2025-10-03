@@ -28,7 +28,7 @@ export async function validateEndpoint(endpoint: string): Promise<{ valid: boole
 
     // 注意：由于CORS限制，这可能在浏览器中失败
     // 建议后端提供专门的验证接口
-    const response = await fetch(endpoint, {
+    await fetch(endpoint, {
       method: 'HEAD',
       signal: controller.signal,
       mode: 'no-cors', // 避免CORS阻止

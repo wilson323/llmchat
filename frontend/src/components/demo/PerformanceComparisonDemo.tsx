@@ -18,7 +18,7 @@ import { useChatStore } from '@/store/chatStore';
 
 export const PerformanceComparisonDemo: React.FC = () => {
   // const [useOptimized, setUseOptimized] = useState(true); // 未使用，已注释
-  const useOptimized = true; // 始终使用优化版本
+  // const useOptimized = true; // 始终使用优化版本
   const [testResults, setTestResults] = useState<{
     old?: any;
     new?: any;

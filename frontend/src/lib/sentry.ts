@@ -98,7 +98,7 @@ export function initSentry() {
       ],
 
       // 数据清理
-      beforeSend(event, hint) {
+      beforeSend(event: any, _hint: any) {
         // 移除敏感数据
         if (event.request) {
           delete event.request.cookies;
