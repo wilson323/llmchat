@@ -6,6 +6,7 @@ import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { DifyInitService } from '@/services/DifyInitService';
 import { ApiError, AgentConfig } from '@/types';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 import logger from '@/utils/logger';
 import { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
@@ -137,11 +138,10 @@ export class AgentController {
         ? await this.agentService.getAllAgents()
         : await this.agentService.getAvailableAgents();
 
-      res.json({
-        success: true,
-        data: agents,
-        total: agents.length,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, agents, {
+        message: '获取智能体列表成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+        metadata: { extra: { total: agents.length } },
       });
     } catch (error) {
       logger.error('获取智能体列表失败', { error });
@@ -192,10 +192,9 @@ export class AgentController {
       // 转换为安全的Agent对象（不包含敏感信息）
       const agent = this.toSafeAgent(config);
 
-      res.json({
-        success: true,
-        data: agent,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, agent, {
+        message: '获取智能体信息成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('获取智能体信息失败', { error });
@@ -227,10 +226,9 @@ export class AgentController {
       }
 
       const created = await this.agentService.createAgent(value);
-      res.status(201).json({
-        success: true,
-        data: this.toSafeAgent(created),
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendCreated(res, this.toSafeAgent(created), {
+        message: '创建智能体成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {
@@ -265,10 +263,9 @@ export class AgentController {
 
       const healthStatus = await this.agentService.checkAgentHealth(id);
 
-      res.json({
-        success: true,
-        data: healthStatus,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, healthStatus, {
+        message: '获取智能体状态成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('检查智能体状态失败', { error });
@@ -295,14 +292,12 @@ export class AgentController {
       await ensureAdminAuth(req);
       const configs = await this.agentService.reloadAgents();
 
-      res.json({
-        success: true,
+      ApiResponseHandler.sendSuccess(res, {
+        totalAgents: configs.length,
+        activeAgents: configs.filter(c => c.isActive).length,
+      }, {
         message: '智能体配置已重新加载',
-        data: {
-          totalAgents: configs.length,
-          activeAgents: configs.filter(c => c.isActive).length,
-        },
-        timestamp: new Date().toISOString(),
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {
@@ -344,15 +339,14 @@ export class AgentController {
       const isValid = await this.chatService.validateAgentConfig(id);
       const config = await this.agentService.getAgent(id);
 
-      res.json({
-        success: true,
-        data: {
-          agentId: id,
-          isValid,
-          exists: !!config,
-          isActive: config?.isActive || false,
-        },
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, {
+        agentId: id,
+        isValid,
+        exists: !!config,
+        isActive: config?.isActive || false,
+      }, {
+        message: '验证智能体配置成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('验证智能体配置失败', { error });
@@ -394,10 +388,9 @@ export class AgentController {
       }
       await this.agentService.updateAgent(id, value as Partial<AgentConfig>);
       const latest = await this.agentService.getAgent(id);
-      res.json({
-        success: true,
-        data: latest ? this.toSafeAgent(latest) : null,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, latest ? this.toSafeAgent(latest) : null, {
+        message: '更新智能体成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {
@@ -421,7 +414,10 @@ export class AgentController {
         return;
       }
       await this.agentService.deleteAgent(id);
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '删除智能体成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {
         return;
@@ -444,10 +440,9 @@ export class AgentController {
         return;
       }
       const agents = await this.agentService.importAgents(value.agents);
-      res.json({
-        success: true,
-        data: agents.map((agent) => this.toSafeAgent(agent)),
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, agents.map((agent) => this.toSafeAgent(agent)), {
+        message: '导入智能体成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {
@@ -580,10 +575,9 @@ export class AgentController {
         };
       }
 
-      res.json({
-        success: true,
-        data: agentInfo,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, agentInfo, {
+        message: '获取智能体信息成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       if (handleAdminAuthError(error, res)) {

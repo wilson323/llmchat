@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/components/ui/Toast';
 import { translate } from '@/i18n';
+import type { ApiSuccessPayload } from '@/types/dynamic';
 import {
   Agent,
   OriginalChatMessage,
@@ -29,11 +30,7 @@ import {
   isUsageEvent,
 } from '@/lib/fastgptEvents';
 
-interface ApiResponse<T> {
-  data: T;
-  success?: boolean;
-  message?: string;
-}
+type ApiResponse<T> = ApiSuccessPayload<T>;
 
 interface SSECallbacks {
   onChunk: (chunk: string) => void;

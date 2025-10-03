@@ -10,6 +10,7 @@ import {
   EventQueryParams,
   ApiError
 } from '@/types';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 import { getErrorMessage } from '@/utils/helpers';
 import { createErrorFromUnknown, AuthenticationError } from '@/types/errors';
 import { JsonValue } from '@/types/dynamic';
@@ -137,10 +138,9 @@ export class SessionController {
 
       const result = await this.sessionService.listHistoriesEnhanced(agentId, value as SessionListParams);
 
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取会话列表成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
@@ -218,10 +218,9 @@ export class SessionController {
 
       const result = await this.sessionService.batchOperation(agentId, value as BatchOperationOptions);
 
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '批量操作完成',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       if (handleAdminAuthError(unknownError, res)) {
@@ -349,10 +348,9 @@ export class SessionController {
 
       const stats = await this.sessionService.getSessionStats(agentId, dateRange);
 
-      res.json({
-        success: true,
-        data: stats,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, stats, {
+        message: '获取会话统计成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       const { agentId } = req.params;
@@ -401,10 +399,9 @@ export class SessionController {
         agentId
       } as EventQueryParams);
 
-      res.json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '查询会话事件成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       const { agentId } = req.params;
@@ -467,10 +464,9 @@ export class SessionController {
         requestContext
       );
 
-      res.json({
-        success: true,
-        data: detail,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, detail, {
+        message: '获取会话详情成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       const { agentId, sessionId } = req.params;
@@ -525,10 +521,9 @@ export class SessionController {
 
       await this.sessionService.deleteHistory(agentId, sessionId);
 
-      res.json({
-        success: true,
+      ApiResponseHandler.sendSuccess(res, null, {
         message: '会话删除成功',
-        timestamp: new Date().toISOString(),
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (unknownError) {
       if (handleAdminAuthError(unknownError, res)) {

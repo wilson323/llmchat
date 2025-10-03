@@ -68,22 +68,33 @@ export interface ApiRequestPayload {
 }
 
 /**
- * 通用API响应载荷
+ * 通用API成功响应载荷
  */
-export interface ApiResponsePayload {
-  success: boolean;
-  data?: JsonValue;
-  error?: {
-    code: string;
-    message: string;
-    details?: JsonObject;
-  };
+export interface ApiSuccessResponse<T extends JsonValue = JsonValue> {
+  code: string;
+  message: string;
+  data: T;
+  timestamp: string;
+  requestId?: string;
   metadata?: {
-    requestId?: string;
-    timestamp?: string;
-    version?: string;
+    version: string;
+    duration?: number;
+    pagination?: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+    extra?: JsonObject;
   };
 }
+
+/**
+ * 兼容别名：保持向后兼容
+ */
+export type ApiResponsePayload<T extends JsonValue = JsonValue> = ApiSuccessResponse<T>;
 
 /**
  * 外部服务通用响应

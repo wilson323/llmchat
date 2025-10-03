@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { difySessionService } from '@/services/DifySessionService';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import logger from '@/utils/logger';
+import { ApiResponseHandler } from '@/utils/apiResponse';
 
 const agentService = new AgentConfigService();
 
@@ -52,10 +53,9 @@ export class DifySessionController {
 
       const result = await difySessionService.getConversations(agent, params);
 
-      res.status(200).json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取 Dify 会话列表成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('获取 Dify 会话列表失败', {
@@ -122,10 +122,9 @@ export class DifySessionController {
 
       const result = await difySessionService.getConversationMessages(agent, params);
 
-      res.status(200).json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取 Dify 会话消息成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('获取 Dify 会话消息失败', {
@@ -193,10 +192,9 @@ export class DifySessionController {
         user ? (user as string) : undefined
       );
 
-      res.status(200).json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取 Dify 消息详情成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('获取 Dify 消息详情失败', {
@@ -264,10 +262,9 @@ export class DifySessionController {
         user ? (user as string) : undefined
       );
 
-      res.status(200).json({
-        success: true,
+      ApiResponseHandler.sendSuccess(res, null, {
         message: '会话删除成功',
-        timestamp: new Date().toISOString(),
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('删除 Dify 会话失败', {
@@ -336,10 +333,9 @@ export class DifySessionController {
 
       const result = await difySessionService.submitFeedback(agent, params);
 
-      res.status(200).json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '反馈提交成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('提交 Dify 消息反馈失败', {
@@ -407,10 +403,9 @@ export class DifySessionController {
         user ? (user as string) : undefined
       );
 
-      res.status(200).json({
-        success: true,
-        data: result,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, result, {
+        message: '获取建议问题成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
       logger.error('获取 Dify 建议问题失败', {

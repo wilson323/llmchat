@@ -12,11 +12,11 @@ export function useAgentAutoFetch() {
     try {
       const response = await fetchAgentInfoApi(params);
       
-      if (response.success && response.data) {
+      if (response.data) {
         return response.data;
-      } else {
-        throw new Error('获取智能体信息失败');
       }
+
+      throw new Error('获取智能体信息失败');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取智能体信息失败';
       setError(errorMessage);
