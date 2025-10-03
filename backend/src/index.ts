@@ -98,10 +98,10 @@ app.use(compression({
   },
 }));
 
-// 速率限制
+// 速率限制（支持高并发场景）
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000', 10), // 每分钟1000请求
   message: '请求过于频繁，请稍后再试',
   standardHeaders: true,
   legacyHeaders: false,

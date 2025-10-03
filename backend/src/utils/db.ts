@@ -103,8 +103,8 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    max: 20,                          // 连接池最大20个连接（平衡性能和资源）
-    min: 2,                           // 最小保持2个连接
+    max: 50,                          // 连接池最大50个连接（支持1000并发）
+    min: 5,                           // 最小保持5个连接
     idleTimeoutMillis: 30_000,        // 30秒空闲超时
     connectionTimeoutMillis: 10_000,  // 10秒连接超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
