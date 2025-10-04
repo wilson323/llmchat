@@ -728,7 +728,7 @@ export class AgentConfigService {
       }
     }
 
-    const validProviders = ['fastgpt', 'openai', 'anthropic', 'custom'];
+    const validProviders = ['fastgpt', 'openai', 'anthropic', 'dify', 'dashscope', 'custom'];
     if (!validProviders.includes(config.provider)) {
       logger.error('不支持的provider', { provider: config.provider });
       return false;
