@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
@@ -65,6 +65,26 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// 登录页面包装组件，处理登录成功后的跳转
+function LoginPageWrapper() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const handleLoginSuccess = () => {
+    // 获取重定向目标（如果有）
+    const redirect = searchParams.get('redirect');
+    
+    // 跳转到重定向目标或默认首页
+    if (redirect && redirect !== '/login') {
+      navigate(redirect, { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+  
+  return <LoginPage onSuccess={handleLoginSuccess} />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -78,8 +98,8 @@ function App() {
               {/* 智能体工作区路由 */}
               <Route path="/chat/:agentId" element={<AgentWorkspace />} />
               
-              {/* 登录页面 */}
-              <Route path="/login" element={<LoginPage />} />
+              {/* 登录页面（带跳转逻辑） */}
+              <Route path="/login" element={<LoginPageWrapper />} />
               
               {/* 管理后台（需要登录） */}
               <Route path="/home" element={<AdminHome />} />
