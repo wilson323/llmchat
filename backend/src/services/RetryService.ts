@@ -227,7 +227,7 @@ export class RetryService {
       deduplicationConfig || {
         enabled: true,
         deduplicationWindow: 30000, // 30秒
-        maxConcurrentRequests: 100
+        maxConcurrentRequests: 1000  // 最大支持1000并发
       }
     );
 

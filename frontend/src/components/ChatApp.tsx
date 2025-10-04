@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 import { ChatContainer } from './chat/ChatContainer';
 import { useChatStore } from '@/store/chatStore';
 
-export const ChatApp: React.FC = () => {
+const ChatApp: React.FC = () => {
   const { sidebarOpen, initializeAgentSessions } = useChatStore();
 
   // huihua.md 要求 1：页面初始加载后检查
@@ -29,3 +29,5 @@ export const ChatApp: React.FC = () => {
     </div>
   );
 };
+
+export default ChatApp;

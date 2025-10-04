@@ -1,114 +1,95 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
-import { ChatApp } from '@/components/ChatApp';
-import LoginPage from '@/components/admin/LoginPage';
-import AdminHome from '@/components/admin/AdminHome';
-import { AgentDetails } from '@/components/monitoring';
-import { useAuthStore } from '@/store/authStore';
-import { Toaster, toast } from '@/components/ui/Toast';
-import { useI18n, I18nProvider } from '@/i18n';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { A11yAnnouncer } from '@/components/ui/A11yAnnouncer';
-import { GlobalKeyboardManager } from '@/components/ui/KeyboardShortcutsHelp';
-import PerformanceComparisonDemo from '@/components/demo/PerformanceComparisonDemo';
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const location = useLocation();
-  const isAuthed = useAuthStore((s) => s.isAuthenticated());
-  const { t } = useI18n();
-  const fired = (globalThis as any).__auth_toast_fired ?? new Set<string>();
-  (globalThis as any).__auth_toast_fired = fired;
+// ========================================
+// 代码分割：懒加载组件
+// ========================================
 
-  // 避免在 render 期间触发 Toast 导致 React 警告
-  useEffect(() => {
-    if (!isAuthed) {
-      const key = location.pathname + location.search;
-      if (!fired.has(key)) {
-        fired.add(key);
-        toast({ type: 'warning', title: t('请先登录') });
-      }
+// 主要页面懒加载
+const ChatApp = lazy(() => import('@/components/ChatApp'));
+const LoginPage = lazy(() => import('@/components/admin/LoginPage'));
+const AdminHome = lazy(() => import('@/components/admin/AdminHome'));
+
+// 加载占位组件
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-sm text-muted-foreground">加载中...</p>
+    </div>
+  </div>
+);
+
+// 错误边界组件
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('错误边界捕获:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="text-center space-y-4 p-8">
+            <h1 className="text-2xl font-bold text-destructive">页面加载失败</h1>
+            <p className="text-muted-foreground">
+              {this.state.error?.message || '未知错误'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              重新加载
+            </button>
+          </div>
+        </div>
+      );
     }
-  }, [isAuthed, location.pathname, location.search, t]);
 
-  if (isAuthed) return children;
-  const target = location.pathname + (location.search || '');
-  return <Navigate to={`/login?redirect=${encodeURIComponent(target)}`} replace />;
-}
-
-function LoginRoute() {
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const raw = params.get('redirect');
-  const redirect = raw ? decodeURIComponent(raw) : '/home';
-  return <LoginPage onSuccess={() => navigate(redirect, { replace: true })} />;
+    return this.props.children;
+  }
 }
 
 function App() {
-  const restore = useAuthStore((s) => s.restore);
-  useEffect(() => {
-    restore();
-  }, [restore]);
-
   return (
     <ErrorBoundary>
-      <I18nProvider>
-        <ThemeProvider>
-          <BrowserRouter>
-            {/* 可访问性通知组件 */}
-            <A11yAnnouncer />
-
-            {/* 全局键盘管理器 */}
-            <GlobalKeyboardManager />
-
+      <ThemeProvider>
+        <Router>
+          <Suspense fallback={<LoadingSpinner />}>
             <Routes>
+              {/* 主聊天页面 */}
               <Route path="/" element={<ChatApp />} />
-              <Route path="/login" element={<LoginRoute />} />
-              <Route
-                path="/home"
-                element={
-                  <ProtectedRoute>
-                    <ErrorBoundary>
-                      <AdminHome />
-                    </ErrorBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/home/:tab"
-                element={
-                  <ProtectedRoute>
-                    <ErrorBoundary>
-                      <AdminHome />
-                    </ErrorBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/monitoring/agent/:id"
-                element={
-                  <ProtectedRoute>
-                    <ErrorBoundary>
-                      <AgentDetails />
-                    </ErrorBoundary>
-                  </ProtectedRoute>
-                }
-              />
-              {/* 性能测试页面（开发用） */}
-              <Route
-                path="/demo/perf"
-                element={
-                  <ErrorBoundary>
-                    <PerformanceComparisonDemo />
-                  </ErrorBoundary>
-                }
-              />
+              
+              {/* 登录页面 */}
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* 管理后台（需要登录） */}
+              <Route path="/home" element={<AdminHome />} />
+              <Route path="/home/:tab" element={<AdminHome />} />
+              
+              {/* 404 重定向 */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </BrowserRouter>
+          </Suspense>
+          
+          {/* 全局通知 */}
           <Toaster />
-        </ThemeProvider>
-      </I18nProvider>
+        </Router>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
