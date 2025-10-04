@@ -117,15 +117,31 @@ export class FastGPTSessionService {
 
   /**
    * 计算 FastGPT 基础 URL
+   * 
+   * 修复URL重复问题：
+   * 输入: http://171.43.138.237:3000/v1/api/v1/chat/completions
+   * 输出: http://171.43.138.237:3000
    */
   private getBaseUrl(agent: AgentConfig): string {
     if (!agent.endpoint) {
       throw new Error('FastGPT 智能体缺少 endpoint 配置');
     }
-    const cleaned = agent.endpoint.replace(/[`\s]+/g, '').replace(/\/$/, '');
+    
+    // 清理空格和末尾斜杠
+    let cleaned = agent.endpoint.replace(/[`\s]+/g, '').replace(/\/$/, '');
+    
+    // 移除 /chat/completions 后缀
     if (cleaned.endsWith(FASTGPT_COMPLETIONS_SUFFIX)) {
-      return cleaned.slice(0, -FASTGPT_COMPLETIONS_SUFFIX.length);
+      cleaned = cleaned.slice(0, -FASTGPT_COMPLETIONS_SUFFIX.length);
     }
+    
+    // 🔧 关键修复：统一移除末尾的API路径，避免重复拼接
+    // 支持多种格式：/v1/api/v1, /api/v1, /v1
+    cleaned = cleaned
+      .replace(/\/v1\/api\/v1\/?$/, '')  // 移除 /v1/api/v1 或 /v1/api/v1/
+      .replace(/\/api\/v1\/?$/, '')      // 移除 /api/v1 或 /api/v1/
+      .replace(/\/v1\/?$/, '');          // 移除 /v1 或 /v1/
+    
     return cleaned;
   }
 

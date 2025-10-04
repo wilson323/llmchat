@@ -36,6 +36,7 @@ import agentsRouter from './routes/agents';
 import chatRouter from './routes/chat';
 import healthRouter from './routes/health';
 import cadRouter from './routes/cad';
+import authRouter from './routes/auth';
 
 // 工具
 import { logger } from './utils/logger';
@@ -129,6 +130,7 @@ app.use(csrfProtection({
 
 // 路由注册
 app.use('/health', healthRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/cad', cadRouter);

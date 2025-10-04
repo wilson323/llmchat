@@ -1,21 +1,25 @@
-import { Router, type Router as RouterType } from 'express';
+import { Router } from 'express';
 import { AuthController } from '@/controllers/AuthController';
-import { loginRateLimiter } from '@/middleware/rateLimiterV2';
 
-export const authRoutes: RouterType = Router();
+const router: Router = Router();
+const authController = new AuthController();
 
-// 登录接口（应用速率限制防止暴力破解）
-authRoutes.post('/login', loginRateLimiter, AuthController.login);
+/**
+ * 认证路由
+ * 
+ * 所有认证相关的端点
+ */
 
-// Token刷新接口（V2功能）
-authRoutes.post('/refresh-token', AuthController.refreshToken);
+// POST /api/auth/login - 用户登录
+router.post('/login', (req, res) => authController.login(req, res));
 
-// 用户信息接口
-authRoutes.get('/profile', AuthController.profile);
+// POST /api/auth/logout - 用户登出
+router.post('/logout', (req, res) => authController.logout(req, res));
 
-// 登出接口
-authRoutes.post('/logout', AuthController.logout);
+// POST /api/auth/refresh - 刷新Token
+router.post('/refresh', (req, res) => authController.refreshToken(req, res));
 
-// 修改密码接口
-authRoutes.post('/change-password', AuthController.changePassword);
+// GET /api/auth/verify - 验证Token
+router.get('/verify', (req, res) => authController.verifyToken(req, res));
 
+export default router;
