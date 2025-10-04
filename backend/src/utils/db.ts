@@ -271,7 +271,15 @@ export async function initDB(): Promise<void> {
     }
   });
 
-  await seedAgentsFromFile();
+  // 🔧 种子智能体数据（添加错误处理）
+  try {
+    logger.info('🌱 开始种子智能体数据...');
+    await seedAgentsFromFile();
+    logger.info('✅ 智能体数据种子完成');
+  } catch (error) {
+    logger.error('❌ 智能体数据种子失败', { error });
+    // 不抛出异常，允许服务继续启动
+  }
 }
 
 export async function withClient<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
@@ -298,24 +306,34 @@ export async function closeDB(): Promise<void> {
 }
 
 async function seedAgentsFromFile(): Promise<void> {
+  logger.info('🌱 [seedAgentsFromFile] 开始执行智能体种子函数...');
+  
   const filePathCandidates = [
-    path.resolve(__dirname, '../../config/agents.json'),
-    path.resolve(process.cwd(), 'config/agents.json')
+    path.resolve(__dirname, '../../../config/agents.json'),  // 从 backend/src/utils 到根目录 config
+    path.resolve(process.cwd(), 'config/agents.json'),       // 从当前工作目录
+    path.resolve(process.cwd(), '../config/agents.json')     // 如果 cwd 是 backend
   ];
+  
+  logger.info('[seedAgentsFromFile] 候选文件路径', { paths: filePathCandidates });
 
   let fileContent: string | null = null;
   for (const filePath of filePathCandidates) {
     try {
+      logger.info('[seedAgentsFromFile] 尝试读取文件', { path: filePath });
       if (fs.existsSync(filePath)) {
         fileContent = fs.readFileSync(filePath, 'utf-8');
+        logger.info('[seedAgentsFromFile] ✅ 文件读取成功', { path: filePath, length: fileContent.length });
         break;
+      } else {
+        logger.warn('[seedAgentsFromFile] 文件不存在', { path: filePath });
       }
     } catch (e) {
-      logger.warn('[initDB] 读取智能体配置文件失败', { error: e });
+      logger.error('[seedAgentsFromFile] 读取智能体配置文件失败', { path: filePath, error: e });
     }
   }
 
   if (!fileContent) {
+    logger.error('[seedAgentsFromFile] ❌ 所有候选路径都未找到agents.json文件！');
     return;
   }
 

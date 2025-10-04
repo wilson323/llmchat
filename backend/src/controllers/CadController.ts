@@ -230,6 +230,7 @@ export class CadController {
    */
   getFunctionTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      logger.info('[CadController] 获取工具定义请求', { path: req.path, method: req.method });
       res.json({
         code: 'SUCCESS',
         message: '获取工具定义成功',

@@ -134,46 +134,89 @@ export function initSentry() {
  * 设置用户上下文
  */
 export function setSentryUser(user: { id: string; email?: string; username?: string }) {
-  Sentry.setUser({
-    id: user.id,
-    email: user.email,
-    username: user.username,
-  });
+  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== 'function') {
+    return;
+  }
+
+  try {
+    Sentry.setUser({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    });
+  } catch (error) {
+    console.warn('设置Sentry用户上下文失败:', error);
+  }
 }
 
 /**
  * 清除用户上下文（登出时）
  */
 export function clearSentryUser() {
-  Sentry.setUser(null);
+  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== 'function') {
+    return;
+  }
+
+  try {
+    Sentry.setUser(null);
+  } catch (error) {
+    console.warn('清除Sentry用户上下文失败:', error);
+  }
 }
 
 /**
  * 手动捕获错误
  */
 export function captureError(error: Error, context?: Record<string, unknown>) {
-  Sentry.captureException(error, {
-    extra: context,
-  });
+  if (!sentryAvailable || !Sentry || typeof Sentry.captureException !== 'function') {
+    console.error('错误追踪未可用:', error);
+    return;
+  }
+
+  try {
+    Sentry.captureException(error, {
+      extra: context,
+    });
+  } catch (e) {
+    console.error('Sentry捕获错误失败:', e);
+  }
 }
 
 /**
  * 添加面包屑（用于调试）
  */
 export function addBreadcrumb(message: string, category: string, level: 'info' | 'warning' | 'error' | 'debug' = 'info') {
-  Sentry.addBreadcrumb({
-    message,
-    category,
-    level,
-    timestamp: Date.now() / 1000,
-  });
+  // 安全检查：确保Sentry已初始化
+  if (!sentryAvailable || !Sentry || typeof Sentry.addBreadcrumb !== 'function') {
+    return;
+  }
+
+  try {
+    Sentry.addBreadcrumb({
+      message,
+      category,
+      level,
+      timestamp: Date.now() / 1000,
+    });
+  } catch (error) {
+    console.warn('添加Sentry面包屑失败:', error);
+  }
 }
 
 /**
  * 性能追踪
  */
 export function startTransaction(name: string, op: string) {
-  return Sentry.startTransaction({ name, op });
+  if (!sentryAvailable || !Sentry || typeof Sentry.startTransaction !== 'function') {
+    return null;
+  }
+
+  try {
+    return Sentry.startTransaction({ name, op });
+  } catch (error) {
+    console.warn('启动Sentry事务失败:', error);
+    return null;
+  }
 }
 
 // 导出Sentry实例供高级使用
