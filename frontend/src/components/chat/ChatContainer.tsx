@@ -19,7 +19,7 @@ import { chatService } from '@/services/api';
 import { useMessageStore } from '@/store/messageStore';
 import { useAgentStore } from '@/store/agentStore';
 import { useSessionStore } from '@/store/sessionStore';
-import type { InteractiveData } from '@/types';
+import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
 
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
@@ -58,13 +58,15 @@ export const ChatContainer: React.FC = () => {
   const [pendingInitVars, setPendingInitVars] = useState<Record<string, any> | null>(null);
 
   // 将 FastGPT init 返回的 variables 转为交互气泡
-  const renderVariablesAsInteractive = (initData: any) => {
+  const renderVariablesAsInteractive = (initData: Record<string, unknown>) => {
     return perfMonitor.measure('ChatContainer.renderVariablesAsInteractive', () => {
       try {
-        const vars = initData?.app?.chatConfig?.variables || [];
+        const app = initData.app as Record<string, unknown> | undefined;
+        const chatConfig = app?.chatConfig as Record<string, unknown> | undefined;
+        const vars = (chatConfig?.variables as Array<Record<string, unknown>>) || [];
         if (vars.length === 0) return;
 
-        const fields = vars.map((v: any) => {
+        const fields = vars.map((v: Record<string, unknown>) => {
           const base = {
             id: v.id,
             label: v.label || v.key,
@@ -81,7 +83,7 @@ export const ChatContainer: React.FC = () => {
               return {
                 ...base,
                 type: 'select' as const,
-                options: (v.enums || []).map((opt: any) => ({
+                options: ((v.enums as Array<{label?: string; value: string}> | undefined) || []).map((opt) => ({
                   label: opt.label || opt.value,
                   value: opt.value,
                 })),
@@ -96,7 +98,7 @@ export const ChatContainer: React.FC = () => {
           origin: 'init',
           params: {
             description: t('请填写以下信息'),
-            inputForm: fields,
+            inputForm: fields as unknown as InteractiveFormItem[],
           },
         };
         addMessage({ interactive });
@@ -108,25 +110,28 @@ export const ChatContainer: React.FC = () => {
   };
 
   // 交互回调：区分 init 起源与普通交互
-  const handleInteractiveSelect = (payload: any) => {
+  const handleInteractiveSelect = (payload: string | Record<string, unknown>) => {
     if (typeof payload === 'string') {
       // 普通交互（非 init）：先移除交互气泡，再继续运行
       try { removeLastInteractiveMessage(); } catch {}
       return continueInteractiveSelect(payload);
     }
-    if (payload && payload.origin === 'init') {
+    if (payload && typeof payload === 'object' && payload.origin === 'init') {
       // init 交互：仅收集变量，显示输入框，不请求后端
-      setPendingInitVars((prev) => ({ ...(prev || {}), [payload.key]: payload.value }));
+      const payloadObj = payload as Record<string, unknown>;
+      const key = String(payloadObj.key || '');
+      const value = payloadObj.value;
+      setPendingInitVars((prev) => ({ ...(prev || {}), [key]: value }));
       setHideComposer(false);
       try { removeLastInteractiveMessage(); } catch {}
     }
   };
 
-  const handleInteractiveFormSubmit = (payload: any) => {
+  const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined) => {
     // 非 init 表单：直接继续运行
     if (!payload || payload.origin !== 'init') {
       try { removeLastInteractiveMessage(); } catch {}
-      return continueInteractiveForm(payload);
+      return continueInteractiveForm(payload as Record<string, string>);
     }
     // init 表单：仅收集变量，显示输入框
     const values = payload.values || {};
@@ -136,10 +141,10 @@ export const ChatContainer: React.FC = () => {
   };
 
   // 发送消息：若存在 init 变量，则在首次发送时一并携带
-  const handleSendMessage = async (content: string, extraOptions?: any) => {
+  const handleSendMessage = async (content: string, extraOptions?: ChatOptions) => {
     return perfMonitor.measureAsync('ChatContainer.handleSendMessage', async () => {
       const vars = pendingInitVars || undefined;
-      const mergedOptions = {
+      const mergedOptions: ChatOptions = {
         ...(extraOptions || {}),
         ...(vars ? { variables: vars } : {}),
         detail: true,

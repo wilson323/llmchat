@@ -94,10 +94,11 @@ class Logger {
     if (!metadata) return undefined;
 
     const sanitized = { ...metadata };
-    const sensitiveKeys = ['password', 'token', 'apiKey', 'secret', 'authorization'];
+    const sensitiveKeys = ['password', 'token', 'apikey', 'api_key', 'secret', 'authorization', 'auth'];
 
     Object.keys(sanitized).forEach(key => {
-      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+      const lowerKey = key.toLowerCase();
+      if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
         sanitized[key] = '[REDACTED]';
       }
     });
