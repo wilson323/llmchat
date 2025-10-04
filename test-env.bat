@@ -19,12 +19,12 @@ if %errorlevel% equ 0 (
 echo.
 
 echo [测试 2] 检查 npm
-where npm >nul 2>&1
+where pnpm >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ npm:
-    npm -v
+    pnpm -v
 ) else (
-    echo ✗ npm 未安装
+    echo ✗ pnpm 未安装
 )
 echo.
 
@@ -84,12 +84,12 @@ if %errorlevel% equ 0 (
 )
 echo.
 
-echo [测试 6] 检查 npm 脚本
-npm run 2>nul | findstr /C:"dev" >nul
+echo [测试 6] 检查 pnpm 脚本
+pnpm run 2>nul | findstr /C:"dev" >nul
 if %errorlevel% equ 0 (
-    echo ✓ npm run dev 脚本已配置
+    echo ✓ pnpm run dev 脚本已配置
 ) else (
-    echo ✗ npm run dev 脚本未配置
+    echo ✗ pnpm run dev 脚本未配置
 )
 echo.
 
@@ -103,7 +103,7 @@ echo.
 echo 如果有错误 (✗)，请先解决问题:
 echo   1. ✗ Node.js/npm: 安装 Node.js 18+
 echo   2. ✗ 配置文件: 运行 start-dev-debug.bat
-echo   3. ✗ 依赖: 运行 npm install
+echo   3. ✗ 依赖: 运行 pnpm install
 echo   4. ⚠ 端口占用: 关闭占用端口的程序
 echo.
 pause

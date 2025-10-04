@@ -25,15 +25,15 @@ if %errorlevel% neq 0 (
 echo [成功] Node.js 版本:
 node -v
 
-REM 检查 npm
-where npm >nul 2>&1
+REM 检查 pnpm
+where pnpm >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] npm 未安装！
+    echo [错误] pnpm 未安装！请先安装: npm install -g pnpm
     pause
     exit /b 1
 )
-echo [成功] npm 版本:
-npm -v
+echo [成功] pnpm 版本:
+pnpm -v
 
 echo.
 echo [信息] 检查配置文件...
@@ -92,7 +92,7 @@ if not exist "frontend\node_modules" (
 
 if !NEED_INSTALL! equ 1 (
     echo [信息] 正在安装依赖...
-    call npm install
+    call pnpm install
     if %errorlevel% neq 0 (
         echo [错误] 依赖安装失败！
         pause
@@ -114,19 +114,19 @@ echo.
 echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 echo.
 
-REM 检查 npm run dev 脚本是否存在
-npm run 2>nul | findstr /C:"dev" >nul
+REM 检查 pnpm run dev 脚本是否存在
+pnpm run 2>nul | findstr /C:"dev" >nul
 if %errorlevel% neq 0 (
-    echo [错误] 'npm run dev' 脚本不存在！
+    echo [错误] 'pnpm run dev' 脚本不存在！
     echo [提示] 请检查 package.json 中是否配置了 dev 脚本
     pause
     exit /b 1
 )
 
 REM 启动服务
-echo [信息] 正在执行: npm run dev
+echo [信息] 正在执行: pnpm run dev
 echo.
-call npm run dev
+call pnpm run dev
 
 REM 捕获退出代码
 set EXIT_CODE=%errorlevel%
@@ -140,7 +140,7 @@ if %EXIT_CODE% neq 0 (
     echo 1. 检查端口 3000 和 3001 是否被占用
     echo 2. 检查 backend/.env 配置是否正确
     echo 3. 查看上方错误信息
-    echo 4. 尝试手动运行: npm run backend:dev 和 npm run frontend:dev
+    echo 4. 尝试手动运行: pnpm run backend:dev 和 pnpm run frontend:dev
     echo.
 ) else (
     echo [信息] 服务已正常停止

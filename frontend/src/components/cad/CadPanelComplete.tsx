@@ -24,16 +24,13 @@ import {
   Undo2,
   Redo2,
   HelpCircle,
-  Settings,
   X,
   Eye,
   EyeOff,
   ChevronDown,
   ChevronRight,
   Search,
-  Filter,
   Trash2,
-  RotateCcw,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -102,7 +99,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
     setActiveTab('info');
   }, []);
 
-  const handleEntityHover = useCallback((entity: DxfEntity | null) => {
+  const handleEntityHover = useCallback((_entity: DxfEntity | null) => {
     // 可以添加悬停效果
   }, []);
 

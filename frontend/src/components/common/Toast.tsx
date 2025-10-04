@@ -114,7 +114,9 @@ class ToastManager {
 
   subscribe(listener: (toasts: ToastProps[]) => void) {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   private notify() {
@@ -130,7 +132,8 @@ export const useToast = () => {
   const [toasts, setToasts] = useState<ToastProps[]>([]);
 
   useEffect(() => {
-    return toastManager.subscribe(setToasts);
+    const unsubscribe = toastManager.subscribe(setToasts);
+    return () => unsubscribe();
   }, []);
 
   return {

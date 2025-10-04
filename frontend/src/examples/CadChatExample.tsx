@@ -14,7 +14,7 @@ import { ToastContainer, useToast } from '@/components/common/Toast';
 import { cadChatService } from '@/services/cadChatService';
 
 export const CadChatExample: React.FC = () => {
-  const [currentAgent, setCurrentAgent] = useState({ id: 'cad-editor-agent', name: 'CAD 编辑智能体' });
+  const [currentAgent, _setCurrentAgent] = useState({ id: 'cad-editor-agent', name: 'CAD 编辑智能体' });
   const [hasContext, setHasContext] = useState(false);
   const [loading, setLoading] = useState(false);
   const { success, error: showError, info } = useToast();

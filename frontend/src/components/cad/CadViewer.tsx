@@ -6,7 +6,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';
 import { ZoomIn, ZoomOut, Maximize2, Grid3x3 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   entities,
   width = 800,
   height = 600,
-  onEntityClick,
+  onEntityClick: _onEntityClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);

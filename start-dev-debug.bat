@@ -33,9 +33,9 @@ echo [成功] Node.js 已安装
 echo.
 
 echo [2/8] 检查 npm...
-where npm >nul 2>&1
+where pnpm >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] npm 未安装！
+    echo [错误] pnpm 未安装！请先安装: npm install -g pnpm！
     pause
     exit /b 1
 )
@@ -88,7 +88,7 @@ echo.
 echo [6/8] 检查依赖...
 if not exist "node_modules" (
     echo [警告] 根目录 node_modules 不存在，正在安装...
-    call npm install
+    call pnpm install
     if %errorlevel% neq 0 (
         echo [错误] 安装失败！
         pause
@@ -101,7 +101,7 @@ if not exist "node_modules" (
 if not exist "backend\node_modules" (
     echo [警告] backend 依赖不存在，正在安装...
     cd backend
-    call npm install
+    call pnpm install
     if %errorlevel% neq 0 (
         echo [错误] 后端依赖安装失败！
         cd ..
@@ -116,7 +116,7 @@ if not exist "backend\node_modules" (
 if not exist "frontend\node_modules" (
     echo [警告] frontend 依赖不存在，正在安装...
     cd frontend
-    call npm install
+    call pnpm install
     if %errorlevel% neq 0 (
         echo [错误] 前端依赖安装失败！
         cd ..
@@ -133,7 +133,7 @@ echo [7/8] 检查 concurrently...
 if not exist "node_modules\concurrently" (
     echo [错误] concurrently 未安装！
     echo [提示] 正在安装 concurrently...
-    call npm install concurrently --save-dev
+    call pnpm install concurrently --save-dev
     if %errorlevel% neq 0 (
         echo [错误] concurrently 安装失败！
         pause
@@ -145,13 +145,13 @@ if not exist "node_modules\concurrently" (
 echo.
 
 echo [8/8] 检查 npm 脚本...
-npm run 2>nul | findstr /C:"dev" >nul
+pnpm run 2>nul | findstr /C:"dev" >nul
 if %errorlevel% neq 0 (
-    echo [错误] 'npm run dev' 脚本不存在！
+    echo [错误] 'pnpm run dev' 脚本不存在！
     echo [提示] 请检查 package.json 中的 scripts 配置
     echo.
     echo 当前可用的脚本:
-    npm run
+    pnpm run
     pause
     exit /b 1
 ) else (
@@ -171,7 +171,7 @@ echo ═════════════════════════
 echo.
 
 REM 启动服务
-call npm run dev
+call pnpm run dev
 
 REM 捕获退出代码
 set EXIT_CODE=%errorlevel%
@@ -190,8 +190,8 @@ if %EXIT_CODE% neq 0 (
     echo 1. 检查端口: netstat -ano ^| findstr "3000 3001"
     echo 2. 查看上方详细错误信息
     echo 3. 尝试分别启动:
-    echo    - npm run backend:dev
-    echo    - npm run frontend:dev
+    echo    - pnpm run backend:dev
+    echo    - pnpm run frontend:dev
 ) else (
     echo [信息] 服务已正常停止
 )

@@ -8,13 +8,13 @@ echo 🚀 启动 LLMChat...
 echo.
 
 REM 快速检查
-if not exist "node_modules\concurrently" (
-    echo ⚠ concurrently 未安装，正在安装...
-    npm install --no-audit
+if not exist "node_modules\.pnpm" (
+    echo ⚠ 依赖未安装，正在安装...
+    pnpm install
     echo.
 )
 
-call npm run dev
+call pnpm run dev
 
 REM 如果失败，提示用户
 if %errorlevel% neq 0 (

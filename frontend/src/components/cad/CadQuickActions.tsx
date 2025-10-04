@@ -10,10 +10,8 @@ import {
   Move,
   Search,
   Download,
-  Upload,
   Trash2,
   Copy,
-  Scissors,
   RotateCw,
 } from 'lucide-react';
 

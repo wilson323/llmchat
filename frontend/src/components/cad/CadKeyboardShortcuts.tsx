@@ -2,7 +2,7 @@
  * CAD 键盘快捷键处理
  */
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 interface CadKeyboardShortcutsProps {
   onUndo?: () => void;

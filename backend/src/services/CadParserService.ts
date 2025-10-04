@@ -48,8 +48,8 @@ export class CadParserService {
 
       const entities: DxfEntity[] = [];
       const layersSet = new Set<string>();
-      let minX = Infinity, minY = Infinity;
-      let maxX = -Infinity, maxY = -Infinity;
+      const minX = Infinity, minY = Infinity;
+      const maxX = -Infinity, maxY = -Infinity;
 
       // 转换实体
       for (const entity of dxf.entities) {

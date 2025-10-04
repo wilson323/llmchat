@@ -11,7 +11,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';
 import { 
   ZoomIn, 
@@ -24,8 +24,6 @@ import {
   Ruler,
   MousePointer,
   Eye,
-  EyeOff,
-  RotateCcw
 } from 'lucide-react';
 
 interface CadViewerEnhancedProps {
@@ -56,10 +54,10 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
 
   const [showGrid, setShowGrid] = useState(true);
-  const [showAxes, setShowAxes] = useState(true);
+  const [_showAxes, _setShowAxes] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | 'top' | 'front' | 'side'>('3d');
   const [measureMode, setMeasureMode] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState<Point3D | null>(null);
+  const [_cursorPosition, _setCursorPosition] = useState<Point3D | null>(null);
   const [hoveredEntity, setHoveredEntity] = useState<DxfEntity | null>(null);
   const [fps, setFps] = useState(60);
 
@@ -123,7 +121,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     }
 
     // 添加坐标轴
-    if (showAxes) {
+    if (_showAxes) {
       const axesHelper = new THREE.AxesHelper(100);
       axesHelper.name = 'axes';
       scene.add(axesHelper);
@@ -207,7 +205,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
         containerRef.current.removeChild(renderer.domElement);
       }
     };
-  }, [width, height, showGrid, showAxes, measureMode, onEntityClick, onEntityHover]);
+  }, [width, height, showGrid, _showAxes, measureMode, onEntityClick, onEntityHover]);
 
   // 渲染实体
   useEffect(() => {
@@ -257,8 +255,17 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       }
 
       case 'CIRCLE': {
-        const geometry = new THREE.CircleGeometry(entity.radius, 64);
-        geometry.vertices?.shift(); // 移除中心点
+        const segments = 64;
+        const points: THREE.Vector3[] = [];
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * Math.PI * 2;
+          points.push(new THREE.Vector3(
+            Math.cos(angle) * entity.radius,
+            Math.sin(angle) * entity.radius,
+            0
+          ));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const mesh = new THREE.LineLoop(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
@@ -267,13 +274,18 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       case 'ARC': {
         const startAngle = (entity.startAngle * Math.PI) / 180;
         const endAngle = (entity.endAngle * Math.PI) / 180;
-        const geometry = new THREE.CircleGeometry(
-          entity.radius,
-          64,
-          startAngle,
-          endAngle - startAngle
-        );
-        geometry.vertices?.shift();
+        const segments = 64;
+        const points: THREE.Vector3[] = [];
+        const angleRange = endAngle - startAngle;
+        for (let i = 0; i <= segments; i++) {
+          const angle = startAngle + (i / segments) * angleRange;
+          points.push(new THREE.Vector3(
+            Math.cos(angle) * entity.radius,
+            Math.sin(angle) * entity.radius,
+            0
+          ));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const mesh = new THREE.Line(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
@@ -535,12 +547,12 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       {/* 底部状态栏 */}
       <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
         {/* 鼠标位置 */}
-        {cursorPosition && (
+        {_cursorPosition && (
           <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg px-3 py-1.5">
             <div className="flex items-center gap-4 text-xs font-mono">
-              <span>X: {cursorPosition.x.toFixed(2)}</span>
-              <span>Y: {cursorPosition.y.toFixed(2)}</span>
-              <span>Z: {cursorPosition.z.toFixed(2)}</span>
+              <span>X: {_cursorPosition.x.toFixed(2)}</span>
+              <span>Y: {_cursorPosition.y.toFixed(2)}</span>
+              <span>Z: {_cursorPosition.z.toFixed(2)}</span>
             </div>
           </div>
         )}
