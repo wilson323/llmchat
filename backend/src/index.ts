@@ -41,6 +41,7 @@ import authRouter from './routes/auth';
 // 工具
 import { logger } from './utils/logger';
 import { initCacheService } from './services/CacheService';
+import { initDB } from './utils/db';
 
 const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
@@ -155,6 +156,11 @@ app.use(errorHandler);
 // 启动服务器（异步初始化）
 async function startServer() {
   try {
+    // 🔧 初始化数据库（创建表、种子智能体数据）
+    logger.info('🔨 开始初始化数据库...');
+    await initDB();
+    logger.info('✅ 数据库初始化完成');
+    
     // 初始化缓存服务
     await initCacheService();
     
