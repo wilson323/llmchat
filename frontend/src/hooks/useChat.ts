@@ -7,11 +7,11 @@
  * 3. 精确的状态订阅
  * 
  * @version 2.0 - 优化版（2025-10-03）
- * @legacy 原版备份在 useChat.legacy.ts
  */
 
 import { useCallback } from 'react';
 import { chatService } from '@/services/api';
+import { logger } from '@/lib/logger';
 
 // 新的拆分Store
 import { useMessageStore } from '@/store/messageStore';
@@ -20,6 +20,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { usePreferenceStore } from '@/store/preferenceStore';
 
 import { ChatMessage, ChatOptions, OriginalChatMessage, ReasoningStepUpdate } from '@/types';
+import type { JsonValue } from '@/types/dynamic';
 import { useI18n } from '@/i18n';
 import { parseReasoningPayload } from '@/lib/reasoning';
 import { normalizeFastGPTEvent } from '@/lib/events';
@@ -117,7 +118,7 @@ export const useChat = () => {
                 try {
                   useMessageStore.getState().addMessage({ interactive: interactiveData });
                 } catch (e) {
-                  console.warn(t('处理 interactive 事件失败'), e, interactiveData);
+                  logger.warn(t('处理 interactive 事件失败'), { error: e, interactiveData });
                 }
               },
               onChatId: () => {},
@@ -141,7 +142,10 @@ export const useChat = () => {
         if (error instanceof DOMException && error.name === 'AbortError') {
           useMessageStore.getState().updateLastMessage(t('（生成已停止）'));
         } else {
-          console.error(t('发送消息失败'), error);
+          logger.error(t('发送消息失败'), error as Error, {
+            agentId: currentAgent?.id,
+            sessionId: currentSession?.id
+          });
           useMessageStore.getState().updateLastMessage(t('抱歉，发送消息时出现错误。请稍后重试。'));
         }
       } finally {
@@ -193,47 +197,51 @@ export const useChat = () => {
             currentAgent.id,
             currentSession.id,
             messageId,
-            (chunk) => {
-              // 对于retry消息，使用updateMessageById
-              useMessageStore.getState().updateMessageById(messageId, (prev) => ({
-                ...prev,
-                AI: `${prev.AI || ''}${chunk}`
-              }));
-            },
-            (status) => {
-              useMessageStore.getState().setStreamingStatus(status);
-              if (status?.type === 'complete' || status?.type === 'error') {
-                useMessageStore.getState().finalizeReasoning();
-              }
-            },
-            { detail: true },
-            (interactiveData) => {
-              try {
-                useMessageStore.getState().addMessage({ interactive: interactiveData });
-              } catch (e) {
-                console.warn(t('处理 retry interactive 事件失败'), e, interactiveData);
-              }
-            },
-            (cid) => {
-              debugLog('重新生成消息使用 chatId:', cid);
-            },
-            (reasoningEvent) => {
-              const parsed = parseReasoningPayload(reasoningEvent);
-              if (!parsed) return;
+            {
+              onChunk: (chunk: string) => {
+                // 对于retry消息，使用updateMessageById
+                useMessageStore.getState().updateMessageById(messageId, (prev) => ({
+                  ...prev,
+                  AI: `${prev.AI || ''}${chunk}`
+                }));
+              },
+              onStatus: (status) => {
+                useMessageStore.getState().setStreamingStatus(status);
+              },
+              onInteractive: (interactiveData) => {
+                try {
+                  useMessageStore.getState().addMessage({ interactive: interactiveData });
+                } catch (e) {
+                  logger.warn(t('处理 retry interactive 事件失败'), { error: e, interactiveData });
+                }
+              },
+              onChatId: (cid: string) => {
+                debugLog('重新生成消息使用 chatId:', cid);
+              },
+              onReasoning: (reasoningEvent) => {
+                const parsed = parseReasoningPayload(reasoningEvent);
+                if (!parsed) return;
 
-              parsed.steps.forEach((step: ReasoningStepUpdate) => {
-                useMessageStore.getState().appendReasoningStep(step);
-              });
+                parsed.steps.forEach((step: ReasoningStepUpdate) => {
+                  useMessageStore.getState().appendReasoningStep(step);
+                });
 
-              if (parsed.finished) {
-                useMessageStore.getState().finalizeReasoning(parsed.totalSteps);
+                if (parsed.finished) {
+                  useMessageStore.getState().finalizeReasoning(parsed.totalSteps);
+                }
+              },
+              onEvent: (eventName, payload) => {
+                // 将SSEEventData转换为JsonValue
+                const jsonPayload = payload === null || payload === undefined ? null : 
+                  typeof payload === 'string' ? payload :
+                  typeof payload === 'object' ? payload as Record<string, unknown> :
+                  null;
+                const normalized = normalizeFastGPTEvent(eventName, jsonPayload as JsonValue);
+                if (!normalized) return;
+                useMessageStore.getState().appendAssistantEvent(normalized);
               }
             },
-            (eventName, payload) => {
-              const normalized = normalizeFastGPTEvent(eventName, payload);
-              if (!normalized) return;
-              useMessageStore.getState().appendAssistantEvent(normalized);
-            }
+            { detail: true }
           );
         } else {
           const response = await chatService.retryMessage(currentAgent.id, currentSession.id, messageId, { detail: true });
@@ -244,7 +252,11 @@ export const useChat = () => {
           }));
         }
       } catch (error) {
-        console.error('重新生成消息失败:', error);
+        logger.error('重新生成消息失败', error as Error, {
+          messageId,
+          agentId: currentAgent.id,
+          sessionId: currentSession.id
+        });
         useMessageStore.getState().updateMessageById(messageId, (prev) => ({
           ...prev,
           AI: t('抱歉，重新生成时出现错误。请稍后重试。')

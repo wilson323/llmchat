@@ -359,7 +359,8 @@ if (process.env.NODE_ENV === 'development') {
   setInterval(() => {
     const stats = perfMonitor.getStats('messageStore.flushBuffer');
     if (stats && stats.count > 0) {
-      console.log('📊 MessageStore Performance:', {
+      // Performance metrics available via perfMonitor.getStats('messageStore.flushBuffer')
+      debugLog('MessageStore Performance', {
         flushCount: stats.count,
         avgFlushTime: `${stats.avg.toFixed(2)}ms`,
         p95: `${stats.p95.toFixed(2)}ms`,

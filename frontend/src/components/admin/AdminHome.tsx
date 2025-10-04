@@ -2324,7 +2324,6 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   
   // 自动获取智能体信息功能
   const { fetchAgentInfo, loading: fetching, error: fetchError } = useAgentAutoFetch();
-  // const [showAutoFetch, setShowAutoFetch] = useState(false); // 未使用，已注释
   
   // 检测是否可以自动获取（FastGPT或Dify且有必填信息）
   const canAutoFetch = 

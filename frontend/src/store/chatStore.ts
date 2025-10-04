@@ -4,6 +4,7 @@ import { Agent, ChatMessage, StreamStatus, ChatSession, UserPreferences, AgentSe
 import { normalizeReasoningDisplay } from '@/lib/reasoning';
 import { debugLog } from '@/lib/debug';
 import { generateSmartTitle, updateSessionTitleIfNeeded } from '@/utils/titleGeneration';
+import { logger } from '@/lib/logger';
 
 const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -252,7 +253,7 @@ export const useChatStore = create<ChatState>()(
 
           const targetIndex = findLastAssistantMessageIndex(state.messages);
           if (targetIndex === -1) {
-            console.warn('⚠️ 未找到可更新的助手消息');
+            logger.warn('未找到可更新的助手消息');
             return state;
           }
 
@@ -381,7 +382,10 @@ export const useChatStore = create<ChatState>()(
 
             const existingEvents = msg.events ?? [];
 
-            const mergePayload = (prev: any, incoming: any) => {
+            const mergePayload = (
+              prev: Record<string, unknown> | null | undefined, 
+              incoming: Record<string, unknown> | null | undefined
+            ): Record<string, unknown> | null | undefined => {
               if (prev && incoming && typeof prev === 'object' && typeof incoming === 'object') {
                 return { ...prev, ...incoming };
               }
@@ -513,7 +517,7 @@ export const useChatStore = create<ChatState>()(
           try {
             controller.abort();
           } catch (error) {
-            console.warn('abort streaming failed', error);
+            logger.warn('abort streaming 失败', { error });
           }
         }
         set({

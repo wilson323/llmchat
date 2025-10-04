@@ -7,7 +7,8 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Agent, ChatMessage, ChatSession, AgentSessionsMap } from '@/types';
 import { HybridStorageManager } from '@/services/storage/HybridStorageManager';
-import { SearchQuery } from '@/types/hybrid-storage';
+import { SearchQuery, CacheUsageStats } from '@/types/hybrid-storage';
+import { logger } from '@/lib/logger';
 
 interface HybridChatState {
   // 混合存储管理器
@@ -24,9 +25,9 @@ interface HybridChatState {
   currentSession: ChatSession | null;
   messages: ChatMessage[];
   isStreaming: boolean;
-  streamingStatus: any | null;
+  streamingStatus: Record<string, unknown> | null;
   streamAbortController: AbortController | null;
-  preferences: any;
+  preferences: Record<string, unknown>;
   agentSelectorOpen: boolean;
   sidebarOpen: boolean;
 
@@ -34,7 +35,7 @@ interface HybridChatState {
   syncStatus: 'idle' | 'syncing' | 'error' | 'offline';
   lastSyncTime: number;
   pendingSyncCount: number;
-  cacheStats: any | null;
+  cacheStats: CacheUsageStats | null;
   isOnline: boolean;
 
   // Actions
@@ -83,7 +84,7 @@ interface HybridChatState {
   setAgentSelectorOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
-  setStreamingStatus: (status: any | null) => void;
+  setStreamingStatus: (status: Record<string, unknown> | null) => void;
   setStreamAbortController: (controller: AbortController | null) => void;
   stopStreaming: () => void;
 
@@ -136,12 +137,12 @@ export const useHybridChatStore = create<HybridChatState>()(
         // 设置事件监听器
         storageManager.onSyncProgress((progress) => {
           set({ syncStatus: 'syncing' });
-          console.log('同步进度:', progress);
+          logger.info('同步进度', progress);
         });
 
         storageManager.onSyncError((error) => {
           set({ syncStatus: 'error', storageError: error.error });
-          console.error('同步错误:', error);
+          logger.error('同步错误', error as Error);
         });
 
         // 检查网络状态
@@ -159,7 +160,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        console.error('存储初始化失败:', error);
+        logger.error('存储初始化失败', error as Error);
         set({
           storageError: error instanceof Error ? error.message : '存储初始化失败',
           agentsLoading: false
@@ -206,7 +207,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         }
 
       } catch (error) {
-        console.error('设置当前智能体失败:', error);
+        logger.error('设置当前智能体失败', error as Error, { agentId: agent.id });
         set({ agentsError: error instanceof Error ? error.message : '设置智能体失败' });
       }
     },
@@ -218,7 +219,7 @@ export const useHybridChatStore = create<HybridChatState>()(
     loadAgentSessions: async (agentId) => {
       const state = get();
       if (!state.storageManager) {
-        console.warn('存储管理器未初始化');
+        logger.warn('存储管理器未初始化');
         return;
       }
 
@@ -237,7 +238,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        console.error('加载智能体会话失败:', error);
+        logger.error('加载智能体会话失败', error as Error, { agentId });
         set({ agentsError: error instanceof Error ? error.message : '加载会话失败' });
       }
     },
@@ -278,7 +279,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         }
 
       } catch (error) {
-        console.error('保存当前会话失败:', error);
+        logger.error('保存当前会话失败', error as Error, { sessionId: get().currentSession?.id });
         set({ storageError: error instanceof Error ? error.message : '保存会话失败' });
       }
     },
@@ -319,7 +320,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        console.error('创建新会话失败:', error);
+        logger.error('创建新会话失败', error as Error, { agentId: get().currentAgent?.id });
         set({ storageError: error instanceof Error ? error.message : '创建会话失败' });
       }
     },
@@ -351,7 +352,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        console.error('删除会话失败:', error);
+        logger.error('删除会话失败', error as Error, { sessionId });
         set({ storageError: error instanceof Error ? error.message : '删除会话失败' });
       }
     },
@@ -366,7 +367,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         // 从混合存储获取会话
         const session = await state.storageManager.getSession(sessionId);
         if (!session) {
-          console.warn('会话不存在:', sessionId);
+          logger.warn('会话不存在', { sessionId });
           return;
         }
 
@@ -380,7 +381,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         state.storageManager.preloadAgentSessions(state.currentAgent.id, 3);
 
       } catch (error) {
-        console.error('切换会话失败:', error);
+        logger.error('切换会话失败', error as Error, { sessionId });
         set({ storageError: error instanceof Error ? error.message : '切换会话失败' });
       }
     },
@@ -415,7 +416,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        console.error('重命名会话失败:', error);
+        logger.error('重命名会话失败', error as Error, { sessionId, newTitle: title });
         set({ storageError: error instanceof Error ? error.message : '重命名会话失败' });
       }
     },
@@ -445,7 +446,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         set({ currentSession: updatedSession });
 
       } catch (error) {
-        console.error('添加消息失败:', error);
+        logger.error('添加消息失败', error as Error, { sessionId: get().currentSession?.id });
         set({ storageError: error instanceof Error ? error.message : '添加消息失败' });
       }
     },
@@ -488,7 +489,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         set({ currentSession: updatedSession });
 
       } catch (error) {
-        console.error('更新最后消息失败:', error);
+        logger.error('更新最后消息失败', error as Error, { sessionId: get().currentSession?.id });
         set({ storageError: error instanceof Error ? error.message : '更新消息失败' });
       }
     },
@@ -511,7 +512,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
         return success;
       } catch (error) {
-        console.error('同步当前会话失败:', error);
+        logger.error('同步当前会话失败', error as Error, { sessionId: get().currentSession?.id });
         set({ syncStatus: 'error' });
         return false;
       }
@@ -541,7 +542,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
         return success;
       } catch (error) {
-        console.error('同步智能体会话失败:', error);
+        logger.error('同步智能体会话失败', error as Error, { agentId });
         set({ syncStatus: 'error' });
         return false;
       }
@@ -562,7 +563,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
         return success;
       } catch (error) {
-        console.error('同步所有会话失败:', error);
+        logger.error('同步所有会话失败', error as Error);
         set({ syncStatus: 'error' });
         return false;
       }
@@ -580,7 +581,7 @@ export const useHybridChatStore = create<HybridChatState>()(
       try {
         await state.storageManager.preloadAgentSessions(agentId, limit);
       } catch (error) {
-        console.error('预加载会话失败:', error);
+        logger.error('预加载会话失败', error as Error, { agentId });
       }
     },
 
@@ -592,7 +593,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         await state.storageManager.cleanupCache();
         await state.refreshCacheStats();
       } catch (error) {
-        console.error('清理缓存失败:', error);
+        logger.error('清理缓存失败', error as Error);
       }
     },
 
@@ -604,7 +605,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         await state.storageManager.optimizeCache();
         await state.refreshCacheStats();
       } catch (error) {
-        console.error('优化缓存失败:', error);
+        logger.error('优化缓存失败', error as Error);
       }
     },
 
@@ -616,7 +617,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         const stats = await state.storageManager.getCacheStats();
         set({ cacheStats: stats });
       } catch (error) {
-        console.error('获取缓存统计失败:', error);
+        logger.error('获取缓存统计失败', error as Error);
       }
     },
 
@@ -628,7 +629,7 @@ export const useHybridChatStore = create<HybridChatState>()(
       try {
         return await state.storageManager.searchSessions(query);
       } catch (error) {
-        console.error('搜索会话失败:', error);
+        logger.error('搜索会话失败', error as Error, { query });
         return [];
       }
     },
@@ -642,7 +643,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         await state.storageManager.enableOfflineMode();
         set({ syncStatus: 'offline' });
       } catch (error) {
-        console.error('启用离线模式失败:', error);
+        logger.error('启用离线模式失败', error as Error);
       }
     },
 
@@ -654,7 +655,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         await state.storageManager.disableOfflineMode();
         set({ syncStatus: 'idle' });
       } catch (error) {
-        console.error('禁用离线模式失败:', error);
+        logger.error('禁用离线模式失败', error as Error);
       }
     },
 
@@ -670,7 +671,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         try {
           controller.abort();
         } catch (error) {
-          console.warn('停止流式传输失败:', error);
+          logger.warn('停止流式传输失败', { error });
         }
       }
       set({
@@ -690,7 +691,7 @@ export const useHybridChatStore = create<HybridChatState>()(
       try {
         return await state.storageManager.healthCheck();
       } catch (error) {
-        console.error('健康检查失败:', error);
+        logger.error('健康检查失败', error as Error);
         return { overall: false };
       }
     },
