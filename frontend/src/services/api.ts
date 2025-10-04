@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/components/ui/Toast';
 import { translate } from '@/i18n';
+import { logger } from '@/lib/logger';
 import type { ApiSuccessPayload } from '@/types/dynamic';
 import {
   Agent,
@@ -41,8 +42,7 @@ type ApiResponse<T> = ApiSuccessPayload<T>;
 
 const debugLog = (...args: unknown[]) => {
   if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
-    // eslint-disable-next-line no-console
-    console.debug('[chatService]', ...args);
+    logger.debug('[chatService]', { args });
   }
 };
 
@@ -89,7 +89,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error(translate('API请求错误'), error);
+    logger.error(translate('API请求错误'), error, {
+      url: error?.config?.url,
+      method: error?.config?.method,
+      status: error?.response?.status
+    });
     const status = error?.response?.status;
     if (status === 401) {
       const { logout } = useAuthStore.getState();
@@ -207,7 +211,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     try {
       onReasoning({ event: eventNameOverride || resolvedEvent || 'reasoning', data });
     } catch (reasoningError) {
-      console.warn('reasoning 回调执行失败:', reasoningError);
+      logger.warn('reasoning 回调执行失败', { error: reasoningError });
     }
   };
 
@@ -391,7 +395,7 @@ const consumeChatSSEStream = async (response: Response, callbacks: SSECallbacks)
       try {
         payload = JSON.parse(parsed.data) as Record<string, unknown>;
       } catch (error) {
-        console.warn('解析 SSE 数据失败:', error, '原始数据:', parsed.data);
+        logger.warn('解析 SSE 数据失败', { error, rawData: parsed.data });
         payload = parsed.data;
       }
     }
@@ -447,7 +451,7 @@ export const agentService = {
       debugLog('智能体状态响应', response.data);
       return response.data.data;
     } catch (error) {
-      console.error(translate('检查智能体状态失败'), error);
+      logger.error(translate('检查智能体状态失败'), error as Error, { agentId: id });
       throw error;
     }
   },
@@ -521,7 +525,11 @@ export const chatService = {
         return;
       }
       const errorText = await response.text();
-      console.error('Stream request failed:', response.status, errorText);
+      logger.error('Stream request failed', new Error(errorText), {
+        status: response.status,
+        agentId,
+        messagesCount: messages.length
+      });
       throw new Error(`Stream request failed: ${response.status} ${errorText}`);
     }
 
@@ -576,7 +584,11 @@ export const chatService = {
         return;
       }
       const errorText = await response.text();
-      console.error('Init stream request failed:', response.status, errorText);
+      logger.error('Init stream request failed', new Error(errorText), {
+        status: response.status,
+        agentId,
+        chatId
+      });
       throw new Error(`Init stream request failed: ${response.status} ${errorText}`);
     }
 
@@ -613,7 +625,10 @@ export const chatService = {
       };
       await api.post('/chat/feedback', payload);
     } catch (error) {
-      console.error(translate('提交点赞/点踩反馈失败'), error);
+      logger.error(translate('提交点赞/点踩反馈失败'), error as Error, {
+        dataId,
+        feedbackType: type
+      });
       throw error;
     }
   },
@@ -687,7 +702,12 @@ export const chatService = {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Retry stream request failed:', response.status, errorText);
+      logger.error('Retry stream request failed', new Error(errorText), {
+        status: response.status,
+        agentId,
+        chatId,
+        dataId
+      });
       throw new Error(`Retry stream request failed: ${response.status} ${errorText}`);
     }
 

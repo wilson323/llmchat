@@ -11,6 +11,7 @@
 
 import { useCallback } from 'react';
 import { chatService } from '@/services/api';
+import { logger } from '@/lib/logger';
 
 // 新的拆分Store
 import { useMessageStore } from '@/store/messageStore';
@@ -117,7 +118,7 @@ export const useChat = () => {
                 try {
                   useMessageStore.getState().addMessage({ interactive: interactiveData });
                 } catch (e) {
-                  console.warn(t('处理 interactive 事件失败'), e, interactiveData);
+                  logger.warn(t('处理 interactive 事件失败'), { error: e, interactiveData });
                 }
               },
               onChatId: () => {},
@@ -141,7 +142,10 @@ export const useChat = () => {
         if (error instanceof DOMException && error.name === 'AbortError') {
           useMessageStore.getState().updateLastMessage(t('（生成已停止）'));
         } else {
-          console.error(t('发送消息失败'), error);
+          logger.error(t('发送消息失败'), error as Error, {
+            agentId: currentAgent?.id,
+            sessionId: currentSession?.id
+          });
           useMessageStore.getState().updateLastMessage(t('抱歉，发送消息时出现错误。请稍后重试。'));
         }
       } finally {
@@ -208,7 +212,7 @@ export const useChat = () => {
                 try {
                   useMessageStore.getState().addMessage({ interactive: interactiveData });
                 } catch (e) {
-                  console.warn(t('处理 retry interactive 事件失败'), e, interactiveData);
+                  logger.warn(t('处理 retry interactive 事件失败'), { error: e, interactiveData });
                 }
               },
               onChatId: (cid: string) => {
@@ -248,7 +252,11 @@ export const useChat = () => {
           }));
         }
       } catch (error) {
-        console.error('重新生成消息失败:', error);
+        logger.error('重新生成消息失败', error as Error, {
+          messageId,
+          agentId: currentAgent.id,
+          sessionId: currentSession.id
+        });
         useMessageStore.getState().updateMessageById(messageId, (prev) => ({
           ...prev,
           AI: t('抱歉，重新生成时出现错误。请稍后重试。')
