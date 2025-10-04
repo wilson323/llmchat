@@ -16,7 +16,12 @@ import {
   ProductPreviewResponse,
 
 } from '@/types';
-import type { SSECallbacks, SSEParsedEvent } from '@/types/sse';
+import type { 
+  SSECallbacks, 
+  SSEParsedEvent,
+  FastGPTStatusData,
+  FastGPTInteractiveData 
+} from '@/types/sse';
 import {
   getNormalizedEventKey,
   isChatIdEvent,
@@ -228,6 +233,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   if (isStatusEvent(resolvedEvent) && payload && typeof payload === 'object') {
     const payloadObj = payload as Record<string, unknown>;
     const statusData: FastGPTStatusData = {
+      type: 'flowNodeStatus',
       status: (payloadObj.status as 'loading' | 'running' | 'completed' | 'error') || 'running',
       message: payloadObj.message as string | undefined,
       moduleId: payloadObj.id as string | undefined,
@@ -240,6 +246,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
 
   if (eventKey === getNormalizedEventKey('flowResponses')) {
     const statusData: FastGPTStatusData = {
+      type: 'progress',
       status: 'completed',
       message: '执行完成',
       moduleName: '执行完成',
@@ -286,6 +293,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
 
   if (isEndEvent(resolvedEvent)) {
     const statusData: FastGPTStatusData = {
+      type: 'complete',
       status: 'completed',
       moduleName: 'complete',
     };
@@ -329,9 +337,13 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     return;
   }
 
-  const fallbackContent = payload?.content || payload?.choices?.[0]?.delta?.content;
-  if (fallbackContent) {
-    onChunk(fallbackContent);
+  if (payload && typeof payload === 'object') {
+    const payloadObj = payload as Record<string, unknown>;
+    const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
+    const fallbackContent = (payloadObj.content as string) || choices?.[0]?.delta?.content;
+    if (fallbackContent) {
+      onChunk(fallbackContent);
+    }
   }
   if (reasoningContent) {
     emitReasoning(reasoningContent, resolvedEvent || 'reasoning');

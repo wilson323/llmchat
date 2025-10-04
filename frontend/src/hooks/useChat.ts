@@ -192,47 +192,46 @@ export const useChat = () => {
             currentAgent.id,
             currentSession.id,
             messageId,
-            (chunk) => {
-              // 对于retry消息，使用updateMessageById
-              useMessageStore.getState().updateMessageById(messageId, (prev) => ({
-                ...prev,
-                AI: `${prev.AI || ''}${chunk}`
-              }));
-            },
-            (status) => {
-              useMessageStore.getState().setStreamingStatus(status);
-              if (status?.type === 'complete' || status?.type === 'error') {
-                useMessageStore.getState().finalizeReasoning();
-              }
-            },
-            { detail: true },
-            (interactiveData) => {
-              try {
-                useMessageStore.getState().addMessage({ interactive: interactiveData });
-              } catch (e) {
-                console.warn(t('处理 retry interactive 事件失败'), e, interactiveData);
-              }
-            },
-            (cid) => {
-              debugLog('重新生成消息使用 chatId:', cid);
-            },
-            (reasoningEvent) => {
-              const parsed = parseReasoningPayload(reasoningEvent);
-              if (!parsed) return;
+            {
+              onChunk: (chunk: string) => {
+                // 对于retry消息，使用updateMessageById
+                useMessageStore.getState().updateMessageById(messageId, (prev) => ({
+                  ...prev,
+                  AI: `${prev.AI || ''}${chunk}`
+                }));
+              },
+              onStatus: (status) => {
+                useMessageStore.getState().setStreamingStatus(status);
+              },
+              onInteractive: (interactiveData) => {
+                try {
+                  useMessageStore.getState().addMessage({ interactive: interactiveData });
+                } catch (e) {
+                  console.warn(t('处理 retry interactive 事件失败'), e, interactiveData);
+                }
+              },
+              onChatId: (cid: string) => {
+                debugLog('重新生成消息使用 chatId:', cid);
+              },
+              onReasoning: (reasoningEvent) => {
+                const parsed = parseReasoningPayload(reasoningEvent);
+                if (!parsed) return;
 
-              parsed.steps.forEach((step: ReasoningStepUpdate) => {
-                useMessageStore.getState().appendReasoningStep(step);
-              });
+                parsed.steps.forEach((step: ReasoningStepUpdate) => {
+                  useMessageStore.getState().appendReasoningStep(step);
+                });
 
-              if (parsed.finished) {
-                useMessageStore.getState().finalizeReasoning(parsed.totalSteps);
+                if (parsed.finished) {
+                  useMessageStore.getState().finalizeReasoning(parsed.totalSteps);
+                }
+              },
+              onEvent: (eventName, payload) => {
+                const normalized = normalizeFastGPTEvent(eventName, payload);
+                if (!normalized) return;
+                useMessageStore.getState().appendAssistantEvent(normalized);
               }
             },
-            (eventName, payload) => {
-              const normalized = normalizeFastGPTEvent(eventName, payload);
-              if (!normalized) return;
-              useMessageStore.getState().appendAssistantEvent(normalized);
-            }
+            { detail: true }
           );
         } else {
           const response = await chatService.retryMessage(currentAgent.id, currentSession.id, messageId, { detail: true });

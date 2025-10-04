@@ -23,13 +23,17 @@ export type SSEEventType =
 
 /**
  * FastGPT状态更新数据
+ * 兼容StreamStatus接口
  */
 export interface FastGPTStatusData {
+  type?: 'flowNodeStatus' | 'progress' | 'error' | 'complete';
   status: 'loading' | 'running' | 'completed' | 'error';
   message?: string;
   moduleId?: string;
-  moduleName: string;
+  moduleName?: string;
   duration?: number;
+  progress?: number;
+  error?: string;
 }
 
 /**
