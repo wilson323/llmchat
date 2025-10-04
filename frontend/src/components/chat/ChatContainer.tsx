@@ -7,7 +7,6 @@
  * 3. 优化消息列表渲染
  * 
  * @version 2.0 - 优化版（2025-10-03）
- * @legacy 原版备份在 ChatContainer.legacy.tsx
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -21,14 +20,12 @@ import { useMessageStore } from '@/store/messageStore';
 import { useAgentStore } from '@/store/agentStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { InteractiveData } from '@/types';
-// import { usePreferenceStore } from '@/store/preferenceStore'; // 未使用，已注释
 
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
 import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
 import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
-// import { useResponsive } from '@/hooks/useResponsive'; // 未使用，已注释
 import { perfMonitor } from '@/utils/performanceMonitor';
 
 export const ChatContainer: React.FC = () => {
@@ -52,7 +49,6 @@ export const ChatContainer: React.FC = () => {
   } = useChat();
 
   const { t } = useI18n();
-  // const { isMobile, isTablet } = useResponsive(); // 未使用，已注释
 
   // 避免重复触发同一会话/智能体的开场白
   const welcomeTriggeredKeyRef = useRef<string | null>(null);

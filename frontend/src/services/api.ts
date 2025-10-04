@@ -16,6 +16,7 @@ import {
   ProductPreviewResponse,
 
 } from '@/types';
+import type { SSECallbacks, SSEParsedEvent } from '@/types/sse';
 import {
   getNormalizedEventKey,
   isChatIdEvent,
@@ -32,25 +33,8 @@ import {
 
 type ApiResponse<T> = ApiSuccessPayload<T>;
 
-interface SSECallbacks {
-  onChunk: (chunk: string) => void;
-  onStatus?: (status: any) => void;
-  onInteractive?: (data: any) => void;
-  onChatId?: (chatId: string) => void;
-  onReasoning?: (event: { event?: string; data: any }) => void;
-  onEvent?: (eventName: string, data: any) => void;
-}
-
-interface SSEParsedEvent {
-  event: string;
-  data: string;
-  id?: string;
-  retry?: number;
-}
-
-
-const debugLog = (...args: any[]) => {
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV) {
+const debugLog = (...args: unknown[]) => {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
     // eslint-disable-next-line no-console
     console.debug('[chatService]', ...args);
   }
@@ -186,22 +170,33 @@ const parseSSEEventBlock = (rawBlock: string): SSEParsedEvent | null => {
   return { event, data, id, retry };
 };
 
-const extractReasoningPayload = (payload: any) =>
-  payload?.choices?.[0]?.delta?.reasoning_content ||
-  payload?.delta?.reasoning_content ||
-  payload?.reasoning_content ||
-  payload?.reasoning ||
-  null;
+const extractReasoningPayload = (payload: Record<string, unknown> | string | null): string | null => {
+  if (!payload || typeof payload === 'string') return null;
+  
+  const choices = payload.choices as Array<{ delta?: { reasoning_content?: string } }> | undefined;
+  const delta = payload.delta as { reasoning_content?: string } | undefined;
+  
+  return (
+    choices?.[0]?.delta?.reasoning_content ||
+    delta?.reasoning_content ||
+    (payload.reasoning_content as string) ||
+    (payload.reasoning as string) ||
+    null
+  );
+};
 
-const resolveEventName = (eventName: string, payload: any): string =>
-  (eventName || (typeof payload?.event === 'string' ? payload.event : '') || '').trim();
+const resolveEventName = (eventName: string, payload: Record<string, unknown> | string | null): string => {
+  if (!payload || typeof payload === 'string') return eventName.trim();
+  const payloadEvent = payload.event;
+  return (eventName || (typeof payloadEvent === 'string' ? payloadEvent : '') || '').trim();
+};
 
-const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payload: any) => {
+const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payload: Record<string, unknown> | string | null) => {
   const { onChunk, onStatus, onInteractive, onChatId, onReasoning, onEvent } = callbacks;
   const resolvedEvent = resolveEventName(incomingEvent, payload);
   const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
-  const emitReasoning = (data: any, eventNameOverride?: string) => {
+  const emitReasoning = (data: string | Record<string, unknown>, eventNameOverride?: string) => {
     if (!onReasoning || data == null) return;
     try {
       onReasoning({ event: eventNameOverride || resolvedEvent || 'reasoning', data });
@@ -211,7 +206,12 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   };
 
   if (isChatIdEvent(resolvedEvent)) {
-    const chatIdValue = typeof payload === 'string' ? payload : payload?.chatId || payload?.id || payload?.data?.chatId;
+    const chatIdValue = typeof payload === 'string' ? payload : 
+      (payload && typeof payload === 'object' ? 
+        (payload as Record<string, unknown>).chatId || 
+        (payload as Record<string, unknown>).id || 
+        ((payload as Record<string, unknown>).data as Record<string, unknown> | undefined)?.chatId : 
+        null);
     if (typeof chatIdValue === 'string') {
       onChatId?.(chatIdValue);
     }
@@ -219,17 +219,19 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     return;
   }
 
-  if (isInteractiveEvent(resolvedEvent)) {
-    onInteractive?.(payload);
+  if (isInteractiveEvent(resolvedEvent) && payload && typeof payload === 'object') {
+    onInteractive?.(payload as FastGPTInteractiveData);
     onEvent?.('interactive', payload);
     return;
   }
 
-  if (isStatusEvent(resolvedEvent)) {
-    const statusData = {
-      type: 'flowNodeStatus',
-      status: payload?.status || 'running',
-      moduleName: payload?.name || payload?.moduleName || payload?.id || translate('未知模块'),
+  if (isStatusEvent(resolvedEvent) && payload && typeof payload === 'object') {
+    const payloadObj = payload as Record<string, unknown>;
+    const statusData: FastGPTStatusData = {
+      status: (payloadObj.status as 'loading' | 'running' | 'completed' | 'error') || 'running',
+      message: payloadObj.message as string | undefined,
+      moduleId: payloadObj.id as string | undefined,
+      moduleName: (payloadObj.name || payloadObj.moduleName || payloadObj.id || translate('未知模块')) as string,
     };
     onStatus?.(statusData);
     onEvent?.(resolvedEvent || 'flowNodeStatus', payload);
@@ -237,15 +239,24 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   }
 
   if (eventKey === getNormalizedEventKey('flowResponses')) {
-    onStatus?.({ type: 'progress', status: 'completed', moduleName: '执行完成' });
+    const statusData: FastGPTStatusData = {
+      status: 'completed',
+      message: '执行完成',
+      moduleName: '执行完成',
+    };
+    onStatus?.(statusData);
     onEvent?.(resolvedEvent || 'flowResponses', payload);
     return;
   }
 
   if (eventKey === getNormalizedEventKey('answer')) {
-    const answerContent = payload?.choices?.[0]?.delta?.content || payload?.content || '';
-    if (answerContent) {
-      onChunk(answerContent);
+    if (payload && typeof payload === 'object') {
+      const payloadObj = payload as Record<string, unknown>;
+      const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
+      const answerContent = choices?.[0]?.delta?.content || (payloadObj.content as string) || '';
+      if (answerContent) {
+        onChunk(answerContent);
+      }
     }
     const reasoningContent = extractReasoningPayload(payload);
     if (reasoningContent) {
@@ -256,8 +267,10 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   }
 
   if (isReasoningEvent(resolvedEvent)) {
-    emitReasoning(payload, resolvedEvent || 'reasoning');
-    onEvent?.('reasoning', { event: resolvedEvent || 'reasoning', data: payload });
+    if (payload) {
+      emitReasoning(payload, resolvedEvent || 'reasoning');
+      onEvent?.('reasoning', { event: resolvedEvent || 'reasoning', data: payload });
+    }
     return;
   }
 
@@ -272,7 +285,11 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   }
 
   if (isEndEvent(resolvedEvent)) {
-    onStatus?.({ type: 'complete', status: 'completed' });
+    const statusData: FastGPTStatusData = {
+      status: 'completed',
+      moduleName: 'complete',
+    };
+    onStatus?.(statusData);
     onEvent?.(resolvedEvent || 'end', payload);
     return;
   }
@@ -280,9 +297,15 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   const reasoningContent = extractReasoningPayload(payload);
 
   if (!resolvedEvent || isChunkLikeEvent(resolvedEvent)) {
-    const chunkContent = typeof payload === 'string'
-      ? payload
-      : payload?.content || payload?.choices?.[0]?.delta?.content || '';
+    let chunkContent = '';
+    if (typeof payload === 'string') {
+      chunkContent = payload;
+    } else if (payload && typeof payload === 'object') {
+      const payloadObj = payload as Record<string, unknown>;
+      const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
+      chunkContent = (payloadObj.content as string) || choices?.[0]?.delta?.content || '';
+    }
+    
     if (chunkContent) {
       onChunk(chunkContent);
     }
@@ -346,10 +369,10 @@ const consumeChatSSEStream = async (response: Response, callbacks: SSECallbacks)
       return;
     }
 
-    let payload: any = parsed.data;
+    let payload: Record<string, unknown> | string | null = parsed.data;
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
       try {
-        payload = JSON.parse(parsed.data);
+        payload = JSON.parse(parsed.data) as Record<string, unknown>;
       } catch (error) {
         console.warn('解析 SSE 数据失败:', error, '原始数据:', parsed.data);
         payload = parsed.data;
@@ -439,15 +462,7 @@ export const chatService = {
   async sendStreamMessage(
     agentId: string,
     messages: OriginalChatMessage[],
-    callbacks: {
-      onChunk: (chunk: string) => void;
-      onStatus?: (status: any) => void;
-      onInteractive?: (data: any) => void;
-      onChatId?: (chatId: string) => void;
-      onReasoning?: (event: { event?: string; data: any }) => void;
-      onEvent?: (eventName: string, data: any) => void;
-      signal?: AbortSignal;
-    },
+    callbacks: SSECallbacks & { signal?: AbortSignal },
     options?: ChatOptions
   ): Promise<void> {
     const { onChunk, onStatus, onInteractive, onChatId, onReasoning, onEvent, signal } = callbacks;
@@ -518,7 +533,7 @@ export const chatService = {
     agentId: string,
     chatId: string | undefined,
     onChunk: (chunk: string) => void,
-    onComplete?: (data: any) => void,
+    onComplete?: (data: Record<string, unknown>) => void,
     opts?: { signal?: AbortSignal }
   ): Promise<void> {
     const search = new URLSearchParams({ appId: agentId, stream: 'true' });
@@ -628,16 +643,12 @@ export const chatService = {
     agentId: string,
     chatId: string,
     dataId: string,
-    onChunk: (chunk: string) => void,
-    onStatus?: (status: any) => void,
-    options?: { detail?: boolean },
-    onInteractive?: (data: any) => void,
-    onChatId?: (chatId: string) => void,
-    onReasoning?: (event: { event?: string; data: any }) => void,
-    onEvent?: (eventName: string, data: any) => void
+    callbacks: SSECallbacks,
+    options?: { detail?: boolean }
   ): Promise<void> {
+    const { onChunk, onStatus, onInteractive, onChatId, onReasoning, onEvent } = callbacks;
     const authToken = useAuthStore.getState().token;
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       agentId,
       dataId,
       stream: true,

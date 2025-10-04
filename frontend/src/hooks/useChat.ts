@@ -7,7 +7,6 @@
  * 3. 精确的状态订阅
  * 
  * @version 2.0 - 优化版（2025-10-03）
- * @legacy 原版备份在 useChat.legacy.ts
  */
 
 import { useCallback } from 'react';

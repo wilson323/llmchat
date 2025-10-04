@@ -11,14 +11,11 @@ import { perfMonitor } from '@/utils/performanceMonitor';
 
 // 新的优化Store
 import { useMessageStore } from '@/store/messageStore';
-// import { useAgentStore } from '@/store/agentStore'; // 未使用，已注释
 
 // 旧的合并Store
 import { useChatStore } from '@/store/chatStore';
 
 export const PerformanceComparisonDemo: React.FC = () => {
-  // const [useOptimized, setUseOptimized] = useState(true); // 未使用，已注释
-  // const useOptimized = true; // 始终使用优化版本
   const [testResults, setTestResults] = useState<{
     old?: any;
     new?: any;
