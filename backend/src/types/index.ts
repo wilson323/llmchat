@@ -20,7 +20,7 @@ export interface AgentConfig {
     requestsPerMinute: number;
     tokensPerMinute: number;
   };
-  provider: 'fastgpt' | 'openai' | 'anthropic' | 'dify' | 'custom';
+  provider: 'fastgpt' | 'openai' | 'anthropic' | 'dify' | 'dashscope' | 'custom';
   isActive: boolean;
   features: {
     supportsChatId: boolean;
