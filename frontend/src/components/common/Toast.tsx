@@ -133,7 +133,7 @@ export const useToast = () => {
 
   useEffect(() => {
     const unsubscribe = toastManager.subscribe(setToasts);
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
   return {
