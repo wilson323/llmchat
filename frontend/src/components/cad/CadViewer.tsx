@@ -138,7 +138,17 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       }
 
       case 'CIRCLE': {
-        const geometry = new THREE.CircleGeometry(entity.radius, 64);
+        const segments = 64;
+        const points: THREE.Vector3[] = [];
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * Math.PI * 2;
+          points.push(new THREE.Vector3(
+            Math.cos(angle) * entity.radius,
+            Math.sin(angle) * entity.radius,
+            0
+          ));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const mesh = new THREE.LineLoop(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
@@ -147,12 +157,18 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       case 'ARC': {
         const startAngle = (entity.startAngle * Math.PI) / 180;
         const endAngle = (entity.endAngle * Math.PI) / 180;
-        const geometry = new THREE.CircleGeometry(
-          entity.radius,
-          64,
-          startAngle,
-          endAngle - startAngle
-        );
+        const segments = 64;
+        const points: THREE.Vector3[] = [];
+        const angleRange = endAngle - startAngle;
+        for (let i = 0; i <= segments; i++) {
+          const angle = startAngle + (i / segments) * angleRange;
+          points.push(new THREE.Vector3(
+            Math.cos(angle) * entity.radius,
+            Math.sin(angle) * entity.radius,
+            0
+          ));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const mesh = new THREE.Line(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;

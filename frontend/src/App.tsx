@@ -74,11 +74,11 @@ function LoginPageWrapper() {
     // 获取重定向目标（如果有）
     const redirect = searchParams.get('redirect');
     
-    // 跳转到重定向目标或默认首页
+    // 跳转到重定向目标或默认管理后台
     if (redirect && redirect !== '/login') {
       navigate(redirect, { replace: true });
     } else {
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true }); // 修复：管理员登录后跳转到管理后台
     }
   };
   

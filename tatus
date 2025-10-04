@@ -1,0 +1,48 @@
+[1mdiff --git a/frontend/src/components/cad/CadViewer.tsx b/frontend/src/components/cad/CadViewer.tsx[m
+[1mindex 6204937..8a9022a 100644[m
+[1m--- a/frontend/src/components/cad/CadViewer.tsx[m
+[1m+++ b/frontend/src/components/cad/CadViewer.tsx[m
+[36m@@ -138,7 +138,17 @@[m [mexport const CadViewer: React.FC<CadViewerProps> = ({[m
+       }[m
+ [m
+       case 'CIRCLE': {[m
+[31m-        const geometry = new THREE.CircleGeometry(entity.radius, 64);[m
+[32m+[m[32m        const segments = 64;[m
+[32m+[m[32m        const points: THREE.Vector3[] = [];[m
+[32m+[m[32m        for (let i = 0; i <= segments; i++) {[m
+[32m+[m[32m          const angle = (i / segments) * Math.PI * 2;[m
+[32m+[m[32m          points.push(new THREE.Vector3([m
+[32m+[m[32m            Math.cos(angle) * entity.radius,[m
+[32m+[m[32m            Math.sin(angle) * entity.radius,[m
+[32m+[m[32m            0[m
+[32m+[m[32m          ));[m
+[32m+[m[32m        }[m
+[32m+[m[32m        const geometry = new THREE.BufferGeometry().setFromPoints(points);[m
+         const mesh = new THREE.LineLoop(geometry, material);[m
+         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);[m
+         return mesh;[m
+[36m@@ -147,12 +157,18 @@[m [mexport const CadViewer: React.FC<CadViewerProps> = ({[m
+       case 'ARC': {[m
+         const startAngle = (entity.startAngle * Math.PI) / 180;[m
+         const endAngle = (entity.endAngle * Math.PI) / 180;[m
+[31m-        const geometry = new THREE.CircleGeometry([m
+[31m-          entity.radius,[m
+[31m-          64,[m
+[31m-          startAngle,[m
+[31m-          endAngle - startAngle[m
+[31m-        );[m
+[32m+[m[32m        const segments = 64;[m
+[32m+[m[32m        const points: THREE.Vector3[] = [];[m
+[32m+[m[32m        const angleRange = endAngle - startAngle;[m
+[32m+[m[32m        for (let i = 0; i <= segments; i++) {[m
+[32m+[m[32m          const angle = startAngle + (i / segments) * angleRange;[m
+[32m+[m[32m          points.push(new THREE.Vector3([m
+[32m+[m[32m            Math.cos(angle) * entity.radius,[m
+[32m+[m[32m            Math.sin(angle) * entity.radius,[m
+[32m+[m[32m            0[m
+[32m+[m[32m          ));[m
+[32m+[m[32m        }[m
+[32m+[m[32m        const geometry = new THREE.BufferGeometry().setFromPoints(points);[m
+         const mesh = new THREE.Line(geometry, material);[m
+         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);[m
+         return mesh;[m
