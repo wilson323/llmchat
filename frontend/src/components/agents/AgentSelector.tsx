@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { ChevronDown, Bot, Camera, PhoneCall } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useChatStore } from '@/store/chatStore';
 import { useAgents } from '@/hooks/useAgents';
-
 import { useI18n } from '@/i18n';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 
@@ -19,6 +19,7 @@ export const AgentSelector: React.FC = () => {
 
   const { fetchAgents, loading } = useAgents();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { t } = useI18n();
 
   useEffect(() => {
@@ -40,6 +41,8 @@ export const AgentSelector: React.FC = () => {
   }, [agentSelectorOpen, setAgentSelectorOpen]);
 
   const handleAgentSelect = (agent: any) => {
+    // 使用路由导航到智能体工作区
+    navigate(`/chat/${agent.id}`);
     setCurrentAgent(agent);
     setAgentSelectorOpen(false);
   };

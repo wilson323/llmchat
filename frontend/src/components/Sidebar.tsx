@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   MessageSquare,
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   } = useChatStore();
   const { t, locale } = useI18n();
   const { isMobile, isTablet } = useResponsive();
+  const navigate = useNavigate();
 
   // 乐观会话切换
   const {
@@ -99,6 +101,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     setEditTitle(session.title);
   };
 
+  const handleNewChat = () => {
+    createNewSession();
+    // 更新URL，添加new=true参数
+    if (currentAgent) {
+      navigate(`/chat/${currentAgent.id}?new=true`, { replace: true });
+    }
+  };
+
   const handleSwitchSession = async (session: ChatSession) => {
     setSwitchingSessionId(session.id);
     setSwitchingSuccess(false);
@@ -110,6 +120,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
       if (success) {
         setSwitchingSuccess(true);
+        
+        // 更新URL以包含会话ID
+        if (currentAgent) {
+          navigate(`/chat/${currentAgent.id}?session=${session.id}`, { replace: true });
+        }
 
         // 异步加载详细历史（如果需要的话）
         if (!currentAgent) return;
@@ -449,7 +464,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         {/* 头部 - 移动端优化 */}
         <div className={`${isMobile ? 'p-2' : 'p-4'} border-b border-border/50`}>
           <Button
-            onClick={createNewSession}
+            onClick={handleNewChat}
             variant="brand"
             size={isMobile ? 'md' : 'lg'}
             radius="lg"

@@ -1,6 +1,15 @@
 import type { JsonValue } from '@llmchat/shared-types';
 
 /**
+ * 工作区类型
+ */
+export type WorkspaceType = 
+  | 'chat'              // 标准聊天界面
+  | 'product-preview'   // 产品现场预览
+  | 'voice-call'        // 语音对话
+  | 'custom';           // 自定义扩展
+
+/**
  * 智能体接口
  */
 export interface Agent {
@@ -13,6 +22,7 @@ export interface Agent {
   capabilities: string[];
   provider: string;
   isActive?: boolean;
+  workspaceType?: WorkspaceType; // 工作区类型，默认为 'chat'
 }
 
 /**

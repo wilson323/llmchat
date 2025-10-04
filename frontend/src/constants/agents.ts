@@ -11,6 +11,7 @@ export const PRODUCT_PREVIEW_AGENT: Agent = {
   status: 'active',
   capabilities: ['现场拍照', '产品组合', '个性化生成'],
   provider: 'aliyun-vision',
+  workspaceType: 'product-preview', // 使用特殊工作区
 };
 
 export const VOICE_CALL_AGENT: Agent = {
@@ -21,4 +22,5 @@ export const VOICE_CALL_AGENT: Agent = {
   status: 'active',
   capabilities: ['语音识别', '实时对话', '语音播报'],
   provider: 'fastgpt',
+  workspaceType: 'voice-call', // 使用特殊工作区
 };

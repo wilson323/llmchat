@@ -23,9 +23,6 @@ import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types'
 
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
-import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
-import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
-import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 import { perfMonitor } from '@/utils/performanceMonitor';
 
 export const ChatContainer: React.FC = () => {
@@ -155,13 +152,8 @@ export const ChatContainer: React.FC = () => {
   };
 
   useEffect(() => {
-    return perfMonitor.measure('ChatContainer.specialAgentCheck', () => {
-      if (currentAgent?.id === PRODUCT_PREVIEW_AGENT_ID ||
-          currentAgent?.id === VOICE_CALL_AGENT_ID) {
-        return;
-      }
-
-      // 其他智能体的开场白逻辑
+    return perfMonitor.measure('ChatContainer.welcomeMessage', () => {
+      // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面
       if (!currentAgent || !currentSession) return;
 
       const welcomeKey = `${currentAgent.id}-${currentSession.id}`;
@@ -192,15 +184,9 @@ export const ChatContainer: React.FC = () => {
     });
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
 
-  // 特殊智能体的专用工作区
-  if (currentAgent?.id === PRODUCT_PREVIEW_AGENT_ID) {
-    return currentAgent ? <ProductPreviewWorkspace agent={currentAgent} /> : null;
-  }
-
-  if (currentAgent?.id === VOICE_CALL_AGENT_ID) {
-    return currentAgent ? <VoiceCallWorkspace agent={currentAgent} /> : null;
-  }
-
+  // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
+  // 此组件现在只负责渲染标准聊天界面
+  
   // 常规智能体聊天界面
   return (
     <div className="flex flex-col h-full bg-background">

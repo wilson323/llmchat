@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 
 // 主要页面懒加载
 const ChatApp = lazy(() => import('@/components/ChatApp'));
+const AgentWorkspace = lazy(() => import('@/components/workspace/AgentWorkspace'));
 const LoginPage = lazy(() => import('@/components/admin/LoginPage'));
 const AdminHome = lazy(() => import('@/components/admin/AdminHome'));
 
@@ -73,6 +74,9 @@ function App() {
             <Routes>
               {/* 主聊天页面 */}
               <Route path="/" element={<ChatApp />} />
+              
+              {/* 智能体工作区路由 */}
+              <Route path="/chat/:agentId" element={<AgentWorkspace />} />
               
               {/* 登录页面 */}
               <Route path="/login" element={<LoginPage />} />
