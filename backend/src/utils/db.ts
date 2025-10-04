@@ -329,15 +329,24 @@ async function seedAgentsFromFile(): Promise<void> {
 
   const agents: any[] = Array.isArray(parsed?.agents) ? parsed.agents : [];
   if (agents.length === 0) {
+    logger.info('[seedAgentsFromFile] agents.json为空，跳过种子');
     return;
   }
+
+  // 🔧 关键修复：替换环境变量占位符
+  const resolvedAgents = deepReplaceEnvVariables(agents);
+  logger.info('[seedAgentsFromFile] 智能体配置环境变量已替换', { count: agents.length });
 
   await withClient(async (client) => {
     const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM agent_configs');
     const count = parseInt(rows[0]?.count || '0', 10);
-    if (count > 0) {
-      return;
-    }
+    
+    logger.info(`[seedAgentsFromFile] 数据库现有智能体数量: ${count}`);
+    
+    // 🔧 修复：即使有数据也执行UPSERT（使用ON CONFLICT）
+    // if (count > 0) {
+    //   return;
+    // }
 
     const insertText = `
       INSERT INTO agent_configs (
@@ -369,8 +378,9 @@ async function seedAgentsFromFile(): Promise<void> {
         updated_at = NOW();
     `;
 
-    for (const agent of agents) {
+    for (const agent of resolvedAgents) {
       try {
+        logger.info('[seedAgentsFromFile] 导入智能体', { id: agent.id, name: agent.name });
         await client.query(insertText, [
           agent.id,
           agent.name,
@@ -391,9 +401,11 @@ async function seedAgentsFromFile(): Promise<void> {
           'json',
         ]);
       } catch (e) {
-        logger.warn('[initDB] 导入智能体失败', { agentId: agent?.id, error: e });
+        logger.error('[seedAgentsFromFile] 导入智能体失败', { agentId: agent?.id, error: e });
       }
     }
+    
+    logger.info(`✅ [seedAgentsFromFile] 智能体种子完成，共处理 ${resolvedAgents.length} 个智能体`);
   });
 }
 
