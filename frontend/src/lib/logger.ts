@@ -9,13 +9,19 @@
  * - 敏感信息过滤
  */
 
-// Sentry import - optional
-let Sentry: typeof import('@sentry/react') | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Sentry = require('@sentry/react');
-} catch {
-  // Sentry not installed, will use stub
+// Sentry import - optional, use dynamic import to avoid type errors
+let Sentry: {
+  captureException: (error: Error, options?: { extra?: Record<string, unknown>; level?: string }) => void;
+  captureMessage: (message: string, options?: { level?: string; extra?: Record<string, unknown> }) => void;
+} | null = null;
+
+if (typeof window !== 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    Sentry = require('@sentry/react') as typeof Sentry;
+  } catch {
+    // Sentry not installed, will use stub
+  }
 }
 
 /**

@@ -19,6 +19,7 @@ import { useSessionStore } from '@/store/sessionStore';
 import { usePreferenceStore } from '@/store/preferenceStore';
 
 import { ChatMessage, ChatOptions, OriginalChatMessage, ReasoningStepUpdate } from '@/types';
+import type { JsonValue } from '@/types/dynamic';
 import { useI18n } from '@/i18n';
 import { parseReasoningPayload } from '@/lib/reasoning';
 import { normalizeFastGPTEvent } from '@/lib/events';
@@ -226,7 +227,12 @@ export const useChat = () => {
                 }
               },
               onEvent: (eventName, payload) => {
-                const normalized = normalizeFastGPTEvent(eventName, payload);
+                // 将SSEEventData转换为JsonValue
+                const jsonPayload = payload === null || payload === undefined ? null : 
+                  typeof payload === 'string' ? payload :
+                  typeof payload === 'object' ? payload as Record<string, unknown> :
+                  null;
+                const normalized = normalizeFastGPTEvent(eventName, jsonPayload as JsonValue);
                 if (!normalized) return;
                 useMessageStore.getState().appendAssistantEvent(normalized);
               }

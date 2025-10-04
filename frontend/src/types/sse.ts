@@ -23,11 +23,11 @@ export type SSEEventType =
 
 /**
  * FastGPT状态更新数据
- * 兼容StreamStatus接口
+ * 完全兼容StreamStatus接口
  */
 export interface FastGPTStatusData {
-  type?: 'flowNodeStatus' | 'progress' | 'error' | 'complete';
-  status: 'loading' | 'running' | 'completed' | 'error';
+  type: 'flowNodeStatus' | 'progress' | 'error' | 'complete';
+  status: 'running' | 'completed' | 'error';
   message?: string;
   moduleId?: string;
   moduleName?: string;
@@ -44,7 +44,7 @@ export type FastGPTInteractiveData = InteractiveData;
 /**
  * FastGPT推理步骤数据
  */
-export type FastGPTReasoningData = ReasoningStepUpdate;
+export type FastGPTReasoningData = ReasoningStepUpdate | string | Record<string, unknown>;
 
 /**
  * FastGPT ChatId数据

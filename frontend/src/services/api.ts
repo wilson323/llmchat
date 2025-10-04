@@ -20,7 +20,8 @@ import type {
   SSECallbacks, 
   SSEParsedEvent,
   FastGPTStatusData,
-  FastGPTInteractiveData 
+  FastGPTInteractiveData,
+  FastGPTReasoningData
 } from '@/types/sse';
 import {
   getNormalizedEventKey,
@@ -201,7 +202,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   const resolvedEvent = resolveEventName(incomingEvent, payload);
   const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
-  const emitReasoning = (data: string | Record<string, unknown>, eventNameOverride?: string) => {
+  const emitReasoning = (data: FastGPTReasoningData, eventNameOverride?: string) => {
     if (!onReasoning || data == null) return;
     try {
       onReasoning({ event: eventNameOverride || resolvedEvent || 'reasoning', data });
@@ -232,9 +233,13 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
 
   if (isStatusEvent(resolvedEvent) && payload && typeof payload === 'object') {
     const payloadObj = payload as Record<string, unknown>;
+    const rawStatus = payloadObj.status as string | undefined;
+    // 将'loading'映射为'running'以兼容StreamStatus
+    const mappedStatus = rawStatus === 'loading' ? 'running' : (rawStatus as 'running' | 'completed' | 'error' | undefined);
+    
     const statusData: FastGPTStatusData = {
       type: 'flowNodeStatus',
-      status: (payloadObj.status as 'loading' | 'running' | 'completed' | 'error') || 'running',
+      status: mappedStatus || 'running',
       message: payloadObj.message as string | undefined,
       moduleId: payloadObj.id as string | undefined,
       moduleName: (payloadObj.name || payloadObj.moduleName || payloadObj.id || translate('未知模块')) as string,
