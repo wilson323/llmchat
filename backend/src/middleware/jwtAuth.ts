@@ -20,7 +20,7 @@ export interface AuthenticatedRequest extends Request {
  * 从 Authorization header 中提取并验证 JWT token
  */
 export function authenticateJWT() {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
       
@@ -31,11 +31,12 @@ export function authenticateJWT() {
           ip: req.ip,
         });
         
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           code: 'AUTHENTICATION_REQUIRED',
           message: '请提供有效的认证令牌',
         });
+        return;
       }
       
       const token = authHeader.substring(7); // 移除 "Bearer " 前缀
@@ -76,11 +77,12 @@ export function authenticateJWT() {
           ip: req.ip,
         });
         
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           code: 'TOKEN_EXPIRED',
           message: '认证令牌已过期，请重新登录',
         });
+        return;
       }
       
       if (error instanceof jwt.JsonWebTokenError) {
@@ -91,11 +93,12 @@ export function authenticateJWT() {
           error: error.message,
         });
         
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           code: 'INVALID_TOKEN',
           message: '无效的认证令牌',
         });
+        return;
       }
       
       logger.error('JWT 认证失败', {
@@ -105,11 +108,12 @@ export function authenticateJWT() {
         error,
       });
       
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         code: 'AUTHENTICATION_ERROR',
         message: '认证过程发生错误',
       });
+      return;
     }
   };
 }

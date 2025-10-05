@@ -2,11 +2,11 @@
  * CAD 路由
  */
 
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import multer from 'multer';
 import { CadController } from '@/controllers/CadController';
 
-const router = Router();
+const router: RouterType = Router();
 const cadController = new CadController();
 
 // 配置文件上传

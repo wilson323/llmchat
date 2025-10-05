@@ -37,7 +37,7 @@ export class CadOperationService {
         layer: params.layer || '0',
         start: params.start,
         end: params.end,
-        color: params.color,
+        ...(params.color !== undefined && { color: params.color }),
       };
 
       entities.push(newEntity);
@@ -73,7 +73,7 @@ export class CadOperationService {
         layer: params.layer || '0',
         center: params.center,
         radius: params.radius,
-        color: params.color,
+        ...(params.color !== undefined && { color: params.color }),
       };
 
       entities.push(newEntity);
@@ -111,7 +111,7 @@ export class CadOperationService {
         radius: params.radius,
         startAngle: params.startAngle,
         endAngle: params.endAngle,
-        color: params.color,
+        ...(params.color !== undefined && { color: params.color }),
       };
 
       entities.push(newEntity);
@@ -288,7 +288,8 @@ export class CadOperationService {
 
       // 添加实体
       for (const entity of entities) {
-        dxf.setCurrentLayer(entity.layer);
+        // 注意: dxf-writer 可能没有 setCurrentLayer 方法，这里先注释掉
+        // dxf.setCurrentLayer(entity.layer);
 
         switch (entity.type) {
           case 'LINE':
@@ -332,13 +333,17 @@ export class CadOperationService {
               for (let i = 0; i < entity.vertices.length - 1; i++) {
                 const v1 = entity.vertices[i];
                 const v2 = entity.vertices[i + 1];
-                dxf.drawLine(v1.x, v1.y, v2.x, v2.y);
+                if (v1 && v2) {
+                  dxf.drawLine(v1.x, v1.y, v2.x, v2.y);
+                }
               }
               // 如果闭合，连接最后一点和第一点
               if (entity.closed) {
                 const first = entity.vertices[0];
                 const last = entity.vertices[entity.vertices.length - 1];
-                dxf.drawLine(last.x, last.y, first.x, first.y);
+                if (first && last) {
+                  dxf.drawLine(last.x, last.y, first.x, first.y);
+                }
               }
             }
             break;

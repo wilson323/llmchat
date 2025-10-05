@@ -63,7 +63,7 @@ export class CadController {
         uploadedAt: new Date().toISOString(),
         entityCount: parseResult.entities.length,
         layers: parseResult.layers,
-        bounds: parseResult.bounds,
+        ...(parseResult.bounds && { bounds: parseResult.bounds }),
       };
 
       // 存储文件信息
@@ -102,6 +102,16 @@ export class CadController {
   getCadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fileId } = req.params;
+      
+      if (!fileId) {
+        res.status(400).json({
+          code: 'INVALID_FILE_ID',
+          message: '文件 ID 不能为空',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {
@@ -136,6 +146,16 @@ export class CadController {
     try {
       const { fileId } = req.params;
       const { operation, params } = req.body;
+      
+      if (!fileId) {
+        res.status(400).json({
+          code: 'INVALID_FILE_ID',
+          message: '文件 ID 不能为空',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {
@@ -202,6 +222,16 @@ export class CadController {
   exportDxf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fileId } = req.params;
+      
+      if (!fileId) {
+        res.status(400).json({
+          code: 'INVALID_FILE_ID',
+          message: '文件 ID 不能为空',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {

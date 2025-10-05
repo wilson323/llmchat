@@ -187,7 +187,9 @@ export const swaggerOptions = {
 export function setupSwagger(app: any) {
   try {
     // 动态导入（避免在未安装依赖时报错）
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const swaggerJsdoc = require('swagger-jsdoc');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const swaggerUi = require('swagger-ui-express');
 
     const specs = swaggerJsdoc(swaggerOptions);
