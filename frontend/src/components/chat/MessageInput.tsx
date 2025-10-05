@@ -292,6 +292,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
           {/* 发送按钮 */}
           <Button
             id="send-message-button"
+            data-testid="send-button"
             type="submit"
             disabled={disabled || uploading || !canSend || isStreaming}
             variant="brand"

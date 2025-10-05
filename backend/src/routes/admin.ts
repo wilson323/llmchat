@@ -1,22 +1,29 @@
-import { Router, type Router as RouterType } from 'express';
-import { AdminController } from '@/controllers/AdminController';
-import { authenticateJWT } from '@/middleware/jwtAuth';
-import { adminGuard } from '@/middleware/adminGuard';
+import { Router } from "express";
+import {
+  getConfigHealth,
+  compareConfigSnapshot,
+  cleanupObsoleteConfigs,
+  getConfigDetails,
+} from "@/controllers/AdminController";
+import { adminGuard } from "@/middleware/adminGuard";
 
-export const adminRoutes: RouterType = Router();
+const router = Router();
 
-// 所有 admin 路由都需要 JWT 认证 + 管理员权限
-adminRoutes.use(authenticateJWT());
-adminRoutes.use(adminGuard());
+/**
+ * 管理接口路由
+ * 所有接口都需要管理员权限
+ */
 
-adminRoutes.get('/system-info', AdminController.systemInfo);
-adminRoutes.get('/users', AdminController.users);
-adminRoutes.post('/users/create', AdminController.createUser);
-adminRoutes.post('/users/update', AdminController.updateUser);
-adminRoutes.post('/users/reset-password', AdminController.resetUserPassword);
-adminRoutes.get('/logs', AdminController.logs);
-adminRoutes.get('/logs/export', AdminController.logsExport);
-adminRoutes.get('/analytics/province-heatmap', AdminController.provinceHeatmap);
-adminRoutes.get('/analytics/conversations/series', AdminController.conversationSeries);
-adminRoutes.get('/analytics/conversations/agents', AdminController.conversationAgents);
+// 配置健康状态监控
+router.get("/config/health", adminGuard, getConfigHealth);
 
+// 配置快照对比
+router.get("/config/compare", adminGuard, compareConfigSnapshot);
+
+// 清理废弃配置
+router.post("/config/cleanup", adminGuard, cleanupObsoleteConfigs);
+
+// 获取配置详情
+router.get("/config/details", adminGuard, getConfigDetails);
+
+export default router;

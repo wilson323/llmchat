@@ -189,7 +189,7 @@ export const ChatContainer: React.FC = () => {
   
   // 常规智能体聊天界面
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background" data-testid="chat-container">
       {/* 空状态 */}
       {messages.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center p-8">

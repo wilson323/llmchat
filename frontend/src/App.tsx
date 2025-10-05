@@ -78,7 +78,7 @@ function LoginPageWrapper() {
     if (redirect && redirect !== '/login') {
       navigate(redirect, { replace: true });
     } else {
-      navigate('/home', { replace: true }); // 修复：管理员登录后跳转到管理后台
+      navigate('/admin', { replace: true }); // 修复：管理员登录后跳转到管理后台
     }
   };
   
@@ -104,6 +104,8 @@ function App() {
               <Route path="/admin/login" element={<LoginPageWrapper />} />
               
               {/* 管理后台（需要登录） */}
+              <Route path="/admin" element={<AdminHome />} />
+              <Route path="/admin/:tab" element={<AdminHome />} />
               <Route path="/home" element={<AdminHome />} />
               <Route path="/home/:tab" element={<AdminHome />} />
               

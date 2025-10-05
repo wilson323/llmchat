@@ -1,6 +1,6 @@
 /**
  * 前端统一日志工具
- * 
+ *
  * 功能：
  * - 结构化日志记录
  * - Sentry错误追踪集成
@@ -11,14 +11,21 @@
 
 // Sentry import - optional, use dynamic import to avoid type errors
 let Sentry: {
-  captureException: (error: Error, options?: { extra?: Record<string, unknown>; level?: string }) => void;
-  captureMessage: (message: string, options?: { level?: string; extra?: Record<string, unknown> }) => void;
+  captureException: (
+    error: Error,
+    options?: { extra?: Record<string, unknown>; level?: string }
+  ) => void;
+  captureMessage: (
+    message: string,
+    options?: { level?: string; extra?: Record<string, unknown> }
+  ) => void;
 } | null = null;
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    Sentry = require('@sentry/react') as typeof Sentry;
+    // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
+    Sentry = require("@sentry/react") as typeof Sentry;
   } catch {
     // Sentry not installed, will use stub
   }
@@ -28,10 +35,10 @@ if (typeof window !== 'undefined') {
  * 日志级别
  */
 export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
+  DEBUG = "debug",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
 }
 
 /**
@@ -69,7 +76,8 @@ class Logger {
     this.config = {
       level: this.isDevelopment ? LogLevel.DEBUG : LogLevel.INFO,
       enabled: true,
-      sentryEnabled: import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === 'true',
+      sentryEnabled:
+        import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === "true",
       consoleEnabled: this.isDevelopment,
     };
   }
@@ -80,7 +88,12 @@ class Logger {
   private shouldLog(level: LogLevel): boolean {
     if (!this.config.enabled) return false;
 
-    const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
+    const levels = [
+      LogLevel.DEBUG,
+      LogLevel.INFO,
+      LogLevel.WARN,
+      LogLevel.ERROR,
+    ];
     const currentLevelIndex = levels.indexOf(this.config.level);
     const messageLevelIndex = levels.indexOf(level);
 
@@ -94,12 +107,20 @@ class Logger {
     if (!metadata) return undefined;
 
     const sanitized = { ...metadata };
-    const sensitiveKeys = ['password', 'token', 'apikey', 'api_key', 'secret', 'authorization', 'auth'];
+    const sensitiveKeys = [
+      "password",
+      "token",
+      "apikey",
+      "api_key",
+      "secret",
+      "authorization",
+      "auth",
+    ];
 
-    Object.keys(sanitized).forEach(key => {
+    Object.keys(sanitized).forEach((key) => {
       const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
-        sanitized[key] = '[REDACTED]';
+      if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
+        sanitized[key] = "[REDACTED]";
       }
     });
 
@@ -109,16 +130,24 @@ class Logger {
   /**
    * 格式化日志消息
    */
-  private formatMessage(level: LogLevel, message: string, metadata?: LogMetadata): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    metadata?: LogMetadata
+  ): string {
     const timestamp = new Date().toISOString();
-    const metaStr = metadata ? ` ${JSON.stringify(metadata)}` : '';
+    const metaStr = metadata ? ` ${JSON.stringify(metadata)}` : "";
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;
   }
 
   /**
    * 输出到控制台
    */
-  private logToConsole(level: LogLevel, message: string, metadata?: LogMetadata): void {
+  private logToConsole(
+    level: LogLevel,
+    message: string,
+    metadata?: LogMetadata
+  ): void {
     if (!this.config.consoleEnabled) return;
 
     const sanitized = this.sanitizeMetadata(metadata);
@@ -147,7 +176,12 @@ class Logger {
   /**
    * 发送到Sentry
    */
-  private logToSentry(level: LogLevel, message: string, metadata?: LogMetadata, error?: Error): void {
+  private logToSentry(
+    level: LogLevel,
+    message: string,
+    metadata?: LogMetadata,
+    error?: Error
+  ): void {
     if (!this.config.sentryEnabled || !Sentry) return;
 
     const sanitized = this.sanitizeMetadata(metadata);
@@ -156,11 +190,11 @@ class Logger {
     if (level === LogLevel.ERROR && error) {
       Sentry.captureException(error, {
         extra: sanitized,
-        level: 'error',
+        level: "error",
       });
     } else if (level === LogLevel.WARN || level === LogLevel.ERROR) {
       Sentry.captureMessage(message, {
-        level: level === LogLevel.ERROR ? 'error' : 'warning',
+        level: level === LogLevel.ERROR ? "error" : "warning",
         extra: sanitized,
       });
     }
@@ -210,20 +244,35 @@ class Logger {
   /**
    * 性能日志
    */
-  performance(operation: string, duration: number, metadata?: LogMetadata): void {
+  performance(
+    operation: string,
+    duration: number,
+    metadata?: LogMetadata
+  ): void {
     this.info(`Performance: ${operation}`, {
       ...metadata,
       duration,
-      unit: 'ms',
-      type: 'performance',
+      unit: "ms",
+      type: "performance",
     });
   }
 
   /**
    * API请求日志
    */
-  apiRequest(method: string, url: string, statusCode: number, duration: number, metadata?: LogMetadata): void {
-    const level = statusCode >= 500 ? LogLevel.ERROR : statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
+  apiRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    metadata?: LogMetadata
+  ): void {
+    const level =
+      statusCode >= 500
+        ? LogLevel.ERROR
+        : statusCode >= 400
+        ? LogLevel.WARN
+        : LogLevel.INFO;
     const message = `API ${method} ${url} - ${statusCode}`;
 
     const enrichedMetadata: LogMetadata = {
@@ -232,7 +281,7 @@ class Logger {
       url,
       statusCode,
       duration,
-      type: 'api',
+      type: "api",
     };
 
     if (level === LogLevel.ERROR) {
@@ -250,7 +299,7 @@ class Logger {
   userAction(action: string, metadata?: LogMetadata): void {
     this.info(`User Action: ${action}`, {
       ...metadata,
-      type: 'user_action',
+      type: "user_action",
     });
   }
 

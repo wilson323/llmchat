@@ -1,17 +1,18 @@
 {
   // 项目根配置（被 backend/src/utils/db.ts 读取）
-  // 使用环境变量占位符，deepReplaceEnvVariables 会在运行时替换
+  // 使用环境变量占位符时，建议仅用于字符串；数值项使用合法 JSON 值
   "database": {
     "postgres": {
       "host": "${DB_HOST}",
-      "port": ${DB_PORT},
+      "port": 5432,
       "user": "${DB_USER}",
       "password": "${DB_PASSWORD}",
       "database": "${DB_NAME}",
-      "ssl": ${DB_SSL}
+      "ssl": false
     }
   },
   "auth": {
-    "tokenTTLSeconds": ${TOKEN_TTL_SECONDS}
+    // token 有效期（秒），默认 24h
+    "tokenTTLSeconds": 86400
   }
 }

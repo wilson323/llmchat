@@ -312,7 +312,7 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
 function TopHeader({ onToggleSidebar, onToggleCollapse: _onToggleCollapse, sidebarCollapsed, username: _username, onLogout: _onLogout, onChangePassword: _onChangePassword, title, breadcrumb }: { onToggleSidebar: () => void; onToggleCollapse: () => void; sidebarCollapsed: boolean; username: string; onLogout: () => void; onChangePassword: () => void; title: string; breadcrumb: Array<{ label: string; to?: string }>; }) {
   const { theme, toggleTheme } = useTheme();
   return (
-    <motion.header initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className={`sticky top-0 z-30 h-16 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`}>
+    <motion.header data-testid="admin-header" className={`admin-header sticky top-0 z-30 h-16 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`} initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="lg:hidden rounded-lg">

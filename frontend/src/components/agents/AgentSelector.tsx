@@ -88,6 +88,7 @@ export const AgentSelector: React.FC = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <Button
+        data-testid="agent-selector"
         onClick={() => setAgentSelectorOpen(!agentSelectorOpen)}
         variant="secondary"
         size="md"
@@ -135,7 +136,7 @@ export const AgentSelector: React.FC = () => {
             </div>
 
             {/* 智能体列表 */}
-            <div className="max-h-[72vh] md:max-h-[75vh] overflow-y-auto overscroll-contain">
+            <div className="max-h-[72vh] md:max-h-[75vh] overflow-y-auto overscroll-contain" data-testid="agent-list">
               {loading ? (
                 <div className="p-4 text-center">
                   <div className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400">
