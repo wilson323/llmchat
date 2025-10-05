@@ -37,6 +37,11 @@ import chatRouter from './routes/chat';
 import healthRouter from './routes/health';
 import cadRouter from './routes/cad';
 import authRouter from './routes/auth';
+import { adminRoutes } from './routes/admin';
+import auditRouter from './routes/audit'; // 使用 default export
+import difySessionRouter from './routes/difySession'; // 使用 default export
+import { productPreviewRoutes } from './routes/productPreview'; // 使用 named export
+import sessionRouter from './routes/sessionRoutes'; // 使用 default export
 
 // 工具
 import { logger } from './utils/logger';
@@ -135,6 +140,11 @@ app.use('/api/auth', authRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/cad', cadRouter);
+app.use('/api/admin', adminRoutes);
+app.use('/api/audit', auditRouter); // 审计日志接口
+app.use('/api/dify', difySessionRouter); // Dify会话管理接口
+app.use('/api/product-preview', productPreviewRoutes); // 产品预览接口
+app.use('/api/sessions', sessionRouter); // 会话管理接口
 
 // 404处理
 app.use((req, res) => {

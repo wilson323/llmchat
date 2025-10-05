@@ -44,7 +44,7 @@ agents.forEach(agent => {
 #### 已修复（5/14）：
 
 1. **Toast.tsx useEffect返回类型错误** ✅
-   ```typescript
+```typescript
    // 修改前: return () => unsubscribe();
    // 修改后: return unsubscribe;
    ```
@@ -59,7 +59,7 @@ agents.forEach(agent => {
    （已在之前修复）
 
 5. **CadViewer.tsx onEntityClick未使用** ✅  
-   ```typescript
+```typescript
    // 使用_前缀标记: onEntityClick: _onEntityClick
    ```
 
