@@ -77,13 +77,18 @@ console.log('🌍 国际化: i18next');
 console.log('📱 PWA: Service Worker');
 
 // 立即渲染应用（低延时：最快首屏）
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <DefaultI18nProvider>
-      <App />
-    </DefaultI18nProvider>
-  </React.StrictMode>
-);
-
-console.log('⚡ 首屏渲染完成');
-console.log('📝 注意: 可选功能（Sentry/i18n等）后台异步加载中...');
+// 修复：确保只创建一次 root 实例
+const rootElement = document.getElementById('root');
+if (rootElement && !rootElement.hasAttribute('data-root-initialized')) {
+  rootElement.setAttribute('data-root-initialized', 'true');
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <DefaultI18nProvider>
+        <App />
+      </DefaultI18nProvider>
+    </React.StrictMode>
+  );
+  
+  console.log('⚡ 首屏渲染完成');
+  console.log('📝 注意: 可选功能（Sentry/i18n等）后台异步加载中...');
+}
