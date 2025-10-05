@@ -2,13 +2,18 @@ import '@/styles/globals.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { useAuthStore } from '@/store/authStore';
 
 /**
  * 高可用 & 低延时设计:
  * - 可选功能延迟加载，不阻塞主渲染
  * - 功能降级，缺失依赖时使用Stub
  * - 异步初始化，提升首屏速度
+ * - 应用启动时恢复认证状态
  */
+
+// 🔐 恢复认证状态（在渲染前执行）
+useAuthStore.getState().restore();
 
 // 默认Provider（无i18n）
 const DefaultI18nProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;

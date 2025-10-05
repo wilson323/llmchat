@@ -1,0 +1,10 @@
+⚠️ 重要提醒：本项目必须使用 pnpm
+
+所有命令都必须使用 pnpm：
+- pnpm install
+- pnpm run dev
+- pnpm run build
+- pnpm run test
+- pnpm run lint
+
+禁止使用 npm！

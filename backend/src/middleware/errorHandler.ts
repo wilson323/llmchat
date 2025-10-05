@@ -33,7 +33,7 @@ export const errorHandler = (
     }
   });
 
-  // 结构化日志记录
+  // 结构化日志记录（包含requestId）
   logger.error('统一错误处理', {
     errorId: typedError.id,
     code: typedError.code,
@@ -46,6 +46,8 @@ export const errorHandler = (
     stack: typedError.stack,
     userAgent: req.get('User-Agent'),
     ip: req.ip,
+    requestId: (req as any).requestId, // 添加requestId用于追踪
+    userId: (req as any).user?.id, // 添加userId（如果已认证）
   });
 
   // 如果响应已经发送，传递给默认错误处理器
