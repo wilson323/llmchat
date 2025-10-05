@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
 import { logger } from '@/utils/logger';
+import { AuthServiceV2 } from '@/services/AuthServiceV2';
 
 /**
  * 认证控制器
  * 处理登录、登出、Token验证等认证相关功能
  */
 export class AuthController {
+  private authService: AuthServiceV2;
+
+  constructor() {
+    this.authService = new AuthServiceV2();
+  }
   /**
    * 用户登录
    * 
@@ -28,14 +34,8 @@ export class AuthController {
         return;
       }
 
-      // TODO: 实现真实的认证逻辑
-      // 1. 查询用户数据库
-      // 2. 验证密码哈希
-      // 3. 生成JWT Token
-      // 4. 记录登录日志
-
-      // 暂时使用简单方案允许开发继续
-      const token = `dev_token_${Date.now()}_${username}`;
+      // 使用 AuthServiceV2 进行真实认证
+      const result = await this.authService.login(username, password);
 
       logger.info('用户登录成功', { 
         username,
@@ -48,18 +48,10 @@ export class AuthController {
       res.status(200).json({
         code: 'SUCCESS',
         message: '登录成功',
-        data: {
-          token,
-          user: {
-            username,
-            role: 'user',
-            permissions: ['read', 'write'],
-          },
-          expiresIn: 86400, // 24小时
-        },
+        data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('登录失败', { 
         error,
         metadata: {
@@ -68,9 +60,13 @@ export class AuthController {
         },
       });
       
-      res.status(500).json({
-        code: 'LOGIN_ERROR',
-        message: '登录失败，请稍后重试',
+      // 根据错误类型返回适当的状态码
+      const statusCode = error.code === 'INVALID_CREDENTIALS' ? 401 : 500;
+      const message = error.message || '登录失败，请稍后重试';
+      
+      res.status(statusCode).json({
+        code: error.code || 'LOGIN_ERROR',
+        message,
         data: null,
         timestamp: new Date().toISOString(),
       });

@@ -1,7 +1,13 @@
 import { Router, type Router as RouterType } from 'express';
 import { AdminController } from '@/controllers/AdminController';
+import { authenticateJWT } from '@/middleware/jwtAuth';
+import { adminGuard } from '@/middleware/adminGuard';
 
 export const adminRoutes: RouterType = Router();
+
+// 所有 admin 路由都需要 JWT 认证 + 管理员权限
+adminRoutes.use(authenticateJWT());
+adminRoutes.use(adminGuard());
 
 adminRoutes.get('/system-info', AdminController.systemInfo);
 adminRoutes.get('/users', AdminController.users);
