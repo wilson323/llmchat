@@ -43,7 +43,10 @@ const router: RouterType = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', AgentController.list);
+// 创建控制器实例
+const agentController = new AgentController();
+
+router.get('/', agentController.getAgents);
 
 /**
  * @swagger
@@ -75,7 +78,7 @@ router.get('/', AgentController.list);
  *       500:
  *         description: 服务器错误
  */
-router.get('/:id', AgentController.getById);
+router.get('/:id', agentController.getAgentById);
 
 /**
  * @swagger
@@ -96,7 +99,7 @@ router.get('/:id', AgentController.getById);
  *       503:
  *         description: 智能体不可用
  */
-router.get('/:id/status', AgentController.checkStatus);
+router.get('/:id/status', agentController.checkAgentStatus);
 
 /**
  * @swagger
@@ -110,7 +113,7 @@ router.get('/:id/status', AgentController.checkStatus);
  *       500:
  *         description: 重新加载失败
  */
-router.post('/reload', AgentController.reload);
+router.post('/reload', agentController.reloadAgents);
 
 /**
  * @swagger
@@ -131,7 +134,7 @@ router.post('/reload', AgentController.reload);
  *       400:
  *         description: 配置验证失败
  */
-router.get('/:id/validate', AgentController.validate);
+router.get('/:id/validate', agentController.validateAgent);
 
 export default router;
 export { router as agentRoutes };
