@@ -78,7 +78,7 @@ router.get('/', agentController.getAgents);
  *       500:
  *         description: 服务器错误
  */
-router.get('/:id', agentController.getAgentById);
+router.get('/:id', agentController.getAgent);
 
 /**
  * @swagger
@@ -99,7 +99,7 @@ router.get('/:id', agentController.getAgentById);
  *       503:
  *         description: 智能体不可用
  */
-router.get('/:id/status', agentController.checkAgentStatus);
+router.get('/:id/status', agentController.getAgentStatus);
 
 /**
  * @swagger
