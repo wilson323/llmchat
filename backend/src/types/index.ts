@@ -1,4 +1,7 @@
 import type { JsonValue } from './dynamic';
+
+// 重新导出 JsonValue 以便其他模块使用
+export type { JsonValue };
 import type { ErrorCategory, ErrorSeverity } from './errors';
 
 /**

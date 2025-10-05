@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🏗️ 项目架构
 
-这是一个**智能体切换聊天应用**，采用前端+后端分离架构，支持多个 AI 提供商（FastGPT、OpenAI、Anthropic）之间的动态切换。
+这是一个**智能体切换聊天应用**，采用前端+后端分离架构，支持多个 AI 提供商（FastGPT、OpenAI、Anthropic、Dify）之间的动态切换。
 
 ### 技术栈
 
-**前端**: React 18 + TypeScript + Vite + Tailwind CSS + Zustand
-**后端**: Node.js + Express + TypeScript
+**前端**: React 18 + TypeScript + Vite + Tailwind CSS + Zustand + React Router
+**后端**: Node.js + Express + TypeScript + PostgreSQL/MongoDB + Redis
 **状态管理**: Zustand (前端) + 本地存储持久化
+**测试**: Jest (后端) + Vitest (前端) + Playwright (E2E)
+**包管理器**: pnpm with workspaces
 
 ### 项目结构
 
@@ -18,21 +20,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 llmchat/
 ├── backend/                 # 后端服务 (端口 3001)
 │   └── src/
-│       ├── controllers/     # 控制器 (AgentController, ChatController)
-│       ├── services/        # 业务服务 (AgentConfigService, ChatProxyService)
+│       ├── controllers/     # 控制器 (AgentController, ChatController, AuthController)
+│       ├── services/        # 业务服务 (AgentConfigService, ChatProxyService, AuthServiceV2)
+│       ├── routes/          # 路由定义 (/api/...)
+│       ├── middleware/      # 中间件 (JWT认证, 保护中间件, 日志, 限流)
+│       ├── migrations/      # 数据库迁移文件 (PostgreSQL)
 │       ├── types/           # TypeScript类型定义
-│       └── utils/           # 工具函数
+│       └── utils/           # 工具函数和日志
 ├── frontend/                # 前端应用 (端口 3000)
 │   └── src/
 │       ├── components/      # React组件
 │       │   ├── agents/      # 智能体相关组件
 │       │   ├── chat/        # 聊天相关组件
+│       │   ├── admin/       # 管理后台组件
 │       │   └── theme/       # 主题相关组件
 │       ├── store/           # Zustand状态管理
+│       ├── services/        # API服务层
+│       ├── hooks/           # React Hooks
 │       └── types/           # TypeScript类型定义
+├── shared-types/            # 前后端共享类型定义
 ├── config/                  # 配置文件
 │   └── agents.json          # 智能体配置文件
-└── doc/                     # 文档目录
+├── tests/                   # E2E测试
+│   └── e2e/                 # Playwright测试文件
+└── docs/                    # 项目文档
 ```
 
 ## 🚀 开发命令
@@ -40,11 +51,11 @@ llmchat/
 ### 环境设置
 ```bash
 # 安装所有依赖（使用工作区自动安装前后端）
-npm install
+pnpm install
 
 # 配置后端环境变量
 cp backend/.env.example backend/.env
-# 编辑 backend/.env 设置必要配置
+# 编辑 backend/.env 设置必要配置（数据库连接、JWT密钥、API密钥等）
 
 # 配置智能体（如需自定义）
 cp config/agents.example.json config/agents.json
@@ -53,39 +64,53 @@ cp config/agents.example.json config/agents.json
 ### 开发模式
 ```bash
 # 推荐：并发启动前后端开发服务
-npm run dev
+pnpm run dev
 
 # 或分别启动
-npm run backend:dev    # 后端: http://localhost:3001 (使用 ts-node-dev 热重载)
-npm run frontend:dev   # 前端: http://localhost:3000 (使用 Vite)
+pnpm run backend:dev    # 后端: http://localhost:3001 (使用 ts-node-dev 热重载)
+pnpm run frontend:dev   # 前端: http://localhost:3000 (使用 Vite)
 ```
 
 ### 构建和测试
 ```bash
 # 构建
-npm run build          # 构建前后端（自动安装依赖）
-npm run backend:build  # 仅构建后端 (tsc)
-npm run frontend:build # 仅构建前端 (tsc && vite build)
+pnpm run build          # 构建前后端（自动安装依赖）
+pnpm run backend:build  # 仅构建后端 (tsc)
+pnpm run frontend:build # 仅构建前端 (tsc && vite build)
 
 # 测试
-npm test               # 运行所有测试
-npm run backend:test   # 后端测试 (jest --runInBand)
-npm run frontend:test  # 前端测试（当前未配置）
+pnpm test               # 运行所有测试
+pnpm run backend:test   # 后端测试 (jest --runInBand)
+pnpm run frontend:test  # 前端测试（vitest）
+pnpm run test:e2e       # E2E测试 (playwright)
+pnpm run test:e2e:ui    # E2E测试UI模式
 
 # 代码质量
-npm run lint               # 检查前后端代码
-npm run lint:fix           # 修复前后端代码问题
-npm run backend:lint       # 仅后端代码检查
-npm run backend:lint:fix   # 仅后端代码修复
-npm run frontend:lint      # 仅前端代码检查
-npm run frontend:lint:fix  # 仅前端代码修复
-npm run frontend:type-check # 前端 TypeScript 类型检查
+pnpm run lint               # 检查前后端代码
+pnpm run lint:fix           # 修复前后端代码问题
+pnpm run backend:lint       # 仅后端代码检查
+pnpm run backend:lint:fix   # 仅后端代码修复
+pnpm run frontend:lint      # 仅前端代码检查
+pnpm run frontend:lint:fix  # 仅前端代码修复
+pnpm run type-check         # 前端 TypeScript 类型检查
+```
+
+### 数据库操作
+```bash
+# 运行数据库迁移
+pnpm run migrate:up         # 执行迁移
+pnpm run migrate:down       # 回滚迁移
+pnpm run migrate:status     # 查看迁移状态
+
+# 验证配置和环境
+pnpm run validate:env       # 验证环境变量
+pnpm run validate-config    # 验证智能体配置
 ```
 
 ### 生产部署
 ```bash
-npm run build        # 构建生产版本
-npm start           # 启动后端服务 (node dist/index.js)
+pnpm run build        # 构建生产版本
+pnpm start           # 启动后端服务 (node dist/index.js)
 ```
 
 ## 🎯 核心架构概念
@@ -93,43 +118,65 @@ npm start           # 启动后端服务 (node dist/index.js)
 ### 1. 智能体系统 (Multi-Agent Architecture)
 
 - **智能体配置**: `config/agents.json` 定义所有可用的 AI 智能体
-- **支持提供商**: FastGPT、OpenAI、Anthropic、自定义
+- **支持提供商**: FastGPT、OpenAI、Anthropic、Dify、自定义
 - **动态切换**: 用户可以在不同智能体间无缝切换
-- **状态管理**: 每个智能体独立管理会话和配置
+- **配置热重载**: 通过 API `POST /api/agents/reload` 无需重启服务
 
-### 2. 会话管理系统
+### 2. 认证与授权系统
 
-按照 `huihua.md` 文档设计的会话存储结构：
+- **JWT认证**: 使用 JWT token 进行用户认证
+- **AuthServiceV2**: 统一的认证服务，支持多种认证方式
+- **中间件保护**: JWT认证中间件和保护中间件
+- **安全增强**: 密码加密、速率限制、请求验证
+
+### 3. 会话管理系统
+
 ```typescript
-// 按智能体分组的会话字典
+// 数据库中的会话存储结构
 {
-  "agentId1": [会话数组],
-  "agentId2": [会话数组],
-  // ...
-}
-
-// 单个会话结构
-{
-  id: string,              // 时间戳字符串
-  title: string,           // 取自首条消息前30字符
+  id: string,              // UUID
+  title: string,           // 会话标题
   agentId: string,         // 关联的智能体ID
-  messages: ChatMessage[], // 格式: {'AI': string, 'HUMAN': string}
+  userId?: string,         // 用户ID（可选）
+  messages: ChatMessage[], // 消息数组
   createdAt: Date,
   updatedAt: Date
 }
+
+// 前端本地存储格式（简化）
+{
+  conversations: {
+    [agentId: string]: Array<{
+      id: string;
+      title: string;
+      agentId: string;
+      messages: Array<{'AI': string, 'HUMAN': string}>;
+      createdAt: Date;
+      updatedAt: Date;
+    }>
+  }
+}
 ```
 
-### 3. 消息格式转换
+### 4. 消息格式与流式响应
 
-前端使用简化的消息格式 (`{'AI': string, 'HUMAN': string}`)，与后端通信时转换为标准格式 (`{role: string, content: string}`)。
+- **格式转换**: 前端简化格式 `{'AI': string, 'HUMAN': string}` 与后端标准格式 `{role: string, content: string}` 之间的转换
+- **SSE流式响应**: 支持 Server-Sent Events，实时显示AI回复
+- **多提供商适配**: 统一的接口适配不同AI提供商的响应格式
 
-### 4. 主题系统
+### 5. 主题系统
 
 - **三种模式**: 亮色/暗色/自动
 - **自动切换**: 基于时间 schedule (06:00-18:00 亮色，其余暗色)
 - **持久化**: 用户偏好保存到 localStorage
 
 ## 🔧 API 端点
+
+### 认证相关
+- `POST /api/auth/login` - 用户登录
+- `POST /api/auth/register` - 用户注册
+- `POST /api/auth/refresh` - 刷新token
+- `POST /api/auth/logout` - 用户登出
 
 ### 智能体管理
 - `GET /api/agents` - 获取可用智能体列表
@@ -140,7 +187,13 @@ npm start           # 启动后端服务 (node dist/index.js)
 
 ### 聊天代理
 - `POST /api/chat/completions` - 发送聊天请求 (支持流式和非流式)
-- `GET /api/chat/history/:sessionId` - 获取聊天历史 (待实现)
+- `GET /api/chat/history/:sessionId` - 获取聊天历史
+- `POST /api/chat/save` - 保存聊天记录
+
+### 管理后台
+- `GET /api/admin/stats` - 获取统计数据
+- `GET /api/admin/audit` - 获取审计日志
+- `POST /api/admin/migrate` - 执行数据库迁移
 
 ## 📝 代码规范和注意事项
 
@@ -157,30 +210,29 @@ npm start           # 启动后端服务 (node dist/index.js)
 - JSX: `react-jsx` 模式，无需导入 React
 - 模块解析: `bundler` 模式（Vite 特有）
 
-### 类型系统
-- 前后端共享核心类型定义，但前端有适配的简化版本
-- 消息格式：前端使用 `{'AI': string, 'HUMAN': string}` 简化格式
-- 后端使用标准 `{role: string, content: string}` 格式
-- 消息格式转换使用专门的工具函数处理
+### 包管理器工作区
+- **根目录**: 统一的工作区配置，管理所有依赖
+- **shared-types**: 前后端共享的类型定义
+- **依赖策略**: 优先使用 pnpm workspace，避免重复安装
 
-### 状态管理
-- 使用 Zustand 进行全局状态管理
-- 支持持久化到 localStorage（版本化迁移）
-- 状态恢复时自动执行初始化检查
-- Store 版本管理防止数据结构不兼容
+### 数据库架构
+- **PostgreSQL**: 主数据库，存储用户、会话、消息等
+- **MongoDB**: 可选，用于日志存储和分析
+- **Redis**: 缓存和会话存储
+- **迁移系统**: 基于SQL文件的版本控制迁移
 
 ### 错误处理
-- 统一的 API 错误格式 (`ApiError` 接口)
-- 开发环境包含详细错误信息和堆栈跟踪
-- 生产环境返回简化错误信息
-- 前端错误边界和全局错误处理
+- **统一错误格式**: `ApiError` 接口，包含错误代码、消息、详情
+- **自定义错误类型**: `ValidationError`, `ResourceError`, `ExternalServiceError`
+- **错误边界**: 前端React错误边界和全局错误处理
+- **日志系统**: Winston日志记录，支持文件轮转
 
-### 流式响应
-- 支持 Server-Sent Events (SSE)
-- 后端显式禁用对 SSE 端点的压缩
-- FastGPT 特有的流式状态事件 (`status`, `interactive`, `chatId`)
-- 实时显示工作流进度和交互节点
-- 前端使用 ReadableStream 解析 SSE 文本流
+### 安全措施
+- **JWT认证**: 安全的token认证机制
+- **速率限制**: 基于IP和用户的请求限制
+- **输入验证**: Joi验证schema
+- **保护中间件**: 防止恶意请求和滥用
+- **环境变量**: 敏感信息通过环境变量管理
 
 ## 🔍 调试和开发
 
@@ -188,8 +240,8 @@ npm start           # 启动后端服务 (node dist/index.js)
 ```bash
 # 检查项目状态
 git status                    # Git 仓库状态
-npm run frontend:type-check   # TypeScript 类型检查
-npm run lint                  # 代码质量检查
+pnpm run type-check          # TypeScript 类型检查
+pnpm run lint                # 代码质量检查
 
 # 检查构建产物
 ls -la backend/dist/         # 后端构建输出
@@ -202,6 +254,10 @@ cat config/agents.json       # 智能体配置
 # 测试 API 端点
 curl http://localhost:3001/health                # 健康检查
 curl http://localhost:3001/api/agents            # 获取智能体列表
+
+# 数据库操作
+pnpm run migrate:status      # 查看迁移状态
+pnpm run validate:env        # 验证环境变量
 ```
 
 ### 开发注意事项
@@ -216,6 +272,11 @@ curl http://localhost:3001/api/agents            # 获取智能体列表
 - 前端: 使用 `@/` 前缀导入，如 `import { Button } from '@/components/ui/Button'`
 - 运行时需要 `tsconfig-paths/register`（后端已配置在 dev 脚本中）
 
+**数据库调试**:
+- 迁移文件位置: `backend/src/migrations/`
+- 数据库连接配置在 `backend/.env`
+- 使用 `pnpm run migrate:status` 检查迁移状态
+
 **状态管理调试**:
 - 状态版本: 在 `chatStore.ts` 中定义，版本不匹配时会清除旧数据
 - 持久化键: `llmchat-store` (localStorage)
@@ -224,10 +285,6 @@ curl http://localhost:3001/api/agents            # 获取智能体列表
 **跨域和代理**:
 - 开发环境: 前端 Vite 配置代理 `/api -> http://localhost:3001`
 - 生产环境: 需要通过 Nginx 等反向代理配置
-
-**环境变量管理**:
-- 后端: `backend/.env` (不提交到 Git)
-- 敏感信息: 使用环境变量或密钥管理服务，不要硬编码在代码中
 
 ### 浏览器开发者工具使用
 
@@ -274,7 +331,7 @@ localStorage.removeItem('llmchat-store')
 
 2. **更新类型定义** (`backend/src/types/agent.ts`):
    ```typescript
-   export type ProviderType = 'fastgpt' | 'openai' | 'anthropic' | 'new-provider';
+   export type ProviderType = 'fastgpt' | 'openai' | 'anthropic' | 'dify' | 'new-provider';
    ```
 
 3. **配置智能体** (`config/agents.json`):
@@ -284,33 +341,42 @@ localStorage.removeItem('llmchat-store')
      "provider": "new-provider",
      "endpoint": "https://api.newprovider.com/v1/chat",
      "apiKey": "sk-...",
-     ...
+     "features": {
+       "supportsStream": true,
+       "supportsFiles": true,
+       "supportsImages": false
+     }
    }
    ```
 
-### 修改会话存储结构
+### 数据库迁移
 
-**当前结构** (基于 `doc/2-huihua.md`):
-```typescript
-// localStorage key: 'llmchat-store'
-{
-  conversations: {
-    [agentId: string]: Array<{
-      id: string;              // 时间戳字符串
-      title: string;           // 首条消息前30字符
-      agentId: string;
-      messages: Array<{'AI': string, 'HUMAN': string}>;
-      createdAt: Date;
-      updatedAt: Date;
-    }>
-  }
-}
+**创建新迁移**:
+```bash
+# 1. 创建新的迁移文件
+echo "-- 新迁移文件" > backend/src/migrations/XXX_new_table.sql
+
+# 2. 编写迁移SQL
+# 在新文件中编写 UP 和 DOWN SQL语句
+
+# 3. 执行迁移
+pnpm run migrate:up
 ```
 
-**修改步骤**:
-1. 更新 `frontend/src/store/chatStore.ts` 中的类型定义
-2. 增加 store 版本号（触发数据迁移）
-3. 实现状态迁移函数处理旧数据兼容
+**迁移文件格式**:
+```sql
+-- 创建用户表
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 添加索引
+CREATE INDEX idx_users_email ON users(email);
+```
 
 ### 自定义主题
 
@@ -346,7 +412,7 @@ localStorage.removeItem('llmchat-store')
 - 懒加载历史消息（按需加载旧会话）
 
 **智能体配置缓存**:
-- 后端: 使用内存缓存避免频繁读取 JSON 文件
+- 后端: 使用 Redis 缓存智能体配置，避免频繁读取 JSON 文件
 - 前端: 使用 `useMemo` 缓存智能体列表
 
 **流式响应优化**:
@@ -366,7 +432,7 @@ localStorage.removeItem('llmchat-store')
 # 解决方案
 # 1. 确认 tsconfig.json 中 baseUrl 和 paths 配置正确
 # 2. 后端: 确保使用 tsconfig-paths/register
-npm run backend:dev  # 已配置 -r tsconfig-paths/register
+pnpm run backend:dev  # 已配置 -r tsconfig-paths/register
 
 # 3. 前端: Vite 需要在 vite.config.ts 中配置 resolve.alias
 # 已配置，如有问题检查 vite.config.ts
@@ -389,10 +455,22 @@ const config: Config = {};  // ✅ 省略可选属性
 **问题**: 后端启动失败 - "Cannot find module"
 ```bash
 # 检查依赖是否安装
-cd backend && npm install
+pnpm install
 
 # 检查 tsconfig-paths 是否注册
-npm run dev  # 确保使用项目脚本
+pnpm run backend:dev  # 确保使用项目脚本
+```
+
+**问题**: 数据库连接失败
+```bash
+# 1. 检查环境变量配置
+cat backend/.env | grep DATABASE
+
+# 2. 验证数据库连接
+pnpm run validate:env
+
+# 3. 检查数据库迁移状态
+pnpm run migrate:status
 ```
 
 **问题**: 前端 API 调用 404 或 CORS 错误
@@ -438,7 +516,7 @@ npx jsonlint config/agents.json
 curl -X POST http://localhost:3001/api/agents/reload
 
 # 4. 检查后端日志
-npm run backend:dev  # 查看控制台输出
+pnpm run backend:dev  # 查看控制台输出
 ```
 
 **问题**: 环境变量未生效
@@ -449,8 +527,11 @@ ls backend/.env
 # 2. 检查 NODE_ENV 设置
 echo $NODE_ENV  # 或 Windows: echo %NODE_ENV%
 
-# 3. 重启服务
-npm run backend:dev
+# 3. 验证环境变量
+pnpm run validate:env
+
+# 4. 重启服务
+pnpm run backend:dev
 ```
 
 ### 状态和存储问题
@@ -529,3 +610,57 @@ curl -L "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json" -o fronte
 # 下载省级地图(示例:广东省 440000)
 curl -L "https://geo.datav.aliyun.com/areas_v3/bound/440000_full.json" -o frontend/public/maps/guangdong.json
 ```
+
+## 🧪 测试策略
+
+### 单元测试
+```bash
+# 后端单元测试
+pnpm run backend:test
+
+# 前端单元测试
+pnpm run frontend:test
+
+# 测试覆盖率
+pnpm run frontend:test:coverage
+```
+
+### E2E测试
+```bash
+# 运行所有E2E测试
+pnpm run test:e2e
+
+# 交互模式
+pnpm run test:e2e:ui
+
+# 调试模式
+pnpm run test:e2e:debug
+```
+
+### 测试文件位置
+- 后端测试: `backend/src/__tests__/`
+- 前端测试: `frontend/src/test/`
+- E2E测试: `tests/e2e/`
+
+## 📱 生产部署
+
+### Docker 部署
+```bash
+# 构建镜像
+docker build -t llmchat .
+
+# 运行容器
+docker run -p 3001:3001 llmchat
+```
+
+### 环境变量配置
+生产环境必需的环境变量：
+- `DATABASE_URL`: PostgreSQL 连接字符串
+- `JWT_SECRET`: JWT 密钥
+- `REDIS_URL`: Redis 连接字符串（可选）
+- `NODE_ENV`: 设置为 `production`
+
+### 健康检查
+- 健康检查端点: `GET /health`
+- 数据库连接检查: `GET /health/db`
+- 外部服务检查: `GET /health/external`

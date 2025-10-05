@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+description: 提交规范（Conventional Commits）与 Pull Request 要求
+---
+
+提交规范
+- 使用 Conventional Commits（示例：`feat: refine reasoning trail ux`，`fix: ...`）
+- 提交摘要用小写祈使句，尽量控制在 ~72 字符内
+- 多作用域改动尽量拆分为多次提交
+
+Pull Request
+- 描述动机、列出关键变更、提供测试证据
+- 关联 issue 或设计稿；触及 UI/CLI 行为需附截图或终端输出
+- 明确配置影响与所需环境变量
+
+参考
+- 合并检查清单： [docs/merge-checklist.md](mdc:docs/merge-checklist.md)
+- 开发规范： [docs/development-guidelines.md](mdc:docs/development-guidelines.md), [docs/project-audit.md](mdc:docs/project-audit.md)

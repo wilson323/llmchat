@@ -100,6 +100,8 @@ function App() {
               
               {/* 登录页面（带跳转逻辑） */}
               <Route path="/login" element={<LoginPageWrapper />} />
+              {/* TRACE-routing-20251005-别名路由：兼容测试访问 /admin/login */}
+              <Route path="/admin/login" element={<LoginPageWrapper />} />
               
               {/* 管理后台（需要登录） */}
               <Route path="/home" element={<AdminHome />} />

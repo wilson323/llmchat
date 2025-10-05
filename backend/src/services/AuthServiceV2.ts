@@ -15,7 +15,7 @@
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { Redis } from 'ioredis';
+import Redis from 'ioredis';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { EnvManager } from '@/config/EnvManager';
@@ -118,7 +118,7 @@ export class AuthServiceV2 {
         port: envManager.getInt('REDIS_PORT', 6379),
         password: envManager.get('REDIS_PASSWORD', ''),
         db: envManager.getInt('REDIS_DB', 0),
-        retryStrategy: (times) => {
+        retryStrategy: (times: number) => {
           if (times > 3) {
             logger.error('Redis连接失败，切换到内存模式');
             return null; // 停止重试
@@ -131,7 +131,7 @@ export class AuthServiceV2 {
         logger.info('✅ Redis连接成功，Token存储启用');
       });
 
-      this.redis.on('error', (err) => {
+      this.redis.on('error', (err: Error) => {
         logger.error('Redis错误，将降级到内存模式', { error: err.message });
       });
     } catch (error: any) {

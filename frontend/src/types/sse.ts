@@ -1,25 +1,22 @@
 /**
  * SSE (Server-Sent Events) 类型定义
  * 用于消除API层的any类型使用
+ * 
+ * @deprecated 此文件已被 shared-types/sse-events.ts 替代
+ * 为保持向后兼容，暂时保留此文件并重新导出新类型
  */
 
-import type { InteractiveData, ReasoningStepUpdate } from './index';
+// 从 @llmchat/shared-types 导入新的类型定义
+import type {
+  SSEEventType as NewSSEEventType,
+  SSEInteractiveEvent,
+  SSEReasoningEvent,
+} from '@llmchat/shared-types';
 
 /**
  * SSE事件类型
  */
-export type SSEEventType =
-  | 'chunk'
-  | 'end'
-  | 'error'
-  | 'status'
-  | 'interactive'
-  | 'reasoning'
-  | 'chatId'
-  | 'dataset'
-  | 'summary'
-  | 'tool'
-  | 'usage';
+export type SSEEventType = NewSSEEventType;
 
 /**
  * FastGPT状态更新数据
@@ -31,20 +28,23 @@ export interface FastGPTStatusData {
   message?: string;
   moduleId?: string;
   moduleName?: string;
+  name?: string;
   duration?: number;
   progress?: number;
+  totalSteps?: number;
+  currentStep?: number;
   error?: string;
 }
 
 /**
  * FastGPT交互数据
  */
-export type FastGPTInteractiveData = InteractiveData;
+export type FastGPTInteractiveData = SSEInteractiveEvent['data'];
 
 /**
  * FastGPT推理步骤数据
  */
-export type FastGPTReasoningData = ReasoningStepUpdate | string | Record<string, unknown>;
+export type FastGPTReasoningData = SSEReasoningEvent['data'];
 
 /**
  * FastGPT ChatId数据

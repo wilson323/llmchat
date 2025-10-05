@@ -1,0 +1,15 @@
+---
+alwaysApply: true
+description: 日志、可观测与审计
+---
+
+日志
+- 结构化日志；分级：info、warn、error；敏感信息打码
+- 后端日志目录： [backend/log](mdc:backend/log)
+
+可观测
+- 关键外部调用：记录耗时、状态与重试；为错误附加 `requestId`
+- 设置超时、重试、熔断；为失败计数打点（若接入 APM/监控）
+
+审计
+- 对关键管理操作记录审计日志；避免在响应中回显内部细节

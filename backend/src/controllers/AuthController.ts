@@ -1,199 +1,190 @@
-import { Request, Response } from 'express';
-import { logger } from '@/utils/logger';
-import { AuthServiceV2 } from '@/services/AuthServiceV2';
+import { Request, Response } from 'express'; // [L1]
+import { logger } from '@/utils/logger'; // [L2]
+import { AuthServiceV2 } from '@/services/AuthServiceV2'; // [L3]
 
 /**
  * 认证控制器
- * 处理登录、登出、Token验证等认证相关功能
- */
-export class AuthController {
-  private authService: AuthServiceV2;
+ * 职责：处理登录、登出、令牌验证与刷新等认证相关功能。
+ * 依赖：AuthServiceV2 提供认证业务逻辑；logger 提供审计日志。
+ */ // [L9]
+export class AuthController { // [L10]
+  private authService: AuthServiceV2; // [L11]
 
-  constructor() {
-    this.authService = new AuthServiceV2();
-  }
+  constructor() { // [L13]
+    this.authService = new AuthServiceV2(); // [L14]
+  } // [L15]
+
   /**
    * 用户登录
-   * 
-   * @route POST /api/auth/login
-   * @body { username: string, password: string }
-   * @returns { token: string, user: object }
-   */
-  async login(req: Request, res: Response): Promise<void> {
-    try {
-      const { username, password } = req.body;
+   * 路由: POST /api/auth/login
+   * 参数: req.body { username: string, password: string }
+   * 返回: 200 { code, message, data: { token, refreshToken, user, expiresIn }, timestamp }
+   * 异常: 400 INVALID_CREDENTIALS, 401 AUTH_FAILED, 500 LOGIN_ERROR
+   * 使用示例:
+   *  curl -X POST http://localhost:3001/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"123456"}'
+   */ // [L24]
+  async login(req: Request, res: Response): Promise<void> { // [L25]
+    try { // [L26]
+      const { username, password } = req.body as { username?: string; password?: string }; // [L27]
 
-      // 参数验证
-      if (!username || !password) {
-        res.status(400).json({
-          code: 'INVALID_CREDENTIALS',
-          message: '用户名或密码不能为空',
-          data: null,
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
+      if (!username || !password) { // [L29]
+        res.status(400).json({ // [L30]
+          code: 'INVALID_CREDENTIALS', // [L31]
+          message: '用户名或密码不能为空', // [L32]
+          data: null, // [L33]
+          timestamp: new Date().toISOString(), // [L34]
+        }); // [L35]
+        return; // [L36]
+      } // [L37]
 
-      // 使用 AuthServiceV2 进行真实认证
-      const result = await this.authService.login(username, password);
+      const result = await this.authService.login(username, password); // [L39]
+      logger.info('用户登录成功', { user: result.user?.id, env: process.env.NODE_ENV || 'development' }); // [L40]
 
-      logger.info('用户登录成功', { 
-        username,
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
+      res.status(200).json({ // [L42]
+        code: 'SUCCESS', // [L43]
+        message: '登录成功', // [L44]
+        data: { // [L45]
+          token: result.token, // [L46]
+          refreshToken: result.refreshToken, // [L47]
+          user: result.user, // [L48]
+          expiresIn: result.expiresIn, // [L49]
+        }, // [L50]
+        timestamp: new Date().toISOString(), // [L51]
+      }); // [L52]
+    } catch (error: any) { // [L53]
+      logger.error('用户登录失败', { error }); // [L54]
+      const statusCode = error?.code === 'AUTH_FAILED' ? 401 : 500; // [L55]
+      res.status(statusCode).json({ // [L56]
+        code: error?.code || 'LOGIN_ERROR', // [L57]
+        message: error?.message || '登录失败', // [L58]
+        data: null, // [L59]
+        timestamp: new Date().toISOString(), // [L60]
+      }); // [L61]
+    } // [L62]
+  } // [L63]
 
-      res.status(200).json({
-        code: 'SUCCESS',
-        message: '登录成功',
-        data: result,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error: any) {
-      logger.error('登录失败', { 
-        error,
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
-      
-      // 根据错误类型返回适当的状态码
-      const statusCode = error.code === 'INVALID_CREDENTIALS' ? 401 : 500;
-      const message = error.message || '登录失败，请稍后重试';
-      
-      res.status(statusCode).json({
-        code: error.code || 'LOGIN_ERROR',
-        message,
-        data: null,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+  // TRACE-auth-20251005-认证路径统一JSON响应 // [L65]
 
   /**
-   * 用户登出
-   * 
-   * @route POST /api/auth/logout
-   * @returns { success: boolean }
-   */
-  async logout(req: Request, res: Response): Promise<void> {
-    try {
-      // TODO: 实现真实的登出逻辑
-      // 1. 黑名单Token
-      // 2. 清除会话
-      // 3. 记录登出日志
+   * 令牌验证
+   * 路由: GET /api/auth/verify
+   * 头部: Authorization: Bearer <token>
+   * 返回: 200 { code:'SUCCESS', message:'Token有效', data:{ valid:true, user }, timestamp }
+   * 异常: 401 AUTHENTICATION_REQUIRED / TOKEN_INVALID / TOKEN_EXPIRED, 500 VERIFY_ERROR
+   * 使用示例:
+   *  curl -H "Authorization: Bearer <token>" http://localhost:3001/api/auth/verify
+   */ // [L74]
+  async verifyToken(req: Request, res: Response): Promise<void> { // [L75]
+    try { // [L76]
+      const authHeader = req.headers.authorization || ''; // [L77]
+      if (!authHeader.startsWith('Bearer ')) { // [L78]
+        res.status(401).json({ // [L79]
+          code: 'AUTHENTICATION_REQUIRED', // [L80]
+          message: '未提供认证信息', // [L81]
+          data: null, // [L82]
+          timestamp: new Date().toISOString(), // [L83]
+        }); // [L84]
+        return; // [L85]
+      } // [L86]
 
-      logger.info('用户登出成功', {
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
+      const token = authHeader.substring(7); // [L88]
+      const result = await this.authService.validateToken(token); // [L89]
 
-      res.status(200).json({
-        code: 'SUCCESS',
-        message: '登出成功',
-        data: null,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('登出失败', { 
-        error,
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
-      
-      res.status(500).json({
-        code: 'LOGOUT_ERROR',
-        message: '登出失败',
-        data: null,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+      if (!result.valid) { // [L91]
+        const code = result.error || 'TOKEN_INVALID'; // [L92]
+        const message = code === 'TOKEN_EXPIRED' ? 'Token已过期' : 'Token无效'; // [L93]
+        res.status(401).json({ // [L94]
+          code, // [L95]
+          message, // [L96]
+          data: null, // [L97]
+          timestamp: new Date().toISOString(), // [L98]
+        }); // [L99]
+        return; // [L100]
+      } // [L101]
 
-  /**
-   * 刷新Token
-   * 
-   * @route POST /api/auth/refresh
-   * @body { token: string }
-   * @returns { token: string }
-   */
-  async refreshToken(req: Request, res: Response): Promise<void> {
-    try {
-      const { token: oldToken } = req.body;
-
-      if (!oldToken) {
-        res.status(400).json({
-          code: 'INVALID_TOKEN',
-          message: '未提供Token',
-          data: null,
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
-
-      // TODO: 实现真实的Token刷新逻辑
-      // 1. 验证旧Token
-      // 2. 检查是否在刷新窗口内
-      // 3. 生成新Token
-      // 4. 黑名单旧Token
-
-      const newToken = `dev_token_${Date.now()}_refreshed`;
-
-      logger.info('Token刷新成功', {
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
-
-      res.status(200).json({
-        code: 'SUCCESS',
-        message: 'Token刷新成功',
-        data: { 
-          token: newToken,
-          expiresIn: 86400,
-        },
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Token刷新失败', { 
-        error,
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
-      
-      res.status(500).json({
-        code: 'REFRESH_ERROR',
-        message: 'Token刷新失败',
-        data: null,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
+      res.status(200).json({ // [L103]
+        code: 'SUCCESS', // [L104]
+        message: 'Token有效', // [L105]
+        data: { valid: true, user: result.user }, // [L106]
+        timestamp: new Date().toISOString(), // [L107]
+      }); // [L108]
+    } catch (error: any) { // [L109]
+      logger.error('Token验证失败', { error }); // [L110]
+      res.status(500).json({ // [L111]
+        code: 'VERIFY_ERROR', // [L112]
+        message: error?.message || 'Token验证失败', // [L113]
+        data: null, // [L114]
+        timestamp: new Date().toISOString(), // [L115]
+      }); // [L116]
+    } // [L117]
+  } // [L118]
 
   /**
-   * 验证Token
-   * 
-   * @route GET /api/auth/verify
-   * @header Authorization: Bearer <token>
-   * @returns { valid: boolean, user: object }
-   */
-  async verifyToken(req: Request, res: Response): Promise<void> {
-    try {
-      const authHeader = req.headers.authorization;
+   * 刷新令牌
+   * 路由: POST /api/auth/refresh
+   * 参数: req.body.refreshToken 或 Authorization: Bearer <refreshToken>
+   * 返回: 200 { code:'SUCCESS', message:'Token刷新成功', data:{ token, refreshToken, expiresIn }, timestamp }
+   * 异常: 400 INVALID_TOKEN, 401 REFRESH_TOKEN_INVALID, 500 REFRESH_ERROR
+   * 使用示例:
+   *  curl -X POST http://localhost:3001/api/auth/refresh -H "Content-Type: application/json" -d '{"refreshToken":"..."}'
+   */ // [L127]
+  async refreshToken(req: Request, res: Response): Promise<void> { // [L128]
+    try { // [L129]
+      const bodyToken = (req.body && (req.body.refreshToken || req.body.token)) as string | undefined; // [L130]
+      const header = req.headers.authorization; // [L131]
+      const bearerToken = header && header.startsWith('Bearer ') ? header.substring(7) : undefined; // [L132]
+      const refreshToken = bodyToken || bearerToken; // [L133]
 
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      if (!refreshToken) { // [L135]
+        res.status(400).json({ // [L136]
+          code: 'INVALID_TOKEN', // [L137]
+          message: '未提供刷新令牌', // [L138]
+          data: null, // [L139]
+          timestamp: new Date().toISOString(), // [L140]
+        }); // [L141]
+        return; // [L142]
+      } // [L143]
+
+      const result = await this.authService.refreshToken(refreshToken); // [L145]
+      logger.info('Token刷新成功'); // [L146]
+
+      res.status(200).json({ // [L148]
+        code: 'SUCCESS', // [L149]
+        message: 'Token刷新成功', // [L150]
+        data: { token: result.token, refreshToken: result.refreshToken, expiresIn: result.expiresIn }, // [L151]
+        timestamp: new Date().toISOString(), // [L152]
+      }); // [L153]
+    } catch (error: any) { // [L154]
+      logger.error('Token刷新失败', { error }); // [L155]
+      const statusCode = error?.code === 'REFRESH_TOKEN_INVALID' ? 401 : 500; // [L156]
+      res.status(statusCode).json({ // [L157]
+        code: error?.code || 'REFRESH_ERROR', // [L158]
+        message: error?.message || 'Token刷新失败', // [L159]
+        data: null, // [L160]
+        timestamp: new Date().toISOString(), // [L161]
+      }); // [L162]
+    } // [L163]
+  } // [L164]
+
+  // TRACE-auth-20251005-认证刷新路径一致性 // [L166]
+
+  /**
+   * 登出
+   * 路由: POST /api/auth/logout
+   * 参数: Authorization: Bearer <token>（可选）
+   * 返回: 200 { code:'SUCCESS', message:'登出成功', data:null, timestamp }
+   * 异常: 401 AUTHENTICATION_REQUIRED, 500 LOGOUT_ERROR
+   * 使用示例:
+   *  curl -X POST http://localhost:3001/api/auth/logout -H "Authorization: Bearer <token>"
+   */ // [L175]
+  async logout(req: Request, res: Response): Promise<void> { // [L176]
+    try { // [L177]
+      const authHeader = req.headers.authorization || ''; // [L178]
+      const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined; // [L179]
+
+      if (!token) {
         res.status(401).json({
-          code: 'UNAUTHORIZED',
+          code: 'AUTHENTICATION_REQUIRED',
           message: '未提供认证信息',
           data: null,
           timestamp: new Date().toISOString(),
@@ -201,54 +192,24 @@ export class AuthController {
         return;
       }
 
-      const token = authHeader.substring(7); // 移除 "Bearer " 前缀
+      await this.authService.logout(token); // [L181]
+      logger.info('用户登出成功'); // [L182]
 
-      // TODO: 实现真实的Token验证逻辑
-      // 1. 解析JWT
-      // 2. 验证签名
-      // 3. 检查过期时间
-      // 4. 检查黑名单
-
-      // 暂时简单验证格式
-      const isValid = token.startsWith('dev_token_');
-
-      if (!isValid) {
-        res.status(401).json({
-          code: 'INVALID_TOKEN',
-          message: 'Token无效',
-          data: null,
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
-
-      res.status(200).json({
-        code: 'SUCCESS',
-        message: 'Token有效',
-        data: { 
-          valid: true,
-          user: {
-            username: 'dev_user',
-            role: 'user',
-          },
-        },
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('Token验证失败', { 
-        error,
-        metadata: {
-          service: 'llmchat-backend',
-          environment: process.env.NODE_ENV || 'development',
-        },
-      });
-      
-      res.status(500).json({
-        code: 'VERIFY_ERROR',
-        message: 'Token验证失败',
-        data: null,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-}
+      res.status(200).json({ // [L184]
+        code: 'SUCCESS', // [L185]
+        message: '登出成功', // [L186]
+        data: null, // [L187]
+        timestamp: new Date().toISOString(), // [L188]
+      }); // [L189]
+    } catch (error: any) { // [L190]
+      logger.error('用户登出失败', { error }); // [L191]
+      const statusCode = error?.code === 'AUTHENTICATION_REQUIRED' ? 401 : 500; // [L192]
+      res.status(statusCode).json({ // [L193]
+        code: error?.code || 'LOGOUT_ERROR', // [L194]
+        message: error?.message || '登出失败', // [L195]
+        data: null, // [L196]
+        timestamp: new Date().toISOString(), // [L197]
+      }); // [L198]
+    } // [L199]
+  } // [L200]
+} // [L201]

@@ -115,6 +115,7 @@ import {
   FastGPTInitResponse
 } from '@/types';
 import { JsonValue, DynamicTypeGuard, SafeAccess, FastGPTEventPayload } from '@/types/dynamic';
+import type { SSEEventData } from '@/types/provider';
 import { createErrorFromUnknown } from '@/types/errors';
 
 import {
@@ -772,7 +773,7 @@ export class ChatController {
         },
         options,
         // 事件透传回调：关注 FastGPT 的 interactive 以及 chatId 事件
-        (eventName: string, data: FastGPTEventPayload) => {
+        (eventName: string, data: SSEEventData) => {
           if (!eventName) return;
 
           if (eventName === 'interactive') {
@@ -786,7 +787,9 @@ export class ChatController {
           }
 
           if (eventName === 'chatId') {
-            logger.debug('🆔 透传本次使用的 chatId', { chatId: (data && (data.chatId || data.id)) || data });
+            const dataObj = (typeof data === 'object' && data !== null) ? data as Record<string, JsonValue> : {};
+            const chatId = (dataObj.chatId || dataObj.id || data) as string | JsonValue;
+            logger.debug('🆔 透传本次使用的 chatId', { chatId });
             this.sendSSEEvent(res, 'chatId', DynamicDataConverter.toSafeJsonValue(data));
             return;
           }

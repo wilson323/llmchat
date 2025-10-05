@@ -1,0 +1,14 @@
+---
+description: 测试与质量门禁
+---
+# 测试与质量
+
+- 后端：
+  - 运行：`npm run backend:test` 或 `npm run backend:test -- --watch`
+  - 目录： [backend/src/**/__tests__](mdc:backend/src)
+  - 模式：仿照 fastgptEvents 测试；外部 IO 使用 jest mock。
+- 前端：
+  - 新增组件需添加 `.test.tsx` 并纳入 Jest/Vite 测试栈。
+  - 覆盖鉴权守卫与智能体切换流程的边界。
+- Lint：`npm run backend:lint` 与 `npm run frontend:lint` 必过。
+- PR 必附：测试证据（截图/日志）、手动 QA 说明（若自动化不足）。

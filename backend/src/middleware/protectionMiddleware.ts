@@ -8,6 +8,7 @@ import { getProtectionService, ProtectedRequestContext } from '@/services/Protec
 import { createErrorFromUnknown } from '@/types/errors';
 import logger from '@/utils/logger';
 import { JsonValue } from '@/types/dynamic';
+import { createDefaultFirewall } from '@/services/EthicsFirewallService';
 
 /**
  * 保护中间件
@@ -59,6 +60,7 @@ export function protectionMiddleware() {
 export function protectedApiMiddleware() {
   const protectionService = getProtectionService();
 
+  const ethicsFirewall = createDefaultFirewall();
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const context = req.protectionContext;
 
@@ -72,6 +74,36 @@ export function protectedApiMiddleware() {
     }
 
     try {
+      // 伦理防火墙检查（API）
+      try {
+        const payload: { action: string; content: any; sensitive: boolean } & Partial<{ resourceId: string }> = {
+          action: `${req.method} ${req.path}`,
+          content: req.body,
+          sensitive: req.path.includes('/admin') || req.path.includes('/export') || req.method === 'DELETE',
+        };
+        const paramId = (req as Request & { params?: Record<string, unknown> }).params?.['id'];
+        if (typeof paramId === 'string' && paramId.length > 0) {
+          (payload as { resourceId: string }).resourceId = paramId;
+        }
+        const verdict = ethicsFirewall.evaluateCommand(context, payload);
+        ethicsFirewall.assertOrThrow(verdict);
+      } catch (ethicsError) {
+        const typedError = createErrorFromUnknown(ethicsError, {
+          component: 'ProtectionMiddleware',
+          operation: 'ethicsApiCheck',
+          url: req.originalUrl,
+          method: req.method,
+        });
+        logger.warn('伦理防火墙阻断(API)', { error: typedError.message });
+        res.status(403).json({
+          code: 'POLICY_VIOLATION',
+          message: typedError.message,
+          requestId: context.requestId,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       // 检查限流
       const rateLimitResult = await checkRateLimit(req, protectionService);
       if (!rateLimitResult.allowed) {
@@ -128,6 +160,7 @@ export function protectedApiMiddleware() {
 export function protectedChatMiddleware() {
   const protectionService = getProtectionService();
 
+  const ethicsFirewall = createDefaultFirewall();
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const context = req.protectionContext;
 
@@ -146,6 +179,40 @@ export function protectedChatMiddleware() {
     }
 
     try {
+      // 伦理防火墙检查（Chat）
+      try {
+        const payload: { action: string; content: any; sensitive: boolean } & Partial<{ resourceId: string }> = {
+          action: 'chat.handle',
+          content: req.body,
+          sensitive: false,
+        };
+        if (typeof context.agentId === 'string' && context.agentId !== 'unknown' && context.agentId.length > 0) {
+          (payload as { resourceId: string }).resourceId = context.agentId;
+        }
+        const verdict = ethicsFirewall.evaluateCommand(context, payload);
+        ethicsFirewall.assertOrThrow(verdict);
+      } catch (ethicsError) {
+        const typedError = createErrorFromUnknown(ethicsError, {
+          component: 'ProtectionMiddleware',
+          operation: 'ethicsChatCheck',
+          url: req.originalUrl,
+          method: req.method,
+          context: { requestId: context.requestId, agentId: context.agentId },
+        });
+        logger.warn('伦理防火墙阻断(Chat)', {
+          requestId: context.requestId,
+          agentId: context.agentId,
+          error: typedError.message
+        });
+        res.status(403).json({
+          code: 'POLICY_VIOLATION',
+          message: typedError.message,
+          requestId: context.requestId,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
       // 执行受保护的聊天请求
       await protectionService.executeProtectedRequest(context, async () => {
         // 这里不直接执行聊天逻辑，而是继续到下一个中间件

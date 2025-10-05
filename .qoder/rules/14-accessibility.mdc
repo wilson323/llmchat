@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+description: 无障碍（A11y）最低要求
+---
+
+要求
+- 可聚焦与键盘可达；提供跳转链接与语义标签
+- 图片提供替代文本；交互组件具备可见/可读的状态
+- 颜色对比满足 WCAG AA；避免仅靠颜色传达信息
+- 参考清单： [P0-ACCESSIBILITY-IMPLEMENTATION.md](mdc:P0-ACCESSIBILITY-IMPLEMENTATION.md)

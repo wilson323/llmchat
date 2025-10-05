@@ -5,8 +5,22 @@ import {
   ChatOptions,
   ChatResponse,
   StreamStatus,
-  RequestHeaders
+  RequestHeaders,
+  JsonValue
 } from '@/types';
+import {
+  FastGPTResponse,
+  FastGPTStreamChunk,
+  OpenAIResponse,
+  OpenAIStreamChunk,
+  AnthropicResponse,
+  AnthropicStreamChunk,
+  DifyResponse,
+  DifyStreamChunk,
+  DifyFile,
+  SSEEventData,
+  ReasoningPayload
+} from '@/types/provider';
 import { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
@@ -54,8 +68,8 @@ export interface ProviderResponseData {
 export interface AIProvider {
   name: string;
   transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean, options?: ChatOptions): ProviderRequestData;
-  transformResponse(response: ProviderResponseData): ChatResponse;
-  transformStreamResponse(chunk: Record<string, unknown>): string;
+  transformResponse(response: ProviderResponseData | FastGPTResponse | OpenAIResponse | AnthropicResponse | DifyResponse): ChatResponse;
+  transformStreamResponse(chunk: Record<string, JsonValue> | FastGPTStreamChunk | OpenAIStreamChunk | AnthropicStreamChunk | DifyStreamChunk): string;
   validateConfig(config: AgentConfig): boolean;
   buildHeaders(config: AgentConfig): RequestHeaders;
 }
@@ -66,9 +80,9 @@ export interface AIProvider {
 export class FastGPTProvider implements AIProvider {
   name = 'FastGPT';
 
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions): ProviderRequestData {
     const detail = options?.detail ?? config.features?.supportsDetail ?? false;
-    const request: any = {
+    const request: ProviderRequestData = {
       chatId: options?.chatId || `chat_${Date.now()}`,
       stream: stream && config.features.streamingConfig.enabled,
       detail,
@@ -88,8 +102,8 @@ export class FastGPTProvider implements AIProvider {
     }
 
     // 添加系统消息
-    if (config.systemPrompt) {
-      request.messages.unshift({
+    if (config.systemPrompt && Array.isArray(request.messages)) {
+      (request.messages as Array<{ role: string; content: string }>).unshift({
         role: 'system',
         content: config.systemPrompt,
       });
@@ -99,25 +113,42 @@ export class FastGPTProvider implements AIProvider {
     return request;
   }
 
-  transformResponse(response: any): ChatResponse {
-    return {
+  transformResponse(response: FastGPTResponse): ChatResponse {
+    const firstChoice = response.choices?.[0];
+    const result: ChatResponse = {
       id: response.id || generateId(),
       object: response.object || 'chat.completion',
       created: response.created || generateTimestamp(),
       model: response.model || 'fastgpt',
-      choices: response.choices || [{
+      choices: response.choices && response.choices.length > 0 ? response.choices.map(choice => ({
+        index: choice.index,
+        message: {
+          role: (choice.message?.role || 'assistant') as 'user' | 'system' | 'assistant',
+          content: choice.message?.content || '',
+        },
+        finish_reason: choice.finish_reason || 'stop',
+      })) : [{
         index: 0,
         message: {
-          role: 'assistant',
-          content: response.choices?.[0]?.message?.content || '',
+          role: 'assistant' as const,
+          content: firstChoice?.message?.content || '',
         },
-        finish_reason: response.choices?.[0]?.finish_reason || 'stop',
+        finish_reason: firstChoice?.finish_reason || 'stop',
       }],
-      usage: response.usage,
     };
+    
+    if (response.usage) {
+      result.usage = {
+        prompt_tokens: response.usage.prompt_tokens ?? 0,
+        completion_tokens: response.usage.completion_tokens ?? 0,
+        total_tokens: response.usage.total_tokens ?? 0,
+      };
+    }
+    
+    return result;
   }
 
-  transformStreamResponse(chunk: any): string {
+  transformStreamResponse(chunk: FastGPTStreamChunk): string {
     // FastGPT流式响应格式
     if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
       return chunk.choices[0].delta.content || '';
@@ -160,25 +191,30 @@ export class OpenAIProvider implements AIProvider {
     };
   }
 
-  transformResponse(response: any): ChatResponse {
-    return {
+  transformResponse(response: OpenAIResponse): ChatResponse {
+    const result: ChatResponse = {
       id: response.id || generateId(),
       object: response.object || 'chat.completion',
       created: response.created || generateTimestamp(),
       model: response.model,
-      choices: response.choices.map((choice: any) => ({
+      choices: response.choices.map((choice) => ({
         index: choice.index,
         message: {
-          role: choice.message.role,
+          role: choice.message.role as 'user' | 'system' | 'assistant',
           content: choice.message.content,
         },
         finish_reason: choice.finish_reason,
       })),
-      usage: response.usage,
     };
+    
+    if (response.usage) {
+      result.usage = response.usage;
+    }
+    
+    return result;
   }
 
-  transformStreamResponse(chunk: any): string {
+  transformStreamResponse(chunk: OpenAIStreamChunk): string {
     if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
       return chunk.choices[0].delta.content || '';
     }
@@ -220,7 +256,8 @@ export class AnthropicProvider implements AIProvider {
     };
   }
 
-  transformResponse(response: any): ChatResponse {
+  transformResponse(response: AnthropicResponse): ChatResponse {
+    const firstContent = response.content?.[0];
     return {
       id: response.id || generateId(),
       object: 'chat.completion',
@@ -229,8 +266,8 @@ export class AnthropicProvider implements AIProvider {
       choices: [{
         index: 0,
         message: {
-          role: 'assistant',
-          content: response.content[0].text,
+          role: 'assistant' as const,
+          content: firstContent?.text || '',
         },
         finish_reason: response.stop_reason || 'stop',
       }],
@@ -242,8 +279,8 @@ export class AnthropicProvider implements AIProvider {
     };
   }
 
-  transformStreamResponse(chunk: any): string {
-    if (chunk.type === 'content_block_delta') {
+  transformStreamResponse(chunk: AnthropicStreamChunk): string {
+    if (chunk.type === 'content_block_delta' && chunk.delta) {
       return chunk.delta.text || '';
     }
     return '';
@@ -293,7 +330,7 @@ export class DifyProvider implements AIProvider {
       });
     }
 
-    const request: any = {
+    const request: ProviderRequestData = {
       query: lastUserMessage.content,
       response_mode: stream && config.features.streamingConfig.enabled ? 'streaming' : 'blocking',
       user: options?.userId || 'default-user',
@@ -311,10 +348,10 @@ export class DifyProvider implements AIProvider {
 
     // 添加文件（Dify 特有）
     if (options?.files && Array.isArray(options.files)) {
-      request.files = options.files.map((file: any) => ({
+      request.files = (options.files as Array<Partial<DifyFile>>).map((file) => ({
         type: file.type || 'file',
         transfer_method: file.transfer_method || 'remote_url',
-        url: file.url,
+        url: file.url || '',
       }));
     }
 
@@ -332,7 +369,7 @@ export class DifyProvider implements AIProvider {
    * 
    * Dify 响应格式转换为统一的 ChatResponse 格式
    */
-  transformResponse(response: any): ChatResponse {
+  transformResponse(response: DifyResponse): ChatResponse {
     return {
       id: response.message_id || generateId(),
       object: 'chat.completion',
@@ -364,7 +401,7 @@ export class DifyProvider implements AIProvider {
    * 
    * Dify SSE 事件处理
    */
-  transformStreamResponse(chunk: any): string {
+  transformStreamResponse(chunk: DifyStreamChunk): string {
     // Dify 流式响应事件类型：message, message_end, message_file, error, ping
     if (chunk.event === 'message' && chunk.answer) {
       return chunk.answer;
@@ -582,7 +619,7 @@ export class ChatProxyService {
     onChunk: (chunk: string) => void,
     onStatus: (status: StreamStatus) => void,
     options?: ChatOptions,
-    onEvent?: (eventName: string, data: any) => void,
+    onEvent?: (eventName: string, data: SSEEventData) => void,
     protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
@@ -628,7 +665,7 @@ export class ChatProxyService {
       // 在发送请求前，将本次使用的 chatId 透传给上层（用于交互节点继续运行复用 chatId）
       let usedChatId: string | undefined;
       try {
-        usedChatId = (requestData as any)?.chatId;
+        usedChatId = (requestData as Record<string, unknown>)?.chatId as string | undefined;
         if (usedChatId) {
           // 记录 chatId 事件
           try {
@@ -781,7 +818,7 @@ export class ChatProxyService {
   private logStreamEvent(
     ctx: { agentId: string; chatId?: string; endpoint: string; provider: string } | undefined,
     eventType: string,
-    data: any
+    data: SSEEventData
   ): void {
     try {
       this.chatLog.logStreamEvent({
@@ -795,14 +832,20 @@ export class ChatProxyService {
     } catch {}
   }
 
-  private extractReasoningPayload(data: any): any {
+  private extractReasoningPayload(data: Record<string, JsonValue> | null): ReasoningPayload {
+    if (!data || typeof data !== 'object') return null;
+    
+    // 尝试从不同的可能位置提取推理内容
+    const choices = data.choices as Array<Record<string, JsonValue>> | undefined;
+    const firstChoice = choices?.[0] as Record<string, JsonValue> | undefined;
+    const delta = (firstChoice?.delta || data.delta) as Record<string, JsonValue> | undefined;
+    
     return (
-      data?.choices?.[0]?.delta?.reasoning_content ||
-      data?.delta?.reasoning_content ||
-      data?.reasoning_content ||
-      data?.reasoning ||
+      delta?.reasoning_content ||
+      data.reasoning_content ||
+      data.reasoning ||
       null
-    );
+    ) as ReasoningPayload;
   }
 
   /**
@@ -819,16 +862,19 @@ export class ChatProxyService {
   private dispatchFastGPTEvent(
     provider: AIProvider,
     eventName: string,
-    payload: any,
+    payload: Record<string, JsonValue> | string | null,
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
-    onEvent?: (eventName: string, data: any) => void,
+    onEvent?: (eventName: string, data: SSEEventData) => void,
     ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
   ): void {
-    const resolvedEvent = (eventName || (typeof payload?.event === 'string' ? payload.event : '') || '').trim();
+    const payloadEvent = (typeof payload === 'object' && payload !== null && 'event' in payload) 
+      ? payload.event 
+      : '';
+    const resolvedEvent = (eventName || (typeof payloadEvent === 'string' ? payloadEvent : '') || '').trim();
     const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
-    const emitEvent = (name: string, data: any) => {
+    const emitEvent = (name: string, data: SSEEventData) => {
       if (!onEvent) return;
       try {
         onEvent(name, data);
@@ -861,10 +907,11 @@ export class ChatProxyService {
 
     // 处理状态事件
     if (isStatusEvent(resolvedEvent)) {
+      const payloadObj = (typeof payload === 'object' && payload !== null) ? payload : {};
       const statusEvent: StreamStatus = {
         type: 'flowNodeStatus',
-        status: (payload?.status ?? 'running') as StreamStatus['status'],
-        moduleName: payload?.name || payload?.moduleName || payload?.id || '未知模块',
+        status: ((payloadObj.status as string) ?? 'running') as StreamStatus['status'],
+        moduleName: (payloadObj.name || payloadObj.moduleName || payloadObj.id || '未知模块') as string,
       };
       this.logStreamEvent(ctx, 'flowNodeStatus', payload);
       onStatus?.(statusEvent);
@@ -874,16 +921,23 @@ export class ChatProxyService {
 
     // 处理answer事件 - 这是主要的内容流
     if (eventKey === getNormalizedEventKey('answer')) {
-      const answerContent = payload?.choices?.[0]?.delta?.content ?? payload?.content ?? '';
+      const payloadObj = (typeof payload === 'object' && payload !== null) ? payload : {};
+      const choices = payloadObj.choices as Array<Record<string, JsonValue>> | undefined;
+      const delta = (choices?.[0] as Record<string, JsonValue> | undefined)?.delta as Record<string, JsonValue> | undefined;
+      const answerContent = (delta?.content ?? payloadObj.content ?? '') as string;
+      
       if (answerContent) {
         this.logStreamEvent(ctx, 'answer', payload);
         onChunk(answerContent);
       }
 
-      const reasoningContent = this.extractReasoningPayload(payload);
+      const reasoningContent = this.extractReasoningPayload(payloadObj);
       if (reasoningContent) {
-        this.logStreamEvent(ctx, 'reasoning', reasoningContent);
-        emitEvent('reasoning', { event: resolvedEvent || 'reasoning', data: reasoningContent });
+        const reasoningData = typeof reasoningContent === 'object' && reasoningContent !== null
+          ? reasoningContent
+          : { content: reasoningContent };
+        this.logStreamEvent(ctx, 'reasoning', reasoningData);
+        emitEvent('reasoning', reasoningData);
       }
       return; // 重要：直接返回，避免后续的兜底处理
     }
@@ -919,7 +973,11 @@ export class ChatProxyService {
 
     // 兜底处理：只处理非answer事件，避免重复处理
     if (eventKey !== getNormalizedEventKey('answer')) {
-      const transformed = provider.transformStreamResponse(payload);
+      // 将 payload 转换为提供商期望的格式
+      const chunkData = (typeof payload === 'object' && payload !== null) 
+        ? payload as Record<string, JsonValue>
+        : {} as Record<string, JsonValue>;
+      const transformed = provider.transformStreamResponse(chunkData);
       if (transformed) {
         this.logStreamEvent(ctx, 'chunk', transformed);
         onChunk(transformed);
@@ -936,12 +994,12 @@ export class ChatProxyService {
    * 处理流式响应 - 兼容 FastGPT 全事件并支持多行 data
    */
   private async handleStreamResponse(
-    stream: any,
+    stream: NodeJS.ReadableStream,
     provider: AIProvider,
     config: AgentConfig,
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
-    onEvent?: (eventName: string, data: any) => void,
+    onEvent?: (eventName: string, data: SSEEventData) => void,
     ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
   ): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -973,12 +1031,12 @@ export class ChatProxyService {
           return;
         }
 
-        let payload: any = rawData;
+        let payload: Record<string, JsonValue> | string = rawData;
         if (typeof rawData === 'string') {
           const trimmed = rawData.trim();
           if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
             try {
-              payload = JSON.parse(rawData);
+              payload = JSON.parse(rawData) as Record<string, JsonValue>;
             } catch (parseError) {
               logger.warn('解析 SSE 数据失败', { parseError, rawData });
               payload = rawData;

@@ -12,6 +12,7 @@
 import { useCallback } from 'react';
 import { chatService } from '@/services/api';
 import { logger } from '@/lib/logger';
+import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter';
 
 // 新的拆分Store
 import { useMessageStore } from '@/store/messageStore';
@@ -116,7 +117,13 @@ export const useChat = () => {
               },
               onInteractive: (interactiveData) => {
                 try {
-                  useMessageStore.getState().addMessage({ interactive: interactiveData });
+                  // 转换 FastGPT 交互数据为前端格式
+                  const convertedData = convertFastGPTInteractiveData(interactiveData);
+                  if (convertedData) {
+                    useMessageStore.getState().addMessage({ interactive: convertedData });
+                  } else {
+                    logger.warn(t('无法转换 interactive 数据'), { interactiveData });
+                  }
                 } catch (e) {
                   logger.warn(t('处理 interactive 事件失败'), { error: e, interactiveData });
                 }
@@ -210,7 +217,13 @@ export const useChat = () => {
               },
               onInteractive: (interactiveData) => {
                 try {
-                  useMessageStore.getState().addMessage({ interactive: interactiveData });
+                  // 转换 FastGPT 交互数据为前端格式
+                  const convertedData = convertFastGPTInteractiveData(interactiveData);
+                  if (convertedData) {
+                    useMessageStore.getState().addMessage({ interactive: convertedData });
+                  } else {
+                    logger.warn(t('无法转换 retry interactive 数据'), { interactiveData });
+                  }
                 } catch (e) {
                   logger.warn(t('处理 retry interactive 事件失败'), { error: e, interactiveData });
                 }
