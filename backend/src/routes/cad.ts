@@ -35,6 +35,13 @@ const upload = multer({
 router.post('/upload', upload.single('file'), cadController.uploadDxf);
 
 /**
+ * @route GET /api/cad/tools
+ * @desc 获取 Function Calling 工具定义
+ * @access Public
+ */
+router.get('/tools', cadController.getFunctionTools);
+
+/**
  * @route GET /api/cad/:fileId
  * @desc 获取 CAD 文件信息
  * @access Public
@@ -54,12 +61,5 @@ router.post('/:fileId/execute', cadController.executeCadOperation);
  * @access Public
  */
 router.get('/:fileId/export', cadController.exportDxf);
-
-/**
- * @route GET /api/cad/tools
- * @desc 获取 Function Calling 工具定义
- * @access Public
- */
-router.get('/tools', cadController.getFunctionTools);
 
 export default router;
