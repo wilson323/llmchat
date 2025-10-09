@@ -8,6 +8,8 @@ import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService } from '@/services/ChatHistoryService';
+import { authService } from '@/services/authInstance';
+import { AuthUser } from '@/services/AuthService';
 import { analyticsService } from '@/services/analyticsInstance';
 import {
   ChatMessage,
@@ -153,6 +155,24 @@ export class ChatController {
     data: Joi.string().required(),
     source: Joi.string().valid('upload', 'voice', 'external').optional(),
   });
+
+  private async requireAuthenticatedUser(req: Request): Promise<AuthUser> {
+    const authorization = req.headers['authorization'];
+    const token = (authorization || '').replace(/^Bearer\s+/i, '').trim();
+
+    if (!token) {
+      throw new Error('UNAUTHORIZED');
+    }
+
+    try {
+      return await authService.profile(token);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
+        throw new Error('TOKEN_EXPIRED');
+      }
+      throw new Error('UNAUTHORIZED');
+    }
+  }
 
   private decorateMessages(
     messages: ChatMessage[],
@@ -1017,6 +1037,24 @@ export class ChatController {
    */
   getChatHistory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      let authUser: AuthUser;
+      try {
+        authUser = await this.requireAuthenticatedUser(req);
+      } catch (authError) {
+        const message = authError instanceof Error && authError.message === 'TOKEN_EXPIRED'
+          ? '登录已过期，请重新登录'
+          : '未授权访问';
+
+        const apiError: ApiError = {
+          code: authError instanceof Error ? authError.message : 'UNAUTHORIZED',
+          message,
+          timestamp: new Date().toISOString(),
+        };
+
+        res.status(401).json(apiError);
+        return;
+      }
+
       const { sessionId } = req.params;
       const limitRaw = req.query.limit;
       const offsetRaw = req.query.offset;
@@ -1072,6 +1110,19 @@ export class ChatController {
         res.status(404).json({
           code: 'SESSION_NOT_FOUND',
           message: `未找到会话: ${sessionId}`,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (
+        history.session.userId &&
+        history.session.userId !== authUser.id &&
+        authUser.role !== 'admin'
+      ) {
+        res.status(403).json({
+          code: 'FORBIDDEN',
+          message: '无权访问该会话记录',
           timestamp: new Date().toISOString(),
         });
         return;
