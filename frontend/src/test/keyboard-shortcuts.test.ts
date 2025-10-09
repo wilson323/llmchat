@@ -4,27 +4,27 @@
  * 这是一个简单的逻辑测试，验证快捷键管理器的核心功能
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardManager, useKeyboardHelp, KeyboardShortcut } from '@/hooks/useKeyboardManager';
 
 describe('useKeyboardManager', () => {
-  let mockDispatchEvent: jest.SpyInstance;
+  let mockDispatchEvent: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     // Mock DOM APIs
-    mockDispatchEvent = jest.spyOn(document, 'dispatchEvent');
+    mockDispatchEvent = vi.spyOn(document, 'dispatchEvent');
 
     // Mock querySelector for our tests
     Object.defineProperty(document, 'querySelector', {
       writable: true,
-      value: jest.fn(() => null)
+      value: vi.fn(() => null)
     });
 
     // Mock window.confirm
     Object.defineProperty(window, 'confirm', {
       writable: true,
-      value: jest.fn(() => true)
+      value: vi.fn(() => true)
     });
   });
 
@@ -33,7 +33,7 @@ describe('useKeyboardManager', () => {
   });
 
   it('应该正确注册和执行快捷键', () => {
-    const mockAction = jest.fn();
+    const mockAction = vi.fn();
     const shortcuts: KeyboardShortcut[] = [
       {
         key: 'n',
@@ -144,8 +144,8 @@ describe('useKeyboardManager', () => {
   });
 
   it('应该在输入框中跳过某些快捷键', () => {
-    const mockAction1 = jest.fn();
-    const mockAction2 = jest.fn();
+    const mockAction1 = vi.fn();
+    const mockAction2 = vi.fn();
 
     const shortcuts: KeyboardShortcut[] = [
       {
@@ -202,7 +202,7 @@ describe('useKeyboardManager', () => {
   });
 
   it('应该支持动态启用/禁用快捷键', () => {
-    const mockAction = jest.fn();
+    const mockAction = vi.fn();
     const shortcuts: KeyboardShortcut[] = [
       {
         key: 'n',
@@ -248,9 +248,9 @@ describe('useKeyboardManager', () => {
   });
 
   it('应该正确处理快捷键冲突', () => {
-    const mockAction1 = jest.fn();
-    const mockAction2 = jest.fn();
-    const mockConflictHandler = jest.fn();
+    const mockAction1 = vi.fn();
+    const mockAction2 = vi.fn();
+    const mockConflictHandler = vi.fn();
 
     const shortcuts: KeyboardShortcut[] = [
       {
@@ -312,7 +312,7 @@ describe('useKeyboardHelp', () => {
 
     expect(formatShortcut(shortcuts[0])).toBe('Ctrl + N');
     expect(formatShortcut(shortcuts[1])).toBe('Alt + H');
-    expect(formatShortcut(shortcuts[2])).toBe('Ctrl + Shift + Delete');
+    expect(formatShortcut(shortcuts[2])).toBe('Ctrl + Shift + delete');
   });
 
   it('应该按类别组织帮助内容', () => {

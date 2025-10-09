@@ -6,248 +6,289 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+  CI: true
+
 jobs:
-  # 代码质量检查
-  lint:
-    name: Lint & Type Check
+  type-check:
+    name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
-          
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Get pnpm store directory
-        id: pnpm-cache
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-          
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
       - name: Setup pnpm cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-            
+
       - name: Install dependencies
-        run: pnpm install
-        
-      - name: Lint backend
-        run: cd backend && pnpm run lint
-        
+        run: pnpm install --frozen-lockfile
+
       - name: Type check backend
-        run: cd backend && pnpm run build
-        
-      - name: Lint frontend
-        run: cd frontend && pnpm run lint
-        
+        run: pnpm run backend:build
+
       - name: Type check frontend
-        run: cd frontend && pnpm run type-check
+        run: pnpm run frontend:type-check
 
-  # 后端测试
-  backend-test:
-    name: Backend Tests
+  lint:
+    name: Lint Code
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: llmchat_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-          
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
-          
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
-        run: pnpm install
-        
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint backend
+        run: pnpm run backend:lint
+
+      - name: Lint frontend
+        run: pnpm run frontend:lint
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 分离测试以提高并行度
+        test-group: [backend, frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run backend tests
-        run: cd backend && pnpm test
+        if: matrix.test-group == 'backend'
+        run: |
+          pnpm run backend:test
+          echo "Backend tests completed"
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/llmchat_test
           NODE_ENV: test
-          
-      - name: Upload backend coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./backend/coverage/coverage-final.json
-          flags: backend
+          JWT_SECRET: test-jwt-secret
+          DATABASE_URL: postgresql://test:test@localhost:5432/testdb
 
-  # 前端测试
-  frontend-test:
-    name: Frontend Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          
-      - name: Install dependencies
-        run: pnpm install
-        
       - name: Run frontend tests
-        run: cd frontend && pnpm run test:run
-        
-      - name: Generate coverage report
-        run: cd frontend && pnpm run test:coverage
-        
-      - name: Upload frontend coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./frontend/coverage/coverage-final.json
-          flags: frontend
+        if: matrix.test-group == 'frontend'
+        run: |
+          pnpm run frontend:test:run
+          echo "Frontend tests completed"
 
-  # E2E测试（待实现）
   e2e-test:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
-    if: github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          
-      - name: Install dependencies
-        run: pnpm install
-        
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-        
-      - name: Run E2E tests
-        run: pnpm test:e2e || echo "E2E tests not yet implemented"
-        
-      - name: Upload E2E artifacts
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  # 构建验证
-  build:
-    name: Build Verification
-    runs-on: ubuntu-latest
-    needs: [lint, backend-test, frontend-test]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
-          
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
-        run: pnpm install
-        
-      - name: Build backend
-        run: cd backend && pnpm run build
-        
-      - name: Build frontend
-        run: cd frontend && pnpm run build
-        
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Run E2E tests
+        run: pnpm run test:e2e
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [type-check, lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: |
+          echo "Building backend..."
+          pnpm run backend:build
+          echo "Building frontend..."
+          pnpm run frontend:build
+          echo "Build completed successfully"
+
       - name: Upload backend build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: backend-dist
           path: backend/dist/
-          
+          retention-days: 7
+
       - name: Upload frontend build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: frontend-dist
           path: frontend/dist/
+          retention-days: 7
 
-  # 安全扫描
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
-          
-      - name: Install dependencies
-        run: pnpm install
-        
-      - name: Run npm audit
-        run: pnpm audit --audit-level moderate || true
-        
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
+          version: ${{ env.PNPM_VERSION }}
 
-  # 通知
-  notify:
-    name: Notify Results
-    runs-on: ubuntu-latest
-    needs: [build, security, e2e-test]
-    if: always()
-    steps:
-      - name: Check workflow status
+      - name: Get pnpm store directory
+        shell: bash
         run: |
-          echo "Workflow completed"
-          echo "Build status: ${{ needs.build.result }}"
-          echo "Security status: ${{ needs.security.result }}"
-          echo "E2E status: ${{ needs.e2e-test.result }}"
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: pnpm audit --audit-level moderate
+
+      - name: Check for vulnerabilities
+        run: |
+          if [ $(pnpm audit --json | jq '.vulnerabilities | length') -gt 0 ]; then
+            echo "Security vulnerabilities found!"
+            pnpm audit --audit-level moderate
+            exit 1
+          fi

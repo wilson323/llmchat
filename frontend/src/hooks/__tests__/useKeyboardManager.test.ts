@@ -1,11 +1,12 @@
 import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useKeyboardManager, appShortcuts, useKeyboardHelp } from "../useKeyboardManager";
 import { useChatStore } from "@/store/chatStore";
 import { useUIStore } from "@/store/uiStore";
 
 // Mock the stores
-jest.mock("@/store/chatStore");
-jest.mock("@/store/uiStore");
+vi.mock("@/store/chatStore");
+vi.mock("@/store/uiStore");
 
 describe("useKeyboardManager", () => {
   let mockChatStore: any;
@@ -13,26 +14,26 @@ describe("useKeyboardManager", () => {
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock chat store
     mockChatStore = {
-      getState: jest.fn(),
-      createNewSession: jest.fn(),
-      deleteSession: jest.fn(),
-      switchToSession: jest.fn(),
-      initializeAgentSessions: jest.fn(),
+      getState: vi.fn(),
+      createNewSession: vi.fn(),
+      deleteSession: vi.fn(),
+      switchToSession: vi.fn(),
+      initializeAgentSessions: vi.fn(),
     };
 
     // Mock UI store
     mockUIStore = {
-      getState: jest.fn(),
-      setSidebarOpen: jest.fn(),
-      setAgentSelectorOpen: jest.fn(),
+      getState: vi.fn(),
+      setSidebarOpen: vi.fn(),
+      setAgentSelectorOpen: vi.fn(),
     };
 
-    const mockUseChatStore = useChatStore as jest.MockedFunction<typeof useChatStore>;
-    const mockUseUIStore = useUIStore as jest.MockedFunction<typeof useUIStore>;
+    const mockUseChatStore = useChatStore as any;
+    const mockUseUIStore = useUIStore as any;
 
     mockUseChatStore.mockReturnValue(mockChatStore);
     mockUseUIStore.mockReturnValue(mockUIStore);
