@@ -10,15 +10,82 @@ export interface PgConfig {
   database?: {
     postgres?: {
       host: string;
-      port?: number;
+      port?: number | string;
       user: string;
       password: string;
       database: string;
-      ssl?: boolean;
+      ssl?: boolean | string;
     }
   };
   auth?: {
     tokenTTLSeconds?: number;
+  };
+}
+
+type PostgresConfig = NonNullable<NonNullable<PgConfig['database']>['postgres']>;
+export type NormalizedPostgresConfig = Omit<PostgresConfig, 'port' | 'ssl'> & {
+  port?: number;
+  ssl?: boolean;
+};
+
+const PLACEHOLDER_REGEX = /\$\{[^}]+\}/;
+
+function isPlaceholder(value: string): boolean {
+  return PLACEHOLDER_REGEX.test(value);
+}
+
+function parseOptionalNumber(value: unknown, fieldName: string): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed || isPlaceholder(trimmed)) {
+      return undefined;
+    }
+
+    const parsed = Number.parseInt(trimmed, 10);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+
+    logger.warn(`[initDB] 无法解析数据库配置字段 ${fieldName} 为数字`, { value });
+  }
+
+  return undefined;
+}
+
+function parseOptionalBoolean(value: unknown, fieldName: string): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed || isPlaceholder(trimmed)) {
+      return undefined;
+    }
+
+    const normalized = trimmed.toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['0', 'false', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+
+    logger.warn(`[initDB] 无法解析数据库配置字段 ${fieldName} 为布尔值`, { value });
+  }
+
+  return undefined;
+}
+
+export function normalizePostgresConfig(pg: PostgresConfig): NormalizedPostgresConfig {
+  return {
+    ...pg,
+    port: parseOptionalNumber(pg.port, 'port'),
+    ssl: parseOptionalBoolean(pg.ssl, 'ssl'),
   };
 }
 
@@ -39,12 +106,14 @@ export async function initDB(): Promise<void> {
   
   // 替换配置中的环境变量占位符
   const cfg = deepReplaceEnvVariables(rawCfg);
-  const pg = cfg.database?.postgres;
-  
-  if (!pg) {
+  const rawPg = cfg.database?.postgres;
+
+  if (!rawPg) {
     logger.error('[initDB] 数据库配置缺失');
     throw new Error('DATABASE_CONFIG_MISSING');
   }
+
+  const pg = normalizePostgresConfig(rawPg);
   
   logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
 
