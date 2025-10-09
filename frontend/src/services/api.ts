@@ -14,6 +14,7 @@ import {
   ProductPreviewRequest,
   ProductPreviewResponse,
 
+  AgentHealthStatus,
 } from '@/types';
 import {
   getNormalizedEventKey,
@@ -406,7 +407,7 @@ export const agentService = {
   async checkAgentStatus(id: string) {
     debugLog('检查智能体状态', id);
     try {
-      const response = await api.get<ApiResponse>(`/agents/${id}/status`);
+      const response = await api.get<ApiResponse<AgentHealthStatus>>(`/agents/${id}/status`);
       debugLog('智能体状态响应', response.data);
       return response.data.data;
     } catch (error) {
@@ -507,7 +508,7 @@ export const chatService = {
   },
 
   async init(agentId: string, chatId?: string): Promise<any> {
-    const response = await api.get<ApiResponse>('/chat/init', {
+    const response = await api.get<ApiResponse<any>>('/chat/init', {
       params: {
         appId: agentId,
         ...(chatId ? { chatId } : {}),

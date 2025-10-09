@@ -6,11 +6,12 @@ import {
   FastGPTChatHistorySummary,
 } from '@/types';
 
-const coerceDate = (value: string | number | Date | undefined): Date => {
-  if (!value) return new Date();
-  if (value instanceof Date) return value;
-  if (typeof value === 'number') return new Date(value);
-  return new Date(value);
+const coerceTimestamp = (value: string | number | Date | undefined): number => {
+  if (!value) return Date.now();
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'number') return value;
+  const parsed = new Date(value).getTime();
+  return Number.isNaN(parsed) ? Date.now() : parsed;
 };
 
 export const mapHistorySummaryToSession = (
@@ -21,8 +22,8 @@ export const mapHistorySummaryToSession = (
   title: summary.title || '未命名对话',
   agentId,
   messages: [],
-  createdAt: coerceDate(summary.createdAt),
-  updatedAt: coerceDate(summary.updatedAt || summary.createdAt),
+  createdAt: coerceTimestamp(summary.createdAt),
+  updatedAt: coerceTimestamp(summary.updatedAt || summary.createdAt),
 });
 
 const mapHistoryMessageToChatMessage = (message: FastGPTChatHistoryMessage): ChatMessage => {
@@ -64,5 +65,5 @@ export const mergeHistoryDetailIntoSession = (
   id: detail.chatId || session.id,
   title: detail.title || session.title,
   messages: mapHistoryDetailToMessages(detail),
-  updatedAt: detail.metadata?.updatedAt ? coerceDate(detail.metadata.updatedAt) : new Date(),
+  updatedAt: detail.metadata?.updatedAt ? coerceTimestamp(detail.metadata.updatedAt) : Date.now(),
 });
