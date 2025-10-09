@@ -1022,8 +1022,33 @@ export class ChatController {
       const offsetRaw = req.query.offset;
       const roleRaw = req.query.role;
 
-      const limit = limitRaw ? parseInt(String(limitRaw), 10) : undefined;
-      const offset = offsetRaw ? parseInt(String(offsetRaw), 10) : undefined;
+      let limit: number | undefined;
+      if (limitRaw !== undefined) {
+        const parsedLimit = Number.parseInt(String(limitRaw), 10);
+        if (Number.isNaN(parsedLimit)) {
+          res.status(400).json({
+            code: 'INVALID_QUERY_PARAMETER',
+            message: 'limit 参数必须是数字',
+            timestamp: new Date().toISOString(),
+          });
+          return;
+        }
+        limit = parsedLimit;
+      }
+
+      let offset: number | undefined;
+      if (offsetRaw !== undefined) {
+        const parsedOffset = Number.parseInt(String(offsetRaw), 10);
+        if (Number.isNaN(parsedOffset)) {
+          res.status(400).json({
+            code: 'INVALID_QUERY_PARAMETER',
+            message: 'offset 参数必须是数字',
+            timestamp: new Date().toISOString(),
+          });
+          return;
+        }
+        offset = parsedOffset;
+      }
       let roles: Array<'user' | 'assistant' | 'system'> | undefined;
 
       if (roleRaw) {
