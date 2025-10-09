@@ -151,20 +151,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   };
 
   // 日期判断函数
-  const isToday = (date: Date) => {
+  const isToday = (date: Date | number | string) => {
     const today = new Date();
     const targetDate = new Date(date);
     return targetDate.toDateString() === today.toDateString();
   };
 
-  const isYesterday = (date: Date) => {
+  const isYesterday = (date: Date | number | string) => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const targetDate = new Date(date);
     return targetDate.toDateString() === yesterday.toDateString();
   };
 
-  const isThisWeek = (date: Date) => {
+  const isThisWeek = (date: Date | number | string) => {
     const today = new Date();
     const weekAgo = new Date();
     weekAgo.setDate(today.getDate() - 7);
@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     return targetDate >= weekAgo && targetDate <= today;
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | number | string) => {
     return new Date(date).toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit'

@@ -122,6 +122,8 @@ export interface ChatMessage {
 
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
+  reasoning?: ReasoningState;
+  events?: FastGPTEvent[];
 }
 
 export interface ChatAttachmentMetadata {

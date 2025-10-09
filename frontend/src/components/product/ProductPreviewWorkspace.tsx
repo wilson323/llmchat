@@ -374,7 +374,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
         title: sessionTitle,
         metadata,
         messages: sessionMessages,
-        updatedAt: now,
+        updatedAt: now.getTime(),
       }));
     } catch (error: any) {
       console.error('生成现场预览失败', error);

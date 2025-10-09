@@ -38,7 +38,7 @@ const syncMessagesWithSession = (
       ...state.agentSessions,
       [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
         session.id === state.currentSession!.id
-          ? { ...session, messages, updatedAt: new Date() }
+          ? { ...session, messages, updatedAt: Date.now() }
           : session
       )
     };
@@ -49,7 +49,7 @@ const syncMessagesWithSession = (
       currentSession: {
         ...state.currentSession,
         messages,
-        updatedAt: new Date(),
+        updatedAt: Date.now(),
       }
     };
   }
@@ -186,9 +186,9 @@ export const useChatStore = create<ChatState>()(
           if (state.currentSession && state.currentAgent) {
             const updatedAgentSessions = {
               ...state.agentSessions,
-              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
+              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages: updatedMessages, updatedAt: new Date() }
+                  ? { ...session, messages: updatedMessages, updatedAt: Date.now() }
                   : session
               )
             };
@@ -212,7 +212,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages: updatedMessages,
-                updatedAt: new Date()
+                updatedAt: Date.now()
               }
             };
           }
@@ -473,9 +473,9 @@ export const useChatStore = create<ChatState>()(
           if (state.currentSession && state.currentAgent) {
             const updatedAgentSessions = {
               ...state.agentSessions,
-              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
+              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages, updatedAt: new Date() }
+                  ? { ...session, messages, updatedAt: Date.now() }
                   : session
               )
             };
@@ -486,7 +486,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages,
-                updatedAt: new Date()
+                updatedAt: Date.now()
               }
             };
           }
@@ -527,13 +527,14 @@ export const useChatStore = create<ChatState>()(
         if (!currentAgent) return;
         
         // huihua.md 要求：新建对话时添加空messages的会话到agentId数组中
+        const now = Date.now();
         const newSession: ChatSession = {
-          id: Date.now().toString(),        // 时间戳字符串作为会话id
+          id: now.toString(),              // 时间戳字符串作为会话id
           title: '新对话',                   // 默认标题
           agentId: currentAgent.id,         // 关联的智能体ID
           messages: [],                     // 空的消息列表（huihua.md要求）
-          createdAt: new Date(),           // 创建时间
-          updatedAt: new Date(),           // 更新时间
+          createdAt: now,                  // 创建时间
+          updatedAt: now,                  // 更新时间
         };
         
         set((state) => {
@@ -609,8 +610,8 @@ export const useChatStore = create<ChatState>()(
           return {
             agentSessions: {
               ...state.agentSessions,
-              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(s => 
-                s.id === sessionId ? { ...s, title, updatedAt: new Date() } : s
+              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((s) =>
+                s.id === sessionId ? { ...s, title, updatedAt: Date.now() } : s
               )
             }
           };
@@ -668,9 +669,10 @@ export const useChatStore = create<ChatState>()(
             : duplicate?.messages || [];
 
           const filtered = sessions.filter((session) => session.id !== newId || session.id === oldId);
+          const timestamp = Date.now();
           const updatedSessions = filtered.map((session) =>
             session.id === oldId
-              ? { ...session, id: newId, messages: mergedMessages, updatedAt: new Date() }
+              ? { ...session, id: newId, messages: mergedMessages, updatedAt: timestamp }
               : session
           );
 
@@ -685,7 +687,7 @@ export const useChatStore = create<ChatState>()(
                 ...(state.currentSession as ChatSession),
                 id: newId,
                 messages: mergedMessages,
-                updatedAt: new Date(),
+                updatedAt: Date.now(),
               }
             : state.currentSession;
 
@@ -703,7 +705,7 @@ export const useChatStore = create<ChatState>()(
           const sessions = state.agentSessions[agentId] || [];
           const updatedSessions = sessions.map((session) =>
             session.id === sessionId
-              ? { ...session, messages, updatedAt: new Date() }
+              ? { ...session, messages, updatedAt: Date.now() }
               : session
           );
 
@@ -714,7 +716,7 @@ export const useChatStore = create<ChatState>()(
               [agentId]: updatedSessions,
             },
             currentSession: isCurrent
-              ? { ...(state.currentSession as ChatSession), messages, updatedAt: new Date() }
+              ? { ...(state.currentSession as ChatSession), messages, updatedAt: Date.now() }
               : state.currentSession,
             messages: isCurrent ? messages : state.messages,
           };
@@ -764,7 +766,7 @@ export const useChatStore = create<ChatState>()(
           const agentId = state.currentAgent.id;
           const updatedSessions = state.agentSessions[agentId].map((session) =>
             session.id === state.currentSession!.id
-              ? { ...session, messages: updatedMessages, updatedAt: new Date() }
+              ? { ...session, messages: updatedMessages, updatedAt: Date.now() }
               : session
           );
 
@@ -773,7 +775,7 @@ export const useChatStore = create<ChatState>()(
             currentSession: {
               ...state.currentSession,
               messages: updatedMessages,
-              updatedAt: new Date(),
+              updatedAt: Date.now(),
             },
             agentSessions: {
               ...state.agentSessions,

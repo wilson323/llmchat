@@ -251,7 +251,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                 type: 'voice-call',
                 firstUtterance: content,
               },
-              updatedAt: new Date(),
+              updatedAt: Date.now(),
             }));
           }
         }
@@ -382,7 +382,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
             type: 'voice-call',
             startedAt: startedAt.toISOString(),
           },
-          updatedAt: startedAt,
+          updatedAt: startedAt.getTime(),
         }));
       }
 
@@ -425,7 +425,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
           lastUtterance,
           finalUtterances: [...finalUtterancesRef.current],
         },
-        updatedAt: endedAt,
+        updatedAt: endedAt.getTime(),
       }));
     }
     cleanupAudio();
