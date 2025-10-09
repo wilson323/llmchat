@@ -3,6 +3,7 @@ import path from 'path';
 import { withClient } from '@/utils/db';
 import { loadAppConfig } from '@/utils/appConfig';
 import { ObservabilityDispatcher } from '@/services/ObservabilityDispatcher';
+import logger from '@/utils/logger';
 
 interface NormalLogEntry {
   timestamp: string;
@@ -63,7 +64,7 @@ export class ChatLogService {
       }
     } catch (e) {
       // 避免影响主流程
-      console.warn('[ChatLogService] 创建日志目录失败:', e);
+      logger.warn('[ChatLogService] 创建日志目录失败', { error: e });
     }
   }
 
@@ -82,10 +83,10 @@ export class ChatLogService {
     const line = JSON.stringify(entry) + '\n';
     try {
       fs.appendFile(this.getLogFilePath(), line, (err) => {
-        if (err) console.warn('[ChatLogService] 写入日志失败:', err);
+        if (err) logger.warn('[ChatLogService] 写入日志失败', { error: err });
       });
     } catch (e) {
-      console.warn('[ChatLogService] 追加日志异常:', e);
+      logger.warn('[ChatLogService] 追加日志异常', { error: e });
     }
   }
 
@@ -95,7 +96,7 @@ export class ChatLogService {
         await client.query('INSERT INTO logs(level, message) VALUES ($1, $2)', [level, message]);
       });
     } catch (e) {
-      console.warn('[ChatLogService] 数据库写入失败:', e);
+      logger.warn('[ChatLogService] 数据库写入失败', { error: e });
     }
   }
 
@@ -214,7 +215,7 @@ export class ChatLogService {
       }
       this.observability.enqueue(event);
     } catch (error) {
-      console.warn('[ChatLogService] 推送观测事件失败:', error);
+      logger.warn('[ChatLogService] 推送观测事件失败', { error });
     }
   }
 }

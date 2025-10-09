@@ -1,0 +1,22 @@
+---
+globs: frontend/**/*.ts,frontend/**/*.tsx
+description: 前端（React + Vite）架构要点与测试规范
+---
+
+架构
+- 入口： [frontend/src/main.tsx](mdc:frontend/src/main.tsx), [frontend/src/App.tsx](mdc:frontend/src/App.tsx)
+- 结构： [components](mdc:frontend/src/components), [store](mdc:frontend/src/store)（Zustand）, [services](mdc:frontend/src/services)（HTTP 客户端）, [lib](mdc:frontend/src/lib), [hooks](mdc:frontend/src/hooks), [styles](mdc:frontend/src/styles), [img](mdc:frontend/src/img), [types](mdc:frontend/src/types), [utils](mdc:frontend/src/utils)
+- Vite 配置： [frontend/vite.config.ts](mdc:frontend/vite.config.ts)
+
+测试
+- 单元/组件测试：与组件同目录新增 `*.test.tsx`，按需接入 Jest/Vite
+- E2E： [tests/e2e/chat_history.spec.ts](mdc:tests/e2e/chat_history.spec.ts)，配置： [playwright.config.ts](mdc:playwright.config.ts)
+- 重点覆盖：认证守卫、智能体切换等关键流程；无法自动化时补充手测记录
+
+命令
+- 开发：`npm run frontend:dev`
+- Lint：`npm run frontend:lint`
+
+说明
+- 使用路径别名 `@/...`
+- 组件 PascalCase、工具 camelCase

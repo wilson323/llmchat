@@ -2,15 +2,15 @@
   "agents": [
     {
       "id": "6708e788c6ba48baa62419a5",
-      "appId":"6708e788c6ba48baa62419a5",
+      "appId": "${FASTGPT_APP_ID_1}",
       "name": "熵犇犇售后服务助手",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-kTSgkXkhPdVF5XupUr7CbtzWbSa8U6VO4Ceh5VuMpoUn3RDRVkC17BgpkKOv",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_1}",
       "model": "FastAI-4k",
       "maxTokens": 4096,
       "temperature": 0.7,
-      "systemPrompt": "你是一个基于知识库的智能助手，可以帮助用户解答问题。",
+      "systemPrompt": "你是一个基于知识库的智能助手,可以帮助用户解答问题。",
       "capabilities": [],
       "rateLimit": {
         "requestsPerMinute": 60,
@@ -36,11 +36,11 @@
     },
     {
       "id": "68940ff5c21f31d18b0732aa",
-      "appId":"68940ff5c21f31d18b0732aa",
+      "appId": "${FASTGPT_APP_ID_2}",
       "name": "配单智能应用",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-zG9XvwctI2krmQMzwVn1RVFnsCEf5eTWV6vCxVIG9RDVfkgbH9tLd",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_2}",
       "model": "FastAI-4k",
       "maxTokens": 4096,
       "temperature": 0.7,
@@ -70,11 +70,11 @@
     },
     {
       "id": "689c7c46408874189187da89",
-      "appId":"689c7c46408874189187da89",
+      "appId": "${FASTGPT_APP_ID_3}",
       "name": "需求分析",
       "description": "基于 FastGPT 的知识库问答助手，支持自定义知识库和工作流",
-      "endpoint": "http://171.43.138.237:3000/api/v1/chat/completions",
-      "apiKey": "fastgpt-mUEf7WAyVG8gZ3S7PoRTeK7uJ56iI4vAyzjr9S6Q9V8zCpRUDpFng9jsP9Gt",
+      "endpoint": "${FASTGPT_ENDPOINT}/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_3}",
       "model": "FastAI-4k",
       "maxTokens": 4096,
       "temperature": 0.7,
@@ -101,6 +101,44 @@
       },
       "createdAt": "2024-01-01T00:00:00Z",
       "updatedAt": "2024-01-01T00:00:00Z"
+    },
+    {
+      "id": "cad-editor-agent",
+      "name": "CAD 编辑智能体",
+      "description": "基于阿里云通义千问的 CAD 图纸自然语言修改和解读助手，支持 DXF 文件的查看、理解和智能修改",
+      "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "apiKey": "${DASHSCOPE_API_KEY}",
+      "model": "qwen-max",
+      "maxTokens": 8000,
+      "temperature": 0.7,
+      "systemPrompt": "你是一个专业的 CAD 图纸助手，能够理解和修改 DXF 格式的 CAD 文件。你可以帮助用户查看图纸信息、添加或修改几何实体、查询图层和实体属性等。当用户提出修改要求时，你会调用相应的工具函数来执行操作。",
+      "capabilities": [
+        "cad-parsing",
+        "cad-modification",
+        "function-calling",
+        "dxf-format"
+      ],
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "tokensPerMinute": 100000
+      },
+      "provider": "dashscope",
+      "isActive": true,
+      "features": {
+        "supportsChatId": false,
+        "supportsStream": true,
+        "supportsDetail": false,
+        "supportsFiles": true,
+        "supportsImages": false,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": false,
+          "flowNodeStatus": false
+        }
+      },
+      "createdAt": "2025-10-04T00:00:00Z",
+      "updatedAt": "2025-10-04T00:00:00Z"
     }
   ]
 }

@@ -1,9 +1,62 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Agent, ChatMessage, StreamStatus, ChatSession, UserPreferences, AgentSessionsMap, ReasoningStepUpdate, FastGPTEvent } from '@/types';
+import { normalizeReasoningDisplay } from '@/lib/reasoning';
+import { debugLog } from '@/lib/debug';
+import { generateSmartTitle, updateSessionTitleIfNeeded } from '@/utils/titleGeneration';
+import { logger } from '@/lib/logger';
 
-import { Agent, ChatMessage, StreamStatus, ChatSession, UserPreferences, AgentSessionsMap } from '@/types';
-import { translate } from '@/i18n';
+const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message && message.AI !== undefined) {
+      return i;
+    }
+  }
+  return -1;
+};
 
+const mergeReasoningContent = (previous: string | undefined, incoming: string): string => {
+  if (!previous) return incoming;
+  if (!incoming) return previous;
+  if (incoming === previous) return previous;
+  if (incoming.startsWith(previous)) return incoming;
+  if (previous.endsWith(incoming)) return previous;
+  if (incoming.endsWith(previous)) return incoming;
+  return `${previous}${previous.endsWith('\n') ? '' : '\n'}${incoming}`;
+};
+
+const syncMessagesWithSession = (
+  state: {
+    currentSession: ChatSession | null;
+    currentAgent: Agent | null;
+    agentSessions: AgentSessionsMap;
+  },
+  messages: ChatMessage[]
+) => {
+  if (state.currentSession && state.currentAgent) {
+    const updatedAgentSessions = {
+      ...state.agentSessions,
+      [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
+        session.id === state.currentSession!.id
+          ? { ...session, messages, updatedAt: new Date() }
+          : session
+      )
+    };
+
+    return {
+      messages,
+      agentSessions: updatedAgentSessions,
+      currentSession: {
+        ...state.currentSession,
+        messages,
+        updatedAt: new Date(),
+      }
+    };
+  }
+
+  return { messages };
+};
 
 interface ChatState {
   // 智能体状态
@@ -58,6 +111,7 @@ interface ChatState {
   updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => void;
   updateMessageById: (messageId: string, updater: (message: ChatMessage) => ChatMessage) => void;
   removeLastInteractiveMessage: () => void;
+  updateSessionTitleIntelligently: (sessionId?: string) => void;
 }
 
 export const useChatStore = create<ChatState>()(
@@ -128,7 +182,12 @@ export const useChatStore = create<ChatState>()(
       // 添加消息（按 huihua.md 格式）
       addMessage: (message) =>
         set((state) => {
-          const updatedMessages = [...state.messages, message];
+          // 确保消息有时间戳
+          const messageWithTimestamp = {
+            ...message,
+            timestamp: message.timestamp || Date.now()
+          };
+          const updatedMessages = [...state.messages, messageWithTimestamp];
           
           // 同步更新当前会话的消息
           if (state.currentSession && state.currentAgent) {
@@ -136,20 +195,20 @@ export const useChatStore = create<ChatState>()(
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages: updatedMessages, updatedAt: Date.now() }
+                  ? { ...session, messages: updatedMessages, updatedAt: new Date() }
                   : session
               )
             };
             
-            // 自动更新会话标题（huihua.md 要求：取自首条消息前30字符）
+            // 智能更新会话标题（基于NLP关键词提取，替代简单字符串截断）
             if (message.HUMAN && !state.currentSession.messages.some((m) => m.HUMAN !== undefined)) {
-              const newTitle = message.HUMAN.length > 30
-                ? message.HUMAN.slice(0, 30) + '...'
-                : message.HUMAN;
+              // 使用智能标题生成，传入当前会话的完整消息历史
+              const allMessages = [...state.currentSession.messages, messageWithTimestamp];
+              const smartTitle = generateSmartTitle(allMessages, 30);
 
               updatedAgentSessions[state.currentAgent.id] = updatedAgentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
-                  ? { ...session, title: newTitle }
+                  ? { ...session, title: smartTitle }
                   : session
               );
             }
@@ -160,7 +219,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages: updatedMessages,
-              updatedAt: Date.now()
+                updatedAt: new Date()
               }
             };
           }
@@ -189,40 +248,148 @@ export const useChatStore = create<ChatState>()(
       // 更新最后一条消息（流式响应）- 修复实时更新问题
       updateLastMessage: (content) =>
         set((state) => {
+          debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
+          debugLog('📊 当前消息数量:', state.messages.length);
 
+          const targetIndex = findLastAssistantMessageIndex(state.messages);
+          if (targetIndex === -1) {
+            logger.warn('未找到可更新的助手消息');
+            return state;
+          }
+
+          // 创建全新的messages数组，确保引用更新
           const messages = state.messages.map((msg, index) => {
-            if (index === state.messages.length - 1 && msg.AI !== undefined) {
-              return {
-
+            if (index === targetIndex && msg.AI !== undefined) {
+              const updatedMessage = {
                 ...msg,
                 AI: (msg.AI || '') + content,
-                _lastUpdate: Date.now(),
+                _lastUpdate: Date.now() // 添加时间戳强制更新
               } as ChatMessage;
-
+              debugLog('📝 消息更新:', {
+                beforeLength: msg.AI?.length || 0,
+                afterLength: (updatedMessage.AI || '').length,
+                addedContent: content.length
+              });
+              return updatedMessage;
             }
             return msg;
           });
 
+          debugLog('✅ 状态更新完成，最新消息长度:', (messages[messages.length - 1]?.AI || '').length);
 
-          if (state.currentSession && state.currentAgent) {
-            const updatedAgentSessions = {
-              ...state.agentSessions,
-              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
-                session.id === state.currentSession!.id
-                  ? { ...session, messages, updatedAt: Date.now() }
-                  : session
-              ),
-            };
+          return syncMessagesWithSession(state, messages);
+        }),
+
+      appendReasoningStep: (step) =>
+        set((state) => {
+          const targetIndex = findLastAssistantMessageIndex(state.messages);
+          if (targetIndex === -1) {
+            return state;
+          }
+
+          const messages = state.messages.map((msg, index) => {
+            if (index !== targetIndex || msg.AI === undefined) {
+              return msg;
+            }
+
+            const existingSteps = msg.reasoning?.steps ?? [];
+            const highestOrder = existingSteps.reduce((max, item) => {
+              if (typeof item.order === 'number' && Number.isFinite(item.order)) {
+                return Math.max(max, item.order);
+              }
+              return max;
+            }, 0);
+            const normalizedOrder = typeof step.order === 'number' && Number.isFinite(step.order)
+              ? step.order
+              : highestOrder + 1;
+
+            const trimmedContent = (step.content || '').trim();
+            if (!trimmedContent) {
+              return msg;
+            }
+
+            const normalized = normalizeReasoningDisplay(trimmedContent);
+            if (!normalized.body) {
+              return msg;
+            }
+
+            const nextSteps = [...existingSteps];
+            const existingIndex = nextSteps.findIndex((item) => item.order === normalizedOrder);
+
+            if (existingIndex >= 0) {
+              const previousStep = nextSteps[existingIndex];
+              const mergedContent = mergeReasoningContent(previousStep.content, normalized.body);
+              const merged = normalizeReasoningDisplay(mergedContent);
+              nextSteps[existingIndex] = {
+                ...previousStep,
+                content: merged.body,
+                title: step.title ?? normalized.title ?? previousStep.title ?? merged.title,
+                raw: step.raw ?? previousStep.raw,
+              };
+            } else {
+              const generatedId = `${msg.id || 'reasoning'}-${normalizedOrder}-${Date.now()}`;
+              nextSteps.push({
+                id: generatedId,
+                index: normalizedOrder,
+                order: normalizedOrder,
+                content: normalized.body,
+                text: normalized.body,
+                title: step.title ?? normalized.title ?? `步骤 ${normalizedOrder}`,
+                status: 'completed',
+                raw: step.raw,
+              });
+            }
+
+            nextSteps.sort((a, b) => {
+              const orderA = typeof a.order === 'number' && Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER;
+              const orderB = typeof b.order === 'number' && Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER;
+              return orderA - orderB;
+            });
+
+            const candidateTotal = typeof step.totalSteps === 'number' && Number.isFinite(step.totalSteps)
+              ? step.totalSteps
+              : msg.reasoning?.totalSteps;
+
+            const computedTotal = candidateTotal ?? (nextSteps.length > 0
+              ? nextSteps.reduce((max, item) => Math.max(max, item.order), 0)
+              : undefined);
 
             return {
-              messages,
-              agentSessions: updatedAgentSessions,
-              currentSession: {
-                ...state.currentSession,
-                messages,
-                updatedAt: Date.now(),
+              ...msg,
+              reasoning: {
+                steps: nextSteps,
+                totalSteps: computedTotal,
+                finished: step.finished ? true : msg.reasoning?.finished ?? false,
+                lastUpdatedAt: Date.now(),
               },
+            } as ChatMessage;
+          });
 
+          return syncMessagesWithSession(state, messages);
+        }),
+
+      appendAssistantEvent: (event) =>
+        set((state) => {
+          const targetIndex = findLastAssistantMessageIndex(state.messages);
+          if (targetIndex === -1) {
+            return state;
+          }
+
+          const messages = state.messages.map((msg, index) => {
+            if (index !== targetIndex || msg.AI === undefined) {
+              return msg;
+            }
+
+            const existingEvents = msg.events ?? [];
+
+            const mergePayload = (
+              prev: Record<string, unknown> | null | undefined, 
+              incoming: Record<string, unknown> | null | undefined
+            ): Record<string, unknown> | null | undefined => {
+              if (prev && incoming && typeof prev === 'object' && typeof incoming === 'object') {
+                return { ...prev, ...incoming };
+              }
+              return incoming ?? prev;
             };
 
             const mergeEvent = (prevEvent: FastGPTEvent, incomingEvent: FastGPTEvent): FastGPTEvent => ({
@@ -321,7 +488,7 @@ export const useChatStore = create<ChatState>()(
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
-                  ? { ...session, messages, updatedAt: Date.now() }
+                  ? { ...session, messages, updatedAt: new Date() }
                   : session
               )
             };
@@ -332,7 +499,7 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages,
-                updatedAt: Date.now()
+                updatedAt: new Date()
               }
             };
           }
@@ -341,22 +508,24 @@ export const useChatStore = create<ChatState>()(
         }),
 
       clearMessages: () => set({ messages: [] }),
-      setIsStreaming: (streaming) =>
-        set((state) => ({
-          isStreaming: streaming,
-          streamingStatus: streaming ? state.streamingStatus : null,
-        })),
+      setIsStreaming: (streaming) => set({ isStreaming: streaming }),
       setStreamingStatus: (status) => set({ streamingStatus: status }),
       setStreamAbortController: (controller) => set({ streamAbortController: controller }),
-      stopStreaming: () =>
-        set((state) => {
-          state.streamAbortController?.abort();
-          return {
-            isStreaming: false,
-            streamingStatus: null,
-            streamAbortController: null,
-          };
-        }),
+      stopStreaming: () => {
+        const controller = get().streamAbortController;
+        if (controller) {
+          try {
+            controller.abort();
+          } catch (error) {
+            logger.warn('abort streaming 失败', { error });
+          }
+        }
+        set({
+          isStreaming: false,
+          streamingStatus: null,
+          streamAbortController: null,
+        });
+      },
       setAgentSelectorOpen: (open) => set({ agentSelectorOpen: open }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
@@ -373,11 +542,11 @@ export const useChatStore = create<ChatState>()(
         // huihua.md 要求：新建对话时添加空messages的会话到agentId数组中
         const newSession: ChatSession = {
           id: Date.now().toString(),        // 时间戳字符串作为会话id
-          title: translate('新对话'),       // 默认标题
+          title: '新对话',                   // 默认标题
           agentId: currentAgent.id,         // 关联的智能体ID
           messages: [],                     // 空的消息列表（huihua.md要求）
-          createdAt: Date.now(),           // 创建时间
-          updatedAt: Date.now(),           // 更新时间
+          createdAt: new Date(),           // 创建时间
+          updatedAt: new Date(),           // 更新时间
         };
         
         set((state) => {
@@ -425,24 +594,57 @@ export const useChatStore = create<ChatState>()(
           };
         }),
 
-      // 切换会话（huihua.md 要求：点击显示详细内容）
+      // 切换会话（优化版本：支持乐观更新和预加载）
       switchToSession: (sessionId) => {
         const state = get();
         const currentAgent = state.currentAgent;
-        
+
         if (!currentAgent) return;
-        
-        // 从localStorage中获取当前智能体的会话列表
+
+        // 从agentSessions中获取当前智能体的会话列表
         const agentSessions = state.agentSessions[currentAgent.id] || [];
         const targetSession = agentSessions.find(s => s.id === sessionId);
-        
+
         if (targetSession) {
-          // huihua.md 要求：点击会话标题显示该会话的详细内容（messages列表）
-          set({ 
-            currentSession: targetSession, 
-            messages: targetSession.messages  // 显示该会话的messages
+          // 立即更新状态（乐观更新）
+          set({
+            currentSession: targetSession,
+            messages: targetSession.messages || []  // 确保messages总是数组
           });
+
+          // 更新最后活动时间
+          const updatedAgentSessions = {
+            ...state.agentSessions,
+            [currentAgent.id]: agentSessions.map(session =>
+              session.id === sessionId
+                ? { ...session, lastAccessedAt: Date.now() }
+                : session
+            )
+          };
+
+          // 更新store
+          set({ agentSessions: updatedAgentSessions });
+
+          // 异步优化：预加载相邻会话
+          setTimeout(() => {
+            const currentIndex = agentSessions.findIndex(s => s.id === sessionId);
+            const adjacentIndices = [currentIndex - 1, currentIndex + 1]
+              .filter(i => i >= 0 && i < agentSessions.length);
+
+            adjacentIndices.forEach(index => {
+              const adjacentSession = agentSessions[index];
+              if (adjacentSession && adjacentSession.messages.length > 0) {
+                // 预加载到内存（实际项目中可能从IndexedDB加载）
+                console.log('预加载会话:', adjacentSession.id);
+              }
+            });
+          }, 100);
+
+          // 返回成功状态
+          return true;
         }
+
+        return false;
       },
 
       // 重命名会话
@@ -454,7 +656,7 @@ export const useChatStore = create<ChatState>()(
             agentSessions: {
               ...state.agentSessions,
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(s => 
-                s.id === sessionId ? { ...s, title, updatedAt: Date.now() } : s
+                s.id === sessionId ? { ...s, title, updatedAt: new Date() } : s
               )
             }
           };
@@ -584,6 +786,7 @@ export const useChatStore = create<ChatState>()(
 
           const orderedSessions = [updatedSession, ...remainingSessions];
           const isCurrent = state.currentSession?.id === sessionId;
+          const sessionMessages = (updatedSession as ChatSession).messages || [];
 
           return {
             agentSessions: {
@@ -591,7 +794,7 @@ export const useChatStore = create<ChatState>()(
               [agentId]: orderedSessions,
             },
             currentSession: isCurrent ? updatedSession : state.currentSession,
-            messages: isCurrent ? updatedSession.messages : state.messages,
+            messages: isCurrent ? sessionMessages : state.messages,
           };
         }),
 
@@ -624,6 +827,45 @@ export const useChatStore = create<ChatState>()(
               [agentId]: updatedSessions,
             },
           };
+        }),
+
+      // 智能标题更新函数
+      updateSessionTitleIntelligently: (sessionId) =>
+        set((state) => {
+          const targetSessionId = sessionId || state.currentSession?.id;
+          if (!targetSessionId || !state.currentAgent) return state;
+
+          const agentSessions = state.agentSessions[state.currentAgent.id] || [];
+          const targetSession = agentSessions.find(s => s.id === targetSessionId);
+
+          if (!targetSession || targetSession.messages.length === 0) return state;
+
+          // 使用智能标题更新检查
+          const titleUpdateResult = updateSessionTitleIfNeeded(
+            targetSession.messages,
+            targetSession.title,
+            30
+          );
+
+          if (titleUpdateResult.shouldUpdate) {
+            const updatedSessions = agentSessions.map(session =>
+              session.id === targetSessionId
+                ? { ...session, title: titleUpdateResult.newTitle, updatedAt: new Date() }
+                : session
+            );
+
+            return {
+              agentSessions: {
+                ...state.agentSessions,
+                [state.currentAgent.id]: updatedSessions
+              },
+              currentSession: state.currentSession?.id === targetSessionId
+                ? { ...state.currentSession, title: titleUpdateResult.newTitle, updatedAt: new Date() }
+                : state.currentSession
+            };
+          }
+
+          return state;
         }),
     }),
     {

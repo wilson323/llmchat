@@ -1,0 +1,167 @@
+# Artillery 压力测试配置
+# 运行方式：
+# artillery run tests/load/artillery-config.yml
+# artillery run --output report.json tests/load/artillery-config.yml
+
+config:
+  target: "http://localhost:3001"
+  phases:
+    # 轻量级压测配置（避免过度占用资源）
+    # 预热阶段
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm up"
+    
+    # 低负载阶段
+    - duration: 60
+      arrivalRate: 5
+      name: "Low load"
+    
+    # 中负载阶段
+    - duration: 90
+      arrivalRate: 10
+      name: "Medium load"
+    
+    # 高负载阶段
+    - duration: 60
+      arrivalRate: 20
+      name: "High load"
+    
+    # 降压阶段
+    - duration: 30
+      arrivalRate: 5
+      name: "Cool down"
+  
+  # 超时配置
+  timeout: 30
+  
+  # HTTP 配置
+  http:
+    timeout: 30000
+  
+  # 自定义指标
+  plugins:
+    metrics-by-endpoint:
+      stripQueryString: true
+  
+  # 性能阈值
+  ensure:
+    maxErrorRate: 1         # 最大错误率 1%
+    p95: 500                # p95 < 500ms
+    p99: 1000               # p99 < 1000ms
+  
+  # 变量
+  variables:
+    randomMessages:
+      - "你好，我想了解产品信息"
+      - "请帮我查询订单状态"
+      - "如何使用这个功能"
+      - "产品有哪些优势"
+      - "支持哪些支付方式"
+
+scenarios:
+  # 场景1: 健康检查
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: status
+      - think: 1
+  
+  # 场景2: 获取智能体列表
+  - name: "Get Agents"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/agents"
+          headers:
+            Content-Type: "application/json"
+          expect:
+            - statusCode: 200
+            - hasProperty: data
+          capture:
+            - json: "$.data[0].id"
+              as: "agentId"
+      - think: 2
+  
+  # 场景3: 聊天请求（非流式）
+  - name: "Chat Completions"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/chat/completions"
+          json:
+            agentId: "fastgpt-assistant"
+            messages:
+              - role: "user"
+                content: "{{ randomMessages }}"
+            stream: false
+          expect:
+            - statusCode: [200, 201]
+            - contentType: json
+      - think: 3
+  
+  # 场景4: 详细健康检查
+  - name: "Detailed Health"
+    weight: 10
+    flow:
+      - get:
+          url: "/health/detailed"
+          expect:
+            - statusCode: [200, 503]
+            - hasProperty: components
+      - think: 2
+  
+  # 场景5: 完整用户流程
+  - name: "Complete User Flow"
+    weight: 10
+    flow:
+      # 1. 健康检查
+      - get:
+          url: "/health"
+      
+      # 2. 获取智能体列表
+      - get:
+          url: "/api/agents"
+          capture:
+            - json: "$.data[0].id"
+              as: "selectedAgentId"
+      
+      - think: 2
+      
+      # 3. 发送第一条消息
+      - post:
+          url: "/api/chat/completions"
+          json:
+            agentId: "{{ selectedAgentId }}"
+            messages:
+              - role: "user"
+                content: "你好"
+            stream: false
+      
+      - think: 3
+      
+      # 4. 发送第二条消息
+      - post:
+          url: "/api/chat/completions"
+          json:
+            agentId: "{{ selectedAgentId }}"
+            messages:
+              - role: "user"
+                content: "请介绍一下你的功能"
+            stream: false
+      
+      - think: 2
+
+# 报告输出
+reporting:
+  cli:
+    progress: true
+  json:
+    path: "artillery-report.json"
+  html:
+    path: "artillery-report.html"

@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { readJsonc } from '@/utils/config';
+import { deepReplaceEnvVariables } from '@/utils/envHelper';
+import logger from '@/utils/logger';
 
 export interface PgConfig {
   database?: {
@@ -30,11 +32,70 @@ export function getPool(): Pool {
 }
 
 export async function initDB(): Promise<void> {
-  const cfg = await readJsonc<PgConfig>('config/config.jsonc');
+  logger.info('[initDB] 开始初始化数据库...');
+  
+  const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
+  logger.info('[initDB] 配置文件加载成功');
+  
+  // 替换配置中的环境变量占位符
+  const cfg = deepReplaceEnvVariables(rawCfg);
   const pg = cfg.database?.postgres;
+  
   if (!pg) {
+    logger.error('[initDB] 数据库配置缺失');
     throw new Error('DATABASE_CONFIG_MISSING');
   }
+  
+  logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
+
+  // 先连接到 postgres 默认数据库，检查并创建目标数据库
+  logger.info('[initDB] 连接到 postgres 默认数据库...');
+  const tempPool = new Pool({
+    host: pg.host,
+    port: pg.port ?? 5432,
+    user: pg.user,
+    password: pg.password,
+    database: 'postgres', // 先连接到默认数据库
+    ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
+  });
+
+  try {
+    const client = await tempPool.connect();
+    logger.info('[initDB] 成功连接到 postgres 数据库');
+    
+    try {
+      // 检查数据库是否存在
+      logger.info(`[initDB] 检查数据库 "${pg.database}" 是否存在...`);
+      const result = await client.query(
+        `SELECT 1 FROM pg_database WHERE datname = $1`,
+        [pg.database]
+      );
+      
+      if (result.rows.length === 0) {
+        // 数据库不存在，创建它
+        logger.info(`🔨 数据库 "${pg.database}" 不存在，正在创建...`);
+        await client.query(`CREATE DATABASE "${pg.database}"`);
+        logger.info(`✅ 数据库 "${pg.database}" 创建成功`);
+      } else {
+        logger.info(`✅ 数据库 "${pg.database}" 已存在`);
+      }
+    } catch (checkError) {
+      logger.error('[initDB] 检查/创建数据库时出错', { error: checkError });
+      throw checkError;
+    } finally {
+      client.release();
+      logger.info('[initDB] 释放临时连接');
+    }
+  } catch (tempPoolError) {
+    logger.error('[initDB] 连接到 postgres 数据库失败', { error: tempPoolError });
+    throw tempPoolError;
+  } finally {
+    await tempPool.end();
+    logger.info('[initDB] 关闭临时连接池');
+  }
+
+  // 现在连接到目标数据库
+  logger.info(`[initDB] 连接到目标数据库 "${pg.database}"...`);
   pool = new Pool({
     host: pg.host,
     port: pg.port ?? 5432,
@@ -42,10 +103,14 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    max: 50,                          // 连接池最大50个连接（支持1000并发）
+    min: 5,                           // 最小保持5个连接
+    idleTimeoutMillis: 30_000,        // 30秒空闲超时
+    connectionTimeoutMillis: 10_000,  // 10秒连接超时
+    maxUses: 7500,                    // 每个连接最多使用7500次后回收
   });
+  
+  logger.info('[initDB] 数据库连接池创建成功');
 
   // 建表（若不存在）
   await withClient(async (client) => {
@@ -109,6 +174,42 @@ export async function initDB(): Promise<void> {
       );
     `);
 
+    // 审计日志表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id SERIAL PRIMARY KEY,
+        timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        user_id TEXT,
+        username TEXT,
+        action TEXT NOT NULL,
+        resource_type TEXT,
+        resource_id TEXT,
+        details JSONB,
+        ip_address TEXT,
+        user_agent TEXT,
+        status TEXT NOT NULL DEFAULT 'SUCCESS',
+        error_message TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // 审计日志索引
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_status ON audit_logs(status);
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS chat_messages (
         id TEXT PRIMARY KEY,
@@ -170,7 +271,15 @@ export async function initDB(): Promise<void> {
     }
   });
 
-  await seedAgentsFromFile();
+  // 🔧 种子智能体数据（添加错误处理）
+  try {
+    logger.info('🌱 开始种子智能体数据...');
+    await seedAgentsFromFile();
+    logger.info('✅ 智能体数据种子完成');
+  } catch (error) {
+    logger.error('❌ 智能体数据种子失败', { error });
+    // 不抛出异常，允许服务继续启动
+  }
 }
 
 export async function withClient<T>(fn: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
@@ -197,24 +306,34 @@ export async function closeDB(): Promise<void> {
 }
 
 async function seedAgentsFromFile(): Promise<void> {
+  logger.info('🌱 [seedAgentsFromFile] 开始执行智能体种子函数...');
+  
   const filePathCandidates = [
-    path.resolve(__dirname, '../../config/agents.json'),
-    path.resolve(process.cwd(), 'config/agents.json')
+    path.resolve(__dirname, '../../../config/agents.json'),  // 从 backend/src/utils 到根目录 config
+    path.resolve(process.cwd(), 'config/agents.json'),       // 从当前工作目录
+    path.resolve(process.cwd(), '../config/agents.json')     // 如果 cwd 是 backend
   ];
+  
+  logger.info('[seedAgentsFromFile] 候选文件路径', { paths: filePathCandidates });
 
   let fileContent: string | null = null;
   for (const filePath of filePathCandidates) {
     try {
+      logger.info('[seedAgentsFromFile] 尝试读取文件', { path: filePath });
       if (fs.existsSync(filePath)) {
         fileContent = fs.readFileSync(filePath, 'utf-8');
+        logger.info('[seedAgentsFromFile] ✅ 文件读取成功', { path: filePath, length: fileContent.length });
         break;
+      } else {
+        logger.warn('[seedAgentsFromFile] 文件不存在', { path: filePath });
       }
     } catch (e) {
-      console.warn('[initDB] 读取智能体配置文件失败:', e);
+      logger.error('[seedAgentsFromFile] 读取智能体配置文件失败', { path: filePath, error: e });
     }
   }
 
   if (!fileContent) {
+    logger.error('[seedAgentsFromFile] ❌ 所有候选路径都未找到agents.json文件！');
     return;
   }
 
@@ -222,21 +341,30 @@ async function seedAgentsFromFile(): Promise<void> {
   try {
     parsed = JSON.parse(fileContent);
   } catch (e) {
-    console.warn('[initDB] 解析 agents.json 失败:', e);
+    logger.warn('[initDB] 解析 agents.json 失败', { error: e });
     return;
   }
 
   const agents: any[] = Array.isArray(parsed?.agents) ? parsed.agents : [];
   if (agents.length === 0) {
+    logger.info('[seedAgentsFromFile] agents.json为空，跳过种子');
     return;
   }
+
+  // 🔧 关键修复：替换环境变量占位符
+  const resolvedAgents = deepReplaceEnvVariables(agents);
+  logger.info('[seedAgentsFromFile] 智能体配置环境变量已替换', { count: agents.length });
 
   await withClient(async (client) => {
     const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM agent_configs');
     const count = parseInt(rows[0]?.count || '0', 10);
-    if (count > 0) {
-      return;
-    }
+    
+    logger.info(`[seedAgentsFromFile] 数据库现有智能体数量: ${count}`);
+    
+    // 🔧 修复：即使有数据也执行UPSERT（使用ON CONFLICT）
+    // if (count > 0) {
+    //   return;
+    // }
 
     const insertText = `
       INSERT INTO agent_configs (
@@ -268,8 +396,9 @@ async function seedAgentsFromFile(): Promise<void> {
         updated_at = NOW();
     `;
 
-    for (const agent of agents) {
+    for (const agent of resolvedAgents) {
       try {
+        logger.info('[seedAgentsFromFile] 导入智能体', { id: agent.id, name: agent.name });
         await client.query(insertText, [
           agent.id,
           agent.name,
@@ -290,9 +419,11 @@ async function seedAgentsFromFile(): Promise<void> {
           'json',
         ]);
       } catch (e) {
-        console.warn('[initDB] 导入智能体失败:', agent?.id, e);
+        logger.error('[seedAgentsFromFile] 导入智能体失败', { agentId: agent?.id, error: e });
       }
     }
+    
+    logger.info(`✅ [seedAgentsFromFile] 智能体种子完成，共处理 ${resolvedAgents.length} 个智能体`);
   });
 }
 

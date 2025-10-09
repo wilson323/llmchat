@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AppConfig, LoggingExporterConfig } from '@/utils/appConfig';
 import { loadAppConfig, resolveLoggingExportersFromEnv } from '@/utils/appConfig';
+import logger from '@/utils/logger';
 
 export interface ObservabilityEvent {
   timestamp: string;
@@ -92,7 +93,7 @@ export class ObservabilityDispatcher {
           try {
             await this.sendToExporter(exporter, slice);
           } catch (error) {
-            console.warn('[ObservabilityDispatcher] Export failed:', exporter.type, error);
+            logger.warn('[ObservabilityDispatcher] Export failed', { exporterType: exporter.type, error });
           }
         }
       })

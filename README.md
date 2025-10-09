@@ -1,4 +1,5 @@
 # LLMChat - 多智能体切换聊天应用
+技术债务积分：+1（阶段3：伦理防火墙接入）
 
 一个仿照 ChatGPT 官网交互体验的聊天应用，支持在多个 AI 提供商（如 FastGPT、OpenAI、Anthropic 等）之间进行动态切换，提供统一的服务端配置与代理能力，前端具备主题切换、流式响应、管理后台等功能。
 
@@ -59,23 +60,56 @@ llmchat/
 
 2. 配置环境变量（后端）
    - 参考 `backend/.env.example` 在 `backend/.env` 中设置：
-     ```
+     ```bash
+     # === 服务器配置 ===
      PORT=3001
      NODE_ENV=development
      FRONTEND_URL=http://localhost:3000
-     AGENTS_CONFIG_PATH=../config/agents.json
+     
+     # === 日志与限流 ===
      LOG_LEVEL=debug
      REQUEST_TIMEOUT=30000
      RATE_LIMIT_POINTS=100
      RATE_LIMIT_DURATION=60
      RATE_LIMIT_BLOCK_DURATION=60
+     
+     # === 数据库配置（PostgreSQL）===
+     DB_HOST=localhost
+     DB_PORT=5432
+     DB_USER=your_db_user
+     DB_PASSWORD=your_db_password
+     DB_NAME=llmchat
+     
+     # === Redis 配置（用于 Token 管理）===
+     REDIS_HOST=localhost
+     REDIS_PORT=6379
+     REDIS_PASSWORD=your_redis_password
+     REDIS_DB=0
+     
+     # === Token 配置 ===
+     TOKEN_SECRET=your-secure-secret-key-at-least-32-characters-long
+     TOKEN_TTL=86400
+     REFRESH_TOKEN_TTL=2592000
+     
+     # === FastGPT 智能体配置（示例）===
+     FASTGPT_AGENT_ID_1=your-fastgpt-agent-id-1
+     FASTGPT_API_KEY_1=your-fastgpt-api-key-1
+     FASTGPT_ENDPOINT=https://api.fastgpt.in/api/v1/chat/completions
+     
+     # === 阿里云图像生成 API ===
      ALIYUN_IMAGE_API_URL=https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation
      ALIYUN_IMAGE_API_KEY=your-dashscope-api-key
      ALIYUN_IMAGE_MODEL=wanx-stylepro-v1
      # 可选：如需指定工作空间
      # ALIYUN_WORKSPACE_ID=your-workspace-id
      ```
-   - 生产环境中 `FRONTEND_URL` 必须设置为实际前端地址（如 https://yourdomain）。
+   
+   - **重要说明**：
+     - 生产环境中 `FRONTEND_URL` 必须设置为实际前端地址（如 `https://yourdomain`）
+     - **智能体配置**：`config/agents.json` 现支持环境变量占位符（如 `${FASTGPT_API_KEY_1}`），避免在配置文件中硬编码敏感信息
+     - **数据库配置**：`config/config.jsonc` 中的数据库连接信息也支持环境变量占位符（如 `${DB_PASSWORD}`）
+     - 所有敏感信息（API密钥、数据库密码、Token密钥等）**必须**存储在 `backend/.env` 中，**切勿**提交到版本控制系统
+     - 环境变量命名规范：使用大写字母和下划线（如 `FASTGPT_API_KEY_1`）
 
 3. 启动开发服务（并发前后端）
    ```
@@ -122,6 +156,39 @@ llmchat/
   - `errorHandler`：统一错误处理
 - 健康检查：`GET /health`
 - 优雅关闭：处理 SIGTERM/SIGINT，关闭 HTTP 与 DB 连接
+
+### 数据库迁移
+
+项目使用版本化的数据库迁移系统管理 PostgreSQL schema:
+
+```bash
+cd backend
+
+# 查看迁移状态
+npm run migrate:status
+
+# 执行所有待执行的迁移
+npm run migrate:up
+
+# 回滚最后一次迁移
+npm run migrate:down
+```
+
+详细说明请参阅 [DATABASE_MIGRATIONS.md](docs/DATABASE_MIGRATIONS.md)
+
+### 数据存储架构
+
+**重要**: LLMChat 采用**混合存储架构**：
+- **第三方智能体**（FastGPT、Dify）- 消息内容由其平台管理，本地仅存储会话元数据
+- **自研智能体**（语音电话、产品预览）- 消息内容存储在本地数据库
+
+这种设计的优势：
+- ✅ 遵循数据所有权原则，避免重复存储
+- ✅ 降低存储成本和数据库压力
+- ✅ 简化GDPR合规要求（用户数据删除）
+- ✅ 保持自研功能的完整性
+
+详细说明请参阅 [ARCHITECTURE_DATA_STORAGE.md](docs/ARCHITECTURE_DATA_STORAGE.md)
 
 ### API 前缀与路由
 

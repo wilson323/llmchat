@@ -5,11 +5,27 @@ import {
   ChatOptions,
   ChatResponse,
   StreamStatus,
-  RequestHeaders
+  RequestHeaders,
+  JsonValue
 } from '@/types';
+import {
+  FastGPTResponse,
+  FastGPTStreamChunk,
+  OpenAIResponse,
+  OpenAIStreamChunk,
+  AnthropicResponse,
+  AnthropicStreamChunk,
+  DifyResponse,
+  DifyStreamChunk,
+  DifyFile,
+  SSEEventData,
+  ReasoningPayload
+} from '@/types/provider';
 import { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
+import { getProtectionService, ProtectedRequestContext } from './ProtectionService';
+import logger from '@/utils/logger';
 import {
   getNormalizedEventKey,
   isChatIdEvent,
@@ -23,6 +39,7 @@ import {
   isToolEvent,
   isUsageEvent,
 } from '@/utils/fastgptEvents';
+import { ValidationError, ResourceError, ExternalServiceError } from '@/types/errors';
 
 interface SSEParsedEvent {
   event: string;
@@ -32,13 +49,27 @@ interface SSEParsedEvent {
 }
 
 /**
+ * AI 提供商请求数据格式（通用）
+ */
+export interface ProviderRequestData {
+  [key: string]: unknown; // 允许提供商特定字段
+}
+
+/**
+ * AI 提供商响应数据格式（通用）
+ */
+export interface ProviderResponseData {
+  [key: string]: unknown;
+}
+
+/**
  * AI提供商适配器接口
  */
 export interface AIProvider {
   name: string;
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean, options?: ChatOptions): any;
-  transformResponse(response: any): ChatResponse;
-  transformStreamResponse(chunk: any): string;
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean, options?: ChatOptions): ProviderRequestData;
+  transformResponse(response: ProviderResponseData | FastGPTResponse | OpenAIResponse | AnthropicResponse | DifyResponse): ChatResponse;
+  transformStreamResponse(chunk: Record<string, JsonValue> | FastGPTStreamChunk | OpenAIStreamChunk | AnthropicStreamChunk | DifyStreamChunk): string;
   validateConfig(config: AgentConfig): boolean;
   buildHeaders(config: AgentConfig): RequestHeaders;
 }
@@ -49,9 +80,9 @@ export interface AIProvider {
 export class FastGPTProvider implements AIProvider {
   name = 'FastGPT';
 
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions): ProviderRequestData {
     const detail = options?.detail ?? config.features?.supportsDetail ?? false;
-    const request: any = {
+    const request: ProviderRequestData = {
       chatId: options?.chatId || `chat_${Date.now()}`,
       stream: stream && config.features.streamingConfig.enabled,
       detail,
@@ -71,36 +102,53 @@ export class FastGPTProvider implements AIProvider {
     }
 
     // 添加系统消息
-    if (config.systemPrompt) {
-      request.messages.unshift({
+    if (config.systemPrompt && Array.isArray(request.messages)) {
+      (request.messages as Array<{ role: string; content: string }>).unshift({
         role: 'system',
         content: config.systemPrompt,
       });
     }
 
-    console.log('FastGPT 请求数据:', JSON.stringify(request, null, 2));
+    logger.debug('FastGPT 请求数据', { request });
     return request;
   }
 
-  transformResponse(response: any): ChatResponse {
-    return {
+  transformResponse(response: FastGPTResponse): ChatResponse {
+    const firstChoice = response.choices?.[0];
+    const result: ChatResponse = {
       id: response.id || generateId(),
       object: response.object || 'chat.completion',
       created: response.created || generateTimestamp(),
       model: response.model || 'fastgpt',
-      choices: response.choices || [{
+      choices: response.choices && response.choices.length > 0 ? response.choices.map(choice => ({
+        index: choice.index,
+        message: {
+          role: (choice.message?.role || 'assistant') as 'user' | 'system' | 'assistant',
+          content: choice.message?.content || '',
+        },
+        finish_reason: choice.finish_reason || 'stop',
+      })) : [{
         index: 0,
         message: {
-          role: 'assistant',
-          content: response.choices?.[0]?.message?.content || '',
+          role: 'assistant' as const,
+          content: firstChoice?.message?.content || '',
         },
-        finish_reason: response.choices?.[0]?.finish_reason || 'stop',
+        finish_reason: firstChoice?.finish_reason || 'stop',
       }],
-      usage: response.usage,
     };
+    
+    if (response.usage) {
+      result.usage = {
+        prompt_tokens: response.usage.prompt_tokens ?? 0,
+        completion_tokens: response.usage.completion_tokens ?? 0,
+        total_tokens: response.usage.total_tokens ?? 0,
+      };
+    }
+    
+    return result;
   }
 
-  transformStreamResponse(chunk: any): string {
+  transformStreamResponse(chunk: FastGPTStreamChunk): string {
     // FastGPT流式响应格式
     if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
       return chunk.choices[0].delta.content || '';
@@ -143,25 +191,30 @@ export class OpenAIProvider implements AIProvider {
     };
   }
 
-  transformResponse(response: any): ChatResponse {
-    return {
+  transformResponse(response: OpenAIResponse): ChatResponse {
+    const result: ChatResponse = {
       id: response.id || generateId(),
       object: response.object || 'chat.completion',
       created: response.created || generateTimestamp(),
       model: response.model,
-      choices: response.choices.map((choice: any) => ({
+      choices: response.choices.map((choice) => ({
         index: choice.index,
         message: {
-          role: choice.message.role,
+          role: choice.message.role as 'user' | 'system' | 'assistant',
           content: choice.message.content,
         },
         finish_reason: choice.finish_reason,
       })),
-      usage: response.usage,
     };
+    
+    if (response.usage) {
+      result.usage = response.usage;
+    }
+    
+    return result;
   }
 
-  transformStreamResponse(chunk: any): string {
+  transformStreamResponse(chunk: OpenAIStreamChunk): string {
     if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
       return chunk.choices[0].delta.content || '';
     }
@@ -203,7 +256,8 @@ export class AnthropicProvider implements AIProvider {
     };
   }
 
-  transformResponse(response: any): ChatResponse {
+  transformResponse(response: AnthropicResponse): ChatResponse {
+    const firstContent = response.content?.[0];
     return {
       id: response.id || generateId(),
       object: 'chat.completion',
@@ -212,8 +266,8 @@ export class AnthropicProvider implements AIProvider {
       choices: [{
         index: 0,
         message: {
-          role: 'assistant',
-          content: response.content[0].text,
+          role: 'assistant' as const,
+          content: firstContent?.text || '',
         },
         finish_reason: response.stop_reason || 'stop',
       }],
@@ -225,8 +279,8 @@ export class AnthropicProvider implements AIProvider {
     };
   }
 
-  transformStreamResponse(chunk: any): string {
-    if (chunk.type === 'content_block_delta') {
+  transformStreamResponse(chunk: AnthropicStreamChunk): string {
+    if (chunk.type === 'content_block_delta' && chunk.delta) {
       return chunk.delta.text || '';
     }
     return '';
@@ -250,6 +304,194 @@ export class AnthropicProvider implements AIProvider {
 }
 
 /**
+ * Dify 提供商适配器
+ * 
+ * Dify API 规范:
+ * - 端点: POST /v1/chat-messages
+ * - 认证: Bearer {api_key}
+ * - 请求格式: { query, response_mode, conversation_id, user, inputs, files }
+ * - SSE 事件: message, message_end, message_file, error, ping
+ */
+export class DifyProvider implements AIProvider {
+  name = 'Dify';
+
+  /**
+   * 转换请求格式
+   * 
+   * Dify 使用 query 字段而非 messages 数组，需要提取最后一条用户消息
+   */
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+    // 提取最后一条用户消息作为 query
+    const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
+    if (!lastUserMessage) {
+      throw new ValidationError({
+        message: 'Dify 请求必须包含至少一条用户消息',
+        code: 'MISSING_USER_MESSAGE'
+      });
+    }
+
+    const request: ProviderRequestData = {
+      query: lastUserMessage.content,
+      response_mode: stream && config.features.streamingConfig.enabled ? 'streaming' : 'blocking',
+      user: options?.userId || 'default-user',
+    };
+
+    // 添加会话 ID（Dify 使用 conversation_id）
+    if (options?.chatId) {
+      request.conversation_id = options.chatId;
+    }
+
+    // 添加输入变量（Dify 特有）
+    if (options?.variables) {
+      request.inputs = options.variables;
+    }
+
+    // 添加文件（Dify 特有）
+    if (options?.files && Array.isArray(options.files)) {
+      request.files = (options.files as Array<Partial<DifyFile>>).map((file) => ({
+        type: file.type || 'file',
+        transfer_method: file.transfer_method || 'remote_url',
+        url: file.url || '',
+      }));
+    }
+
+    logger.debug('Dify 请求数据', { 
+      component: 'DifyProvider', 
+      request,
+      originalMessagesCount: messages.length
+    });
+    
+    return request;
+  }
+
+  /**
+   * 转换响应格式
+   * 
+   * Dify 响应格式转换为统一的 ChatResponse 格式
+   */
+  transformResponse(response: DifyResponse): ChatResponse {
+    return {
+      id: response.message_id || generateId(),
+      object: 'chat.completion',
+      created: response.created_at || generateTimestamp(),
+      model: response.mode || 'dify',
+      choices: [{
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: response.answer || '',
+        },
+        finish_reason: 'stop',
+      }],
+      usage: response.metadata?.usage || {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+      },
+      // Dify 特有元数据
+      metadata: {
+        conversation_id: response.conversation_id,
+        retriever_resources: response.metadata?.retriever_resources || [],
+      },
+    };
+  }
+
+  /**
+   * 转换流式响应
+   * 
+   * Dify SSE 事件处理
+   */
+  transformStreamResponse(chunk: DifyStreamChunk): string {
+    // Dify 流式响应事件类型：message, message_end, message_file, error, ping
+    if (chunk.event === 'message' && chunk.answer) {
+      return chunk.answer;
+    }
+    
+    // message_end 事件不返回内容，但包含元数据
+    if (chunk.event === 'message_end') {
+      logger.debug('Dify 消息结束', {
+        component: 'DifyProvider',
+        messageId: chunk.id,
+        conversationId: chunk.conversation_id,
+        metadata: chunk.metadata
+      });
+    }
+
+    // error 事件
+    if (chunk.event === 'error') {
+      logger.error('Dify 流式响应错误', {
+        component: 'DifyProvider',
+        status: chunk.status,
+      code: chunk.code,
+      message: chunk.message
+    });
+    throw new ExternalServiceError({
+      message: `Dify 错误: ${chunk.message || '未知错误'}`,
+      code: 'DIFY_STREAM_ERROR',
+      service: 'Dify'
+    });
+    }
+
+    // message_file 事件（文件消息）
+    if (chunk.event === 'message_file') {
+      logger.info('Dify 文件消息', {
+        component: 'DifyProvider',
+        type: chunk.type,
+        url: chunk.url
+      });
+      // 可以在这里处理文件消息的特殊逻辑
+      return `[文件: ${chunk.type}]`;
+    }
+
+    // ping 事件用于保持连接，不返回内容
+    return '';
+  }
+
+  /**
+   * 验证配置
+   * 
+   * Dify API Key 格式: app-xxx
+   */
+  validateConfig(config: AgentConfig): boolean {
+    const isValidProvider = config.provider === 'dify';
+    const hasValidApiKey = Boolean(config.apiKey && (config.apiKey.startsWith('app-') || config.apiKey.includes('dify')));
+    const hasValidEndpoint = Boolean(config.endpoint && config.endpoint.length > 0);
+
+    if (!isValidProvider) {
+      logger.warn('Dify 配置验证失败: provider 不匹配', {
+        component: 'DifyProvider',
+        provider: config.provider
+      });
+    }
+    if (!hasValidApiKey) {
+      logger.warn('Dify 配置验证失败: API Key 格式不正确', {
+        component: 'DifyProvider',
+        apiKeyPrefix: config.apiKey?.substring(0, 4)
+      });
+    }
+    if (!hasValidEndpoint) {
+      logger.warn('Dify 配置验证失败: endpoint 缺失', {
+        component: 'DifyProvider'
+      });
+    }
+
+    return isValidProvider && hasValidApiKey && hasValidEndpoint;
+  }
+
+  /**
+   * 构建请求头
+   * 
+   * Dify 使用 Bearer token 认证
+   */
+  buildHeaders(config: AgentConfig): RequestHeaders {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${config.apiKey}`,
+    };
+  }
+}
+
+/**
  * 聊天代理服务
  */
 export class ChatProxyService {
@@ -257,6 +499,7 @@ export class ChatProxyService {
   private httpClient: ReturnType<typeof axios.create>;
   private providers: Map<string, AIProvider> = new Map();
   private chatLog: ChatLogService = new ChatLogService();
+  private protectionService = getProtectionService();
 
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;
@@ -268,6 +511,7 @@ export class ChatProxyService {
     this.registerProvider(new FastGPTProvider());
     this.registerProvider(new OpenAIProvider());
     this.registerProvider(new AnthropicProvider());
+    this.registerProvider(new DifyProvider());
   }
 
   /**
@@ -283,29 +527,42 @@ export class ChatProxyService {
   async sendMessage(
     agentId: string,
     messages: ChatMessage[],
-    options?: ChatOptions
+    options?: ChatOptions,
+    protectionContext?: ProtectedRequestContext
   ): Promise<ChatResponse> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
-      throw new Error(`智能体不存在: ${agentId}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${agentId}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: agentId
+      });
     }
 
     if (!config.isActive) {
-      throw new Error(`智能体未激活: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体未激活: ${agentId}`,
+        code: 'AGENT_INACTIVE'
+      });
     }
 
     const provider = this.getProvider(config.provider);
     if (!provider) {
-      throw new Error(`不支持的提供商: ${config.provider}`);
+      throw new ValidationError({
+        message: `不支持的提供商: ${config.provider}`,
+        code: 'UNSUPPORTED_PROVIDER'
+      });
     }
 
-    try {
+    // 创建受保护的请求操作
+    const protectedOperation = async (): Promise<ChatResponse> => {
       // 转换请求格式
       const requestData = provider.transformRequest(messages, config, false, options);
-      
+
       // 构建请求头
       const headers = provider.buildHeaders(config);
-      
+
       // 发送请求
       const response = await this.httpClient.post(
         config.endpoint,
@@ -329,9 +586,27 @@ export class ChatProxyService {
         });
       } catch {}
       return normalized;
+    };
+
+    try {
+      if (protectionContext) {
+        // 使用保护机制执行请求
+        return await this.protectionService.executeProtectedRequest(
+          protectionContext,
+          protectedOperation
+        );
+      } else {
+        // 直接执行请求（向后兼容）
+        return await protectedOperation();
+      }
     } catch (error) {
-      console.error(`智能体 ${agentId} 请求失败:`, error);
-      throw new Error(`智能体请求失败: ${getErrorMessage(error)}`);
+      logger.error('智能体请求失败', { agentId, error });
+      throw new ExternalServiceError({
+        message: `智能体请求失败: ${getErrorMessage(error)}`,
+        code: 'AGENT_REQUEST_FAILED',
+        service: config.provider,
+        originalError: error
+      });
     }
   }
 
@@ -344,37 +619,53 @@ export class ChatProxyService {
     onChunk: (chunk: string) => void,
     onStatus: (status: StreamStatus) => void,
     options?: ChatOptions,
-    onEvent?: (eventName: string, data: any) => void
+    onEvent?: (eventName: string, data: SSEEventData) => void,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
-      throw new Error(`智能体不存在: ${agentId}`);
+      throw new ResourceError({
+        message: `智能体不存在: ${agentId}`,
+        code: 'AGENT_NOT_FOUND',
+        resourceType: 'agent',
+        resourceId: agentId
+      });
     }
 
     if (!config.isActive) {
-      throw new Error(`智能体未激活: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体未激活: ${agentId}`,
+        code: 'AGENT_INACTIVE'
+      });
     }
 
     if (!config.features.streamingConfig.enabled) {
-      throw new Error(`智能体不支持流式响应: ${agentId}`);
+      throw new ValidationError({
+        message: `智能体不支持流式响应: ${agentId}`,
+        code: 'STREAM_NOT_SUPPORTED'
+      });
     }
 
     const provider = this.getProvider(config.provider);
     if (!provider) {
-      throw new Error(`不支持的提供商: ${config.provider}`);
+      throw new ValidationError({
+        message: `不支持的提供商: ${config.provider}`,
+        code: 'UNSUPPORTED_PROVIDER'
+      });
     }
 
-    try {
+    // 创建受保护的流式请求操作
+    const protectedOperation = async (): Promise<void> => {
       // 转换请求格式
       const requestData = provider.transformRequest(messages, config, true, options);
-      
+
       // 构建请求头
       const headers = provider.buildHeaders(config);
-      
+
       // 在发送请求前，将本次使用的 chatId 透传给上层（用于交互节点继续运行复用 chatId）
       let usedChatId: string | undefined;
       try {
-        usedChatId = (requestData as any)?.chatId;
+        usedChatId = (requestData as Record<string, unknown>)?.chatId as string | undefined;
         if (usedChatId) {
           // 记录 chatId 事件
           try {
@@ -386,10 +677,16 @@ export class ChatProxyService {
               eventType: 'chatId',
               data: { chatId: usedChatId },
             });
-          } catch {}
+          } catch (logError) {
+            // 日志记录失败不影响主流程
+            console.warn('[ChatProxyService] chatId 日志记录失败:', logError);
+          }
           onEvent?.('chatId', { chatId: usedChatId });
         }
-      } catch (_) {}
+      } catch (chatIdError) {
+        // chatId 提取失败不影响主流程
+        console.warn('[ChatProxyService] chatId 提取失败:', chatIdError);
+      }
 
       // 发送流式请求
       const response = await this.httpClient.post(
@@ -411,14 +708,32 @@ export class ChatProxyService {
         onEvent,
         { agentId, endpoint: config.endpoint, provider: config.provider, ...(usedChatId ? { chatId: usedChatId } : {}) }
       );
+    };
+
+    try {
+      if (protectionContext) {
+        // 使用保护机制执行流式请求
+        await this.protectionService.executeProtectedRequest(
+          protectionContext,
+          protectedOperation
+        );
+      } else {
+        // 直接执行流式请求（向后兼容）
+        await protectedOperation();
+      }
     } catch (error) {
-      console.error(`智能体 ${agentId} 流式请求失败:`, error);
+      logger.error('智能体流式请求失败', { agentId, error });
       onStatus?.({
         type: 'error',
         status: 'error',
         error: getErrorMessage(error),
       });
-      throw new Error(`智能体流式请求失败: ${getErrorMessage(error)}`);
+      throw new ExternalServiceError({
+        message: `智能体流式请求失败: ${getErrorMessage(error)}`,
+        code: 'AGENT_STREAM_REQUEST_FAILED',
+        service: config.provider,
+        originalError: error
+      });
     }
   }
 
@@ -503,7 +818,7 @@ export class ChatProxyService {
   private logStreamEvent(
     ctx: { agentId: string; chatId?: string; endpoint: string; provider: string } | undefined,
     eventType: string,
-    data: any
+    data: SSEEventData
   ): void {
     try {
       this.chatLog.logStreamEvent({
@@ -517,14 +832,20 @@ export class ChatProxyService {
     } catch {}
   }
 
-  private extractReasoningPayload(data: any): any {
+  private extractReasoningPayload(data: Record<string, JsonValue> | null): ReasoningPayload {
+    if (!data || typeof data !== 'object') return null;
+    
+    // 尝试从不同的可能位置提取推理内容
+    const choices = data.choices as Array<Record<string, JsonValue>> | undefined;
+    const firstChoice = choices?.[0] as Record<string, JsonValue> | undefined;
+    const delta = (firstChoice?.delta || data.delta) as Record<string, JsonValue> | undefined;
+    
     return (
-      data?.choices?.[0]?.delta?.reasoning_content ||
-      data?.delta?.reasoning_content ||
-      data?.reasoning_content ||
-      data?.reasoning ||
+      delta?.reasoning_content ||
+      data.reasoning_content ||
+      data.reasoning ||
       null
-    );
+    ) as ReasoningPayload;
   }
 
   /**
@@ -541,21 +862,24 @@ export class ChatProxyService {
   private dispatchFastGPTEvent(
     provider: AIProvider,
     eventName: string,
-    payload: any,
+    payload: Record<string, JsonValue> | string | null,
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
-    onEvent?: (eventName: string, data: any) => void,
+    onEvent?: (eventName: string, data: SSEEventData) => void,
     ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
   ): void {
-    const resolvedEvent = (eventName || (typeof payload?.event === 'string' ? payload.event : '') || '').trim();
+    const payloadEvent = (typeof payload === 'object' && payload !== null && 'event' in payload) 
+      ? payload.event 
+      : '';
+    const resolvedEvent = (eventName || (typeof payloadEvent === 'string' ? payloadEvent : '') || '').trim();
     const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
-    const emitEvent = (name: string, data: any) => {
+    const emitEvent = (name: string, data: SSEEventData) => {
       if (!onEvent) return;
       try {
         onEvent(name, data);
       } catch (emitError) {
-        console.warn('事件回调执行失败:', emitError);
+        logger.warn('事件回调执行失败', { error: emitError });
       }
     };
 
@@ -583,10 +907,11 @@ export class ChatProxyService {
 
     // 处理状态事件
     if (isStatusEvent(resolvedEvent)) {
+      const payloadObj = (typeof payload === 'object' && payload !== null) ? payload : {};
       const statusEvent: StreamStatus = {
         type: 'flowNodeStatus',
-        status: (payload?.status ?? 'running') as StreamStatus['status'],
-        moduleName: payload?.name || payload?.moduleName || payload?.id || '未知模块',
+        status: ((payloadObj.status as string) ?? 'running') as StreamStatus['status'],
+        moduleName: (payloadObj.name || payloadObj.moduleName || payloadObj.id || '未知模块') as string,
       };
       this.logStreamEvent(ctx, 'flowNodeStatus', payload);
       onStatus?.(statusEvent);
@@ -596,16 +921,23 @@ export class ChatProxyService {
 
     // 处理answer事件 - 这是主要的内容流
     if (eventKey === getNormalizedEventKey('answer')) {
-      const answerContent = payload?.choices?.[0]?.delta?.content ?? payload?.content ?? '';
+      const payloadObj = (typeof payload === 'object' && payload !== null) ? payload : {};
+      const choices = payloadObj.choices as Array<Record<string, JsonValue>> | undefined;
+      const delta = (choices?.[0] as Record<string, JsonValue> | undefined)?.delta as Record<string, JsonValue> | undefined;
+      const answerContent = (delta?.content ?? payloadObj.content ?? '') as string;
+      
       if (answerContent) {
         this.logStreamEvent(ctx, 'answer', payload);
         onChunk(answerContent);
       }
 
-      const reasoningContent = this.extractReasoningPayload(payload);
+      const reasoningContent = this.extractReasoningPayload(payloadObj);
       if (reasoningContent) {
-        this.logStreamEvent(ctx, 'reasoning', reasoningContent);
-        emitEvent('reasoning', { event: resolvedEvent || 'reasoning', data: reasoningContent });
+        const reasoningData = typeof reasoningContent === 'object' && reasoningContent !== null
+          ? reasoningContent
+          : { content: reasoningContent };
+        this.logStreamEvent(ctx, 'reasoning', reasoningData);
+        emitEvent('reasoning', reasoningData);
       }
       return; // 重要：直接返回，避免后续的兜底处理
     }
@@ -641,7 +973,11 @@ export class ChatProxyService {
 
     // 兜底处理：只处理非answer事件，避免重复处理
     if (eventKey !== getNormalizedEventKey('answer')) {
-      const transformed = provider.transformStreamResponse(payload);
+      // 将 payload 转换为提供商期望的格式
+      const chunkData = (typeof payload === 'object' && payload !== null) 
+        ? payload as Record<string, JsonValue>
+        : {} as Record<string, JsonValue>;
+      const transformed = provider.transformStreamResponse(chunkData);
       if (transformed) {
         this.logStreamEvent(ctx, 'chunk', transformed);
         onChunk(transformed);
@@ -658,19 +994,19 @@ export class ChatProxyService {
    * 处理流式响应 - 兼容 FastGPT 全事件并支持多行 data
    */
   private async handleStreamResponse(
-    stream: any,
+    stream: NodeJS.ReadableStream,
     provider: AIProvider,
     config: AgentConfig,
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
-    onEvent?: (eventName: string, data: any) => void,
+    onEvent?: (eventName: string, data: SSEEventData) => void,
     ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       let buffer = '';
       let completed = false;
 
-      console.log('开始处理流式响应，提供商:', config.provider);
+      logger.debug('开始处理流式响应', { provider: config.provider });
 
       const flushEventBlock = (rawBlock: string) => {
         const parsed = this.parseSSEEventBlock(rawBlock.replace(/\r/g, ''));
@@ -688,21 +1024,21 @@ export class ChatProxyService {
             return;
           }
           completed = true;
-          console.log('流式响应完成 [DONE]');
+          logger.debug('流式响应完成 [DONE]');
           this.logStreamEvent(ctx, 'complete', { done: true });
           onStatus?.({ type: 'complete', status: 'completed' });
           resolve();
           return;
         }
 
-        let payload: any = rawData;
+        let payload: Record<string, JsonValue> | string = rawData;
         if (typeof rawData === 'string') {
           const trimmed = rawData.trim();
           if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
             try {
-              payload = JSON.parse(rawData);
+              payload = JSON.parse(rawData) as Record<string, JsonValue>;
             } catch (parseError) {
-              console.warn('解析 SSE 数据失败:', parseError, '原始数据:', rawData);
+              logger.warn('解析 SSE 数据失败', { parseError, rawData });
               payload = rawData;
             }
           }
@@ -735,7 +1071,7 @@ export class ChatProxyService {
 
         if (!completed) {
           completed = true;
-          console.log('流式响应结束');
+          logger.debug('流式响应结束');
           this.logStreamEvent(ctx, 'complete', { ended: true });
           onStatus?.({ type: 'complete', status: 'completed' });
           resolve();
@@ -743,7 +1079,7 @@ export class ChatProxyService {
       });
 
       stream.on('error', (error: Error) => {
-        console.error('流式响应错误:', error);
+        logger.error('流式响应错误', { error });
         this.logStreamEvent(ctx, 'error', { message: error.message });
         onStatus?.({ type: 'error', status: 'error', error: error.message });
         if (!completed) {

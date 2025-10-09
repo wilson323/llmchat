@@ -1,0 +1,10 @@
+packages:
+  - frontend
+  - backend
+  - shared-types
+
+ignoredBuiltDependencies:
+  - '@sentry-internal/node-cpu-profiler'
+  - '@tailwindcss/oxide'
+  - bcrypt
+  - esbuild

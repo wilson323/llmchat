@@ -1,3 +1,19 @@
+import type { JsonValue } from './dynamic';
+
+// 重新导出 JsonValue 以便其他模块使用
+export type { JsonValue };
+import type { ErrorCategory, ErrorSeverity } from './errors';
+
+/**
+ * API响应接口
+ */
+export interface ApiResponse<T = any> {
+  code: number;
+  message: string;
+  data: T;
+  success?: boolean;
+}
+
 /**
  * 智能体配置接口
  */
@@ -17,7 +33,7 @@ export interface AgentConfig {
     requestsPerMinute: number;
     tokensPerMinute: number;
   };
-  provider: 'fastgpt' | 'openai' | 'anthropic' | 'custom';
+  provider: 'fastgpt' | 'openai' | 'anthropic' | 'dify' | 'dashscope' | 'custom';
   isActive: boolean;
   features: {
     supportsChatId: boolean;
@@ -84,10 +100,17 @@ export interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
   // FastGPT 特有参数
-  variables?: Record<string, any>; // 模块变量，会替换模块中输入框内容里的 [key]
+  variables?: Record<string, JsonValue>; // 模块变量，会替换模块中输入框内容里的 [key]
   responseChatItemId?: string;     // 响应消息的 ID，FastGPT 会自动将该 ID 存入数据库
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
+  // Dify 特有参数
+  userId?: string;                 // 用户标识，用于区分不同用户
+  files?: Array<{                  // 文件列表
+    type?: string;
+    transfer_method?: string;
+    url: string;
+  }>;
 }
 
 /**
@@ -108,6 +131,12 @@ export interface ChatResponse {
     completion_tokens: number;
     total_tokens: number;
   };
+  // Provider 特有元数据
+  metadata?: {
+    conversation_id?: string;        // Dify: 会话 ID
+    retriever_resources?: any[];     // Dify: 知识库检索结果
+    [key: string]: any;              // 其他 Provider 特有字段
+  };
 }
 
 /**
@@ -122,13 +151,46 @@ export interface StreamStatus {
 }
 
 /**
+ * 聊天请求
+ */
+export interface ChatRequest {
+  agentId: string;
+  messages: ChatMessage[];
+  stream?: boolean;
+  options?: ChatOptions;
+  chatId?: string;
+  detail?: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  variables?: Record<string, JsonValue>;
+  responseChatItemId?: string;
+  attachments?: ChatAttachmentMetadata[];
+  voiceNote?: VoiceNoteMetadata | null;
+}
+
+/**
+ * 反馈请求
+ */
+export interface FeedbackRequest {
+  agentId: string;
+  chatId: string;
+  dataId: string;
+  userGoodFeedback?: boolean | undefined;
+  userBadFeedback?: boolean | undefined;
+}
+
+/**
  * API错误响应
  */
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  category?: ErrorCategory;
+  severity?: ErrorSeverity;
+  details?: JsonValue;
   timestamp: string;
+  userId?: string;
+  requestId?: string;
 }
 
 /**
@@ -283,4 +345,111 @@ export interface ProductPreviewResult {
   imageUrl?: string;
   status?: string;
   raw?: any;
+}
+
+/**
+ * 增强的会话过滤和查询参数
+ */
+export interface SessionListParams {
+  page?: number;
+  pageSize?: number;
+  startDate?: string; // ISO 8601 日期字符串
+  endDate?: string;   // ISO 8601 日期字符串
+  tags?: string[];    // 标签过滤
+  minMessageCount?: number;
+  maxMessageCount?: number;
+  sortBy?: 'createdAt' | 'updatedAt' | 'messageCount' | 'title';
+  sortOrder?: 'asc' | 'desc';
+  searchKeyword?: string; // 在标题和内容中搜索
+}
+
+/**
+ * 分页响应
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+/**
+ * 批量操作选项
+ */
+export interface BatchOperationOptions {
+  sessionIds: string[];
+  operation: 'delete' | 'archive' | 'addTags' | 'removeTags';
+  tags?: string[]; // 用于标签操作
+}
+
+/**
+ * 会话导出选项
+ */
+export interface ExportOptions {
+  format: 'json' | 'csv' | 'excel';
+  includeMessages?: boolean;
+  includeMetadata?: boolean;
+  filters?: SessionListParams;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+}
+
+/**
+ * 会话事件类型
+ */
+export type SessionEventType =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'archived'
+  | 'restored'
+  | 'feedback_added'
+  | 'feedback_updated'
+  | 'message_added'
+  | 'tags_updated'
+  | 'exported';
+
+/**
+ * 会话事件记录
+ */
+export interface SessionEvent {
+  id: string;
+  sessionId: string;
+  agentId: string;
+  eventType: SessionEventType;
+  timestamp: string;
+  userId?: string;
+  metadata?: {
+    oldData?: any;
+    newData?: any;
+    reason?: string;
+    feedbackType?: 'good' | 'bad';
+    feedbackValue?: string;
+    tags?: string[];
+    exportFormat?: string;
+    [key: string]: any;
+  };
+  userAgent?: string;
+  ipAddress?: string;
+}
+
+/**
+ * 事件查询参数
+ */
+export interface EventQueryParams {
+  sessionIds?: string[];
+  agentId?: string;
+  eventTypes?: SessionEventType[];
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: 'timestamp';
+  sortOrder?: 'asc' | 'desc';
 }

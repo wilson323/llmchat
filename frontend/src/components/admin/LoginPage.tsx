@@ -69,6 +69,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  name="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder={t('输入用户名')}
@@ -83,6 +84,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

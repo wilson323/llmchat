@@ -1,44 +1,45 @@
 {
   "name": "llmchat",
   "version": "1.0.0",
-  "description": "智能体切换聊天应用 - 类似ChatGPT官网的多智能体切换功能",
-  "main": "index.js",
+  "private": true,
+  "description": "LLMChat - 多智能体切换聊天应用",
   "scripts": {
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-    "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev",
-    "build": "npm run backend:build && npm run frontend:build",
-    "prebackend:build": "npm install --workspace backend --no-audit --prefer-offline",
-    "backend:build": "cd backend && npm run build",
-    "prefrontend:build": "npm install --workspace frontend --no-audit --prefer-offline",
-    "frontend:build": "cd frontend && npm run build",
-    "start": "cd backend && npm start",
-    "test": "npm run backend:test && npm run frontend:test",
-    "backend:test": "cd backend && npm test",
-    "frontend:test": "cd frontend && npm test",
-    "backend:lint": "cd backend && npm run lint",
-    "frontend:lint": "cd frontend && npm run lint",
-    "lint": "npm run backend:lint && npm run frontend:lint",
-    "lint:fix": "npm run backend:lint -- --fix && npm run frontend:lint -- --fix"
+    "dev": "concurrently \"pnpm run backend:dev\" \"pnpm run frontend:dev\"",
+    "backend:dev": "cd backend && pnpm run dev",
+    "frontend:dev": "cd frontend && pnpm run dev",
+    "build": "pnpm run backend:build && pnpm run frontend:build",
+    "backend:build": "cd backend && pnpm run build",
+    "frontend:build": "cd frontend && pnpm run build",
+    "frontend:preview": "cd frontend && pnpm run preview",
+    "start": "cd backend && pnpm start",
+    "test": "pnpm run backend:test && pnpm run frontend:test",
+    "backend:test": "cd backend && pnpm test",
+    "frontend:test": "cd frontend && pnpm run test:run",
+    "lint": "pnpm run backend:lint && pnpm run frontend:lint",
+    "lint:fix": "pnpm run backend:lint:fix && pnpm run frontend:lint:fix",
+    "backend:lint": "cd backend && pnpm run lint",
+    "backend:lint:fix": "cd backend && pnpm run lint:fix",
+    "frontend:lint": "cd frontend && pnpm run lint",
+    "frontend:lint:fix": "cd frontend && pnpm run lint:fix",
+    "type-check": "pnpm run frontend:type-check",
+    "frontend:type-check": "cd frontend && pnpm run type-check",
+    "install:all": "pnpm install",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
   },
-  "keywords": [
-    "llm",
-    "chat",
-    "ai",
-    "agent",
-    "switching",
-    "react",
-    "typescript",
-    "node"
-  ],
-  "author": "AI Developer",
-  "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.55.1",
+    "@playwright/test": "^1.40.0",
     "concurrently": "^8.2.2"
   },
   "workspaces": [
     "backend",
-    "frontend"
-  ]
+    "frontend",
+    "shared-types"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
 }

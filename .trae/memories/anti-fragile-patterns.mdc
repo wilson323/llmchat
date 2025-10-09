@@ -1,0 +1,93 @@
+# anti-fragile-patterns.mdc
+version: 1.0.0
+date: 2025-10-05
+scope: llmchat 全局梳理/规则生成/后端接入与测试
+purpose: 将失败炼金术转化为可执行记忆规则，供 IDE/CI/脚手架自动加载与拦截
+
+## 可复用失败模式清单（含触发条件与行动）
+- 记忆#001 本地记忆文件回退
+  - 触发条件:
+    - MCP memory.create_entities 返回 ENOENT 或路径未配置
+  - 行动:
+    - 使用 .trae/memories 本地文件持久化；记录审计条目
+    - 提醒：避免将记忆持久化设为单点依赖
+  - 验证:
+    - 文件存在: .trae/memories/anti-fragile-patterns.mdc
+    - CI 中检测“memory server”可选
+
+- 记忆#002 显式激活+路径绑定
+  - 触发条件:
+    - Serena 工具提示 “No active project” 或 “Multiple projects found”
+  - 行动:
+    - activate_project(project=仓库绝对路径)，后续工具均在该上下文执行
+  - 验证:
+    - serena.activate_project 成功日志包含仓库路径
+
+- 记忆#003 再读-精确匹配-小粒度diff
+  - 触发条件:
+    - replace_in_file 搜索块不匹配（README/规则文件）
+  - 行动:
+    - 先 read_file 定位标题或锚点；以最小上下文进行 diff
+  - 验证:
+    - 修改后无额外非目标变更；测试/构建通过
+
+- 记忆#004 驱动库导入规范化（ioredis）
+  - 触发条件:
+    - Redis 相关测试未触发 setex/del/quit；黑名单判定异常
+    - 代码存在 “import { Redis } from 'ioredis'”
+  - 行动:
+    - 将命名导入改为默认导入：import Redis from 'ioredis'
+  - 验证:
+    - 所有 Redis 相关测试通过；无降级到内存模式的日志
+
+## 可直接打补丁的代码片段（git apply）
+### 补丁#004-ioredis-default-import
+文件: backend/src/services/AuthServiceV2.ts
+说明: 统一使用默认导入，避免实例化失败导致降级
+patch:
+```
+*** Begin Patch
+*** Update File: backend/src/services/AuthServiceV2.ts
+@@
+-import { Redis } from 'ioredis';
++import Redis from 'ioredis';
+*** End Patch
+```
+
+## 自动加载与中断指令
+- 启动钩子（脚手架/IDE 规则引擎）：
+  - 内置规则：
+    - 若检测到上述触发条件（如 ENOENT、Serena 未激活、replace_in_file 失败、ioredis 命名导入），则：
+      1) 强制中断当前执行
+      2) 输出提示：“已激活记忆#007”
+      3) 引导应用对应补丁或行动列表
+- YAML 配置建议（项目规则文件中加入）：
+```
+memory_source: .trae/memories/anti-fragile-patterns.mdc
+auto_inject: true
+on_boot:
+  - check_serena_activation: true
+  - check_memory_server_optional: true
+  - enforce_import_rules:
+      libraries:
+        - ioredis: default_import_only
+  - enforce_replace_in_file_strategy: minimal_diff
+  - audit_log: true
+```
+
+## 使用示例
+- 在新项目首次启动时：
+  - 加载 memory_source
+  - 扫描代码，若命中“import { Redis } from 'ioredis'”：
+    - 输出：已激活记忆#007（驱动库导入规范化）
+    - 建议应用补丁#004-ioredis-default-import
+    - 重新运行测试套件以确认恢复
+
+## 审计与合规（Mentor/TaskManager 协同）
+- Mentor.quality_control: 验证补丁后测试覆盖率≥80%，风格符合 PEP8/ESLint 规则
+- Mentor.security_check: 检查环境变量占位符泄露风险与审计链完整
+- Mentor.optimize_performance: 评估规则引擎开销与日志成本
+- TaskManager:
+  - 任务调度/状态追踪：记录记忆触发、补丁应用、回滚状态
+  - 日志与审计：将每次自动加载与中断信息入库
+  - 性能分析：监控规则触发频次与处理延迟

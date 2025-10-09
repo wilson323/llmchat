@@ -1,32 +1,51 @@
+/**
+ * ChatContainer - 优化版本
+ * 
+ * 性能优化：
+ * 1. 使用拆分后的Store，精确订阅需要的状态
+ * 2. 减少不必要的重渲染
+ * 3. 优化消息列表渲染
+ * 
+ * @version 2.0 - 优化版（2025-10-03）
+ */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
-import { useChatStore } from '@/store/chatStore';
-import { useChat } from '@/hooks/useChat';
 import { Bot, Sparkles } from 'lucide-react';
 import { chatService } from '@/services/api';
 
-import { useI18n } from '@/i18n';
+// 新的拆分Store
+import { useMessageStore } from '@/store/messageStore';
+import { useAgentStore } from '@/store/agentStore';
+import { useSessionStore } from '@/store/sessionStore';
+import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
 
+import { useChat } from '@/hooks/useChat';
+import { useI18n } from '@/i18n';
+import { perfMonitor } from '@/utils/performanceMonitor';
 
 export const ChatContainer: React.FC = () => {
+  // 🚀 性能优化：精确订阅，只订阅需要的状态
+  const messages = useMessageStore((state) => state.messages);
+  const isStreaming = useMessageStore((state) => state.isStreaming);
+  const stopStreaming = useMessageStore((state) => state.stopStreaming);
+  const addMessage = useMessageStore((state) => state.addMessage);
+  const removeLastInteractiveMessage = useMessageStore((state) => state.removeLastInteractiveMessage);
+  
+  const currentAgent = useAgentStore((state) => state.currentAgent);
+  
+  const currentSession = useSessionStore((state) => state.currentSession);
+  const bindSessionId = useSessionStore((state) => state.bindSessionId);
+
   const {
-    messages,
-    currentAgent,
-    isStreaming,
-    preferences,
-    currentSession,
-    addMessage,
-    updateLastMessage,
-    setIsStreaming,
-    createNewSession,
+    sendMessage,
+    continueInteractiveSelect,
+    continueInteractiveForm,
+    retryMessage
+  } = useChat();
 
-    stopStreaming,
-    setStreamAbortController,
-  } = useChatStore();
-  const { sendMessage, continueInteractiveSelect, continueInteractiveForm } = useChat();
   const { t } = useI18n();
-
 
   // 避免重复触发同一会话/智能体的开场白
   const welcomeTriggeredKeyRef = useRef<string | null>(null);
@@ -36,284 +55,183 @@ export const ChatContainer: React.FC = () => {
   const [pendingInitVars, setPendingInitVars] = useState<Record<string, any> | null>(null);
 
   // 将 FastGPT init 返回的 variables 转为交互气泡
-  const renderVariablesAsInteractive = (initData: any) => {
-    try {
-      const vars = initData?.app?.chatConfig?.variables || [];
-      if (!Array.isArray(vars) || vars.length === 0) return;
+  const renderVariablesAsInteractive = (initData: Record<string, unknown>) => {
+    return perfMonitor.measure('ChatContainer.renderVariablesAsInteractive', () => {
+      try {
+        const app = initData.app as Record<string, unknown> | undefined;
+        const chatConfig = app?.chatConfig as Record<string, unknown> | undefined;
+        const vars = (chatConfig?.variables as Array<Record<string, unknown>>) || [];
+        if (vars.length === 0) return;
 
-      // 仅 1 个且为 select -> 下拉选择气泡（userSelect）
-      if (vars.length === 1 && vars[0]?.type === 'select' && Array.isArray(vars[0]?.list)) {
-        const v = vars[0];
-        const interactive = {
-          type: 'userSelect' as const,
-          origin: 'init' as const,
-          params: {
-            varKey: v.key,
-            description: v.description || v.label || t('请选择一个选项以继续'),
-            userSelectOptions: (v.list || []).map((opt: any) => ({
-              key: String(opt.value),              // 发送值
-              value: String(opt.label ?? opt.value) // 显示文本
-            }))
+        const fields = vars.map((v: Record<string, unknown>) => {
+          const base = {
+            id: v.id,
+            label: v.label || v.key,
+            required: v.required,
+            description: v.description,
+          };
+
+          switch (v.type) {
+            case 'input':
+              return { ...base, type: 'text' as const };
+            case 'textarea':
+              return { ...base, type: 'textarea' as const };
+            case 'select':
+              return {
+                ...base,
+                type: 'select' as const,
+                options: ((v.enums as Array<{label?: string; value: string}> | undefined) || []).map((opt) => ({
+                  label: opt.label || opt.value,
+                  value: opt.value,
+                })),
+              };
+            default:
+              return { ...base, type: 'text' as const };
           }
+        });
+
+        const interactive: InteractiveData = {
+          type: 'userInput',
+          origin: 'init',
+          params: {
+            description: t('请填写以下信息'),
+            inputForm: fields as unknown as InteractiveFormItem[],
+          },
         };
         addMessage({ interactive });
         setHideComposer(true);
-        return;
+      } catch (e) {
+        console.warn(t('渲染 variables 失败'), e);
       }
-
-      // 多变量或非 select 类型 -> 合并为一个表单（userInput）
-      const inputForm = vars.map((v: any, idx: number) => {
-        const t = v.type;
-        const mappedType = t === 'number' || t === 'numberInput' ? 'numberInput' : (t === 'select' ? 'select' : 'input');
-        return {
-          type: mappedType,
-          key: v.key || `field_${idx}`,
-          label: v.label || v.key || t('字段{index}', { index: idx + 1 }),
-          description: v.description || '',
-          value: v.defaultValue ?? '',
-          defaultValue: v.defaultValue ?? '',
-          valueType: v.valueType || (mappedType === 'numberInput' ? 'number' : 'string'),
-          required: !!v.required,
-          list: Array.isArray(v.list) ? v.list : []
-        };
-      });
-
-      const interactive = {
-        type: 'userInput' as const,
-        origin: 'init' as const,
-        params: {
-          description: t('请填写以下信息以继续'),
-          inputForm
-        }
-      };
-      addMessage({ interactive });
-      setHideComposer(true);
-    } catch (e) {
-      console.warn(t('渲染 variables 失败'), e);
-    }
+    });
   };
 
   // 交互回调：区分 init 起源与普通交互
-  const handleInteractiveSelect = (payload: any) => {
+  const handleInteractiveSelect = (payload: string | Record<string, unknown>) => {
     if (typeof payload === 'string') {
       // 普通交互（非 init）：先移除交互气泡，再继续运行
-      try { useChatStore.getState().removeLastInteractiveMessage(); } catch {}
+      try { removeLastInteractiveMessage(); } catch {}
       return continueInteractiveSelect(payload);
     }
-    if (payload && payload.origin === 'init') {
+    if (payload && typeof payload === 'object' && payload.origin === 'init') {
       // init 交互：仅收集变量，显示输入框，不请求后端
-      setPendingInitVars((prev) => ({ ...(prev || {}), [payload.key]: payload.value }));
+      const payloadObj = payload as Record<string, unknown>;
+      const key = String(payloadObj.key || '');
+      const value = payloadObj.value;
+      setPendingInitVars((prev) => ({ ...(prev || {}), [key]: value }));
       setHideComposer(false);
-      try { useChatStore.getState().removeLastInteractiveMessage(); } catch {}
+      try { removeLastInteractiveMessage(); } catch {}
     }
   };
 
-  const handleInteractiveFormSubmit = (payload: any) => {
+  const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined) => {
     // 非 init 表单：直接继续运行
     if (!payload || payload.origin !== 'init') {
-      try { useChatStore.getState().removeLastInteractiveMessage(); } catch {}
-      return continueInteractiveForm(payload);
+      try { removeLastInteractiveMessage(); } catch {}
+      return continueInteractiveForm(payload as Record<string, string>);
     }
     // init 表单：仅收集变量，显示输入框
     const values = payload.values || {};
     setPendingInitVars((prev) => ({ ...(prev || {}), ...values }));
     setHideComposer(false);
-    try { useChatStore.getState().removeLastInteractiveMessage(); } catch {}
+    try { removeLastInteractiveMessage(); } catch {}
   };
 
   // 发送消息：若存在 init 变量，则在首次发送时一并携带
-  const handleSendMessage = async (content: string, extraOptions?: any) => {
-    const vars = pendingInitVars || undefined;
-    const mergedOptions = {
-      ...(extraOptions || {}),
-      ...(vars ? { variables: vars } : {}),
-      detail: true,
-    };
-    await sendMessage(content, mergedOptions);
-    if (vars) setPendingInitVars(null);
+  const handleSendMessage = async (content: string, extraOptions?: ChatOptions) => {
+    return perfMonitor.measureAsync('ChatContainer.handleSendMessage', async () => {
+      const vars = pendingInitVars || undefined;
+      const mergedOptions: ChatOptions = {
+        ...(extraOptions || {}),
+        ...(vars ? { variables: vars } : {}),
+        detail: true,
+      };
+      await sendMessage(content, mergedOptions);
+      if (vars) setPendingInitVars(null);
+    });
   };
 
-
   useEffect(() => {
-    if (currentAgent?.id === PRODUCT_PREVIEW_AGENT_ID || currentAgent?.id === VOICE_CALL_AGENT_ID) {
-      return;
-    }
+    return perfMonitor.measure('ChatContainer.welcomeMessage', () => {
+      // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面
+      if (!currentAgent || !currentSession) return;
 
-    // 仅在有智能体、当前没有消息、且不在流式中时触发
-    if (!currentAgent) return;
-    if (isStreaming) return;
-    if (messages.length > 0) return;
+      const welcomeKey = `${currentAgent.id}-${currentSession.id}`;
+      if (welcomeTriggeredKeyRef.current === welcomeKey) return;
 
-    let sessionId = currentSession?.id;
+      if (messages.length === 0 && currentAgent.provider === 'fastgpt') {
+        perfMonitor.measureAsync('ChatContainer.fetchWelcome', async () => {
+          try {
+            const response = await chatService.init(currentAgent.id);
+            const chatId = response.chatId;
 
-    const run = async () => {
-      // 确保存在会话（新建对话场景）
-      if (!sessionId) {
-        createNewSession();
-        const latest = useChatStore.getState().currentSession;
-        sessionId = latest?.id;
-      }
+            if (chatId && currentSession.id !== chatId) {
+              if (!currentAgent?.id) return;
+              bindSessionId(currentAgent.id, currentSession.id, chatId);
+            }
 
-      const key = `${currentAgent.id}:${sessionId || 'nosession'}`;
-      if (welcomeTriggeredKeyRef.current === key) return;
-      welcomeTriggeredKeyRef.current = key;
+            const hasVariables = response.app?.chatConfig?.variables?.length > 0;
+            if (hasVariables) {
+              renderVariablesAsInteractive(response);
+            }
 
-      // 添加AI消息占位符，流式增量写入
-      addMessage({ AI: '' });
-      setIsStreaming(true);
-
-      try {
-        if (preferences.streamingEnabled) {
-          const controller = new AbortController();
-          setStreamAbortController(controller);
-          await chatService.initStream(
-            currentAgent.id,
-            sessionId,
-            (chunk) => {
-              updateLastMessage(chunk);
-            },
-            (initData) => {
-              if (initData?.chatId && sessionId) {
-                bindSessionId(sessionId, initData.chatId);
-                sessionId = initData.chatId;
-              }
-              // 流式开场白完成后，根据 variables 渲染交互气泡
-              renderVariablesAsInteractive(initData);
-            },
-            { signal: controller.signal }
-          );
-        } else {
-          const data = await chatService.init(currentAgent.id, sessionId);
-
-          const descriptionSuffix = currentAgent.description
-            ? t('：{description}', { description: currentAgent.description })
-            : '';
-
-          const content =
-            data?.welcomeText ||
-            data?.app?.chatConfig?.welcomeText ||
-            data?.content ||
-            t('你好，我是 {name}{description}', {
-              name: currentAgent.name,
-              description: descriptionSuffix,
-            });
-          updateLastMessage(content);
-          // 非流式初始化后渲染 variables 为交互气泡
-          renderVariablesAsInteractive(data);
-
-        }
-      } catch (e) {
-        console.error(t('开场白加载失败'), e);
-        const fallback = t('你好，我是 {name}{description}', {
-          name: currentAgent.name,
-          description: currentAgent.description
-            ? t('：{description}', { description: currentAgent.description })
-            : '',
+            welcomeTriggeredKeyRef.current = welcomeKey;
+          } catch (error) {
+            console.error(t('获取开场白失败'), error);
+          }
         });
-        updateLastMessage(fallback);
-      } finally {
-        setStreamAbortController(null);
-        setIsStreaming(false);
       }
-    };
+    });
+  }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
 
-    run();
-    // 仅在智能体/会话变更或消息长度变化时检查
-  }, [currentAgent?.id, currentSession?.id, messages.length, isStreaming, preferences.streamingEnabled, createNewSession, addMessage, updateLastMessage, setIsStreaming, bindSessionId]);
+  // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
+  // 此组件现在只负责渲染标准聊天界面
+  
+  // 常规智能体聊天界面
+  return (
+    <div className="flex flex-col h-full bg-background" data-testid="chat-container">
+      {/* 空状态 */}
+      {messages.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="max-w-2xl w-full text-center space-y-6">
+            {currentAgent ? (
+              <>
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-2xl">
+                      <Bot className="w-12 h-12 text-white" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-background flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                </div>
 
-  if (currentAgent?.id === PRODUCT_PREVIEW_AGENT_ID) {
-    return <ProductPreviewWorkspace agent={currentAgent} />;
-  }
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">{currentAgent.name}</h2>
+                  {currentAgent.description && (
+                    <p className="text-muted-foreground text-lg">{currentAgent.description}</p>
+                  )}
+                </div>
 
-  if (currentAgent?.id === VOICE_CALL_AGENT_ID) {
-    return <VoiceCallWorkspace agent={currentAgent} />;
-  }
-
-  // 无智能体时的提示界面
-  if (!currentAgent) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-brand to-brand/70 rounded-2xl
-            flex items-center justify-center">
-            <Bot className="h-8 w-8 text-white" />
-          </div>
-          <h2 className="text-2xl font-semibold text-foreground mb-3">
-            {t('欢迎使用 LLMChat')}
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            {t('请选择一个智能体开始您的对话之旅')}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // 无消息时的欢迎界面（在副作用触发期间短暂显示）
-  if (messages.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center max-w-2xl">
-            <div className="w-20 h-20 mx-auto mb-8 bg-gradient-to-r from-brand to-brand/70 rounded-3xl
-              flex items-center justify-center shadow-lg">
-              <Sparkles className="h-10 w-10 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              {t('与 {name} 对话', { name: currentAgent.name })}
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-              {currentAgent.description}
-            </p>
-
-            {/* 示例提示 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="p-4 bg-background rounded-xl border border-border hover:bg-brand/10 transition-colors cursor-pointer"
-                onClick={() => sendMessage(t('你好，请介绍一下你的能力'))}
-              >
-                <h3 className="font-medium text-foreground mb-2">
-                  👋 {t('介绍与能力')}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {t('了解智能体的功能与特点')}
-                </p>
+                <div className="pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    {t('开始对话，我会尽力帮助你。')}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div>
+                <h2 className="text-2xl font-bold mb-2">{t('请选择一个智能体')}</h2>
+                <p className="text-muted-foreground">{t('从侧边栏选择一个智能体开始对话')}</p>
               </div>
-
-              <div className="p-4 bg-background rounded-xl border border-border hover:bg-brand/10 transition-colors cursor-pointer"
-                onClick={() => sendMessage(t('你能帮我做什么？'))}
-              >
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                  ❓ {t('探索功能')}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('发现更多实用功能')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 输入区域 */}
-        <div className="border-t border-border/50 bg-background p-4">
-          <div className="max-w-4xl mx-auto">
-            {!hideComposer && (
-              <MessageInput
-                onSendMessage={handleSendMessage}
-                isStreaming={isStreaming}
-                onStopStreaming={stopStreaming}
-                placeholder={t('与 {name} 对话...', { name: currentAgent.name })}
-              />
             )}
           </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // 有消息时的正常聊天界面
-  return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="flex-1 overflow-hidden pt-[37px] sm:pt-0">
+      {/* 消息列表 */}
+      {messages.length > 0 && (
         <MessageList
           messages={messages}
           isStreaming={isStreaming}
@@ -321,19 +239,21 @@ export const ChatContainer: React.FC = () => {
           onInteractiveFormSubmit={handleInteractiveFormSubmit}
           onRetryMessage={retryMessage}
         />
-      </div>
-      <div className="border-t border-border/50 bg-background p-4">
-        <div className="max-w-4xl mx-auto">
-          {!hideComposer && (
-            <MessageInput
-              onSendMessage={handleSendMessage}
-              isStreaming={isStreaming}
-              onStopStreaming={stopStreaming}
-              placeholder={t('与 {name} 对话...', { name: currentAgent.name })}
-            />
-          )}
-        </div>
-      </div>
+      )}
+
+      {/* 输入框 */}
+      {!hideComposer && currentAgent && (
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          disabled={!currentAgent || isStreaming}
+          placeholder={currentAgent ? t('输入消息...') : t('请先选择智能体')}
+          isStreaming={isStreaming}
+          onStopStreaming={stopStreaming}
+        />
+      )}
     </div>
   );
 };
+
+export default ChatContainer;
+

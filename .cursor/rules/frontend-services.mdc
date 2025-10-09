@@ -1,0 +1,13 @@
+---
+description: 前端 HTTP 客户端与重试策略
+---
+# 前端 services 规范（React + Vite）
+
+- 统一放置在 [frontend/src/services](mdc:frontend/src/services)，集中封装 HTTP 客户端与 API。
+- 错误处理：统一拦截器抽象；对 400/401/403/404/409/422/429/5xx 做语义化映射。
+- 重试策略：
+  - 网络错误与 5xx：指数退避重试（最多 3 次），幂等请求才重试。
+  - 超时：为所有请求设置超时（如 10s），记录请求 ID。
+- 认证：从单一来源读取 token（store 或 cookie）；避免在组件内直接取 token。
+- 取消与并发：支持 AbortController；重复请求合并/节流；避免 N+1。
+- 缓存：GET 支持 SWR/缓存层；对热数据增加失效与刷新。

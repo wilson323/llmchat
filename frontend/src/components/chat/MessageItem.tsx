@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useEffect } from 'react';
 import { User, Copy, Check, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -7,17 +7,34 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
-import { ChatMessage, Agent, StreamStatus } from '@/types';
+import { ChatMessage, Agent, StreamStatus, InteractiveSelectParams, InteractiveInputParams, InteractiveFormItem } from '@/types';
 import 'highlight.js/styles/github-dark.css';
 import { useChatStore } from '@/store/chatStore';
+import { useMessageStore } from '@/store/messageStore';
 import { chatService } from '@/services/api';
+import { ReasoningTrail } from './ReasoningTrail';
+import { EventTrail } from './EventTrail';
+import { useA11yAnnouncer } from '@/hooks/useA11yAnnouncer';
 
 import { useI18n } from '@/i18n';
+
+// 回调函数类型定义
+interface InteractiveCallbacks {
+  onInteractiveSelect?: (value: string | { origin: 'init'; key?: string; value: string }) => void;
+  onInteractiveFormSubmit?: (values: Record<string, unknown> | { origin: 'init'; values: Record<string, unknown> }) => void;
+}
+
+// ReactMarkdown code组件props类型
+interface CodeProps {
+  className?: string;
+  children?: React.ReactNode;
+  [key: string]: any;
+}
 
 
 import avatarImg from '@/img/4.png';
 
-interface MessageItemProps {
+interface MessageItemProps extends InteractiveCallbacks {
   message: ChatMessage;
   isStreaming?: boolean;
   onRetry?: () => void;
@@ -25,12 +42,9 @@ interface MessageItemProps {
   onDelete?: () => void;
   currentAgent?: Agent;
   streamingStatus?: StreamStatus;
-  // 为了兼容 init 交互，放宽参数类型
-  onInteractiveSelect?: (value: any) => void;
-  onInteractiveFormSubmit?: (values: any) => void;
 }
 
-export const MessageItem: React.FC<MessageItemProps> = ({
+export const MessageItem: React.FC<MessageItemProps> = memo(({
   message,
   isStreaming = false,
   onRetry,
@@ -43,17 +57,33 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 }) => {
   const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
+  const {
+    announceStreamingStatus,
+    announceNewMessage
+  } = useA11yAnnouncer();
+  // 类型守卫函数
+  const isInteractiveSelect = (params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveSelectParams => {
+    return 'userSelectOptions' in params;
+  };
+
+  const isInteractiveInput = (params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveInputParams => {
+    return 'inputForm' in params;
+  };
+
   // 交互节点专用渲染（优先于普通 HUMAN/AI 文本）
   if (message.interactive) {
     const data = message.interactive;
 
     // userInput 表单的本地状态
-    const [formValues, setFormValues] = useState<Record<string, any>>({});
+    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
     // userSelect 下拉选择的本地状态
     const [selectedValue, setSelectedValue] = useState<string>(() => {
-      const opts = (data.params as any)?.userSelectOptions || [];
-      return (opts[0]?.key ?? opts[0]?.value ?? '') as string;
+      if (isInteractiveSelect(data.params)) {
+        const opts = data.params.userSelectOptions || [];
+        return (opts[0]?.key ?? opts[0]?.value ?? '') as string;
+      }
+      return '';
     });
 
 
@@ -71,14 +101,21 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 value={selectedValue}
                 onChange={(e) => setSelectedValue(e.target.value)}
               >
-                {(data.params as any)?.userSelectOptions?.map((opt: any, idx: number) => (
+                {isInteractiveSelect(data.params) && data.params.userSelectOptions?.map((opt, idx: number) => (
                   <option key={idx} value={String(opt.key ?? opt.value)}>
                     {String(opt.value ?? opt.key)}
                   </option>
                 ))}
               </select>
               <Button
-                onClick={() => { if ((data as any).origin === 'init') { const varKey = (data.params as any)?.varKey; onInteractiveSelect?.({ origin: 'init', key: varKey, value: selectedValue }); } else { onInteractiveSelect?.(selectedValue); } }}
+                onClick={() => {
+                  if (data.origin === 'init' && isInteractiveSelect(data.params)) {
+                    const varKey = data.params?.varKey;
+                    onInteractiveSelect?.({ origin: 'init', key: varKey, value: selectedValue });
+                  } else {
+                    onInteractiveSelect?.(selectedValue);
+                  }
+                }}
                 variant="brand"
                 size="md"
                 radius="md"
@@ -95,7 +132,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
 
 
 
-                {(data as any).origin === 'init' ? t('开始对话') : t('确定')}
+                {data.origin === 'init' ? t('开始对话') : t('确定')}
               </Button>
             </div>
           </div>
@@ -115,32 +152,33 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               className="space-y-3"
               onSubmit={(e) => {
                 e.preventDefault();
-                if ((data as any).origin === 'init') {
+                if (data.origin === 'init') {
                   onInteractiveFormSubmit?.({ origin: 'init', values: formValues });
                 } else {
                   onInteractiveFormSubmit?.(formValues);
                 }
               }}
             >
-              {(data.params as any)?.inputForm?.map((item: any, idx: number) => {
-                const key = item?.key || `field_${idx}`;
-                const label = item?.label || key;
-                const type = item?.type || 'input';
+              {isInteractiveInput(data.params) && data.params.inputForm?.map((item: InteractiveFormItem, idx: number) => {
+                const key = item.key || `field_${idx}`;
+                const label = item.label || key;
+                const type = item.type || 'input';
+
                 return (
                   <div key={idx} className="flex items-center gap-3">
                     <label className="w-28 text-sm text-muted-foreground">{label}</label>
                     {type === 'numberInput' ? (
                       <input
                         type="number"
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background text-foreground"
                         onChange={(e) => setFormValues((s) => ({ ...s, [key]: Number(e.target.value) }))}
                       />
                     ) : type === 'select' ? (
                       <select
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background text-foreground"
                         onChange={(e) => setFormValues((s) => ({ ...s, [key]: e.target.value }))}
                       >
-                        {(item.list || []).map((opt: any, i: number) => (
+                        {(item.list || []).map((opt, i: number) => (
                           <option key={i} value={String(opt.value)}>
                             {String(opt.label ?? opt.value)}
                           </option>
@@ -149,7 +187,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                     ) : (
                       <input
                         type="text"
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background text-foreground"
                         onChange={(e) => setFormValues((s) => ({ ...s, [key]: e.target.value }))}
                       />
                     )}
@@ -164,7 +202,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                   radius="md"
                   className="px-4 py-2 text-sm"
                 >
-                  {(data as any).origin === 'init' ? t('开始对话') : t('提交')}
+                  {data.origin === 'init' ? t('开始对话') : t('提交')}
                 </Button>
               </div>
             </form>
@@ -184,9 +222,27 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   const content = isUser ? message.HUMAN : message.AI;
 
   // 从全局store获取当前会话和反馈更新方法
-  const { currentSession, setMessageFeedback } = useChatStore();
+  const currentSession = useChatStore((state) => state.currentSession);
+  const setMessageFeedback = useMessageStore((state) => state.setMessageFeedback);
   const agent = currentAgent; // 已通过props传入
   const canFeedback = !isUser && !!message.id && agent?.provider === 'fastgpt';
+
+  // 可访问性：新消息通知
+  useEffect(() => {
+    if (message.id) {
+      announceNewMessage(isUser);
+    }
+  }, [message.id, isUser, announceNewMessage]);
+
+  // 可访问性：流式状态通知
+  useEffect(() => {
+    if (streamingStatus?.type === 'flowNodeStatus' && streamingStatus.moduleName) {
+      announceStreamingStatus(
+        streamingStatus.moduleName,
+        streamingStatus.status || 'running'
+      );
+    }
+  }, [streamingStatus, announceStreamingStatus]);
 
   // 由消息上的持久化字段推导本地显示态
   const liked: boolean | null = message.feedback === 'good' ? true : message.feedback === 'bad' ? false : null;
@@ -247,8 +303,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
     }
   };
 
-  const formatTime = () => {
-    return new Date().toLocaleTimeString(locale, {
+  const formatTime = (timestamp?: number) => {
+    const time = timestamp ? new Date(timestamp) : new Date();
+    return time.toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -264,7 +321,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               {content}
             </div>
             <div className="text-xs text-blue-100 mt-2 text-right">
-              {formatTime()}
+              {formatTime(message.timestamp)}
             </div>
           </div>
           <div className="w-8 h-8 bg-brand rounded-full flex items-center justify-center flex-shrink-0 ring-1 ring-border">
@@ -301,7 +358,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
               remarkPlugins={[remarkGfm, remarkBreaks]}
               rehypePlugins={[rehypeHighlight, rehypeRaw]}
               components={{
-                code: ({ className, children, ...props }: any) => {
+                code: ({ className, children, ...props }: CodeProps) => {
                   const match = /language-(\\w+)/.exec(className || '');
                   const isBlock = match && className;
 
@@ -379,7 +436,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
           {/* 消息元数据 */}
           <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>{formatTime()}</span>
+              <span>{formatTime(message.timestamp)}</span>
             </div>
 
             {/* 操作按钮 */}
@@ -444,4 +501,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
       </div>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // 自定义比较函数，优化重新渲染
+  return (
+    prevProps.message === nextProps.message &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.currentAgent === nextProps.currentAgent &&
+    prevProps.streamingStatus === nextProps.streamingStatus
+  );
+});

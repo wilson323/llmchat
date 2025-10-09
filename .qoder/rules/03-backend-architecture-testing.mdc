@@ -1,0 +1,23 @@
+---
+globs: backend/**/*.ts
+description: 后端（Express）架构要点与测试规范
+---
+
+架构
+- 入口： [backend/src/index.ts](mdc:backend/src/index.ts)
+- 目录： [controllers](mdc:backend/src/controllers)（精简）、[routes](mdc:backend/src/routes)、[services](mdc:backend/src/services)（封装外部 I/O）、[middleware](mdc:backend/src/middleware)、[utils](mdc:backend/src/utils)、[types](mdc:backend/src/types)
+- 配置： [config/config.jsonc](mdc:config/config.jsonc)（JSONC 加载），dotenv 读取本地 `backend/.env`
+- 校验： [scripts/validate-config.ts](mdc:scripts/validate-config.ts)
+
+测试
+- Jest 配置： [backend/jest.config.ts](mdc:backend/jest.config.ts)
+- 测试目录： [backend/src/__tests__](mdc:backend/src/__tests__)
+- 模式：对齐 `fastgptEvents.test.ts`，mock 网络 I/O，覆盖错误分支
+- 命令：`npm run backend:test` 或 `npm run backend:test -- --watch`
+
+构建与产物
+- 构建到 [backend/dist](mdc:backend/dist)；运行日志位于 [backend/log](mdc:backend/log)
+
+说明
+- 遵循路径别名 `@/...`
+- Controller 只做协调；业务与集成放在 Service

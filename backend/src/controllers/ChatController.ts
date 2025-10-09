@@ -1,22 +1,136 @@
 import { Request, Response, NextFunction } from 'express';
+
+/**
+ * 扩展的 Express Request 接口，包含保护上下文
+ */
+interface ProtectedRequest extends Request {
+  protectionContext?: ProtectedRequestContext;
+}
+
+/**
+ * 扩展的 Express Response 接口，包含 flushHeaders 方法
+ */
+interface ExtendedResponse extends Omit<Response, 'flushHeaders'> {
+  flushHeaders(): void;
+}
 import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import Joi from 'joi';
+import logger from '@/utils/logger';
+import { ApiResponseHandler } from '@/utils/apiResponse';
+
+/**
+ * Joi错误提取工具
+ */
+class ErrorExtractor {
+  /**
+   * 检查是否为已知错误类型
+   */
+  static isKnownError(err: unknown): err is { code: string; httpStatus?: number } {
+    return typeof err === 'object' &&
+           err !== null &&
+           'code' in err &&
+           typeof (err as any).code === 'string';
+  }
+
+  /**
+   * 检查是否为Axios错误
+   */
+  static isAxiosError(err: unknown): err is { response?: { status?: number } } {
+    return typeof err === 'object' &&
+           err !== null &&
+           'isAxiosError' in err;
+  }
+
+  /**
+   * 从Joi验证错误中提取错误消息
+   */
+  static extractMessage(error: unknown): string | undefined {
+    if (typeof error === 'object' && error !== null) {
+      const errorObj = error as Record<string, unknown>;
+      if (Array.isArray(errorObj.details) && errorObj.details.length > 0) {
+        const detail = errorObj.details[0] as Record<string, unknown>;
+        if (typeof detail.message === 'string') {
+          return detail.message;
+        }
+      }
+      if (typeof errorObj.message === 'string') {
+        return errorObj.message;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * 从错误中提取错误代码
+   */
+  static extractCode(err: unknown): string | undefined {
+    if (ErrorExtractor.isKnownError(err)) {
+      return err.code;
+    }
+
+    if (err instanceof Error) {
+      return err.name;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * 从错误中提取HTTP状态码
+   */
+  static extractStatus(err: unknown): number | undefined {
+    if (ErrorExtractor.isKnownError(err)) {
+      return err.httpStatus;
+    }
+
+    // 尝试从Axios错误中提取状态码
+    if (ErrorExtractor.isAxiosError(err)) {
+      return err.response?.status;
+    }
+
+    return undefined;
+  }
+}
 
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService } from '@/services/ChatHistoryService';
+import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { analyticsService } from '@/services/analyticsInstance';
+import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
 import {
   ChatMessage,
   ChatOptions,
+  ChatRequest,
   ApiError,
   StreamStatus,
   ChatAttachmentMetadata,
   VoiceNoteMetadata,
+  FastGPTChatHistorySummary,
+  FastGPTChatHistoryDetail,
+  FeedbackRequest,
+  FastGPTInitResponse
 } from '@/types';
+import { JsonValue, DynamicTypeGuard, SafeAccess, FastGPTEventPayload } from '@/types/dynamic';
+import type { SSEEventData } from '@/types/provider';
+import { createErrorFromUnknown } from '@/types/errors';
+
+import {
+  BaseError,
+  ValidationError,
+  AuthenticationError,
+  AuthorizationError,
+  NetworkError,
+  ExternalServiceError,
+  ResourceError,
+  BusinessLogicError,
+  SystemError,
+  wrapAsyncHandler,
+} from '@/types/errors';
+import { DynamicDataConverter, JsonObject, FastGPTReasoningData } from '@/types/dynamic';
 import { generateId, formatFileSize } from '@/utils/helpers';
 
 /**
@@ -26,19 +140,19 @@ export class ChatController {
   private agentService: AgentConfigService;
   private chatService: ChatProxyService;
   private initService: ChatInitService;
-
   private historyService: ChatHistoryService;
+  private fastgptSessionService: FastGPTSessionService;
+  private protectionService = getProtectionService();
   private uploadDir: string;
-
 
   constructor() {
     this.agentService = new AgentConfigService();
     this.chatService = new ChatProxyService(this.agentService);
     this.initService = new ChatInitService(this.agentService);
-
     this.historyService = new ChatHistoryService();
+    this.fastgptSessionService = new FastGPTSessionService(this.agentService);
     this.uploadDir = path.resolve(__dirname, '../../uploads');
-
+  }
 
   /**
    * 聊天初始化请求验证Schema
@@ -198,12 +312,19 @@ export class ChatController {
     attachments?: ChatAttachmentMetadata[] | null,
     voiceNote?: VoiceNoteMetadata | null
   ): ChatMessage[] {
-    const list = (messages || []).map((msg) => ({
-      ...msg,
-      metadata: msg.metadata ? { ...msg.metadata } : undefined,
-      attachments: msg.attachments ? [...msg.attachments] : undefined,
-      voiceNote: msg.voiceNote ?? null,
-    }));
+    const list = (messages || []).map((msg) => {
+      const result: ChatMessage = {
+        ...msg,
+        ...(msg.metadata && { metadata: { ...msg.metadata } }),
+        ...(msg.attachments && { attachments: [...msg.attachments] }),
+      };
+
+      if (msg.voiceNote !== undefined) {
+        result.voiceNote = msg.voiceNote;
+      }
+
+      return result;
+    });
 
     if ((!attachments || attachments.length === 0) && !voiceNote) {
       return list;
@@ -215,6 +336,10 @@ export class ChatController {
     }
 
     const target = list[index];
+    if (!target) {
+      return list;
+    }
+
     const summary: string[] = [];
     const mergedAttachments: ChatAttachmentMetadata[] = target.attachments
       ? [...target.attachments]
@@ -239,14 +364,22 @@ export class ChatController {
       target.content = `${target.content}\n\n${summary.join('\n')}`.trim();
     }
 
-    target.attachments = mergedAttachments.length ? mergedAttachments : undefined;
+    if (mergedAttachments.length > 0) {
+      target.attachments = mergedAttachments;
+    }
+
     const finalVoice = voiceNote || target.voiceNote || null;
     target.voiceNote = finalVoice;
-    target.metadata = {
+
+    const newMetadata: ChatMessage['metadata'] = {
       ...(target.metadata || {}),
       ...(mergedAttachments.length ? { attachments: mergedAttachments } : {}),
       ...(finalVoice ? { voiceNote: finalVoice } : {}),
     };
+
+    if (Object.keys(newMetadata).length > 0) {
+      target.metadata = newMetadata;
+    }
 
     return list;
   }
@@ -262,13 +395,13 @@ export class ChatController {
 
   private findLastUserMessage(messages: ChatMessage[]): ChatMessage | null {
     const index = this.findLastUserMessageIndex(messages);
-    return index >= 0 ? messages[index] : null;
+    return index >= 0 && messages[index] ? messages[index] : null;
   }
 
   private resolveClientIp(req: Request): string | null {
     const forwarded = req.headers['x-forwarded-for'];
     if (Array.isArray(forwarded) && forwarded.length > 0) {
-      return forwarded[0];
+      return forwarded[0] || null;
     }
     if (typeof forwarded === 'string' && forwarded.trim()) {
       return forwarded;
@@ -276,7 +409,7 @@ export class ChatController {
 
     const realIp = req.headers['x-real-ip'];
     if (Array.isArray(realIp) && realIp.length > 0) {
-      return realIp[0];
+      return realIp[0] || null;
     }
     if (typeof realIp === 'string' && realIp.trim()) {
       return realIp;
@@ -300,8 +433,13 @@ export class ChatController {
         sessionId: sessionId || null,
         ip: ip || null,
       });
-    } catch (error) {
-      console.warn('[ChatController] 记录地域分析失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'recordGeoSnapshot',
+        agentId,
+      });
+      logger.warn('[ChatController] 记录地域分析失败', { error: typedError.message });
     }
   }
 
@@ -328,24 +466,29 @@ export class ChatController {
     if (!lastUser) {
       return;
     }
-    const metadata = (attachments && attachments.length) || voiceNote
-      ? {
-          attachments: attachments && attachments.length ? attachments : undefined,
-          voiceNote: voiceNote || null,
-        }
-      : undefined;
     try {
       await this.historyService.appendMessage({
         sessionId,
         agentId,
         role: 'user',
         content: lastUser.content,
-        metadata,
-        messageId: lastUser.id,
+        ...(attachments && attachments.length || voiceNote ? {
+          metadata: {
+            attachments: attachments && attachments.length ? attachments : undefined,
+            voiceNote: voiceNote || null,
+          }
+        } : {}),
+        ...(lastUser.id ? { messageId: lastUser.id } : {}),
         titleHint: this.buildSessionTitle(messages),
       });
-    } catch (error) {
-      console.warn('[ChatController] 记录用户消息失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'recordUserHistory',
+        sessionId,
+        agentId,
+      });
+      logger.warn('[ChatController] 记录用户消息失败', { error: typedError.message });
     }
   }
 
@@ -360,14 +503,14 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
         return;
       }
 
-      const { agentId, messages, stream } = value as any;
+      const { agentId, messages, stream } = value as ChatRequest;
       const attachments: ChatAttachmentMetadata[] | undefined = value.attachments;
       const voiceNote: VoiceNoteMetadata | undefined = value.voiceNote;
 
@@ -431,12 +574,15 @@ export class ChatController {
         voiceNote
       );
 
-      console.log('🧪 [chatCompletions] 入参(归一化): ', {
+      logger.debug('🧪 [chatCompletions] 入参(归一化)', {
         agentId,
         stream,
         options: normalizedOptions,
         messagesCount: decoratedMessages.length,
       });
+
+      // 获取保护上下文
+      const protectionContext = (req as ProtectedRequest).protectionContext;
 
       // 处理流式请求
       if (stream) {
@@ -447,7 +593,8 @@ export class ChatController {
           normalizedOptions,
           sessionId,
           attachments,
-          voiceNote || null
+          voiceNote || null,
+          protectionContext
         );
       } else {
         await this.handleNormalRequest(
@@ -457,11 +604,19 @@ export class ChatController {
           normalizedOptions,
           sessionId,
           attachments,
-          voiceNote || null
+          voiceNote || null,
+          protectionContext
         );
       }
-    } catch (error) {
-      console.error('聊天请求处理失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'chatCompletions',
+        url: req.originalUrl,
+        method: req.method,
+      });
+
+      logger.error('聊天请求处理失败', { error: typedError });
 
       // 如果响应头已发送（流式响应中），不能再发送JSON响应
       if (res.headersSent) {
@@ -469,16 +624,16 @@ export class ChatController {
       }
 
       const apiError: ApiError = {
-        code: 'CHAT_REQUEST_FAILED',
-        message: '聊天请求处理失败',
-        timestamp: new Date().toISOString(),
+        code: typedError.code,
+        message: typedError.getUserMessage(),
+        timestamp: typedError.timestamp,
+        ...(process.env.NODE_ENV === 'development' && typedError.context && {
+          details: typedError.context as JsonValue
+        }),
       };
 
-      if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
-      }
-
-      res.status(500).json(apiError);
+      const statusCode = this.getErrorStatusCode(typedError);
+      res.status(statusCode).json(apiError);
     }
   };
 
@@ -492,10 +647,16 @@ export class ChatController {
     options: ChatOptions | undefined,
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
-    _voiceNote?: VoiceNoteMetadata | null
+    _voiceNote?: VoiceNoteMetadata | null,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     try {
-      const response = await this.chatService.sendMessage(agentId, messages, options);
+      const response = await this.chatService.sendMessage(
+        agentId,
+        messages,
+        options,
+        protectionContext
+      );
       const assistantContent =
         response?.choices?.[0]?.message?.content || '';
 
@@ -505,27 +666,47 @@ export class ChatController {
           agentId,
           role: 'assistant',
           content: assistantContent,
-          metadata: options?.responseChatItemId
-            ? { responseChatItemId: options.responseChatItemId }
-            : undefined,
+          ...(options?.responseChatItemId ? {
+            metadata: { responseChatItemId: options.responseChatItemId }
+          } : {}),
         });
-      } catch (error) {
-        console.warn('[ChatController] 记录助手消息失败:', error);
+      } catch (unknownError) {
+        const typedError = createErrorFromUnknown(unknownError, {
+          component: 'ChatController',
+          operation: 'recordAssistantMessage',
+          sessionId,
+          agentId,
+        });
+        logger.warn('[ChatController] 记录助手消息失败', { error: typedError.message });
       }
 
-      res.json({
-        success: true,
-        data: { ...response, chatId: sessionId },
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, { ...response, chatId: sessionId }, {
+        message: '聊天请求成功',
       });
-    } catch (error) {
-      const apiError: ApiError = {
-        code: 'CHAT_SERVICE_ERROR',
-        message: error instanceof Error ? error.message : '聊天服务错误',
-        timestamp: new Date().toISOString(),
-      };
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'handleNormalRequest',
+        sessionId,
+        agentId,
+      });
 
-      res.status(500).json(apiError);
+      logger.error('普通聊天请求失败', { error: typedError.message });
+
+      // 检查是否是降级响应
+      if (typeof unknownError === 'object' && unknownError !== null && 'fallbackUsed' in unknownError) {
+        const fallbackError = unknownError as { fallbackUsed?: boolean; data?: JsonValue };
+        if (fallbackError.fallbackUsed) {
+          ApiResponseHandler.sendSuccess(res, fallbackError.data ?? null, {
+            message: '已返回降级响应',
+          });
+          return;
+        }
+      }
+
+      const apiError = typedError.toApiError();
+      const statusCode = this.getErrorStatusCode(typedError);
+      res.status(statusCode).json(apiError);
     }
   }
 
@@ -539,7 +720,8 @@ export class ChatController {
     options: ChatOptions | undefined,
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
-    _voiceNote?: VoiceNoteMetadata | null
+    _voiceNote?: VoiceNoteMetadata | null,
+    protectionContext?: ProtectedRequestContext
   ): Promise<void> {
     try {
       // 标准 SSE 响应头
@@ -547,21 +729,21 @@ export class ChatController {
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // 兼容反向代理
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
       // 立即刷新头部，避免缓冲
-      // @ts-ignore Node.js typings 可能无 flushHeaders 声明
-      typeof (res as any).flushHeaders === 'function' && (res as any).flushHeaders();
+      const extendedRes = res as ExtendedResponse;
+      if (typeof extendedRes.flushHeaders === 'function') {
+        extendedRes.flushHeaders();
+      }
 
-      console.log('🚀 开始处理流式请求，智能体:', agentId);
+      logger.debug('🚀 开始处理流式请求', { agentId });
 
       // 发送初始化事件
-      this.sendSSEEvent(res, 'chatId', { chatId: sessionId });
+      this.sendSSEEvent(res, 'chatId', { chatId: sessionId } as JsonValue);
       this.sendSSEEvent(res, 'start', {
         id: generateId(),
         timestamp: new Date().toISOString(),
         agentId,
-      });
+      } as JsonValue);
 
       let assistantContent = '';
 
@@ -571,47 +753,52 @@ export class ChatController {
         messages,
         // 内容回调 - 确保正确调用
         (chunk: string) => {
-          console.log('📨 收到内容块:', chunk.substring(0, 50));
+          logger.debug('📨 收到内容块', { preview: chunk.substring(0, 50) });
           assistantContent += chunk;
-          this.sendSSEEvent(res, 'chunk', { content: chunk });
+          this.sendSSEEvent(res, 'chunk', { content: chunk } as JsonValue);
         },
         // 状态回调 - 确保正确调用
         (status: StreamStatus) => {
-          console.log('📊 收到状态更新:', status);
-          this.sendSSEEvent(res, 'status', status);
+          logger.debug('📊 收到状态更新', { status });
+          this.sendSSEEvent(res, 'status', DynamicDataConverter.toSafeJsonValue(status));
 
           // 如果是完成或错误状态，结束响应
           if (status.type === 'complete' || status.type === 'error') {
-            console.log('✅ 流式响应完成');
+            logger.debug('✅ 流式响应完成');
             this.sendSSEEvent(res, 'end', {
               timestamp: new Date().toISOString(),
-            });
+            } as JsonValue);
             res.end();
           }
         },
         options,
         // 事件透传回调：关注 FastGPT 的 interactive 以及 chatId 事件
-        (eventName: string, data: any) => {
+        (eventName: string, data: SSEEventData) => {
           if (!eventName) return;
 
           if (eventName === 'interactive') {
-            console.log('🧩 收到交互节点事件 interactive，payload 预览:',
-              (() => { try { return JSON.stringify(data).slice(0, 300); } catch { return '[Unserializable payload]'; } })()
-            );
-            this.sendSSEEvent(res, 'interactive', data);
+            let payloadPreview = '[Unserializable]';
+            try {
+              payloadPreview = JSON.stringify(data).slice(0, 300);
+            } catch { /* ignored */ }
+            logger.debug('🧩 收到交互节点事件 interactive', { payloadPreview });
+            this.sendSSEEvent(res, 'interactive', DynamicDataConverter.toSafeJsonValue(data));
             return;
           }
 
           if (eventName === 'chatId') {
-            console.log('🆔 透传本次使用的 chatId:', (data && (data.chatId || data.id)) || data);
-            this.sendSSEEvent(res, 'chatId', data);
+            const dataObj = (typeof data === 'object' && data !== null) ? data as Record<string, JsonValue> : {};
+            const chatId = (dataObj.chatId || dataObj.id || data) as string | JsonValue;
+            logger.debug('🆔 透传本次使用的 chatId', { chatId });
+            this.sendSSEEvent(res, 'chatId', DynamicDataConverter.toSafeJsonValue(data));
             return;
           }
 
-          console.log('📎 透传 FastGPT 事件:', eventName);
-          this.sendSSEEvent(res, eventName, data);
-        }
-        );
+          logger.debug('📎 透传 FastGPT 事件', { eventName });
+          this.sendSSEEvent(res, eventName, DynamicDataConverter.toSafeJsonValue(data));
+        },
+        protectionContext
+      );
 
       if (assistantContent) {
         try {
@@ -620,23 +807,46 @@ export class ChatController {
             agentId,
             role: 'assistant',
             content: assistantContent,
-            metadata: options?.responseChatItemId
-              ? { responseChatItemId: options.responseChatItemId }
-              : undefined,
+            ...(options?.responseChatItemId ? {
+              metadata: { responseChatItemId: options.responseChatItemId }
+            } : {}),
           });
-        } catch (error) {
-          console.warn('[ChatController] 记录流式助手消息失败:', error);
+        } catch (unknownError) {
+          const typedError = createErrorFromUnknown(unknownError, {
+            component: 'ChatController',
+            operation: 'recordStreamAssistantMessage',
+            sessionId,
+            agentId,
+          });
+          logger.warn('[ChatController] 记录流式助手消息失败', { error: typedError.message });
         }
       }
-    } catch (error) {
-      console.error('❌ 流式聊天请求失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'handleStreamRequest',
+        sessionId,
+        agentId,
+      });
+
+      logger.error('❌ 流式聊天请求失败', { error: typedError.message });
+
+      // 检查是否是降级响应
+      if (typeof unknownError === 'object' && unknownError !== null && 'fallbackUsed' in unknownError) {
+        const fallbackError = unknownError as { fallbackUsed?: boolean; data?: JsonValue };
+        if (fallbackError.fallbackUsed) {
+          this.sendSSEEvent(res, 'fallback', (fallbackError.data || null) as JsonValue);
+          res.end();
+          return;
+        }
+      }
 
       // 发送错误事件
       this.sendSSEEvent(res, 'error', {
-        code: 'STREAM_ERROR',
-        message: error instanceof Error ? error.message : '流式响应错误',
-        timestamp: new Date().toISOString(),
-      });
+        code: typedError.code,
+        message: typedError.message,
+        timestamp: typedError.timestamp,
+      } as JsonValue);
 
       res.end();
     }
@@ -645,12 +855,17 @@ export class ChatController {
   /**
    * 发送SSE事件
    */
-  private sendSSEEvent(res: Response, event: string, data: any): void {
+  private sendSSEEvent(res: Response, event: string, data: unknown): void {
     try {
       res.write(`event: ${event}\n`);
       res.write(`data: ${JSON.stringify(data)}\n\n`);
-    } catch (error) {
-      console.error('发送SSE事件失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'sendSSEEvent',
+        context: { event, dataType: typeof data },
+      });
+      logger.error('发送SSE事件失败', { error: typedError.message });
     }
   }
 
@@ -665,7 +880,7 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
@@ -674,7 +889,7 @@ export class ChatController {
 
       const { appId, chatId, stream } = value;
 
-      console.log(`🚀 处理聊天初始化请求: appId=${appId}, chatId=${chatId}, stream=${stream}`);
+      logger.debug('🚀 处理聊天初始化请求', { appId, chatId, stream });
 
       // 检查智能体是否存在且激活
       const agent = await this.agentService.getAgent(appId);
@@ -707,22 +922,28 @@ export class ChatController {
         await this.handleInitNormalRequest(res, appId, chatId);
       }
 
-    } catch (error) {
-      console.error('聊天初始化请求处理失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'chatInit',
+        url: req.originalUrl,
+        method: req.method,
+      });
+
+      logger.error('聊天初始化请求处理失败', { error: typedError.message });
 
       // 如果响应头已发送（流式响应中），不能再发送JSON响应
       if (res.headersSent) {
         return;
       }
 
-      const apiError: ApiError = {
-        code: 'CHAT_INIT_FAILED',
-        message: '聊天初始化失败',
-        timestamp: new Date().toISOString(),
-      };
+      const apiError = typedError.toApiError();
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : error };
+        apiError.details = {
+          originalError: typedError.message,
+          ...(typedError.stack && { stack: typedError.stack }),
+        } as JsonValue;
       }
 
       res.status(500).json(apiError);
@@ -740,18 +961,19 @@ export class ChatController {
     try {
       const initData = await this.initService.getInitData(appId, chatId);
 
-      res.json({
-        success: true,
-        data: initData,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, initData, {
+        message: '初始化数据获取成功',
       });
-    } catch (error) {
-      const apiError: ApiError = {
-        code: 'INIT_SERVICE_ERROR',
-        message: error instanceof Error ? error.message : '初始化服务错误',
-        timestamp: new Date().toISOString(),
-      };
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'handleInitNormalRequest',
+        url: res.req?.originalUrl,
+        method: res.req?.method,
+        context: { appId, chatId },
+      });
 
+      const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
   }
@@ -770,15 +992,15 @@ export class ChatController {
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
       // 立即刷新头部
-      // @ts-ignore
-      typeof (res as any).flushHeaders === 'function' && (res as any).flushHeaders();
+      const extendedRes = res as ExtendedResponse;
+      if (typeof extendedRes.flushHeaders === 'function') {
+        extendedRes.flushHeaders();
+      }
 
-      console.log('🚀 开始处理流式初始化请求，应用:', appId);
-      console.log('ℹ️ 初始化流仅包含 start/chunk/complete/end 事件，不包含 interactive 事件');
+      logger.debug('🚀 开始处理流式初始化请求', { appId });
+      logger.debug('ℹ️ 初始化流仅包含 start/chunk/complete/end 事件，不包含 interactive 事件');
 
       // 发送初始化事件
       this.sendSSEEvent(res, 'start', {
@@ -786,7 +1008,7 @@ export class ChatController {
         timestamp: new Date().toISOString(),
         appId,
         type: 'init'
-      });
+      } as JsonValue);
 
       // 调用流式初始化服务
       await this.initService.getInitDataStream(
@@ -794,50 +1016,59 @@ export class ChatController {
         chatId,
         // 内容回调 - 流式输出开场白
         (chunk: string) => {
-          // console.log('📨 收到开场白内容块:', chunk.substring(0, 20));
-          this.sendSSEEvent(res, 'chunk', { content: chunk });
+          this.sendSSEEvent(res, 'chunk', { content: chunk } as JsonValue);
         },
         // 完成回调 - 返回完整初始化数据
         (initData) => {
-          console.log('✅ 初始化数据获取完成');
-          this.sendSSEEvent(res, 'complete', {
+          logger.debug('✅ 初始化数据获取完成');
+          this.sendSSEEvent(res, 'complete', DynamicDataConverter.toSafeJsonValue({
             data: initData,
             timestamp: new Date().toISOString()
-          });
+          }));
           this.sendSSEEvent(res, 'end', {
             timestamp: new Date().toISOString(),
-          });
+          } as JsonValue);
           res.end();
         },
         // 错误回调
-        (error) => {
-          console.error('❌ 初始化流式处理失败:', error);
-          this.sendSSEEvent(res, 'error', {
-            error: error.message,
-            timestamp: new Date().toISOString(),
+        (unknownError) => {
+          const typedError = createErrorFromUnknown(unknownError, {
+            component: 'ChatController',
+            operation: 'initDataStream',
+            context: { appId, chatId },
           });
+          logger.error('❌ 初始化流式处理失败', { error: typedError.message });
+          this.sendSSEEvent(res, 'error', {
+            code: typedError.code,
+            message: typedError.message,
+            timestamp: typedError.timestamp,
+          } as JsonValue);
           this.sendSSEEvent(res, 'end', {
             timestamp: new Date().toISOString(),
-          });
+          } as JsonValue);
           res.end();
         }
       );
 
-    } catch (error) {
-      console.error('❌ 流式初始化请求处理失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'handleInitStreamRequest',
+        url: res.req?.originalUrl,
+        method: res.req?.method,
+        context: { appId, chatId },
+      });
+      logger.error('❌ 流式初始化请求处理失败', { error: typedError.message });
 
       if (!res.headersSent) {
-        const apiError: ApiError = {
-          code: 'INIT_STREAM_ERROR',
-          message: error instanceof Error ? error.message : '流式初始化错误',
-          timestamp: new Date().toISOString(),
-        };
+        const apiError = typedError.toApiError();
         res.status(500).json(apiError);
       } else {
         this.sendSSEEvent(res, 'error', {
-          error: error instanceof Error ? error.message : '流式初始化错误',
-          timestamp: new Date().toISOString(),
-        });
+          code: typedError.code,
+          message: typedError.message,
+          timestamp: typedError.timestamp,
+        } as JsonValue);
         res.end();
       }
     }
@@ -852,49 +1083,73 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
         return;
       }
 
-      const { agentId, chatId, dataId, userGoodFeedback, userBadFeedback } = value as any;
+      const { agentId, chatId, dataId, userGoodFeedback, userBadFeedback } = value as FeedbackRequest;
 
-      await this.fastgptSessionService.updateUserFeedback(agentId, {
+      const feedbackData: {
+        chatId: string;
+        dataId: string;
+        userGoodFeedback?: string;
+        userBadFeedback?: string;
+      } = {
         chatId,
         dataId,
-        userGoodFeedback,
-        userBadFeedback,
-      });
-
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
-    } catch (err) {
-      console.error('提交点赞/点踩反馈失败:', err);
-      const apiError: ApiError = {
-        code: 'FEEDBACK_FAILED',
-        message: err instanceof Error ? err.message : '反馈失败',
-        timestamp: new Date().toISOString(),
       };
-      let status = 500;
-      const errCode = (err as any)?.code;
-      const axiosStatus = (err as any)?.response?.status;
-      if (errCode === 'NOT_FOUND') {
-        status = 404;
-        apiError.code = 'AGENT_NOT_FOUND';
-      } else if (errCode === 'INVALID_PROVIDER' || errCode === 'INVALID_APP_ID') {
-        status = 400;
-        apiError.code = errCode;
-      } else if (axiosStatus === 404) {
-        status = 502;
-        apiError.code = 'UPSTREAM_NOT_FOUND';
-      } else if (axiosStatus === 401) {
-        status = 401;
-        apiError.code = 'UPSTREAM_UNAUTHORIZED';
-      } else if (axiosStatus === 408) {
-        status = 504;
-        apiError.code = 'UPSTREAM_TIMEOUT';
+      if (userGoodFeedback !== undefined) {
+        feedbackData.userGoodFeedback = userGoodFeedback.toString();
       }
+      if (userBadFeedback !== undefined) {
+        feedbackData.userBadFeedback = userBadFeedback.toString();
+      }
+
+      await this.fastgptSessionService.updateUserFeedback(agentId, feedbackData);
+
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '反馈提交成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'updateUserFeedback',
+        url: req.originalUrl,
+        method: req.method,
+      });
+      logger.error('提交点赞/点踩反馈失败', { error: typedError.message });
+
+      const apiError = typedError.toApiError();
+      let status = this.getErrorStatusCode(typedError);
+
+      // 特殊处理某些错误代码
+      const originalErrorObj = SafeAccess.getObject(typedError.context, 'originalError');
+      const originalError = originalErrorObj as Error | undefined;
+      if (originalError) {
+        const errCode = ErrorExtractor.extractCode(originalError);
+        const axiosStatus = ErrorExtractor.extractStatus(originalError);
+        if (errCode === 'NOT_FOUND') {
+          status = 404;
+          apiError.code = 'AGENT_NOT_FOUND';
+        } else if (errCode === 'INVALID_PROVIDER' || errCode === 'INVALID_APP_ID') {
+          status = 400;
+          apiError.code = errCode;
+        } else if (axiosStatus === 404) {
+          status = 502;
+          apiError.code = 'UPSTREAM_NOT_FOUND';
+        } else if (axiosStatus === 401) {
+          status = 401;
+          apiError.code = 'UPSTREAM_UNAUTHORIZED';
+        } else if (axiosStatus === 408) {
+          status = 504;
+          apiError.code = 'UPSTREAM_TIMEOUT';
+        }
+      }
+
       res.status(status).json(apiError);
     }
   };
@@ -910,7 +1165,7 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
@@ -952,38 +1207,55 @@ export class ChatController {
         pagination
       );
 
-      res.json({
-        success: true,
-        data: histories,
-        timestamp: new Date().toISOString(),
+      const extraMetadata: Record<string, JsonValue> = {};
+      if (typeof pagination.page === 'number') {
+        extraMetadata.page = pagination.page;
+      }
+      if (typeof pagination.pageSize === 'number') {
+        extraMetadata.pageSize = pagination.pageSize;
+      }
+
+      ApiResponseHandler.sendSuccess(res, histories, {
+        message: '获取聊天历史成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+        ...(Object.keys(extraMetadata).length
+          ? { metadata: { extra: extraMetadata } }
+          : {}),
       });
-    } catch (err: any) {
-      console.error('获取聊天历史列表失败:', err);
-      const apiError: ApiError = {
-        code: 'GET_HISTORY_LIST_FAILED',
-        message: err instanceof Error ? err.message : '获取聊天历史失败',
-        timestamp: new Date().toISOString(),
-      };
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'listChatHistories',
+        url: req.originalUrl,
+        method: req.method,
+      });
+      logger.error('获取聊天历史列表失败', { error: typedError.message });
+
+      const apiError = typedError.toApiError();
+      let status = this.getErrorStatusCode(typedError);
 
       // 错误语义映射
-      let status = 500;
-      const errCode = err?.code;
-      const axiosStatus = err?.response?.status;
-      if (errCode === 'NOT_FOUND') {
-        status = 404;
-        apiError.code = 'AGENT_NOT_FOUND';
-      } else if (errCode === 'INVALID_PROVIDER' || errCode === 'INVALID_APP_ID') {
-        status = 400;
-        apiError.code = errCode;
-      } else if (axiosStatus === 404) {
-        status = 502;
-        apiError.code = 'UPSTREAM_NOT_FOUND';
-      } else if (axiosStatus === 401) {
-        status = 401;
-        apiError.code = 'UPSTREAM_UNAUTHORIZED';
-      } else if (axiosStatus === 408) {
-        status = 504;
-        apiError.code = 'UPSTREAM_TIMEOUT';
+      const originalErrorObj = SafeAccess.getObject(typedError.context, 'originalError');
+      const originalError = originalErrorObj as Error | undefined;
+      if (originalError) {
+        const errCode = ErrorExtractor.extractCode(originalError);
+        const axiosStatus = ErrorExtractor.extractStatus(originalError);
+        if (errCode === 'NOT_FOUND') {
+          status = 404;
+          apiError.code = 'AGENT_NOT_FOUND';
+        } else if (errCode === 'INVALID_PROVIDER' || errCode === 'INVALID_APP_ID') {
+          status = 400;
+          apiError.code = errCode;
+        } else if (axiosStatus === 404) {
+          status = 502;
+          apiError.code = 'UPSTREAM_NOT_FOUND';
+        } else if (axiosStatus === 401) {
+          status = 401;
+          apiError.code = 'UPSTREAM_UNAUTHORIZED';
+        } else if (axiosStatus === 408) {
+          status = 504;
+          apiError.code = 'UPSTREAM_TIMEOUT';
+        }
       }
 
       res.status(status).json(apiError);
@@ -1013,7 +1285,7 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
@@ -1045,21 +1317,20 @@ export class ChatController {
 
       const detail: FastGPTChatHistoryDetail = await this.fastgptSessionService.getHistoryDetail(agentId, chatId);
 
-      res.json({
-        success: true,
-        data: detail,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, detail, {
+        message: '获取聊天历史详情成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (err: any) {
-      console.error('获取聊天历史失败:', err);
+    } catch (err: unknown) {
+      logger.error('获取聊天历史失败', { error: err });
       const apiError: ApiError = {
         code: 'GET_HISTORY_FAILED',
         message: err instanceof Error ? err.message : '获取聊天历史失败',
         timestamp: new Date().toISOString(),
       };
       let status = 500;
-      const errCode = err?.code;
-      const axiosStatus = err?.response?.status;
+      const errCode = ErrorExtractor.extractCode(err);
+      const axiosStatus = ErrorExtractor.extractStatus(err);
       if (errCode === 'NOT_FOUND') {
         status = 404;
         apiError.code = 'AGENT_NOT_FOUND';
@@ -1102,7 +1373,7 @@ export class ChatController {
       if (error) {
         const apiError: ApiError = {
           code: 'VALIDATION_ERROR',
-          message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
         };
         res.status(400).json(apiError);
@@ -1112,17 +1383,20 @@ export class ChatController {
       const { agentId } = value as { agentId: string };
       await this.fastgptSessionService.deleteHistory(agentId, chatId);
 
-      res.json({ success: true, data: null, timestamp: new Date().toISOString() });
-    } catch (err: any) {
-      console.error('删除聊天历史失败:', err);
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '聊天历史删除成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
+    } catch (err: unknown) {
+      logger.error('删除聊天历史失败', { error: err });
       const apiError: ApiError = {
         code: 'DELETE_HISTORY_FAILED',
         message: err instanceof Error ? err.message : '删除聊天历史失败',
         timestamp: new Date().toISOString(),
       };
       let status = 500;
-      const errCode = err?.code;
-      const axiosStatus = err?.response?.status;
+      const errCode = ErrorExtractor.extractCode(err);
+      const axiosStatus = ErrorExtractor.extractStatus(err);
       if (errCode === 'NOT_FOUND') {
         status = 404;
         apiError.code = 'AGENT_NOT_FOUND';
@@ -1148,8 +1422,13 @@ export class ChatController {
   private async ensureUploadDirectory(): Promise<void> {
     try {
       await fs.mkdir(this.uploadDir, { recursive: true });
-    } catch (error) {
-      console.warn('[ChatController] 创建上传目录失败:', error);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'ensureUploadDirectory',
+        context: { uploadDir: this.uploadDir },
+      });
+      logger.warn('[ChatController] 创建上传目录失败', { error: typedError.message });
     }
   }
 
@@ -1206,18 +1485,20 @@ export class ChatController {
         source: value.source || 'upload',
       };
 
-      res.json({
-        success: true,
-        data: metadata,
-        timestamp: new Date().toISOString(),
+      ApiResponseHandler.sendSuccess(res, metadata, {
+        message: '附件上传成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
-      console.error('[ChatController] 上传附件失败:', error);
-      res.status(500).json({
-        code: 'ATTACHMENT_UPLOAD_FAILED',
-        message: '上传附件失败',
-        timestamp: new Date().toISOString(),
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'uploadAttachment',
+        url: req.originalUrl,
+        method: req.method,
       });
+      logger.error('[ChatController] 上传附件失败', { error: typedError.message });
+      const apiError = typedError.toApiError();
+      res.status(500).json(apiError);
     }
   };
 
@@ -1287,20 +1568,34 @@ export class ChatController {
         res.status(404).json({
           code: 'SESSION_NOT_FOUND',
           message: `未找到会话: ${sessionId}`,
+      const { error, value } = this.historyDeleteSchema.validate(req.query);
+      if (error) {
+        const apiError: ApiError = {
+          code: 'VALIDATION_ERROR',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
           timestamp: new Date().toISOString(),
-        });
+        };
+        res.status(400).json(apiError);
         return;
       }
 
-      res.json({
-        success: true,
-        data: history,
+      const { agentId } = value as { agentId: string };
+      await this.fastgptSessionService.clearHistories(agentId);
 
+      ApiResponseHandler.sendSuccess(res, null, {
+        message: '聊天历史已清空',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
+    } catch (err: unknown) {
+      logger.error('清空聊天历史失败', { error: err });
+      const apiError: ApiError = {
+        code: 'CLEAR_HISTORY_FAILED',
+        message: err instanceof Error ? err.message : '清空聊天历史失败',
         timestamp: new Date().toISOString(),
       };
       let status = 500;
-      const errCode = err?.code;
-      const axiosStatus = err?.response?.status;
+      const errCode = ErrorExtractor.extractCode(err);
+      const axiosStatus = ErrorExtractor.extractStatus(err);
       if (errCode === 'NOT_FOUND') {
         status = 404;
         apiError.code = 'AGENT_NOT_FOUND';
@@ -1342,7 +1637,7 @@ export class ChatController {
     if (error) {
       const apiError: ApiError = {
         code: 'VALIDATION_ERROR',
-        message: error?.details?.[0]?.message || (error as any)?.message || '请求参数校验失败',
+        message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
         timestamp: new Date().toISOString(),
       };
       res.status(400).json(apiError);
@@ -1372,30 +1667,63 @@ export class ChatController {
       };
 
       if (stream) {
-        await this.handleStreamRequest(res, agentId, prepared.messages, options);
+        await this.handleStreamRequest(res, agentId, prepared.messages, options, chatId);
         return;
       }
 
-      await this.handleNormalRequest(res, agentId, prepared.messages, options);
-    } catch (err) {
-      console.error('重新生成聊天消息失败:', err);
+      await this.handleNormalRequest(res, agentId, prepared.messages, options, chatId);
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'retryChatMessage',
+        url: req.originalUrl,
+        method: req.method,
+        context: { stream, sessionId: chatId, agentId },
+      });
+      logger.error('重新生成聊天消息失败', { error: typedError.message });
 
       if (stream && res.headersSent) {
         this.sendSSEEvent(res, 'error', {
-          code: 'RETRY_FAILED',
-          message: err instanceof Error ? err.message : '重新生成失败',
-          timestamp: new Date().toISOString(),
-        });
+          code: typedError.code,
+          message: typedError.message,
+          timestamp: typedError.timestamp,
+        } as JsonValue);
         res.end();
         return;
       }
 
-      const apiError: ApiError = {
-        code: 'RETRY_FAILED',
-        message: err instanceof Error ? err.message : '重新生成失败',
-        timestamp: new Date().toISOString(),
-      };
+      const apiError = typedError.toApiError();
       res.status(500).json(apiError);
     }
   };
+
+  /**
+   * 获取错误状态码
+   */
+  private getErrorStatusCode(error: Error): number {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('熔断器')) return 503;
+    if (message.includes('限流')) return 429;
+    if (message.includes('超时')) return 408;
+    if (message.includes('网络')) return 502;
+    if (message.includes('不可用')) return 503;
+
+    return 500;
+  }
+
+  /**
+   * 获取错误代码
+   */
+  private getErrorCode(error: Error): string {
+    const message = error.message.toLowerCase();
+
+    if (message.includes('熔断器')) return 'CIRCUIT_BREAKER_OPEN';
+    if (message.includes('限流')) return 'RATE_LIMIT_EXCEEDED';
+    if (message.includes('超时')) return 'REQUEST_TIMEOUT';
+    if (message.includes('网络')) return 'NETWORK_ERROR';
+    if (message.includes('不可用')) return 'SERVICE_UNAVAILABLE';
+
+    return 'INTERNAL_ERROR';
+  }
 }

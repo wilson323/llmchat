@@ -1,40 +1,18 @@
 {
-  // 通用配置文件（可扩展）
-  "logging": {
-    // 是否写日志
-    "enabled": true,
-    // 日志目录（相对于项目根目录）
-    "dir": "./log",
-    // 记录范围（非流式/流式）
-    "record": {
-      "normal": true,
-      "stream": true
-    },
-    // 包含内容（原始返回/归一化返回）
-    "include": {
-      "raw": true,
-      "normalized": true
-    },
-    // 导出到可观测平台（可选）
-    "exporters": []
-  }
-  ,
+  // 项目根配置（被 backend/src/utils/db.ts 读取）
+  // 使用环境变量占位符时，建议仅用于字符串；数值项使用合法 JSON 值
   "database": {
-    // 后台管理改用 PostgreSQL；不再从 auth.defaultAccounts 读取登录账号
     "postgres": {
-      "host": "171.43.138.237",
-      "port": 5433,
-      "user": "username",
-      "password": "password",
-      "database": "llmchat",
+      "host": "${DB_HOST}",
+      "port": 5432,
+      "user": "${DB_USER}",
+      "password": "${DB_PASSWORD}",
+      "database": "${DB_NAME}",
       "ssl": false
     }
-  }
-
-,
+  },
   "auth": {
     // token 有效期（秒），默认 24h
     "tokenTTLSeconds": 86400
   }
-
 }

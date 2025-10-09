@@ -1,0 +1,170 @@
+/**
+ * CAD 组件响应式样式
+ */
+
+/* 基础响应式断点 */
+@media (max-width: 768px) {
+  /* 移动端优化 */
+  .cad-viewer-container {
+    width: 100% !important;
+    height: 400px !important;
+  }
+
+  .cad-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    width: 100% !important;
+    border-left: none;
+    border-top: 2px solid var(--border-color);
+    overflow-y: auto;
+  }
+
+  .cad-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .cad-toolbar-button {
+    min-width: 44px; /* 触摸友好尺寸 */
+    min-height: 44px;
+  }
+
+  .cad-help-dialog {
+    max-width: 95vw;
+    max-height: 90vh;
+  }
+}
+
+@media (max-width: 640px) {
+  /* 小屏手机 */
+  .cad-control-panel {
+    padding: 0.75rem;
+  }
+
+  .cad-tab-button {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .cad-entity-list {
+    font-size: 0.75rem;
+  }
+
+  .cad-upload-zone {
+    padding: 1.5rem;
+  }
+
+  .cad-upload-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* 平板 */
+  .cad-sidebar {
+    width: 280px !important;
+  }
+
+  .cad-viewer-container {
+    width: calc(100% - 280px) !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  /* 桌面端 */
+  .cad-sidebar {
+    width: 320px !important;
+  }
+
+  .cad-viewer-container {
+    width: calc(100% - 320px) !important;
+  }
+}
+
+/* 高 DPI 屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .cad-viewer-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* 暗色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .cad-panel {
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --text-primary: #f9fafb;
+    --text-secondary: #d1d5db;
+    --border-color: #374151;
+  }
+}
+
+/* 触摸设备优化 */
+@media (pointer: coarse) {
+  .cad-button,
+  .cad-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.75rem;
+  }
+
+  .cad-slider {
+    height: 32px;
+  }
+
+  .cad-checkbox {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .cad-toolbar,
+  .cad-sidebar,
+  .cad-help-button {
+    display: none !important;
+  }
+
+  .cad-viewer-container {
+    width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+}
+
+/* 动画性能优化 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 横屏模式 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .cad-sidebar {
+    max-height: 80vh;
+  }
+
+  .cad-help-dialog {
+    max-height: 85vh;
+  }
+}
+
+/* 竖屏模式 */
+@media (orientation: portrait) and (max-width: 768px) {
+  .cad-viewer-container {
+    height: 300px !important;
+  }
+
+  .cad-sidebar {
+    max-height: 60vh;
+  }
+}

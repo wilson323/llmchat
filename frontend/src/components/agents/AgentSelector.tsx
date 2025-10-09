@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { ChevronDown, Bot, Camera, PhoneCall } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { useChatStore } from '@/store/chatStore';
 import { useAgents } from '@/hooks/useAgents';
-
 import { useI18n } from '@/i18n';
+import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 
 
 export const AgentSelector: React.FC = () => {
@@ -18,6 +19,7 @@ export const AgentSelector: React.FC = () => {
 
   const { fetchAgents, loading } = useAgents();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { t } = useI18n();
 
   useEffect(() => {
@@ -39,9 +41,39 @@ export const AgentSelector: React.FC = () => {
   }, [agentSelectorOpen, setAgentSelectorOpen]);
 
   const handleAgentSelect = (agent: any) => {
+    // 使用路由导航到智能体工作区
+    navigate(`/chat/${agent.id}`);
     setCurrentAgent(agent);
     setAgentSelectorOpen(false);
   };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Escape' && agentSelectorOpen) {
+      setAgentSelectorOpen(false);
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (!agentSelectorOpen) {
+        setAgentSelectorOpen(true);
+        event.preventDefault();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && agentSelectorOpen) {
+        setAgentSelectorOpen(false);
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (!agentSelectorOpen) {
+          setAgentSelectorOpen(true);
+          e.preventDefault();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [agentSelectorOpen, setAgentSelectorOpen]);
 
   const renderAgentIcon = (agentId?: string) => {
     if (agentId === PRODUCT_PREVIEW_AGENT_ID) {
@@ -56,12 +88,17 @@ export const AgentSelector: React.FC = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <Button
+        data-testid="agent-selector"
         onClick={() => setAgentSelectorOpen(!agentSelectorOpen)}
         variant="secondary"
         size="md"
         radius="lg"
         className="flex items-center gap-3 px-4 py-3 text-sm min-w-0 border border-white/30 bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-lg hover:from-white/25 hover:to-white/10 transition-all duration-500 shadow-xl hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed max-w-full sm:max-w-xs lg:max-w-sm"
         disabled={loading}
+        aria-label={t('选择智能体')}
+        aria-haspopup="listbox"
+        aria-expanded={agentSelectorOpen}
+        onKeyDown={handleKeyDown}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {renderAgentIcon(currentAgent?.id)}
@@ -80,17 +117,26 @@ export const AgentSelector: React.FC = () => {
       {agentSelectorOpen && (
         <>
           {/* 移动端全屏遮罩（透明以避免顶部黑色背景） */}
-          <div className="fixed inset-0 bg-transparent z-40 lg:hidden" 
-            onClick={() => setAgentSelectorOpen(false)} />
-          
-          {/* 下拉菜单 */}
-          <div className="absolute top-full left-0 right-0 mt-2 z-50 lg:right-auto lg:w-96 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl animate-slide-down max-h-[80vh] overflow-hidden">
-            
-            {/* 标题 */}
+          <div
+            className="fixed inset-0 bg-transparent z-40 lg:hidden"
+            onClick={() => setAgentSelectorOpen(false)}
+            aria-label="关闭下拉菜单"
+          />
 
-            
+          {/* 下拉菜单 */}
+          <div
+            className="absolute top-full left-0 right-0 mt-2 z-50 lg:right-auto lg:w-96 bg-background/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl animate-slide-down max-h-[80vh] overflow-hidden"
+            role="listbox"
+            aria-label={t('可用智能体列表')}
+          >
+
+            {/* 标题 */}
+            <div className="px-4 py-3 border-b border-border/50">
+              <h3 className="text-sm font-medium text-foreground">{t('选择智能体')}</h3>
+            </div>
+
             {/* 智能体列表 */}
-            <div className="max-h-[72vh] md:max-h-[75vh] overflow-y-auto overscroll-contain">
+            <div className="max-h-[72vh] md:max-h-[75vh] overflow-y-auto overscroll-contain" data-testid="agent-list">
               {loading ? (
                 <div className="p-4 text-center">
                   <div className="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -111,6 +157,9 @@ export const AgentSelector: React.FC = () => {
                       variant="ghost"
                       size="md"
                       radius="md"
+                      role="option"
+                      aria-selected={currentAgent?.id === agent.id}
+                      aria-label={`${agent.name}: ${agent.description}`}
                       className={`h-auto min-h-[4.5rem] w-full justify-start text-left px-4 py-3 transition-all duration-200 flex items-start gap-3 rounded-xl hover:bg-gradient-to-br hover:from-brand/15 hover:to-brand/5 ${
                         currentAgent?.id === agent.id
                           ? 'bg-brand/10 border-r-2 border-brand'

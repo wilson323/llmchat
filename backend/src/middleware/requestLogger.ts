@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '@/utils/logger';
 
 /**
  * 请求日志中间件
@@ -12,7 +13,7 @@ export const requestLogger = (
   const { method, url, ip } = req;
   
   // 记录请求开始
-  console.log(`📝 [${new Date().toISOString()}] ${method} ${url} - ${ip}`);
+  logger.debug('📝 HTTP请求', { method, url, ip, timestamp: new Date().toISOString() });
   
   // 监听响应完成
   res.on('finish', () => {
@@ -22,7 +23,7 @@ export const requestLogger = (
     // 根据状态码选择日志级别
     const logLevel = statusCode >= 400 ? '❌' : '✅';
     
-    console.log(
+    logger.debug(
       `${logLevel} [${new Date().toISOString()}] ${method} ${url} - ${statusCode} - ${duration}ms`
     );
   });

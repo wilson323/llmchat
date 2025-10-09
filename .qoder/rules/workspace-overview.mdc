@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+# 工作区总览与防护
+
+- 项目入口：
+  - 后端： [backend/src/index.ts](mdc:backend/src/index.ts)
+  - 前端： [frontend/src/main.tsx](mdc:frontend/src/main.tsx)
+- 配置：
+  - 应用配置： [config/config.jsonc](mdc:config/config.jsonc)
+  - 智能体： [config/agents.json](mdc:config/agents.json)（提交前必须脱敏）
+  - 环境变量： `backend/.env`（从不提交真实密钥）
+- 包与工作区：
+  - 工作区： [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml)
+  - 根配置： [package.json](mdc:package.json)
+- 运行：
+  - 一体开发： `npm run dev`
+  - 仅后端： `npm run backend:dev`
+  - 仅前端： `npm run frontend:dev`
+  - 构建： `npm run build`
+  - 测试： `npm test`
+
+## 架构与编码准则
+- Controller 保持薄；外部调用与业务封装在 Service。
+- 端到端强类型（TypeScript 与 Python 类型注解）；避免 `any`。
+- 输入边界做校验；集中错误处理与结构化日志。
+- 保障幂等、可重试、可观测。
+- 遵守路径别名 `@/...` 与单仓结构。

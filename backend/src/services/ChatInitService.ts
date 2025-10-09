@@ -2,6 +2,7 @@ import axios from 'axios';
 import { AgentConfigService } from './AgentConfigService';
 import { AgentConfig, FastGPTInitResponse } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
+import logger from '@/utils/logger';
 
 /**
  * 聊天初始化服务
@@ -39,7 +40,7 @@ export class ChatInitService {
     const cached = this.cache.get(cacheKey);
     const now = Date.now();
     if (cached && cached.expiresAt > now) {
-      console.log('✅ 使用缓存的初始化数据');
+      logger.debug('✅ 使用缓存的初始化数据');
       this.cachePolicy.recordHit();
       return cached.data;
     }
@@ -128,7 +129,7 @@ export class ChatInitService {
         params.chatId = chatId;
       }
 
-      console.log(`🚀 调用FastGPT初始化API: ${initUrl}`, params);
+      logger.debug('🚀 调用FastGPT初始化API', { initUrl, params });
 
       // 发送请求
       const response = await this.httpClient.get(initUrl, {
@@ -143,11 +144,11 @@ export class ChatInitService {
         throw new Error(`FastGPT API错误: ${responseData.message || '未知错误'}`);
       }
 
-      console.log('✅ FastGPT初始化API调用成功');
+      logger.debug('✅ FastGPT初始化API调用成功');
       return responseData.data;
 
     } catch (error) {
-      console.error('❌ FastGPT初始化API调用失败:', error);
+      logger.error('❌ FastGPT初始化API调用失败', { error });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
         const message = axiosError.response?.data?.message || axiosError.message;
@@ -201,7 +202,7 @@ export class ChatInitService {
   clearCache(): void {
     this.cache.clear();
     this.cachePolicy.reset();
-    console.log('🧹 初始化数据缓存已清除');
+    logger.debug('🧹 初始化数据缓存已清除');
   }
 
   /**

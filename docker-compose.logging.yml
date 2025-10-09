@@ -1,0 +1,94 @@
+# ========================================
+# ELK 日志聚合栈 Docker Compose 配置
+# 包含 Elasticsearch、Logstash、Kibana、Filebeat
+# ========================================
+
+version: '3.8'
+
+services:
+  # Elasticsearch - 日志存储
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: llmchat-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"  # 限制内存使用
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash - 日志处理管道
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: llmchat-logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "5044:5044"  # Beats 输入
+      - "9600:9600"  # Logstash API
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"  # 限制内存使用
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana - 日志可视化
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: llmchat-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=llmchat-kibana
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Filebeat - 日志采集（可选，用于采集文件日志）
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: llmchat-filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./backend/log:/var/log/llmchat:ro
+    command: filebeat -e -strict.perms=false
+    networks:
+      - elk
+    depends_on:
+      - logstash
+      - elasticsearch
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  elasticsearch-data:
+    driver: local

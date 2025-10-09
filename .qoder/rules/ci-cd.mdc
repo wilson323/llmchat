@@ -1,0 +1,12 @@
+---
+description: CI/CD 与制品管理
+---
+# CI/CD 与制品
+
+- Pipelines：分离 Lint/Test/Build/Deploy 阶段；失败即止；并行可行则并行。
+- 缓存：依赖与构建缓存；仅对可复用工件缓存（Node、Vite、Jest）。
+- 制品：
+  - 后端：`backend/dist` 产物与源映射；版本号与提交哈希打包。
+  - 前端：`frontend/dist` 静态资源；开启内容指纹与 gzip/br。
+- 配置：使用环境注入（.env、CI secret）；禁止提交真实密钥。
+- 发布：金丝雀/灰度；回滚脚本；数据库迁移前备份与幂等。

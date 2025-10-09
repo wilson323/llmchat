@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+description: API 契约（请求/响应、版本化、类型共享）
+---
+
+原则
+- 端到端强类型：共享类型位于 [shared-types/src/index.ts](mdc:shared-types/src/index.ts)
+- 明确请求/响应结构，包含 `code`、`message`、`data`
+- 版本化路径或 Header（如 `/api/v1`），避免破坏性变更
+
+实现
+- 后端：Controller 精简，契约落在 Service 输出的 DTO；输入边界做校验
+- 前端：在 `frontend/src/services` 内集中 HTTP 客户端；统一错误处理与重试策略
+
+文档
+- 在 PR 中更新契约变更；涉及外部用户需在 `docs/` 增补说明

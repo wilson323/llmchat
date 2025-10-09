@@ -1,14 +1,33 @@
 import { ReasoningStepUpdate } from '@/types';
+import type {
+  FastGPTReasoningData,
+  ParsedReasoningUpdate
+} from '@/types/dynamic';
+
+
+const isReasoningData = (value: unknown): value is FastGPTReasoningData => {
+  return typeof value === 'object' &&
+         value !== null &&
+         !Array.isArray(value);
+};
+
+const toJsonValue = (value: unknown): unknown => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.map(toJsonValue);
+  if (typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
+      result[key] = toJsonValue(val);
+    });
+    return result;
+  }
+  return String(value);
+};
 
 export interface RawReasoningEvent {
   event?: string;
-  data: any;
-}
-
-export interface ParsedReasoningUpdate {
-  steps: ReasoningStepUpdate[];
-  finished?: boolean;
-  totalSteps?: number;
+  data: unknown;
 }
 
 const STEP_TITLE_REGEX = /^(?:步骤\s*\d+|Step\s*\d+|思考\s*\d+|阶段\s*\d+|环节\s*\d+|Task\s*\d+|第[\d一二三四五六七八九十百零两]+步|\d+[\.、）])/i;
@@ -118,7 +137,7 @@ const mergeTotalSteps = (current: number | undefined, next: number | undefined, 
 export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | null): ParsedReasoningUpdate | null => {
   if (!payload || payload.data == null) return null;
 
-  const queue: any[] = [payload.data];
+  const queue: unknown[] = [payload.data];
   const steps: ReasoningStepUpdate[] = [];
   let finished = false;
   let totalSteps: number | undefined;
@@ -158,102 +177,151 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
       continue;
     }
 
-    if (typeof item === 'object') {
-      // 嵌套的常见字段
-      if (item.data && item !== item.data) queue.push(item.data);
-      if (item.payload && item !== item.payload) queue.push(item.payload);
-      if (item.output?.reasoning_content) queue.push(item.output.reasoning_content);
-      if (item.delta?.reasoning_content) queue.push(item.delta.reasoning_content);
-      if (item.reasoning_content) queue.push(item.reasoning_content);
-      if (item.reasoning) queue.push(item.reasoning);
-      if (item.steps) queue.push(item.steps);
+    if (typeof item === 'object' && item !== null) {
+      // 使用类型守卫确保item是推理数据
+      if (isReasoningData(item)) {
+        const reasoningData = item as FastGPTReasoningData;
 
-      // thought / analysis 信息
-      const textFromTextField = normalizeText((item as any).text);
-      if (textFromTextField) {
-        const parsed = tryParseJson(textFromTextField);
-        if (parsed) {
-          queue.push(parsed);
+        // 嵌套的常见字段
+        if (reasoningData.data && reasoningData.data !== item) queue.push(reasoningData.data);
+        if (reasoningData.payload && reasoningData.payload !== item) queue.push(reasoningData.payload);
+        if (reasoningData.output?.reasoning_content) queue.push(reasoningData.output.reasoning_content);
+        if (reasoningData.delta?.reasoning_content) queue.push(reasoningData.delta.reasoning_content);
+        if (reasoningData.reasoning_content) queue.push(reasoningData.reasoning_content);
+        if (reasoningData.reasoning) queue.push(reasoningData.reasoning);
+        if (reasoningData.steps) queue.push(reasoningData.steps);
+
+        // thought / analysis 信息
+        const textFromTextField = normalizeText(reasoningData.text);
+        if (textFromTextField) {
+          const parsed = tryParseJson(textFromTextField);
+          if (parsed) {
+            queue.push(parsed);
+          }
+
+          const orderFromText = firstNumber([
+            reasoningData.thoughtNumber,
+            reasoningData.step,
+            reasoningData.index,
+            reasoningData.order,
+            reasoningData.stepNumber,
+          ]);
+
+          const totalFromText = firstNumber([
+            reasoningData.totalThoughts,
+            reasoningData.total_steps,
+            reasoningData.totalSteps,
+          ]);
+
+          pushStep({
+            content: textFromTextField,
+            order: orderFromText,
+            totalSteps: totalFromText,
+            raw: toJsonValue(item),
+          });
         }
 
-        const orderFromText = firstNumber([
-          (item as any).thoughtNumber,
-          (item as any).step,
-          (item as any).index,
-          (item as any).order,
-          (item as any).stepNumber,
+        const candidate = normalizeText(
+          reasoningData.thought ??
+          reasoningData.content ??
+          reasoningData.message ??
+          reasoningData.analysis ??
+          reasoningData.reasoning ??
+          reasoningData.details
+        );
+
+        if (candidate) {
+          const order = firstNumber([
+            reasoningData.order,
+            reasoningData.step,
+            reasoningData.stepIndex,
+            reasoningData.index,
+            reasoningData.thoughtNumber,
+          ]);
+
+          const total = firstNumber([
+            reasoningData.totalThoughts,
+            reasoningData.totalSteps,
+            reasoningData.total_steps,
+          ]);
+
+          const title = normalizeText(reasoningData.title) ?? undefined;
+
+          pushStep({
+            content: candidate,
+            order,
+            totalSteps: total,
+            title,
+            raw: toJsonValue(item),
+          });
+        }
+
+        const totalCandidate = firstNumber([
+          reasoningData.totalThoughts,
+          reasoningData.totalSteps,
+          reasoningData.total_steps,
         ]);
+        if (typeof totalCandidate === 'number' && Number.isFinite(totalCandidate)) {
+          totalSteps = Math.max(totalSteps ?? 0, totalCandidate);
+        }
 
-        const totalFromText = firstNumber([
-          (item as any).totalThoughts,
-          (item as any).total_steps,
-          (item as any).totalSteps,
-        ]);
+        // 检查完成标志
+        if (
+          reasoningData.nextThoughtNeeded === false ||
+          reasoningData.need_next_thought === false ||
+          reasoningData.hasMore === false ||
+          reasoningData.has_more === false ||
+          reasoningData.finished === true ||
+          reasoningData.is_final === true ||
+          reasoningData.isFinal === true ||
+          reasoningData.done === true ||
+          reasoningData.completed === true
+        ) {
+          finished = true;
+        }
+      } else {
+        // 对于无法识别的对象，尝试提取基本文本信息
+        const obj = item as Record<string, unknown>;
 
-        pushStep({
-          content: textFromTextField,
-          order: orderFromText,
-          totalSteps: totalFromText,
-          raw: item,
-        });
-      }
+        // 安全地提取文本候选值
+        const textCandidates = [
+          typeof obj.thought === 'string' ? obj.thought : null,
+          typeof obj.content === 'string' ? obj.content : null,
+          typeof obj.message === 'string' ? obj.message : null,
+          typeof obj.analysis === 'string' ? obj.analysis : null,
+          typeof obj.reasoning === 'string' ? obj.reasoning : null,
+          typeof obj.details === 'string' ? obj.details : null,
+        ].filter((candidate): candidate is string => candidate !== null);
 
-      const candidate = normalizeText(
-        (item as any).thought ??
-        (item as any).content ??
-        (item as any).message ??
-        (item as any).analysis ??
-        (item as any).reasoning ??
-        (item as any).details
-      );
+        const candidate = normalizeText(textCandidates[0] || '');
 
-      if (candidate) {
-        const order = firstNumber([
-          (item as any).order,
-          (item as any).step,
-          (item as any).stepIndex,
-          (item as any).index,
-          (item as any).thoughtNumber,
-        ]);
+        if (candidate) {
+          const order = firstNumber([
+            obj.order,
+            obj.step,
+            obj.stepIndex,
+            obj.index,
+            obj.thoughtNumber,
+          ]);
 
-        const total = firstNumber([
-          (item as any).totalThoughts,
-          (item as any).totalSteps,
-          (item as any).total_steps,
-        ]);
+          const total = firstNumber([
+            obj.totalThoughts,
+            obj.totalSteps,
+            obj.total_steps,
+          ]);
 
-        const title = normalizeText((item as any).title) ?? undefined;
+          const title = normalizeText(
+            typeof obj.title === 'string' ? obj.title : undefined
+          ) ?? undefined;
 
-        pushStep({
-          content: candidate,
-          order,
-          totalSteps: total,
-          title,
-          raw: item,
-        });
-      }
-
-      const totalCandidate = firstNumber([
-        (item as any).totalThoughts,
-        (item as any).totalSteps,
-        (item as any).total_steps,
-      ]);
-      if (typeof totalCandidate === 'number' && Number.isFinite(totalCandidate)) {
-        totalSteps = Math.max(totalSteps ?? 0, totalCandidate);
-      }
-
-      if (
-        (item as any).nextThoughtNeeded === false ||
-        (item as any).need_next_thought === false ||
-        (item as any).hasMore === false ||
-        (item as any).has_more === false ||
-        (item as any).finished === true ||
-        (item as any).is_final === true ||
-        (item as any).isFinal === true ||
-        (item as any).done === true ||
-        (item as any).completed === true
-      ) {
-        finished = true;
+          pushStep({
+            content: candidate,
+            order,
+            totalSteps: total,
+            title,
+            raw: toJsonValue(item),
+          });
+        }
       }
     }
   }

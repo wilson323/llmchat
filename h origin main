@@ -1,0 +1,57 @@
+[33mbfdb55c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m feat(完成): 全局审计与优化 - 高可用+低延时+企业级安全
+[33m1063ae9[m docs: Phase 1-7最终综合报告 - 完整生产级系统交付
+[33mf4d363b[m feat(完整集成): Phase 5-7功能全面落地+生产部署指南
+[33m2097318[m docs: Phase 5-7完成报告
+[33m5c6d40f[m feat(phase5-7): 监控+国际化+高级功能基础实现
+[33m1f5aca8[m docs: Phase 1-4最终综合报告
+[33ma550ad6[m docs: Phase 4完成报告（CI/CD与E2E测试）
+[33m4b2ed93[m feat(phase4): CI/CD配置和E2E测试基础
+[33m3005b7b[m docs: Phase 1-3总体完成报告
+[33md5e849f[m docs: Phase 3完成报告（测试与质量保障）
+[33mca50646[m feat(phase3): 配置Vitest并创建单元测试套件
+[33m236c52d[m docs: Phase 2完成报告（UX增强）
+[33mc88446d[m feat(phase2): 添加字段帮助文档和Tooltip组件
+[33m037ba57[m feat(phase2): 实现实时字段验证功能
+[33m30e98a4[m docs: Phase 1完成报告
+[33m0b35151[m feat(phase1): 实现管理端自动获取智能体信息功能
+[33mb643158[m docs: 添加集成审计总结文档
+[33me686539[m feat: 全面审计FastGPT/Dify集成并创建改进方案
+[33md2e8d81[m fix: 优化环境变量警告和智能体初始化机制
+[33m6c819d0[m fix: resolve DB_NOT_INITIALIZED error and config parsing issues
+[33meca9198[m docs: add enterprise audit report and fixes summary
+[33m502d8be[m fix: add explicit Router type annotations for monorepo compatibility
+[33m56a73e2[m fix: resolve TypeScript strict mode errors
+[33m9e59bc1[m fix: preload dotenv before all module imports
+[33ma6ca678[m fix: correct dotenv path resolution for ts-node-dev
+[33mf7b453e[m fix: add env variable replacement in DB init
+[33mbea2b71[m feat: add performance comparison demo route
+[33m5b505b1[m chore: improve env loading and add setup tool
+[33m6da62fd[m docs: 添加数据库连接快速修复指南
+[33me17c1d7[m fix: 添加PostgreSQL数据库配置和Docker支持
+[33m339626c[m fix: 添加shared-types自动构建脚本
+[33m41b3a1a[m docs: Phase 1 验证指南与进度更新
+[33m68b81ce[m feat: Phase 1 核心页面迁移 - 启用优化版Store
+[33m830f0a5[m chore: 清理冗余文件
+[33m2164e6e[m test: 完成性能测试验证（Node.js模拟环境）
+[33md8bda20[m docs: 添加进度报告 - 核心组件迁移验证
+[33m94cc49f[m feat: 核心组件迁移验证 - Store优化实战
+[33mba018d4[m docs: 更新 ACCEPTANCE - T09/T31/T32/T35 完成
+[33m8bc21af[m perf: Store拆分与性能监控工具实现
+[33m9fcd3f7[m feat: 完成 Dify 会话管理 & 性能深度分析
+[33m9115c73[m docs: 更新 ACCEPTANCE 文档 - T03/T08/T10/T11 已完成
+[33mce91d51[m feat: 实现 DifyProvider 支持 Dify 智能体平台
+[33m8a76390[m feat: 添加管理员数据分析功能 + IP地理位置文档
+[33me329a1b[m feat: 实现数据库迁移系统 + 混合存储架构 (T04)
+[33ma231e9c[m feat: 实现敏感信息环境变量化 (T03)
+[33m4a4f2c8[m docs: update ACCEPTANCE - T07 Audit Logging completed
+[33m8b1e638[m feat(security): implement enterprise audit logging system (T07)
+[33m6386bc6[m docs: update ACCEPTANCE - T02 TokenService completed
+[33mc263db2[m feat(security): implement TokenService with Redis + JWT (T02)
+[33md8e1ac1[m docs: update ACCEPTANCE - T05 Winston Logger & T06 Console Replacement completed
+[33mcc8322f[m refactor(logging): complete global console replacement (T06) - 完成全局console替换173处，测试通过
+[33m491b068[m refactor(logging): complete console replacement in controllers and db utils
+[33mee882fd[m refactor(logging): replace console with winston logger (100+ instances)
+[33mf9650a3[m refactor(logging): replace console calls in index.ts with winston logger
+[33m613804b[m feat(logging): implement Winston logger with structured logging
+[33me81e105[m docs: update ACCEPTANCE document for T01 completion
+[33m36ac740[m feat(security): implement PasswordService with bcrypt

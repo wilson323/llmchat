@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { ApiSuccessPayload } from '@/types/dynamic';
 
 export interface AgentItem {
   id: string;
@@ -38,7 +39,7 @@ export interface AgentPayload {
 }
 
 export async function listAgents(opts?: { includeInactive?: boolean }): Promise<AgentItem[]> {
-  const { data } = await api.get<{ success: boolean; data: AgentItem[]; total: number }>(
+  const { data } = await api.get<ApiSuccessPayload<AgentItem[]>>(
     '/agents',
     { params: { includeInactive: opts?.includeInactive ? 'true' : undefined } }
   );
@@ -46,7 +47,7 @@ export async function listAgents(opts?: { includeInactive?: boolean }): Promise<
 }
 
 export async function reloadAgents(): Promise<{ totalAgents: number; activeAgents: number }> {
-  const { data } = await api.post<{ success: boolean; data: { totalAgents: number; activeAgents: number } }>(
+  const { data } = await api.post<ApiSuccessPayload<{ totalAgents: number; activeAgents: number }>>(
     '/agents/reload',
     {}
   );
@@ -54,12 +55,12 @@ export async function reloadAgents(): Promise<{ totalAgents: number; activeAgent
 }
 
 export async function updateAgent(id: string, updates: Partial<AgentPayload>): Promise<AgentItem> {
-  const { data } = await api.put<{ success: boolean; data: AgentItem }>(`/agents/${id}`, updates);
+  const { data } = await api.put<ApiSuccessPayload<AgentItem>>(`/agents/${id}`, updates);
   return data.data;
 }
 
 export async function createAgent(payload: AgentPayload): Promise<AgentItem> {
-  const { data } = await api.post<{ success: boolean; data: AgentItem }>('/agents', payload);
+  const { data } = await api.post<ApiSuccessPayload<AgentItem>>('/agents', payload);
   return data.data;
 }
 
@@ -68,14 +69,37 @@ export async function deleteAgent(id: string): Promise<void> {
 }
 
 export async function importAgents(payload: { agents: AgentPayload[] }): Promise<AgentItem[]> {
-  const { data } = await api.post<{ success: boolean; data: AgentItem[] }>('/agents/import', payload);
+  const { data } = await api.post<ApiSuccessPayload<AgentItem[]>>('/agents/import', payload);
   return data.data;
 }
 
 export async function validateAgent(id: string): Promise<{ agentId: string; isValid: boolean; exists: boolean; isActive: boolean }> {
-  const { data } = await api.get<{ success: boolean; data: { agentId: string; isValid: boolean; exists: boolean; isActive: boolean } }>(
+  const { data } = await api.get<ApiSuccessPayload<{ agentId: string; isValid: boolean; exists: boolean; isActive: boolean }>>(
     `/agents/${id}/validate`
   );
   return data.data;
+}
+
+export interface FetchAgentInfoParams {
+  provider: 'fastgpt' | 'dify';
+  endpoint: string;
+  apiKey: string;
+  appId?: string;
+}
+
+export interface AgentInfo {
+  name: string;
+  description: string;
+  model: string;
+  systemPrompt: string;
+  temperature: number;
+  maxTokens: number;
+  capabilities: Array<string>;
+  features: Record<string, any>;
+}
+
+export async function fetchAgentInfo(params: FetchAgentInfoParams): Promise<ApiSuccessPayload<AgentInfo>> {
+  const { data } = await api.post<ApiSuccessPayload<AgentInfo>>('/agents/fetch-info', params);
+  return data;
 }
 

@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+description: 项目规则分组索引（便于在 Project Rules 快速导航）
+---
+
+结构与命令
+- [00-project-structure.mdc](mdc:.cursor/rules/00-project-structure.mdc)
+- [01-commands-and-scripts.mdc](mdc:.cursor/rules/01-commands-and-scripts.mdc)
+
+编码规范
+- [02-typescript-style.mdc](mdc:.cursor/rules/02-typescript-style.mdc)
+
+后端与前端架构/测试
+- [03-backend-architecture-testing.mdc](mdc:.cursor/rules/03-backend-architecture-testing.mdc)
+- [04-frontend-architecture-testing.mdc](mdc:.cursor/rules/04-frontend-architecture-testing.mdc)
+
+协作规范
+- [05-commit-and-pr-guidelines.mdc](mdc:.cursor/rules/05-commit-and-pr-guidelines.mdc)
+
+配置与安全
+- [06-configuration-and-security.mdc](mdc:.cursor/rules/06-configuration-and-security.mdc)
+
+专题（新增）
+- [10-error-codes-and-status.mdc](mdc:.cursor/rules/10-error-codes-and-status.mdc)
+- [11-api-contracts.mdc](mdc:.cursor/rules/11-api-contracts.mdc)
+- [12-logging-and-observability.mdc](mdc:.cursor/rules/12-logging-and-observability.mdc)
+- [13-i18n-guidelines.mdc](mdc:.cursor/rules/13-i18n-guidelines.mdc)
+- [14-accessibility.mdc](mdc:.cursor/rules/14-accessibility.mdc)

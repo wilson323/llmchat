@@ -1,4 +1,5 @@
 import geoip from 'geoip-lite';
+import logger from '@/utils/logger';
 
 interface GeoLookupResult {
   country: string;
@@ -144,7 +145,7 @@ export class GeoService {
         city: record.city || null,
       };
     } catch (error) {
-      console.warn('[GeoService] lookup failed:', error);
+      logger.warn('[GeoService] lookup failed', { error });
       return {
         country: 'UNKNOWN',
         province: '未知',

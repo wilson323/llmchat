@@ -1,6 +1,8 @@
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import { geoService } from '@/services/GeoService';
+import { withMongo, ObjectId } from '@/utils/mongo';
+import logger from '@/utils/logger';
 
 export interface ProvinceHeatmapPoint {
   province: string;
@@ -94,7 +96,7 @@ export class AnalyticsService {
         );
       });
     } catch (error) {
-      console.warn('[AnalyticsService] recordAgentRequest failed:', error);
+      logger.warn('[AnalyticsService] recordAgentRequest failed', { error });
     }
   }
 
@@ -167,41 +169,127 @@ export class AnalyticsService {
   }): Promise<ConversationSeriesResult> {
     const { start, end, agentId } = params;
 
-    const { countRows, agentRows } = await withClient(async (client) => {
-      const countQuery = `
-        SELECT date_trunc('day', created_at) AS day, agent_id, COUNT(*)::int AS count
-        FROM chat_geo_events
-        WHERE created_at >= $1 AND created_at <= $2
-        ${agentId ? 'AND agent_id = $3' : ''}
-        GROUP BY day, agent_id
-      `;
-      const countParams: any[] = agentId ? [start, end, agentId] : [start, end];
-      const [countResult, agentResult] = await Promise.all([
-        client.query<{ day: Date; agent_id: string; count: number }>(countQuery, countParams),
-        client.query<{ id: string; name: string; is_active: boolean }>(
-          'SELECT id, name, is_active FROM agent_configs ORDER BY name ASC'
-        ),
-      ]);
-
-      return { countRows: countResult.rows, agentRows: agentResult.rows };
+    const agentRows = await withClient(async (client) => {
+      const { rows } = await client.query<{ id: string; name: string; is_active: boolean; app_id: string | null }>(
+        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC'
+      );
+      return rows;
     });
+
+    const agentById = new Map<string, { id: string; name: string; is_active: boolean; app_id: string | null }>();
+    const appIdToAgent = new Map<string, { id: string; name: string; is_active: boolean }>();
+    agentRows.forEach((row) => {
+      agentById.set(row.id, row);
+      if (row.app_id) {
+        appIdToAgent.set(row.app_id, { id: row.id, name: row.name, is_active: row.is_active });
+      }
+    });
+
+    const appIdsToQuery: string[] = (() => {
+      if (agentId) {
+        const agent = agentById.get(agentId);
+        return agent?.app_id ? [agent.app_id] : [];
+      }
+      return Array.from(appIdToAgent.keys());
+    })();
+
+    const appIdObjectIds = appIdsToQuery
+      .filter((id) => ObjectId.isValid(id))
+      .map((id) => new ObjectId(id));
 
     const dayMap = new Map<string, Map<string, number>>();
     const agentTotalsMap = new Map<string, number>();
+    const agentsWithActivity = new Set<string>();
 
-    countRows.forEach((row) => {
-      const dayKey = new Date(row.day).toISOString().slice(0, 10);
-      const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
-      perDay.set(row.agent_id, (perDay.get(row.agent_id) ?? 0) + Number(row.count || 0));
-      dayMap.set(dayKey, perDay);
-      agentTotalsMap.set(row.agent_id, (agentTotalsMap.get(row.agent_id) ?? 0) + Number(row.count || 0));
-    });
+    if (appIdObjectIds.length > 0) {
+      try {
+        const mongoRows = await withMongo(async (db) => {
+          const pipeline: Record<string, any>[] = [
+            {
+              $match: {
+                createTime: {
+                  $gte: start,
+                  $lte: end,
+                },
+                appId: appIdsToQuery.length === 1
+                  ? appIdObjectIds[0]
+                  : { $in: appIdObjectIds },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  day: {
+                    $dateToString: { format: '%Y-%m-%d', date: '$createTime', timezone: 'UTC' },
+                  },
+                  appId: '$appId',
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ];
+
+          type MongoAggRow = { _id: { day: string; appId: ObjectId }; count: number };
+          const docs = await db.collection<MongoAggRow>('chats').aggregate(pipeline).toArray();
+          return docs;
+        });
+
+        mongoRows.forEach((row) => {
+          const dayKey = row._id.day;
+          const appId = row._id.appId.toHexString();
+          const agent = appIdToAgent.get(appId);
+          if (!agent) return;
+          const agentKey = agent.id;
+          const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
+          const count = Number(row.count || 0);
+          perDay.set(agentKey, (perDay.get(agentKey) ?? 0) + count);
+          dayMap.set(dayKey, perDay);
+          agentTotalsMap.set(agentKey, (agentTotalsMap.get(agentKey) ?? 0) + count);
+          agentsWithActivity.add(agentKey);
+        });
+      } catch (error) {
+        logger.warn('[AnalyticsService] Mongo 聚合失败，回退到 PostgreSQL 统计', { error });
+      }
+    }
+
+    if (dayMap.size === 0 && agentTotalsMap.size === 0) {
+      const pgRows = await withClient(async (client) => {
+        const sql = `
+          SELECT DATE_TRUNC('day', created_at) AS day, agent_id, COUNT(*)::int AS count
+          FROM chat_geo_events
+          WHERE created_at >= $1 AND created_at <= $2
+          ${agentId ? 'AND agent_id = $3' : ''}
+          GROUP BY day, agent_id
+          ORDER BY day ASC
+        `;
+        const params: any[] = agentId ? [start, end, agentId] : [start, end];
+        const { rows } = await client.query<{ day: Date; agent_id: string; count: number }>(sql, params);
+        return rows;
+      });
+
+      pgRows.forEach((row) => {
+        const dayKey = row.day.toISOString().slice(0, 10);
+        const agentKey = row.agent_id;
+        const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
+        const count = Number(row.count || 0);
+        perDay.set(agentKey, (perDay.get(agentKey) ?? 0) + count);
+        dayMap.set(dayKey, perDay);
+        agentTotalsMap.set(agentKey, (agentTotalsMap.get(agentKey) ?? 0) + count);
+        agentsWithActivity.add(agentKey);
+      });
+    }
 
     const msPerDay = 24 * 60 * 60 * 1000;
-    const startDay = new Date(start);
-    startDay.setHours(0, 0, 0, 0);
-    const endDay = new Date(end);
-    endDay.setHours(0, 0, 0, 0);
+    const startDay = new Date(Date.UTC(
+      start.getUTCFullYear(),
+      start.getUTCMonth(),
+      start.getUTCDate()
+    ));
+    const endDay = new Date(Date.UTC(
+      end.getUTCFullYear(),
+      end.getUTCMonth(),
+      end.getUTCDate()
+    ));
     const bucketCount = Math.max(0, Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay)) + 1;
 
     const buckets: ConversationSeriesBucket[] = [];
@@ -216,10 +304,9 @@ export class AnalyticsService {
       buckets.push({ date: key, total: dayTotal, byAgent });
     }
 
-    const relevantAgents = agentRows.filter((row) => {
-      if (!agentId) return true;
-      return row.id === agentId;
-    });
+    const relevantAgents = agentId
+      ? agentRows.filter((row) => row.id === agentId)
+      : agentRows.filter((row) => agentsWithActivity.has(row.id) || agentTotalsMap.has(row.id));
 
     const agentTotals: ConversationSeriesAgentTotal[] = relevantAgents
       .map((row) => ({
@@ -245,31 +332,82 @@ export class AnalyticsService {
   async getAgentTotals(params: { start: Date; end: Date }): Promise<AgentComparisonResult> {
     const { start, end } = params;
 
-    const { totalRows, agentRows } = await withClient(async (client) => {
-      const [agentResult, totalResult] = await Promise.all([
-        client.query<{ id: string; name: string; is_active: boolean }>(
-          'SELECT id, name, is_active FROM agent_configs ORDER BY name ASC'
-        ),
-        client.query<{ agent_id: string; count: number }>(
-          `
-            SELECT agent_id, COUNT(*)::int AS count
-            FROM chat_geo_events
-            WHERE created_at >= $1 AND created_at <= $2
-            GROUP BY agent_id
-          `,
-          [start, end]
-        ),
-      ]);
-
-      return { agentRows: agentResult.rows, totalRows: totalResult.rows };
+    const agentRows = await withClient(async (client) => {
+      const { rows } = await client.query<{ id: string; name: string; is_active: boolean; app_id: string | null }>(
+        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC'
+      );
+      return rows;
     });
+
+    const appIdToAgent = new Map<string, { id: string; name: string; is_active: boolean }>();
+    agentRows.forEach((row) => {
+      if (row.app_id) {
+        appIdToAgent.set(row.app_id, { id: row.id, name: row.name, is_active: row.is_active });
+      }
+    });
+
+    const appIdObjectIds = Array.from(appIdToAgent.keys())
+      .filter((id) => ObjectId.isValid(id))
+      .map((id) => new ObjectId(id));
 
     const countMap = new Map<string, number>();
-    totalRows.forEach((row) => {
-      countMap.set(row.agent_id, (countMap.get(row.agent_id) ?? 0) + Number(row.count || 0));
-    });
+
+    if (appIdObjectIds.length > 0) {
+      try {
+        const mongoRows = await withMongo(async (db) => {
+          const pipeline = [
+            {
+              $match: {
+                createTime: {
+                  $gte: start,
+                  $lte: end,
+                },
+                appId: { $in: appIdObjectIds },
+              },
+            },
+            {
+              $group: {
+                _id: '$appId',
+                count: { $sum: 1 },
+              },
+            },
+          ];
+
+          type MongoAggRow = { _id: ObjectId; count: number };
+          return db.collection<MongoAggRow>('chats').aggregate(pipeline).toArray();
+        });
+
+        mongoRows.forEach((row) => {
+          const appId = row._id.toHexString();
+          const agent = appIdToAgent.get(appId);
+          if (!agent) return;
+          const count = Number(row.count || 0);
+          countMap.set(agent.id, (countMap.get(agent.id) ?? 0) + count);
+        });
+      } catch (error) {
+        logger.warn('[AnalyticsService] Mongo 聚合失败，使用 PostgreSQL 计数', { error });
+      }
+    }
+
+    if (countMap.size === 0) {
+      const pgRows = await withClient(async (client) => {
+        const sql = `
+          SELECT agent_id, COUNT(*)::int AS count
+          FROM chat_geo_events
+          WHERE created_at >= $1 AND created_at <= $2
+          GROUP BY agent_id
+        `;
+        const { rows } = await client.query<{ agent_id: string; count: number }>(sql, [start, end]);
+        return rows;
+      });
+
+      pgRows.forEach((row) => {
+        countMap.set(row.agent_id, Number(row.count || 0));
+      });
+    }
 
     const totals: ConversationSeriesAgentTotal[] = agentRows
+      .filter((row) => countMap.has(row.id))
       .map((row) => ({
         agentId: row.id,
         name: row.name,

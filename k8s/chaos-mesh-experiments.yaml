@@ -1,0 +1,341 @@
+# ========================================
+# Chaos Mesh 混沌工程实验配置
+# 用于测试系统在故障场景下的弹性
+# ========================================
+
+# 前提：安装 Chaos Mesh
+# kubectl apply -f https://mirrors.chaos-mesh.org/v2.6.0/crd.yaml
+# kubectl create ns chaos-mesh
+# helm repo add chaos-mesh https://charts.chaos-mesh.org
+# helm install chaos-mesh chaos-mesh/chaos-mesh -n=chaos-mesh --version 2.6.0
+
+---
+# ========================================
+# 实验 1: 网络延迟注入
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-delay
+  namespace: llmchat
+spec:
+  action: delay
+  mode: one  # 影响一个 Pod
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  delay:
+    latency: "100ms"
+    correlation: "100"
+    jitter: "10ms"
+  duration: "5m"
+  scheduler:
+    cron: "@every 1h"  # 每小时执行一次
+
+---
+# ========================================
+# 实验 2: 网络丢包
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-loss
+  namespace: llmchat
+spec:
+  action: loss
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  loss:
+    loss: "10"  # 10% 丢包率
+    correlation: "50"
+  duration: "3m"
+
+---
+# ========================================
+# 实验 3: Pod 故障注入
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-failure
+  namespace: llmchat
+spec:
+  action: pod-failure
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  duration: "2m"
+
+---
+# ========================================
+# 实验 4: Pod Kill (随机杀死 Pod)
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-kill
+  namespace: llmchat
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  scheduler:
+    cron: "@every 30m"  # 每30分钟杀一次
+
+---
+# ========================================
+# 实验 5: CPU 压力测试
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: cpu-stress
+  namespace: llmchat
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  stressors:
+    cpu:
+      workers: 2
+      load: 50  # 50% CPU 负载
+  duration: "5m"
+
+---
+# ========================================
+# 实验 6: 内存压力测试
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: memory-stress
+  namespace: llmchat
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  stressors:
+    memory:
+      workers: 1
+      size: "512MB"  # 占用 512MB 内存
+  duration: "5m"
+
+---
+# ========================================
+# 实验 7: 数据库网络分区
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: db-partition
+  namespace: llmchat
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - llmchat
+      labelSelectors:
+        app: postgres
+  duration: "2m"
+
+---
+# ========================================
+# 实验 8: Redis 网络延迟
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: redis-delay
+  namespace: llmchat
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: redis
+  delay:
+    latency: "50ms"
+    correlation: "100"
+    jitter: "5ms"
+  duration: "5m"
+
+---
+# ========================================
+# 实验 9: IO 延迟注入
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: IOChaos
+metadata:
+  name: io-delay
+  namespace: llmchat
+spec:
+  action: latency
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: postgres
+  volumePath: /var/lib/postgresql/data
+  path: "/"
+  delay: "100ms"
+  percent: 50  # 50% 的 IO 操作延迟
+  duration: "5m"
+
+---
+# ========================================
+# 实验 10: DNS 故障
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: DNSChaos
+metadata:
+  name: dns-error
+  namespace: llmchat
+spec:
+  action: error
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  patterns:
+    - "*.fastgpt.com"  # 模拟外部 API DNS 解析失败
+  duration: "2m"
+
+---
+# ========================================
+# 实验 11: 时间偏移
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: TimeChaos
+metadata:
+  name: time-shift
+  namespace: llmchat
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  timeOffset: "-1h"  # 时间回退1小时
+  duration: "3m"
+
+---
+# ========================================
+# 实验 12: HTTP 故障注入
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: HTTPChaos
+metadata:
+  name: http-abort
+  namespace: llmchat
+spec:
+  mode: one
+  selector:
+    namespaces:
+      - llmchat
+    labelSelectors:
+      app: llmchat-backend
+  target: Response
+  port: 3001
+  path: "/api/chat/completions"
+  abort: true
+  duration: "1m"
+
+---
+# ========================================
+# Workflow: 综合混沌实验
+# ========================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Workflow
+metadata:
+  name: comprehensive-chaos
+  namespace: llmchat
+spec:
+  entry: entry
+  templates:
+    - name: entry
+      templateType: Serial
+      deadline: 30m
+      children:
+        - network-delay-step
+        - pod-kill-step
+        - cpu-stress-step
+        - recovery-check
+
+    - name: network-delay-step
+      templateType: NetworkChaos
+      deadline: 5m
+      networkChaos:
+        action: delay
+        mode: one
+        selector:
+          namespaces:
+            - llmchat
+          labelSelectors:
+            app: llmchat-backend
+        delay:
+          latency: "100ms"
+
+    - name: pod-kill-step
+      templateType: PodChaos
+      deadline: 3m
+      podChaos:
+        action: pod-kill
+        mode: one
+        selector:
+          namespaces:
+            - llmchat
+          labelSelectors:
+            app: llmchat-backend
+
+    - name: cpu-stress-step
+      templateType: StressChaos
+      deadline: 5m
+      stressChaos:
+        mode: one
+        selector:
+          namespaces:
+            - llmchat
+          labelSelectors:
+            app: llmchat-backend
+        stressors:
+          cpu:
+            workers: 2
+            load: 70
+
+    - name: recovery-check
+      templateType: Suspend
+      deadline: 5m

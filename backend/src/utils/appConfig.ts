@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { stripJsonComments } from './config';
+import logger from '@/utils/logger';
+import { resolveEnvInJsonc, getEnvNumber, getEnvBoolean, getEnvString } from '@/utils/envResolver';
 
 export interface LoggingExporterConfig {
   type: 'http' | 'elasticsearch' | 'clickhouse';
@@ -52,9 +54,29 @@ export function loadAppConfig(): AppConfig {
       if (!fs.existsSync(file)) continue;
       const raw = fs.readFileSync(file, 'utf-8');
       const stripped = stripJsonComments(raw);
-      return JSON.parse(stripped) as AppConfig;
+      
+      // 解析环境变量占位符
+      const resolved = resolveEnvInJsonc(stripped);
+      
+      const config = JSON.parse(resolved) as AppConfig;
+      
+      // 应用环境变量覆盖（环境变量优先级更高）
+      if (config.database?.postgres) {
+        config.database.postgres.host = getEnvString('DB_HOST', config.database.postgres.host);
+        config.database.postgres.port = getEnvNumber('DB_PORT', config.database.postgres.port || 5432);
+        config.database.postgres.user = getEnvString('DB_USER', config.database.postgres.user);
+        config.database.postgres.password = getEnvString('DB_PASSWORD', config.database.postgres.password);
+        config.database.postgres.database = getEnvString('DB_NAME', config.database.postgres.database);
+        config.database.postgres.ssl = getEnvBoolean('DB_SSL', config.database.postgres.ssl || false);
+      }
+      
+      if (config.auth) {
+        config.auth.tokenTTLSeconds = getEnvNumber('TOKEN_TTL', config.auth.tokenTTLSeconds || 86400);
+      }
+      
+      return config;
     } catch (error) {
-      console.warn('[AppConfig] Failed to parse configuration:', file, error);
+      logger.warn('[AppConfig] Failed to parse configuration', { file, error });
     }
   }
   return {};
@@ -90,7 +112,7 @@ function parseHeadersEnv(headers?: string | null): Record<string, string> | unde
       }, {});
     }
   } catch (error) {
-    console.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env:', error);
+    logger.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env', { error });
   }
   return undefined;
 }
