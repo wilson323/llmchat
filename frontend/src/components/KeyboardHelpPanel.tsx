@@ -15,7 +15,7 @@ export const KeyboardHelpPanel: React.FC<KeyboardHelpPanelProps> = ({
   shortcuts = [],
 }) => {
   const { t } = useI18n();
-  const { getHelpContent, formatShortcut, getShortcutsByCategory } = useKeyboardHelp(shortcuts);
+  const { getHelpContent, formatShortcut } = useKeyboardHelp(shortcuts);
 
   const helpContent = getHelpContent();
 

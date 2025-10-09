@@ -47,10 +47,13 @@ import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
 import { logger } from "./utils/logger";
 import { initCacheService } from "./services/CacheService";
 import { initDB } from "./utils/db";
-import { agentConfigService } from "./services/AgentConfigService";
+import { AgentConfigService } from "./services/AgentConfigService";
 
 const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
+
+// 创建服务实例
+const agentConfigService = new AgentConfigService();
 
 // 声明 server 变量（必须在使用前声明）
 let server: ReturnType<typeof app.listen>;
@@ -202,7 +205,7 @@ function startScheduledTasks(): void {
 
     setTimeout(() => {
       // 执行每日清理任务
-      agentConfigService.dailyCleanupTask().catch((error) => {
+      agentConfigService.dailyCleanupTask().catch((error: unknown) => {
         logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
       });
 
@@ -211,7 +214,7 @@ function startScheduledTasks(): void {
         clearInterval(dailyCleanupInterval);
       }
       dailyCleanupInterval = setInterval(() => {
-        agentConfigService.dailyCleanupTask().catch((error) => {
+        agentConfigService.dailyCleanupTask().catch((error: unknown) => {
           logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
         });
       }, 24 * 60 * 60 * 1000); // 每24小时执行一次

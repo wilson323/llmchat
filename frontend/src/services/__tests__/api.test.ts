@@ -3,7 +3,18 @@ import { Agent } from "@/types";
 
 // Mock axios
 jest.mock("axios");
-const mockAxios = require("axios");
+const mockAxios = {
+  get: jest.fn(),
+  post: jest.fn(),
+  delete: jest.fn(),
+  defaults: {
+    baseURL: "/api",
+    timeout: 30000,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  },
+};
 
 describe("api", () => {
   beforeEach(() => {
@@ -78,7 +89,7 @@ describe("api", () => {
       mockAxios.post.mockResolvedValue({ data: { data: mockResponse } });
 
       const response = await chatService.sendMessage("agent-1", [
-        { HUMAN: "Hello" },
+        { role: "user", content: "Hello", id: "user-1", timestamp: Date.now() },
       ]);
 
       expect(response).toEqual(mockResponse);

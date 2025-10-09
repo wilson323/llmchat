@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { ChatContainer } from "../ChatContainer";
 import { useMessageStore } from "@/store/messageStore";
@@ -9,6 +8,11 @@ import { useSessionStore } from "@/store/sessionStore";
 jest.mock("@/store/messageStore");
 jest.mock("@/store/agentStore");
 jest.mock("@/store/sessionStore");
+
+// Type declarations for mocked modules
+const mockUseMessageStore = useMessageStore as jest.MockedFunction<typeof useMessageStore>;
+const mockUseAgentStore = useAgentStore as jest.MockedFunction<typeof useAgentStore>;
+const mockUseSessionStore = useSessionStore as jest.MockedFunction<typeof useSessionStore>;
 
 // Mock the child components
 jest.mock("../MessageList", () => ({
@@ -24,7 +28,7 @@ describe("ChatContainer", () => {
     jest.clearAllMocks();
 
     // Mock store implementations
-    (useMessageStore as jest.Mock).mockReturnValue({
+    mockUseMessageStore.mockReturnValue({
       messages: [],
       isStreaming: false,
       stopStreaming: jest.fn(),
@@ -32,11 +36,11 @@ describe("ChatContainer", () => {
       removeLastInteractiveMessage: jest.fn(),
     });
 
-    (useAgentStore as jest.Mock).mockReturnValue({
+    mockUseAgentStore.mockReturnValue({
       currentAgent: null,
     });
 
-    (useSessionStore as jest.Mock).mockReturnValue({
+    mockUseSessionStore.mockReturnValue({
       currentSession: null,
       bindSessionId: jest.fn(),
     });
@@ -51,7 +55,7 @@ describe("ChatContainer", () => {
   });
 
   it("should render empty state when agent is selected but no messages", () => {
-    (useAgentStore as jest.Mock).mockReturnValue({
+    mockUseAgentStore.mockReturnValue({
       currentAgent: {
         id: "1",
         name: "Test Agent",
@@ -72,7 +76,7 @@ describe("ChatContainer", () => {
   });
 
   it("should render messages when there are messages", () => {
-    (useMessageStore as jest.Mock).mockReturnValue({
+    mockUseMessageStore.mockReturnValue({
       messages: [{ HUMAN: "Hello", timestamp: Date.now() }],
       isStreaming: false,
       stopStreaming: jest.fn(),
@@ -80,7 +84,7 @@ describe("ChatContainer", () => {
       removeLastInteractiveMessage: jest.fn(),
     });
 
-    (useAgentStore as jest.Mock).mockReturnValue({
+    mockUseAgentStore.mockReturnValue({
       currentAgent: {
         id: "1",
         name: "Test Agent",
@@ -100,7 +104,7 @@ describe("ChatContainer", () => {
   });
 
   it("should hide composer when hideComposer is true", () => {
-    (useMessageStore as jest.Mock).mockReturnValue({
+    mockUseMessageStore.mockReturnValue({
       messages: [{ HUMAN: "Hello", timestamp: Date.now() }],
       isStreaming: false,
       stopStreaming: jest.fn(),
@@ -108,7 +112,7 @@ describe("ChatContainer", () => {
       removeLastInteractiveMessage: jest.fn(),
     });
 
-    (useAgentStore as jest.Mock).mockReturnValue({
+    mockUseAgentStore.mockReturnValue({
       currentAgent: {
         id: "1",
         name: "Test Agent",

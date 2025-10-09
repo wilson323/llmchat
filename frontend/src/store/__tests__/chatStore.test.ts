@@ -1,4 +1,5 @@
 import { useChatStore } from "../chatStore";
+import type { AgentStatus } from "@/types";
 
 // Reset all stores before each test
 beforeEach(() => {
@@ -28,7 +29,7 @@ describe("chatStore", () => {
         name: "Agent 1",
         description: "Test agent",
         model: "model1",
-        status: "active",
+        status: "active" as AgentStatus,
         capabilities: [],
         provider: "custom",
       },
@@ -37,7 +38,7 @@ describe("chatStore", () => {
         name: "Agent 2",
         description: "Test agent 2",
         model: "model2",
-        status: "inactive",
+        status: "inactive" as AgentStatus,
         capabilities: [],
         provider: "custom",
       },
@@ -55,7 +56,7 @@ describe("chatStore", () => {
       name: "Agent 1",
       description: "Test agent",
       model: "model1",
-      status: "active",
+      status: "active" as AgentStatus,
       capabilities: [],
       provider: "custom",
     };
@@ -113,7 +114,7 @@ describe("chatStore", () => {
       name: "Agent 1",
       description: "Test agent",
       model: "model1",
-      status: "active",
+      status: "active" as AgentStatus,
       capabilities: [],
       provider: "custom",
     };
@@ -133,7 +134,7 @@ describe("chatStore", () => {
       name: "Agent 1",
       description: "Test agent",
       model: "model1",
-      status: "active",
+      status: "active" as AgentStatus,
       capabilities: [],
       provider: "custom",
     };
@@ -144,7 +145,7 @@ describe("chatStore", () => {
     const session1 = useChatStore.getState().currentSession;
 
     useChatStore.getState().createNewSession();
-    const session2 = useChatStore.getState().currentSession;
+    useChatStore.getState().currentSession; // session2 未使用，直接获取当前会话
 
     // Switch to first session
     if (session1) {
@@ -161,7 +162,7 @@ describe("chatStore", () => {
       name: "Agent 1",
       description: "Test agent",
       model: "model1",
-      status: "active",
+      status: "active" as AgentStatus,
       capabilities: [],
       provider: "custom",
     };
@@ -171,6 +172,7 @@ describe("chatStore", () => {
     const session = useChatStore.getState().currentSession;
 
     if (session) {
+      // deleteSession 方法只需要 sessionId 参数，agentId 从当前状态获取
       useChatStore.getState().deleteSession(session.id);
 
       const state = useChatStore.getState();

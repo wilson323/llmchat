@@ -5,11 +5,11 @@ import { ChatContainer } from "./chat/ChatContainer";
 import { KeyboardHelpPanel } from "./KeyboardHelpPanel";
 import { useChatStore } from "@/store/chatStore";
 import { useUIStore } from "@/store/uiStore";
-import { useKeyboardManager, appShortcuts } from "@/hooks/useKeyboardManager";
+import { useKeyboardManager } from "@/hooks/useKeyboardManager";
 
 const ChatApp: React.FC = () => {
-  const { sidebarOpen, initializeAgentSessions } = useChatStore();
-  const { agentSelectorOpen, setAgentSelectorOpen } = useUIStore();
+  const { initializeAgentSessions } = useChatStore();
+  const { setAgentSelectorOpen } = useUIStore();
   const { registerShortcuts } = useKeyboardManager();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [registeredShortcuts, setRegisteredShortcuts] = useState<any[]>([]);
@@ -125,7 +125,6 @@ const ChatApp: React.FC = () => {
         action: () => {
           const { messages } = useChatStore.getState();
           // 找到最后一条用户消息
-          const lastUserMessageIndex = messages.length - 1;
           let targetMessageIndex = -1;
 
           for (let i = messages.length - 1; i >= 0; i--) {
@@ -216,9 +215,7 @@ const ChatApp: React.FC = () => {
 
       {/* 主内容区域 */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarOpen ? "lg:ml-0" : "lg:ml-0"
-        }`}
+        className="flex-1 flex flex-col min-w-0 transition-all duration-300 lg:ml-0"
       >
         <Header />
         <main className="flex-1 overflow-hidden">

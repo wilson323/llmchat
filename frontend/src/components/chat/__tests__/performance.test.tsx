@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen } from "@testing-library/react";
 import { VirtualizedMessageList } from "../VirtualizedMessageList";
 import { ChatMessage } from "@/types";

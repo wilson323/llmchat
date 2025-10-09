@@ -5,6 +5,16 @@ export type { JsonValue };
 import type { ErrorCategory, ErrorSeverity } from './errors';
 
 /**
+ * API响应接口
+ */
+export interface ApiResponse<T = any> {
+  code: number;
+  message: string;
+  data: T;
+  success?: boolean;
+}
+
+/**
  * 智能体配置接口
  */
 export interface AgentConfig {

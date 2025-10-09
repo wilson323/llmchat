@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useKeyboardManager, KeyboardShortcut } from '@/hooks/useKeyboardManager';
+import { useKeyboardManager, useKeyboardHelp, KeyboardShortcut } from '@/hooks/useKeyboardManager';
 
 describe('useKeyboardManager', () => {
   let mockDispatchEvent: jest.SpyInstance;
@@ -44,7 +44,7 @@ describe('useKeyboardManager', () => {
       }
     ];
 
-    const { result } = renderHook(() => useKeyboardManager({
+    renderHook(() => useKeyboardManager({
       shortcuts,
       enabled: true
     }));
@@ -170,7 +170,7 @@ describe('useKeyboardManager', () => {
       value: mockInput
     });
 
-    const { result } = renderHook(() => useKeyboardManager({
+    renderHook(() => useKeyboardManager({
       shortcuts,
       enabled: true
     }));
@@ -269,7 +269,7 @@ describe('useKeyboardManager', () => {
       }
     ];
 
-    const { result } = renderHook(() => useKeyboardManager({
+    renderHook(() => useKeyboardManager({
       shortcuts,
       enabled: true,
       onConflict: mockConflictHandler
@@ -306,10 +306,7 @@ describe('useKeyboardHelp', () => {
       }
     ];
 
-    const { result } = renderHook(() => useKeyboardManager({
-      shortcuts,
-      enabled: true
-    }));
+    const { result } = renderHook(() => useKeyboardHelp(shortcuts));
 
     const { formatShortcut } = result.current;
 

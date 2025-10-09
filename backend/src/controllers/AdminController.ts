@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
-import { agentConfigService } from "@/services/AgentConfigService";
-import { ApiResponse } from "@/types/api";
+import { AgentConfigService } from "@/services/AgentConfigService";
+import { ApiResponse } from "@/types";
 import logger from "@/utils/logger";
+
+// 创建服务实例
+const configService = new AgentConfigService();
 
 /**
  * 管理员控制器
@@ -95,7 +98,7 @@ export async function getConfigHealth(
   res: Response
 ): Promise<void> {
   try {
-    const healthStatus = await agentConfigService.getConfigHealthStatus();
+    const healthStatus = await configService.getConfigHealthStatus();
 
     const response: ApiResponse<typeof healthStatus> = {
       code: 200,
@@ -196,7 +199,7 @@ export async function compareConfigSnapshot(
   res: Response
 ): Promise<void> {
   try {
-    const comparisonResult = await agentConfigService.compareConfigSnapshot();
+    const comparisonResult = await configService.compareConfigSnapshot();
 
     const response: ApiResponse<typeof comparisonResult> = {
       code: 200,
@@ -278,7 +281,7 @@ export async function cleanupObsoleteConfigs(
   res: Response
 ): Promise<void> {
   try {
-    const cleanupResult = await agentConfigService.cleanupObsoleteConfigs();
+    const cleanupResult = await configService.cleanupObsoleteConfigs();
 
     const response: ApiResponse<typeof cleanupResult> = {
       code: 200,
@@ -353,12 +356,12 @@ export async function getConfigDetails(
   res: Response
 ): Promise<void> {
   try {
-    const configs = await agentConfigService.getAllAgents();
+    const configs = await configService.getAllAgents();
 
     // 获取详细的配置信息
     const detailedConfigs = [];
     for (const config of configs) {
-      const fullConfig = await agentConfigService.getAgent(config.id);
+      const fullConfig = await configService.getAgent(config.id);
       if (fullConfig) {
         detailedConfigs.push(fullConfig);
       }
@@ -388,7 +391,6 @@ import os from "os";
 import { authService } from "@/services/authInstance";
 import { withClient, hashPassword } from "@/utils/db";
 import { analyticsService } from "@/services/analyticsInstance";
-import logger from "@/utils/logger";
 import { logAudit } from "@/middleware/auditMiddleware";
 import { AuditAction, AuditStatus, ResourceType } from "@/types/audit";
 import {

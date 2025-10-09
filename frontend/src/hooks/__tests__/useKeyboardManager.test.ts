@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { useKeyboardManager, appShortcuts } from "../useKeyboardManager";
+import { useKeyboardManager, appShortcuts, useKeyboardHelp } from "../useKeyboardManager";
 import { useChatStore } from "@/store/chatStore";
 import { useUIStore } from "@/store/uiStore";
 
@@ -31,8 +31,11 @@ describe("useKeyboardManager", () => {
       setAgentSelectorOpen: jest.fn(),
     };
 
-    (useChatStore as jest.Mock).mockReturnValue(mockChatStore);
-    (useUIStore as jest.Mock).mockReturnValue(mockUIStore);
+    const mockUseChatStore = useChatStore as jest.MockedFunction<typeof useChatStore>;
+    const mockUseUIStore = useUIStore as jest.MockedFunction<typeof useUIStore>;
+
+    mockUseChatStore.mockReturnValue(mockChatStore);
+    mockUseUIStore.mockReturnValue(mockUIStore);
   });
 
   it("should register shortcuts correctly", () => {
@@ -158,18 +161,20 @@ describe("useKeyboardManager", () => {
   });
 
   it("should format shortcuts correctly", () => {
-    const { result } = renderHook(() => useKeyboardManager());
+    const shortcuts = [
+      {
+        key: "n",
+        ctrlKey: true,
+        action: () => {},
+        description: "New session",
+        category: "conversation" as const,
+      },
+    ];
+
+    const { result } = renderHook(() => useKeyboardHelp(shortcuts));
     const { formatShortcut } = result.current;
 
-    const shortcut = {
-      key: "n",
-      ctrlKey: true,
-      action: () => {},
-      description: "New session",
-      category: "conversation" as const,
-    };
-
-    const formatted = formatShortcut(shortcut);
+    const formatted = formatShortcut(shortcuts[0]);
     expect(formatted).toBe("Ctrl + N");
   });
 });

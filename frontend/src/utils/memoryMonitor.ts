@@ -12,9 +12,8 @@ export class MemoryMonitor {
    */
   getCurrentMemory(): number | null {
     if ("memory" in performance) {
-      // @ts-ignore
-      const memoryInfo = performance.memory;
-      if (memoryInfo) {
+      const memoryInfo = (performance as any).memory;
+      if (memoryInfo && memoryInfo.usedJSHeapSize) {
         // 返回已使用的内存（MB）
         return Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024);
       }
