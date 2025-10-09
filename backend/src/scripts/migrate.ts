@@ -11,7 +11,7 @@
 import { Pool } from 'pg';
 import { readJsonc } from '../utils/config';
 import { createMigrationManager } from '../utils/migrate';
-import { PgConfig } from '../utils/db';
+import { PgConfig, normalizePostgresConfig } from '../utils/db';
 import { resolveEnvInJsonc } from '../utils/envResolver';
 import fs from 'fs';
 import path from 'path';
@@ -26,11 +26,13 @@ async function main() {
   const resolvedConfig = resolveEnvInJsonc(configContent);
   const cfg = JSON.parse(resolvedConfig) as PgConfig;
 
-  const pg = cfg.database?.postgres;
-  if (!pg) {
+  const rawPg = cfg.database?.postgres;
+  if (!rawPg) {
     console.error('❌ 错误: 数据库配置缺失 (config.jsonc -> database.postgres)');
     process.exit(1);
   }
+
+  const pg = normalizePostgresConfig(rawPg);
 
   // 创建连接池
   const pool = new Pool({
