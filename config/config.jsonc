@@ -22,12 +22,12 @@
     // 后台管理改用 PostgreSQL；不再从 auth.defaultAccounts 读取登录账号
     // 实际配置通过环境变量提供，此处为默认值
     "postgres": {
-      "host": "171.43.138.237",
-      "port": 5433,
-      "user": "username",
-      "password": "password",
-      "database": "llmchat",
-      "ssl": false
+      "host": "${DB_HOST}",
+      "port": "${DB_PORT}",
+      "user": "${DB_USER}",
+      "password": "${DB_PASSWORD}",
+      "database": "${DB_NAME}",
+      "ssl": "${DB_SSL}"
     }
   },
   "auth": {
