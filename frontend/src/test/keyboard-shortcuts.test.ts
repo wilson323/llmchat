@@ -4,16 +4,16 @@
  * 这是一个简单的逻辑测试，验证快捷键管理器的核心功能
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardManager, useKeyboardHelp, KeyboardShortcut } from '@/hooks/useKeyboardManager';
 
 describe('useKeyboardManager', () => {
-  let mockDispatchEvent: ReturnType<typeof vi.spyOn>;
+  let mockDispatchEvent: ReturnType<typeof vi.spyOn> & Mock<[(event: Event) => boolean], boolean>;
 
   beforeEach(() => {
     // Mock DOM APIs
-    mockDispatchEvent = vi.spyOn(document, 'dispatchEvent');
+    mockDispatchEvent = vi.spyOn(document, 'dispatchEvent') as any;
 
     // Mock querySelector for our tests
     Object.defineProperty(document, 'querySelector', {
