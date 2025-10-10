@@ -6,6 +6,8 @@ const config: Config = {
   roots: ["<rootDir>/src"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@llmchat/shared-types$": "<rootDir>/../shared-types/src/index.ts",
+    "^@llmchat/shared-types/(.*)$": "<rootDir>/../shared-types/src/$1",
   },
   collectCoverageFrom: ["src/**/*.ts", "!src/**/__tests__/**"],
   coverageThreshold: {
