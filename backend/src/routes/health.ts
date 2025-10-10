@@ -14,12 +14,12 @@ const router: RouterType = Router();
  */
 async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency?: number; error?: string }> {
   const startTime = Date.now();
-  
+
   try {
     const pool = getPool();
     const result = await pool.query('SELECT 1 as health_check');
     const latency = Date.now() - startTime;
-    
+
     return {
       healthy: result.rows.length > 0,
       latency,
@@ -37,12 +37,12 @@ async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency?: numb
  */
 async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number; error?: string }> {
   const startTime = Date.now();
-  
+
   try {
     // 使用 CacheService 检查 Redis
     const { getCacheService } = await import('@/services/CacheService');
     const cacheService = getCacheService();
-    
+
     if (!cacheService.isConnected()) {
       return {
         healthy: false,
@@ -52,7 +52,7 @@ async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number;
 
     const pingResult = await cacheService.ping();
     const latency = Date.now() - startTime;
-    
+
     return {
       healthy: pingResult,
       latency,
@@ -72,11 +72,11 @@ async function checkAgentsHealth(): Promise<{ healthy: boolean; activeCount?: nu
   try {
     const pool = getPool();
     const result = await pool.query(
-      'SELECT COUNT(*) as count FROM agent_configs WHERE is_active = true'
+      'SELECT COUNT(*) as count FROM agent_configs WHERE is_active = true',
     );
-    
+
     const activeCount = parseInt(result.rows[0]?.count || '0', 10);
-    
+
     return {
       healthy: activeCount > 0,
       activeCount,
@@ -112,7 +112,7 @@ router.get('/', (_req: Request, res: Response) => {
 router.get('/detailed', async (_req: Request, res: Response) => {
   const memUsage = process.memoryUsage();
   const cpuUsage = process.cpuUsage();
-  
+
   // 并行检查所有组件
   const [dbHealth, redisHealth, agentsHealth] = await Promise.all([
     checkDatabaseHealth(),
@@ -120,8 +120,8 @@ router.get('/detailed', async (_req: Request, res: Response) => {
     checkAgentsHealth(),
   ]);
 
-  const allHealthy = dbHealth.healthy && 
-    (redisHealth.healthy || redisHealth.error === 'Redis not configured') && 
+  const allHealthy = dbHealth.healthy &&
+    (redisHealth.healthy || redisHealth.error === 'Redis not configured') &&
     agentsHealth.healthy;
 
   res.status(allHealthy ? 200 : 503).json({
@@ -199,7 +199,7 @@ router.get('/startup', async (_req: Request, res: Response) => {
   try {
     const pool = getPool();
     await pool.query('SELECT 1');
-    
+
     res.json({
       status: 'started',
       timestamp: new Date().toISOString(),

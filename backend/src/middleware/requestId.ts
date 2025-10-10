@@ -3,8 +3,8 @@
  * 为每个请求生成唯一ID用于追踪
  */
 
-import { Request, Response, NextFunction } from "express";
-import { generateId } from "@/utils/helpers";
+import { Request, Response, NextFunction } from 'express';
+import { generateId } from '@/utils/helpers';
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -18,16 +18,16 @@ declare module "express-serve-static-core" {
 export function requestId(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // 从header获取或生成新的requestId
-  const id = (req.headers["x-request-id"] as string) || generateId();
+  const id = (req.headers['x-request-id'] as string) || generateId();
 
   // 附加到请求对象
   req.requestId = id;
 
   // 设置响应header
-  res.setHeader("x-request-id", id);
+  res.setHeader('x-request-id', id);
 
   next();
 }

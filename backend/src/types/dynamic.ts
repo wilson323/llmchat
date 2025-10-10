@@ -9,7 +9,7 @@ import type {
   JsonArray,
   JsonObject,
   JsonValue,
-  UnknownValue
+  UnknownValue,
 } from '@llmchat/shared-types';
 
 // 重新导出共享类型，保持向后兼容
@@ -36,7 +36,7 @@ export {
   FastGPTEvent,
   DynamicTypeGuard,
   DynamicDataConverter,
-  SafeAccess
+  SafeAccess,
 } from '@llmchat/shared-types';
 
 // ============================================================================

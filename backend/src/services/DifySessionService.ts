@@ -89,9 +89,9 @@ export interface DifyFeedbackParams {
 
 /**
  * Dify 会话管理服务
- * 
+ *
  * 负责管理 Dify 智能体的会话历史、消息查询、反馈等功能
- * 
+ *
  * 主要功能：
  * - 获取会话列表
  * - 获取会话消息
@@ -99,7 +99,7 @@ export interface DifyFeedbackParams {
  * - 删除会话
  * - 提交消息反馈（点赞/点踩）
  * - 获取建议问题
- * 
+ *
  * API 端点参考：
  * - GET  /v1/conversations - 会话列表
  * - GET  /v1/messages - 消息列表
@@ -139,14 +139,14 @@ export class DifySessionService {
 
   /**
    * 获取会话列表
-   * 
+   *
    * @param agent - 智能体配置
    * @param params - 查询参数
    * @returns 会话列表
    */
   async getConversations(
     agent: AgentConfig,
-    params?: DifyConversationListParams
+    params?: DifyConversationListParams,
   ): Promise<{ data: Array<DifyConversation>; has_more: boolean; limit: number }> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -186,14 +186,14 @@ export class DifySessionService {
 
   /**
    * 获取会话消息列表
-   * 
+   *
    * @param agent - 智能体配置
    * @param params - 查询参数
    * @returns 消息列表
    */
   async getConversationMessages(
     agent: AgentConfig,
-    params: DifyMessageListParams
+    params: DifyMessageListParams,
   ): Promise<{ data: Array<DifyMessage>; has_more: boolean; limit: number }> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -235,7 +235,7 @@ export class DifySessionService {
 
   /**
    * 获取消息详情
-   * 
+   *
    * @param agent - 智能体配置
    * @param messageId - 消息 ID
    * @param user - 用户标识
@@ -244,7 +244,7 @@ export class DifySessionService {
   async getMessageDetail(
     agent: AgentConfig,
     messageId: string,
-    user?: string
+    user?: string,
   ): Promise<DifyMessageDetail> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -278,7 +278,7 @@ export class DifySessionService {
 
   /**
    * 删除会话
-   * 
+   *
    * @param agent - 智能体配置
    * @param conversationId - 会话 ID
    * @param user - 用户标识
@@ -286,7 +286,7 @@ export class DifySessionService {
   async deleteConversation(
     agent: AgentConfig,
     conversationId: string,
-    user?: string
+    user?: string,
   ): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -318,14 +318,14 @@ export class DifySessionService {
 
   /**
    * 提交消息反馈（点赞/点踩）
-   * 
+   *
    * @param agent - 智能体配置
    * @param params - 反馈参数
    * @returns 反馈结果
    */
   async submitFeedback(
     agent: AgentConfig,
-    params: DifyFeedbackParams
+    params: DifyFeedbackParams,
   ): Promise<{ result: string }> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -339,7 +339,7 @@ export class DifySessionService {
         },
         {
           headers: this.buildHeaders(agent),
-        }
+        },
       );
 
       logger.info('Dify 消息反馈提交成功', {
@@ -364,7 +364,7 @@ export class DifySessionService {
 
   /**
    * 获取建议问题
-   * 
+   *
    * @param agent - 智能体配置
    * @param messageId - 消息 ID
    * @param user - 用户标识
@@ -373,7 +373,7 @@ export class DifySessionService {
   async getSuggestedQuestions(
     agent: AgentConfig,
     messageId: string,
-    user?: string
+    user?: string,
   ): Promise<Array<string>> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -409,7 +409,7 @@ export class DifySessionService {
 
   /**
    * 重命名会话（Dify API 可能不支持，预留接口）
-   * 
+   *
    * @param agent - 智能体配置
    * @param conversationId - 会话 ID
    * @param name - 新名称
@@ -419,7 +419,7 @@ export class DifySessionService {
     agent: AgentConfig,
     conversationId: string,
     name: string,
-    user?: string
+    user?: string,
   ): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl(agent);
@@ -433,7 +433,7 @@ export class DifySessionService {
         },
         {
           headers: this.buildHeaders(agent),
-        }
+        },
       );
 
       logger.info('Dify 会话重命名成功', {
@@ -457,4 +457,3 @@ export class DifySessionService {
 
 // 导出单例实例
 export const difySessionService = new DifySessionService();
-

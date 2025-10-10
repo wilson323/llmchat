@@ -8,7 +8,7 @@ import {
   BatchOperationOptions,
   ExportOptions,
   EventQueryParams,
-  ApiError
+  ApiError,
 } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 import { getErrorMessage } from '@/utils/helpers';
@@ -21,7 +21,7 @@ async function ensureAdminAuth(req: Request) {
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',
-      code: 'UNAUTHORIZED'
+      code: 'UNAUTHORIZED',
     });
   }
 
@@ -77,7 +77,7 @@ export class SessionController {
     tags: Joi.array().items(Joi.string()).when('operation', {
       is: Joi.string().valid('addTags', 'removeTags'),
       then: Joi.required(),
-      otherwise: Joi.optional()
+      otherwise: Joi.optional(),
     }),
   });
 
@@ -88,7 +88,7 @@ export class SessionController {
     filters: this.sessionListSchema.optional(),
     dateRange: Joi.object({
       start: Joi.date().iso().required(),
-      end: Joi.date().iso().required()
+      end: Joi.date().iso().required(),
     }).optional(),
   });
 
@@ -212,7 +212,7 @@ export class SessionController {
           sessionId,
           value.operation,
           { operation: value.operation, tags: value.tags } as JsonValue,
-          context
+          context,
         );
       }
 
@@ -281,8 +281,8 @@ export class SessionController {
 
       // 设置响应头
       const contentType = value.format === 'json' ? 'application/json' :
-                         value.format === 'csv' ? 'text/csv' :
-                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        value.format === 'csv' ? 'text/csv' :
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
@@ -298,9 +298,9 @@ export class SessionController {
           sessionCount: 'unknown', // 从result中获取
           includeMessages: value.includeMessages,
           includeMetadata: value.includeMetadata,
-          filters: value.filters
+          filters: value.filters,
         } as JsonValue,
-        context
+        context,
       );
     } catch (unknownError) {
       if (handleAdminAuthError(unknownError, res)) {
@@ -342,7 +342,7 @@ export class SessionController {
       if (startDate && endDate) {
         dateRange = {
           start: startDate as string,
-          end: endDate as string
+          end: endDate as string,
         };
       }
 
@@ -396,7 +396,7 @@ export class SessionController {
 
       const result = await this.sessionService.queryEvents(agentId, {
         ...value,
-        agentId
+        agentId,
       } as EventQueryParams);
 
       ApiResponseHandler.sendSuccess(res, result, {
@@ -440,7 +440,7 @@ export class SessionController {
       // 记录访问事件
       const user = await ensureAdminAuth(req).catch(() => ({ userId: undefined }));
       const eventData = {
-        action: 'view_detail'
+        action: 'view_detail',
       } as JsonValue;
       const requestContext = {} as Record<string, unknown>;
 
@@ -461,7 +461,7 @@ export class SessionController {
         sessionId,
         'updated',
         eventData,
-        requestContext
+        requestContext,
       );
 
       ApiResponseHandler.sendSuccess(res, detail, {
@@ -516,7 +516,7 @@ export class SessionController {
         sessionId,
         'deleted',
         { reason: 'manual_delete' } as JsonValue,
-        context
+        context,
       );
 
       await this.sessionService.deleteHistory(agentId, sessionId);

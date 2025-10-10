@@ -6,7 +6,7 @@ import {
   ChatResponse,
   StreamStatus,
   RequestHeaders,
-  JsonValue
+  JsonValue,
 } from '@/types';
 import {
   FastGPTResponse,
@@ -19,7 +19,7 @@ import {
   DifyStreamChunk,
   DifyFile,
   SSEEventData,
-  ReasoningPayload
+  ReasoningPayload,
 } from '@/types/provider';
 import { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
@@ -96,7 +96,7 @@ export class FastGPTProvider implements AIProvider {
     if (options?.variables) {
       request.variables = options.variables;
     }
-    
+
     if (options?.responseChatItemId) {
       request.responseChatItemId = options.responseChatItemId;
     }
@@ -136,7 +136,7 @@ export class FastGPTProvider implements AIProvider {
         finish_reason: firstChoice?.finish_reason || 'stop',
       }],
     };
-    
+
     if (response.usage) {
       result.usage = {
         prompt_tokens: response.usage.prompt_tokens ?? 0,
@@ -144,13 +144,13 @@ export class FastGPTProvider implements AIProvider {
         total_tokens: response.usage.total_tokens ?? 0,
       };
     }
-    
+
     return result;
   }
 
   transformStreamResponse(chunk: FastGPTStreamChunk): string {
     // FastGPT流式响应格式
-    if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
+    if (chunk.choices?.[0]?.delta) {
       return chunk.choices[0].delta.content || '';
     }
     return '';
@@ -206,16 +206,16 @@ export class OpenAIProvider implements AIProvider {
         finish_reason: choice.finish_reason,
       })),
     };
-    
+
     if (response.usage) {
       result.usage = response.usage;
     }
-    
+
     return result;
   }
 
   transformStreamResponse(chunk: OpenAIStreamChunk): string {
-    if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
+    if (chunk.choices?.[0]?.delta) {
       return chunk.choices[0].delta.content || '';
     }
     return '';
@@ -305,7 +305,7 @@ export class AnthropicProvider implements AIProvider {
 
 /**
  * Dify 提供商适配器
- * 
+ *
  * Dify API 规范:
  * - 端点: POST /v1/chat-messages
  * - 认证: Bearer {api_key}
@@ -317,7 +317,7 @@ export class DifyProvider implements AIProvider {
 
   /**
    * 转换请求格式
-   * 
+   *
    * Dify 使用 query 字段而非 messages 数组，需要提取最后一条用户消息
    */
   transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
@@ -326,7 +326,7 @@ export class DifyProvider implements AIProvider {
     if (!lastUserMessage) {
       throw new ValidationError({
         message: 'Dify 请求必须包含至少一条用户消息',
-        code: 'MISSING_USER_MESSAGE'
+        code: 'MISSING_USER_MESSAGE',
       });
     }
 
@@ -355,18 +355,18 @@ export class DifyProvider implements AIProvider {
       }));
     }
 
-    logger.debug('Dify 请求数据', { 
-      component: 'DifyProvider', 
+    logger.debug('Dify 请求数据', {
+      component: 'DifyProvider',
       request,
-      originalMessagesCount: messages.length
+      originalMessagesCount: messages.length,
     });
-    
+
     return request;
   }
 
   /**
    * 转换响应格式
-   * 
+   *
    * Dify 响应格式转换为统一的 ChatResponse 格式
    */
   transformResponse(response: DifyResponse): ChatResponse {
@@ -398,7 +398,7 @@ export class DifyProvider implements AIProvider {
 
   /**
    * 转换流式响应
-   * 
+   *
    * Dify SSE 事件处理
    */
   transformStreamResponse(chunk: DifyStreamChunk): string {
@@ -406,14 +406,14 @@ export class DifyProvider implements AIProvider {
     if (chunk.event === 'message' && chunk.answer) {
       return chunk.answer;
     }
-    
+
     // message_end 事件不返回内容，但包含元数据
     if (chunk.event === 'message_end') {
       logger.debug('Dify 消息结束', {
         component: 'DifyProvider',
         messageId: chunk.id,
         conversationId: chunk.conversation_id,
-        metadata: chunk.metadata
+        metadata: chunk.metadata,
       });
     }
 
@@ -422,14 +422,14 @@ export class DifyProvider implements AIProvider {
       logger.error('Dify 流式响应错误', {
         component: 'DifyProvider',
         status: chunk.status,
-      code: chunk.code,
-      message: chunk.message
-    });
-    throw new ExternalServiceError({
-      message: `Dify 错误: ${chunk.message || '未知错误'}`,
-      code: 'DIFY_STREAM_ERROR',
-      service: 'Dify'
-    });
+        code: chunk.code,
+        message: chunk.message,
+      });
+      throw new ExternalServiceError({
+        message: `Dify 错误: ${chunk.message || '未知错误'}`,
+        code: 'DIFY_STREAM_ERROR',
+        service: 'Dify',
+      });
     }
 
     // message_file 事件（文件消息）
@@ -437,7 +437,7 @@ export class DifyProvider implements AIProvider {
       logger.info('Dify 文件消息', {
         component: 'DifyProvider',
         type: chunk.type,
-        url: chunk.url
+        url: chunk.url,
       });
       // 可以在这里处理文件消息的特殊逻辑
       return `[文件: ${chunk.type}]`;
@@ -449,7 +449,7 @@ export class DifyProvider implements AIProvider {
 
   /**
    * 验证配置
-   * 
+   *
    * Dify API Key 格式: app-xxx
    */
   validateConfig(config: AgentConfig): boolean {
@@ -460,18 +460,18 @@ export class DifyProvider implements AIProvider {
     if (!isValidProvider) {
       logger.warn('Dify 配置验证失败: provider 不匹配', {
         component: 'DifyProvider',
-        provider: config.provider
+        provider: config.provider,
       });
     }
     if (!hasValidApiKey) {
       logger.warn('Dify 配置验证失败: API Key 格式不正确', {
         component: 'DifyProvider',
-        apiKeyPrefix: config.apiKey?.substring(0, 4)
+        apiKeyPrefix: config.apiKey?.substring(0, 4),
       });
     }
     if (!hasValidEndpoint) {
       logger.warn('Dify 配置验证失败: endpoint 缺失', {
-        component: 'DifyProvider'
+        component: 'DifyProvider',
       });
     }
 
@@ -480,7 +480,7 @@ export class DifyProvider implements AIProvider {
 
   /**
    * 构建请求头
-   * 
+   *
    * Dify 使用 Bearer token 认证
    */
   buildHeaders(config: AgentConfig): RequestHeaders {
@@ -528,7 +528,7 @@ export class ChatProxyService {
     agentId: string,
     messages: ChatMessage[],
     options?: ChatOptions,
-    protectionContext?: ProtectedRequestContext
+    protectionContext?: ProtectedRequestContext,
   ): Promise<ChatResponse> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -536,14 +536,14 @@ export class ChatProxyService {
         message: `智能体不存在: ${agentId}`,
         code: 'AGENT_NOT_FOUND',
         resourceType: 'agent',
-        resourceId: agentId
+        resourceId: agentId,
       });
     }
 
     if (!config.isActive) {
       throw new ValidationError({
         message: `智能体未激活: ${agentId}`,
-        code: 'AGENT_INACTIVE'
+        code: 'AGENT_INACTIVE',
       });
     }
 
@@ -551,7 +551,7 @@ export class ChatProxyService {
     if (!provider) {
       throw new ValidationError({
         message: `不支持的提供商: ${config.provider}`,
-        code: 'UNSUPPORTED_PROVIDER'
+        code: 'UNSUPPORTED_PROVIDER',
       });
     }
 
@@ -567,7 +567,7 @@ export class ChatProxyService {
       const response = await this.httpClient.post(
         config.endpoint,
         requestData,
-        { headers }
+        { headers },
       );
 
       // 转换响应格式并记录日志
@@ -593,7 +593,7 @@ export class ChatProxyService {
         // 使用保护机制执行请求
         return await this.protectionService.executeProtectedRequest(
           protectionContext,
-          protectedOperation
+          protectedOperation,
         );
       } else {
         // 直接执行请求（向后兼容）
@@ -605,7 +605,7 @@ export class ChatProxyService {
         message: `智能体请求失败: ${getErrorMessage(error)}`,
         code: 'AGENT_REQUEST_FAILED',
         service: config.provider,
-        originalError: error
+        originalError: error,
       });
     }
   }
@@ -620,7 +620,7 @@ export class ChatProxyService {
     onStatus: (status: StreamStatus) => void,
     options?: ChatOptions,
     onEvent?: (eventName: string, data: SSEEventData) => void,
-    protectionContext?: ProtectedRequestContext
+    protectionContext?: ProtectedRequestContext,
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -628,21 +628,21 @@ export class ChatProxyService {
         message: `智能体不存在: ${agentId}`,
         code: 'AGENT_NOT_FOUND',
         resourceType: 'agent',
-        resourceId: agentId
+        resourceId: agentId,
       });
     }
 
     if (!config.isActive) {
       throw new ValidationError({
         message: `智能体未激活: ${agentId}`,
-        code: 'AGENT_INACTIVE'
+        code: 'AGENT_INACTIVE',
       });
     }
 
     if (!config.features.streamingConfig.enabled) {
       throw new ValidationError({
         message: `智能体不支持流式响应: ${agentId}`,
-        code: 'STREAM_NOT_SUPPORTED'
+        code: 'STREAM_NOT_SUPPORTED',
       });
     }
 
@@ -650,7 +650,7 @@ export class ChatProxyService {
     if (!provider) {
       throw new ValidationError({
         message: `不支持的提供商: ${config.provider}`,
-        code: 'UNSUPPORTED_PROVIDER'
+        code: 'UNSUPPORTED_PROVIDER',
       });
     }
 
@@ -695,7 +695,7 @@ export class ChatProxyService {
         {
           headers,
           responseType: 'stream',
-        }
+        },
       );
 
       // 处理流式响应
@@ -706,7 +706,7 @@ export class ChatProxyService {
         onChunk,
         onStatus,
         onEvent,
-        { agentId, endpoint: config.endpoint, provider: config.provider, ...(usedChatId ? { chatId: usedChatId } : {}) }
+        { agentId, endpoint: config.endpoint, provider: config.provider, ...(usedChatId ? { chatId: usedChatId } : {}) },
       );
     };
 
@@ -715,7 +715,7 @@ export class ChatProxyService {
         // 使用保护机制执行流式请求
         await this.protectionService.executeProtectedRequest(
           protectionContext,
-          protectedOperation
+          protectedOperation,
         );
       } else {
         // 直接执行流式请求（向后兼容）
@@ -732,7 +732,7 @@ export class ChatProxyService {
         message: `智能体流式请求失败: ${getErrorMessage(error)}`,
         code: 'AGENT_STREAM_REQUEST_FAILED',
         service: config.provider,
-        originalError: error
+        originalError: error,
       });
     }
   }
@@ -818,7 +818,7 @@ export class ChatProxyService {
   private logStreamEvent(
     ctx: { agentId: string; chatId?: string; endpoint: string; provider: string } | undefined,
     eventType: string,
-    data: SSEEventData
+    data: SSEEventData,
   ): void {
     try {
       this.chatLog.logStreamEvent({
@@ -833,13 +833,15 @@ export class ChatProxyService {
   }
 
   private extractReasoningPayload(data: Record<string, JsonValue> | null): ReasoningPayload {
-    if (!data || typeof data !== 'object') return null;
-    
+    if (!data || typeof data !== 'object') {
+      return null;
+    }
+
     // 尝试从不同的可能位置提取推理内容
     const choices = data.choices as Array<Record<string, JsonValue>> | undefined;
-    const firstChoice = choices?.[0] as Record<string, JsonValue> | undefined;
+    const firstChoice = choices?.[0];
     const delta = (firstChoice?.delta || data.delta) as Record<string, JsonValue> | undefined;
-    
+
     return (
       delta?.reasoning_content ||
       data.reasoning_content ||
@@ -850,7 +852,7 @@ export class ChatProxyService {
 
   /**
    * 分发FastGPT事件到相应的回调函数
-   * 
+   *
    * @param provider AI提供商适配器
    * @param eventName 事件名称
    * @param payload 事件数据
@@ -866,16 +868,18 @@ export class ChatProxyService {
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
     onEvent?: (eventName: string, data: SSEEventData) => void,
-    ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
+    ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string },
   ): void {
-    const payloadEvent = (typeof payload === 'object' && payload !== null && 'event' in payload) 
-      ? payload.event 
+    const payloadEvent = (typeof payload === 'object' && payload !== null && 'event' in payload)
+      ? payload.event
       : '';
     const resolvedEvent = (eventName || (typeof payloadEvent === 'string' ? payloadEvent : '') || '').trim();
     const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
     const emitEvent = (name: string, data: SSEEventData) => {
-      if (!onEvent) return;
+      if (!onEvent) {
+        return;
+      }
       try {
         onEvent(name, data);
       } catch (emitError) {
@@ -923,9 +927,9 @@ export class ChatProxyService {
     if (eventKey === getNormalizedEventKey('answer')) {
       const payloadObj = (typeof payload === 'object' && payload !== null) ? payload : {};
       const choices = payloadObj.choices as Array<Record<string, JsonValue>> | undefined;
-      const delta = (choices?.[0] as Record<string, JsonValue> | undefined)?.delta as Record<string, JsonValue> | undefined;
+      const delta = (choices?.[0])?.delta as Record<string, JsonValue> | undefined;
       const answerContent = (delta?.content ?? payloadObj.content ?? '') as string;
-      
+
       if (answerContent) {
         this.logStreamEvent(ctx, 'answer', payload);
         onChunk(answerContent);
@@ -974,8 +978,8 @@ export class ChatProxyService {
     // 兜底处理：只处理非answer事件，避免重复处理
     if (eventKey !== getNormalizedEventKey('answer')) {
       // 将 payload 转换为提供商期望的格式
-      const chunkData = (typeof payload === 'object' && payload !== null) 
-        ? payload as Record<string, JsonValue>
+      const chunkData = (typeof payload === 'object' && payload !== null)
+        ? payload
         : {} as Record<string, JsonValue>;
       const transformed = provider.transformStreamResponse(chunkData);
       if (transformed) {
@@ -1000,7 +1004,7 @@ export class ChatProxyService {
     onChunk: (chunk: string) => void,
     onStatus?: (status: StreamStatus) => void,
     onEvent?: (eventName: string, data: SSEEventData) => void,
-    ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string }
+    ctx?: { agentId: string; chatId?: string; endpoint: string; provider: string },
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       let buffer = '';
@@ -1102,10 +1106,14 @@ export class ChatProxyService {
    */
   async validateAgentConfig(agentId: string): Promise<boolean> {
     const config = await this.agentService.getAgent(agentId);
-    if (!config) return false;
+    if (!config) {
+      return false;
+    }
 
     const provider = this.getProvider(config.provider);
-    if (!provider) return false;
+    if (!provider) {
+      return false;
+    }
 
     return provider.validateConfig(config);
   }

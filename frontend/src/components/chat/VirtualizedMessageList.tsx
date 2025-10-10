@@ -1,10 +1,12 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { ChatMessage } from "@/types";
 import { MessageItem } from "./MessageItem";
 import { useChatStore } from "@/store/chatStore";
 import { useI18n } from "@/i18n";
 import { useVirtualScroll } from "@/hooks/useVirtualScroll";
-import { memoryMonitor } from "@/utils/memoryMonitor";
+import {
+  usePerformanceMonitor
+} from '@/utils/performanceOptimizer';
 
 interface VirtualizedMessageListProps {
   messages: ChatMessage[];
@@ -14,8 +16,18 @@ interface VirtualizedMessageListProps {
   onRetryMessage?: (messageId: string) => void;
 }
 
-// 估算消息高度的函数
+// 🚀 性能优化：缓存消息高度计算
+const messageHeightCache = new Map<string, number>();
+
 const estimateMessageHeight = (message: ChatMessage): number => {
+  // 生成缓存键
+  const cacheKey = `${message.AI || message.HUMAN || ''}-${!!message.interactive}-${message.reasoning?.steps?.length || 0}-${message.events?.length || 0}`;
+
+  // 检查缓存
+  if (messageHeightCache.has(cacheKey)) {
+    return messageHeightCache.get(cacheKey)!;
+  }
+
   // 基础高度
   let height = 80;
 
@@ -43,7 +55,19 @@ const estimateMessageHeight = (message: ChatMessage): number => {
   }
 
   // 确保最小高度
-  return Math.max(height, 80);
+  const finalHeight = Math.max(height, 80);
+
+  // 缓存结果（限制缓存大小）
+  if (messageHeightCache.size > 1000) {
+    // 清理最旧的缓存项
+    const firstKey = messageHeightCache.keys().next().value;
+    if (firstKey) {
+      messageHeightCache.delete(firstKey);
+    }
+  }
+  messageHeightCache.set(cacheKey, finalHeight);
+
+  return finalHeight;
 };
 
 export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
@@ -53,6 +77,9 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
   onInteractiveFormSubmit,
   onRetryMessage,
 }) => {
+  // 🚀 性能监控
+  usePerformanceMonitor('VirtualizedMessageList');
+
   const { currentAgent, streamingStatus } = useChatStore();
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,21 +88,24 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
   // 记录消息数量变化时的内存使用
   useEffect(() => {
     if (import.meta.env?.DEV) {
-      memoryMonitor.recordMeasurement(`虚拟列表渲染 ${messages.length} 条消息`);
+      console.log(`虚拟列表渲染 ${messages.length} 条消息`);
     }
   }, [messages.length]);
 
-  // 计算容器高度（考虑流式消息的特殊处理）
-  const containerHeight =
-    typeof window !== "undefined" ? window.innerHeight - 200 : 600;
+  // 🚀 性能优化：使用useMemo缓存计算结果
+  const virtualScrollConfig = useMemo(() => {
+    const height = typeof window !== "undefined" ? window.innerHeight - 200 : 600;
+
+    return {
+      itemHeight: (index: number) => estimateMessageHeight(messages[index]),
+      containerHeight: height,
+      itemCount: messages.length,
+      overscan: Math.min(5, Math.max(3, Math.floor(height / 100))), // 动态调整overscan
+    };
+  }, [messages.length]);
 
   // 使用虚拟滚动
-  const { virtualItems, totalHeight, scrollToIndex } = useVirtualScroll({
-    itemHeight: (index) => estimateMessageHeight(messages[index]),
-    containerHeight,
-    itemCount: messages.length,
-    overscan: 3,
-  });
+  const { virtualItems, totalHeight, scrollToIndex } = useVirtualScroll(virtualScrollConfig);
 
   // 自动滚动到底部
   useEffect(() => {

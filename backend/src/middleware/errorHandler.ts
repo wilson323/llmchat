@@ -18,7 +18,7 @@ export const errorHandler = (
   unknownError: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   // 使用类型安全基础设施创建结构化错误
   const typedError = createErrorFromUnknown(unknownError, {
@@ -30,7 +30,7 @@ export const errorHandler = (
       headers: req.headers,
       userAgent: req.get('User-Agent'),
       ip: req.ip,
-    }
+    },
   });
 
   // 结构化日志记录（包含requestId）
@@ -89,27 +89,61 @@ function getErrorStatusCode(error: BaseError): number {
   const message = error.message.toLowerCase();
 
   // 客户端错误 (4xx)
-  if (code === 'VALIDATION_ERROR' || code === 'INVALID_PARAMS') return 400;
-  if (code === 'UNAUTHORIZED' || code === 'AUTHENTICATION_FAILED') return 401;
-  if (code === 'FORBIDDEN' || code === 'PERMISSION_DENIED') return 403;
-  if (code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND') return 404;
-  if (code === 'METHOD_NOT_ALLOWED') return 405;
-  if (code === 'CONFLICT') return 409;
-  if (code === 'VALIDATION_FAILED') return 422;
-  if (code === 'RATE_LIMIT_EXCEEDED') return 429;
+  if (code === 'VALIDATION_ERROR' || code === 'INVALID_PARAMS') {
+    return 400;
+  }
+  if (code === 'UNAUTHORIZED' || code === 'AUTHENTICATION_FAILED') {
+    return 401;
+  }
+  if (code === 'FORBIDDEN' || code === 'PERMISSION_DENIED') {
+    return 403;
+  }
+  if (code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND') {
+    return 404;
+  }
+  if (code === 'METHOD_NOT_ALLOWED') {
+    return 405;
+  }
+  if (code === 'CONFLICT') {
+    return 409;
+  }
+  if (code === 'VALIDATION_FAILED') {
+    return 422;
+  }
+  if (code === 'RATE_LIMIT_EXCEEDED') {
+    return 429;
+  }
 
   // 服务器错误 (5xx)
-  if (code === 'INTERNAL_SERVER_ERROR') return 500;
-  if (code === 'SERVICE_UNAVAILABLE') return 503;
-  if (code === 'CIRCUIT_BREAKER_OPEN') return 503;
-  if (code === 'TIMEOUT_ERROR' || code === 'REQUEST_TIMEOUT') return 408;
+  if (code === 'INTERNAL_SERVER_ERROR') {
+    return 500;
+  }
+  if (code === 'SERVICE_UNAVAILABLE') {
+    return 503;
+  }
+  if (code === 'CIRCUIT_BREAKER_OPEN') {
+    return 503;
+  }
+  if (code === 'TIMEOUT_ERROR' || code === 'REQUEST_TIMEOUT') {
+    return 408;
+  }
 
   // 基于消息内容的判断
-  if (message.includes('timeout')) return 408;
-  if (message.includes('not found')) return 404;
-  if (message.includes('unauthorized')) return 401;
-  if (message.includes('forbidden')) return 403;
-  if (message.includes('validation')) return 400;
+  if (message.includes('timeout')) {
+    return 408;
+  }
+  if (message.includes('not found')) {
+    return 404;
+  }
+  if (message.includes('unauthorized')) {
+    return 401;
+  }
+  if (message.includes('forbidden')) {
+    return 403;
+  }
+  if (message.includes('validation')) {
+    return 400;
+  }
 
   // 默认服务器错误
   return 500;
@@ -120,7 +154,7 @@ function getErrorStatusCode(error: BaseError): number {
  * 用于包装异步路由处理器，自动捕获和处理错误
  */
 export const asyncErrorHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>,
 ) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -138,7 +172,7 @@ export const notFoundHandler = (req: Request, res: Response, next: NextFunction)
       operation: 'notFoundHandling',
       url: req.originalUrl,
       method: req.method,
-    }
+    },
   );
 
   const errorResponse = error.toApiError();
@@ -150,7 +184,7 @@ export const notFoundHandler = (req: Request, res: Response, next: NextFunction)
  */
 export const createErrorResponse = (
   error: BaseError,
-  includeDetails: boolean = false
+  includeDetails: boolean = false,
 ): ApiError => {
   const response = error.toApiError();
 
@@ -172,7 +206,7 @@ export const createErrorResponse = (
 export const safeJsonResponse = (
   res: Response,
   data: JsonValue,
-  statusCode: number = 200
+  statusCode: number = 200,
 ): void => {
   try {
     res.status(statusCode).json(data);
@@ -193,7 +227,7 @@ export const safeJsonResponse = (
  */
 export const logErrorEvent = (
   error: BaseError,
-  additionalContext?: Record<string, unknown>
+  additionalContext?: Record<string, unknown>,
 ): void => {
   const logData = {
     errorId: error.id,

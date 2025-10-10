@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/Toast';
 import { translate } from '@/i18n';
 import { logger } from '@/lib/logger';
 import type { ApiSuccessPayload } from '@/types/dynamic';
+import { requestMonitor } from '@/utils/performanceOptimizer';
 import {
   Agent,
   OriginalChatMessage,
@@ -78,17 +79,37 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 api.interceptors.request.use((config) => {
+  // 🚀 性能监控：记录请求开始时间
+  const requestId = `${config.method?.toUpperCase()}-${config.url}-${Date.now()}`;
+  requestMonitor.startRequest(requestId);
+
+  // 添加请求ID到header
+  config.headers = config.headers || {};
+  (config.headers as Record<string, string>)['X-Request-ID'] = requestId;
+
   const token = useAuthStore.getState().token;
   if (token) {
-    config.headers = config.headers || {};
     (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 🚀 性能监控：记录请求完成
+    const requestId = response.config.headers?.['X-Request-ID'] as string;
+    if (requestId) {
+      requestMonitor.endRequest(requestId, response.config.method?.toUpperCase() || 'GET', response.status);
+    }
+    return response;
+  },
   (error) => {
+    // 🚀 性能监控：记录请求失败
+    const requestId = error.config?.headers?.['X-Request-ID'] as string;
+    if (requestId) {
+      requestMonitor.endRequest(requestId, error.config?.method?.toUpperCase() || 'GET', error.response?.status || 0);
+    }
+
     logger.error(translate('API请求错误'), error, {
       url: error?.config?.url,
       method: error?.config?.method,

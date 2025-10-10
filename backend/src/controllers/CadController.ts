@@ -1,6 +1,6 @@
 /**
  * CAD 控制器
- * 
+ *
  * 处理 CAD 文件上传、解析和操作请求
  */
 
@@ -9,8 +9,8 @@ import { CadParserService } from '@/services/CadParserService';
 import { CadOperationService } from '@/services/CadOperationService';
 import { DashScopeService } from '@/services/DashScopeService';
 import { CAD_FUNCTION_TOOLS } from '@/utils/cadFunctionTools';
-import { 
-  DxfEntity, 
+import {
+  DxfEntity,
   CadFileInfo,
   AddLineParams,
   AddCircleParams,
@@ -102,7 +102,7 @@ export class CadController {
   getCadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fileId } = req.params;
-      
+
       if (!fileId) {
         res.status(400).json({
           code: 'INVALID_FILE_ID',
@@ -146,7 +146,7 @@ export class CadController {
     try {
       const { fileId } = req.params;
       const { operation, params } = req.body;
-      
+
       if (!fileId) {
         res.status(400).json({
           code: 'INVALID_FILE_ID',
@@ -222,7 +222,7 @@ export class CadController {
   exportDxf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { fileId } = req.params;
-      
+
       if (!fileId) {
         res.status(400).json({
           code: 'INVALID_FILE_ID',

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from "react";
+import React, { useEffect, useRef, memo, useMemo } from "react";
 import { ChatMessage } from "@/types";
 import { MessageItem } from "./MessageItem";
 import { VirtualizedMessageList } from "./VirtualizedMessageList";
@@ -6,6 +6,9 @@ import { VirtualizedMessageList } from "./VirtualizedMessageList";
 // import { FastGPTStatusIndicator } from './FastGPTStatusIndicator';
 import { useChatStore } from "@/store/chatStore";
 import { useI18n } from "@/i18n";
+import {
+  usePerformanceMonitor
+} from '@/utils/performanceOptimizer';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -24,8 +27,13 @@ export const MessageList: React.FC<MessageListProps> = memo(
     onInteractiveFormSubmit,
     onRetryMessage,
   }) => {
-    // 默认使用虚拟滚动，无论消息数量多少
-    const shouldUseVirtualization = true;
+    // 🚀 性能监控
+    usePerformanceMonitor('MessageList');
+
+    // 🚀 性能优化：智能虚拟化阈值
+    const shouldUseVirtualization = useMemo(() => {
+      return messages.length > 10; // 超过10条消息使用虚拟滚动
+    }, [messages.length]);
 
     if (shouldUseVirtualization) {
       return (

@@ -14,7 +14,7 @@ import { SystemError } from '@/types/errors';
 
 /**
  * 审计日志服务
- * 
+ *
  * 职责：
  * - 记录所有关键安全操作
  * - 提供审计日志查询接口
@@ -69,7 +69,7 @@ export class AuditService {
           userAgent,
           status,
           errorMessage,
-        ]
+        ],
       );
 
       const auditLog = this.mapRowToAuditLog(result.rows[0]);
@@ -165,7 +165,7 @@ export class AuditService {
       // 查询总数
       const countResult = await this.pool.query<{ count: string }>(
         `SELECT COUNT(*) as count FROM audit_logs ${whereClause}`,
-        values
+        values,
       );
       const total = parseInt(countResult.rows[0]?.count || '0', 10);
 
@@ -174,7 +174,7 @@ export class AuditService {
         `SELECT * FROM audit_logs ${whereClause}
          ORDER BY ${orderBy} ${orderDirection}
          LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
-        [...values, limit, offset]
+        [...values, limit, offset],
       );
 
       const logs = dataResult.rows.map((row) => this.mapRowToAuditLog(row));
@@ -214,7 +214,7 @@ export class AuditService {
       offset?: number;
       startDate?: Date;
       endDate?: Date;
-    } = {}
+    } = {},
   ): Promise<AuditLogQueryResult> {
     return this.query({
       userId,
@@ -231,7 +231,7 @@ export class AuditService {
     options: {
       limit?: number;
       offset?: number;
-    } = {}
+    } = {},
   ): Promise<AuditLogQueryResult> {
     return this.query({
       resourceType,
@@ -263,7 +263,7 @@ export class AuditService {
       offset?: number;
       startDate?: Date;
       endDate?: Date;
-    } = {}
+    } = {},
   ): Promise<AuditLogQueryResult> {
     return this.query({
       status: AuditStatus.FAILURE,
@@ -317,7 +317,7 @@ export class AuditService {
 
   /**
    * 清理过期审计日志
-   * 
+   *
    * @param retentionDays 保留天数，默认90天
    */
   async cleanupOldLogs(retentionDays: number = 90): Promise<number> {
@@ -326,8 +326,8 @@ export class AuditService {
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
       const result = await this.pool.query(
-        `DELETE FROM audit_logs WHERE timestamp < $1`,
-        [cutoffDate]
+        'DELETE FROM audit_logs WHERE timestamp < $1',
+        [cutoffDate],
       );
 
       const deletedCount = result.rowCount || 0;
@@ -362,7 +362,7 @@ export class AuditService {
     options: {
       startDate?: Date;
       endDate?: Date;
-    } = {}
+    } = {},
   ): Promise<{
     totalLogs: number;
     successCount: number;
@@ -392,14 +392,14 @@ export class AuditService {
       // 总数统计
       const totalResult = await this.pool.query<{ count: string }>(
         `SELECT COUNT(*) as count FROM audit_logs ${whereClause}`,
-        values
+        values,
       );
       const totalLogs = parseInt(totalResult.rows[0]?.count || '0', 10);
 
       // 成功/失败统计
       const statusResult = await this.pool.query<{ status: string; count: string }>(
         `SELECT status, COUNT(*) as count FROM audit_logs ${whereClause} GROUP BY status`,
-        values
+        values,
       );
 
       let successCount = 0;
@@ -417,7 +417,7 @@ export class AuditService {
       // 操作类型统计
       const actionResult = await this.pool.query<{ action: string; count: string }>(
         `SELECT action, COUNT(*) as count FROM audit_logs ${whereClause} GROUP BY action ORDER BY count DESC`,
-        values
+        values,
       );
 
       const actionCounts: Record<string, number> = {};
@@ -433,7 +433,7 @@ export class AuditService {
          GROUP BY user_id, username 
          ORDER BY count DESC 
          LIMIT 10`,
-        values
+        values,
       );
 
       const topUsers = userResult.rows.map((row) => ({
@@ -509,4 +509,3 @@ export class AuditService {
 
 // 导出单例
 export const auditService = new AuditService();
-

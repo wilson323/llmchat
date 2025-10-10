@@ -92,7 +92,7 @@ export class AnalyticsService {
             country,
             province,
             city,
-          ]
+          ],
         );
       });
     } catch (error) {
@@ -171,7 +171,7 @@ export class AnalyticsService {
 
     const agentRows = await withClient(async (client) => {
       const { rows } = await client.query<{ id: string; name: string; is_active: boolean; app_id: string | null }>(
-        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC'
+        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC',
       );
       return rows;
     });
@@ -238,7 +238,9 @@ export class AnalyticsService {
           const dayKey = row._id.day;
           const appId = row._id.appId.toHexString();
           const agent = appIdToAgent.get(appId);
-          if (!agent) return;
+          if (!agent) {
+            return;
+          }
           const agentKey = agent.id;
           const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
           const count = Number(row.count || 0);
@@ -283,12 +285,12 @@ export class AnalyticsService {
     const startDay = new Date(Date.UTC(
       start.getUTCFullYear(),
       start.getUTCMonth(),
-      start.getUTCDate()
+      start.getUTCDate(),
     ));
     const endDay = new Date(Date.UTC(
       end.getUTCFullYear(),
       end.getUTCMonth(),
-      end.getUTCDate()
+      end.getUTCDate(),
     ));
     const bucketCount = Math.max(0, Math.floor((endDay.getTime() - startDay.getTime()) / msPerDay)) + 1;
 
@@ -334,7 +336,7 @@ export class AnalyticsService {
 
     const agentRows = await withClient(async (client) => {
       const { rows } = await client.query<{ id: string; name: string; is_active: boolean; app_id: string | null }>(
-        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC'
+        'SELECT id, name, is_active, app_id FROM agent_configs ORDER BY name ASC',
       );
       return rows;
     });
@@ -380,7 +382,9 @@ export class AnalyticsService {
         mongoRows.forEach((row) => {
           const appId = row._id.toHexString();
           const agent = appIdToAgent.get(appId);
-          if (!agent) return;
+          if (!agent) {
+            return;
+          }
           const count = Number(row.count || 0);
           countMap.set(agent.id, (countMap.get(agent.id) ?? 0) + count);
         });

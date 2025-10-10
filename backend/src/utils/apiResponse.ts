@@ -46,7 +46,7 @@ export class ApiResponseHandler {
       requestId?: string;
       metadata?: SuccessMetadata;
       startTime?: number;
-    } = {}
+    } = {},
   ): void {
     const {
       message = 'success',
@@ -54,7 +54,7 @@ export class ApiResponseHandler {
       statusCode = 200,
       requestId,
       metadata,
-      startTime
+      startTime,
     } = options;
 
     // 验证响应数据类型
@@ -67,7 +67,7 @@ export class ApiResponseHandler {
           component: 'ApiResponseHandler',
           operation: 'sendSuccess',
           context: { dataType: typeof data },
-        }
+        },
       );
 
       return this.sendError(res, error, requestId ? { requestId } : {});
@@ -116,7 +116,7 @@ export class ApiResponseHandler {
       requestId?: string;
       startTime?: number;
       metadata?: SuccessMetadata;
-    } = {}
+    } = {},
   ): void {
     const totalPages = Math.ceil(pagination.total / pagination.pageSize);
     const hasNext = pagination.page < totalPages;
@@ -152,7 +152,7 @@ export class ApiResponseHandler {
       statusCode?: number;
       requestId?: string;
       includeDetails?: boolean;
-    } = {}
+    } = {},
   ): void {
     const typedError = createErrorFromUnknown(error, {
       component: 'ApiResponseHandler',
@@ -191,7 +191,7 @@ export class ApiResponseHandler {
   static sendCreated<T = unknown>(
     res: Response,
     data: T,
-    options: Omit<SendSuccessOptions, 'statusCode'> = {}
+    options: Omit<SendSuccessOptions, 'statusCode'> = {},
   ): void {
     const nextOptions: SendSuccessOptions = {
       ...(options ?? {}),
@@ -238,7 +238,7 @@ export class ApiResponseHandler {
     options: {
       details?: JsonValue;
       requestId?: string;
-    } = {}
+    } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
@@ -246,7 +246,7 @@ export class ApiResponseHandler {
         component: 'ApiResponseHandler',
         operation: 'sendValidationError',
         context: { details: options.details },
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 400 });
@@ -258,14 +258,14 @@ export class ApiResponseHandler {
   static sendUnauthorized(
     res: Response,
     message: string = '未授权访问',
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
       {
         component: 'ApiResponseHandler',
         operation: 'sendUnauthorized',
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 401 });
@@ -277,14 +277,14 @@ export class ApiResponseHandler {
   static sendForbidden(
     res: Response,
     message: string = '禁止访问',
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
       {
         component: 'ApiResponseHandler',
         operation: 'sendForbidden',
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 403 });
@@ -296,14 +296,14 @@ export class ApiResponseHandler {
   static sendNotFound(
     res: Response,
     message: string = '资源不存在',
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
       {
         component: 'ApiResponseHandler',
         operation: 'sendNotFound',
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 404 });
@@ -315,14 +315,14 @@ export class ApiResponseHandler {
   static sendMethodNotAllowed(
     res: Response,
     message: string = '方法不允许',
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
       {
         component: 'ApiResponseHandler',
         operation: 'sendMethodNotAllowed',
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 405 });
@@ -334,14 +334,14 @@ export class ApiResponseHandler {
   static sendConflict(
     res: Response,
     message: string = '资源冲突',
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
       new Error(message),
       {
         component: 'ApiResponseHandler',
         operation: 'sendConflict',
-      }
+      },
     );
 
     this.sendError(res, error, { ...options, statusCode: 409 });
@@ -380,7 +380,7 @@ export class ApiResponseHandler {
       error?: string;
       index: number;
     }[],
-    options: { requestId?: string; startTime?: number } = {}
+    options: { requestId?: string; startTime?: number } = {},
   ): void {
     const successful = results.filter(r => r.success).length;
     const failed = results.length - successful;
@@ -408,10 +408,10 @@ export class ApiResponseHandler {
     res: Response,
     status: 'healthy' | 'degraded' | 'unhealthy',
     details?: JsonValue,
-    options: { requestId?: string } = {}
+    options: { requestId?: string } = {},
   ): void {
     const statusCode = status === 'healthy' ? 200 :
-                      status === 'degraded' ? 200 : 503;
+      status === 'degraded' ? 200 : 503;
 
     const data = {
       status,
@@ -435,21 +435,43 @@ export class ApiResponseHandler {
     const message = error.message.toLowerCase();
 
     // 客户端错误
-    if (code === 'VALIDATION_ERROR') return 400;
-    if (code === 'UNAUTHORIZED') return 401;
-    if (code === 'FORBIDDEN') return 403;
-    if (code === 'NOT_FOUND') return 404;
-    if (code === 'CONFLICT') return 409;
+    if (code === 'VALIDATION_ERROR') {
+      return 400;
+    }
+    if (code === 'UNAUTHORIZED') {
+      return 401;
+    }
+    if (code === 'FORBIDDEN') {
+      return 403;
+    }
+    if (code === 'NOT_FOUND') {
+      return 404;
+    }
+    if (code === 'CONFLICT') {
+      return 409;
+    }
 
     // 服务器错误
-    if (code === 'INTERNAL_SERVER_ERROR') return 500;
-    if (code === 'SERVICE_UNAVAILABLE') return 503;
+    if (code === 'INTERNAL_SERVER_ERROR') {
+      return 500;
+    }
+    if (code === 'SERVICE_UNAVAILABLE') {
+      return 503;
+    }
 
     // 基于消息判断
-    if (message.includes('not found')) return 404;
-    if (message.includes('unauthorized')) return 401;
-    if (message.includes('forbidden')) return 403;
-    if (message.includes('validation')) return 400;
+    if (message.includes('not found')) {
+      return 404;
+    }
+    if (message.includes('unauthorized')) {
+      return 401;
+    }
+    if (message.includes('forbidden')) {
+      return 403;
+    }
+    if (message.includes('validation')) {
+      return 400;
+    }
 
     return 500;
   }
@@ -461,7 +483,7 @@ export class ApiResponseHandler {
 export const sendSuccess = <T = JsonValue>(
   res: Response,
   data: T,
-  options?: Parameters<typeof ApiResponseHandler.sendSuccess>[2]
+  options?: Parameters<typeof ApiResponseHandler.sendSuccess>[2],
 ): void => {
   ApiResponseHandler.sendSuccess(res, data, options);
 };
@@ -469,7 +491,7 @@ export const sendSuccess = <T = JsonValue>(
 export const sendError = (
   res: Response,
   error: unknown,
-  options?: Parameters<typeof ApiResponseHandler.sendError>[2]
+  options?: Parameters<typeof ApiResponseHandler.sendError>[2],
 ): void => {
   ApiResponseHandler.sendError(res, error, options);
 };
@@ -478,7 +500,7 @@ export const sendPaginated = <T = JsonValue>(
   res: Response,
   data: T[],
   pagination: Parameters<typeof ApiResponseHandler.sendPaginated>[2],
-  options?: Parameters<typeof ApiResponseHandler.sendPaginated>[3]
+  options?: Parameters<typeof ApiResponseHandler.sendPaginated>[3],
 ): void => {
   ApiResponseHandler.sendPaginated(res, data, pagination, options);
 };
@@ -486,7 +508,7 @@ export const sendPaginated = <T = JsonValue>(
 export const sendCreated = <T = JsonValue>(
   res: Response,
   data: T,
-  options?: Parameters<typeof ApiResponseHandler.sendCreated>[2]
+  options?: Parameters<typeof ApiResponseHandler.sendCreated>[2],
 ): void => {
   ApiResponseHandler.sendCreated(res, data, options);
 };
@@ -494,7 +516,7 @@ export const sendCreated = <T = JsonValue>(
 export const sendNotFound = (
   res: Response,
   message?: string,
-  options?: { requestId?: string }
+  options?: { requestId?: string },
 ): void => {
   ApiResponseHandler.sendNotFound(res, message, options);
 };
@@ -502,7 +524,7 @@ export const sendNotFound = (
 export const sendValidationError = (
   res: Response,
   message: string,
-  options?: Parameters<typeof ApiResponseHandler.sendValidationError>[2]
+  options?: Parameters<typeof ApiResponseHandler.sendValidationError>[2],
 ): void => {
   ApiResponseHandler.sendValidationError(res, message, options);
 };

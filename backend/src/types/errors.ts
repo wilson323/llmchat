@@ -55,10 +55,16 @@ export abstract class BaseError extends Error {
     this.code = code;
     this.category = category;
     this.severity = severity;
-    if (context !== undefined) this.context = context;
+    if (context !== undefined) {
+      this.context = context;
+    }
     this.timestamp = new Date().toISOString();
-    if (userId !== undefined) this.userId = userId;
-    if (requestId !== undefined) this.requestId = requestId;
+    if (userId !== undefined) {
+      this.userId = userId;
+    }
+    if (requestId !== undefined) {
+      this.requestId = requestId;
+    }
 
     // 确保错误堆栈正确显示
     if (Error.captureStackTrace) {
@@ -78,9 +84,15 @@ export abstract class BaseError extends Error {
       timestamp: this.timestamp,
     };
 
-    if (this.context !== undefined) result.details = this.context;
-    if (this.userId !== undefined) result.userId = this.userId;
-    if (this.requestId !== undefined) result.requestId = this.requestId;
+    if (this.context !== undefined) {
+      result.details = this.context;
+    }
+    if (this.userId !== undefined) {
+      result.userId = this.userId;
+    }
+    if (this.requestId !== undefined) {
+      result.requestId = this.requestId;
+    }
 
     return result;
   }
@@ -208,9 +220,15 @@ export class ValidationError extends BaseError {
       category: 'validation',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     if (field || value) {
       const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
@@ -284,9 +302,15 @@ export class AuthorizationError extends BaseError {
       category: 'authorization',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     if (resource || action) {
       const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
@@ -338,9 +362,15 @@ export class NetworkError extends BaseError {
       category: 'network',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     if (url || method || statusCode) {
       const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
@@ -392,9 +422,15 @@ export class ExternalServiceError extends BaseError {
       category: 'external_service',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
     superParams.context = {
@@ -405,7 +441,7 @@ export class ExternalServiceError extends BaseError {
         name: originalError.name,
         ...(originalError.stack && { stack: originalError.stack }),
       } : originalError,
-      ...baseContext
+      ...baseContext,
     } as JsonValue;
 
     super(superParams);
@@ -451,9 +487,15 @@ export class ResourceError extends BaseError {
       category: 'resource',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     if (resourceType || resourceId || operation) {
       const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
@@ -503,9 +545,15 @@ export class BusinessLogicError extends BaseError {
       category: 'business_logic',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     if (rule || data) {
       const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
@@ -557,9 +605,15 @@ export class SystemError extends BaseError {
       category: 'system',
     };
 
-    if (severity !== undefined) superParams.severity = severity;
-    if (userId !== undefined) superParams.userId = userId;
-    if (requestId !== undefined) superParams.requestId = requestId;
+    if (severity !== undefined) {
+      superParams.severity = severity;
+    }
+    if (userId !== undefined) {
+      superParams.userId = userId;
+    }
+    if (requestId !== undefined) {
+      superParams.requestId = requestId;
+    }
 
     const baseContext = context && typeof context === 'object' && !Array.isArray(context) ? context : {};
     superParams.context = {
@@ -570,7 +624,7 @@ export class SystemError extends BaseError {
         name: originalError.name,
         ...(originalError.stack && { stack: originalError.stack }),
       } : originalError,
-      ...baseContext
+      ...baseContext,
     } as JsonValue;
 
     super(superParams);
@@ -607,7 +661,7 @@ export function createFailure<E extends BaseError>(error: E): Result<never, E> {
  */
 export function safeExecute<T, E extends BaseError = BaseError>(
   fn: () => T,
-  errorFactory?: (error: unknown) => E
+  errorFactory?: (error: unknown) => E,
 ): Result<T, E> {
   try {
     const data = fn();
@@ -625,7 +679,7 @@ export function safeExecute<T, E extends BaseError = BaseError>(
       new SystemError({
         message: '未知错误',
         originalError: unknownError,
-      }) as E
+      }) as E,
     );
   }
 }
@@ -635,7 +689,7 @@ export function safeExecute<T, E extends BaseError = BaseError>(
  */
 export async function safeExecuteAsync<T, E extends BaseError = BaseError>(
   fn: () => Promise<T>,
-  errorFactory?: (error: unknown) => E
+  errorFactory?: (error: unknown) => E,
 ): Promise<Result<T, E>> {
   try {
     const data = await fn();
@@ -653,7 +707,7 @@ export async function safeExecuteAsync<T, E extends BaseError = BaseError>(
       new SystemError({
         message: '未知错误',
         originalError: unknownError,
-      }) as E
+      }) as E,
     );
   }
 }
@@ -698,8 +752,12 @@ export class TypeGuard {
    * 检查是否为数组
    */
   static isArray<T>(value: unknown, guard?: (item: unknown) => item is T): value is T[] {
-    if (!Array.isArray(value)) return false;
-    if (!guard) return true;
+    if (!Array.isArray(value)) {
+      return false;
+    }
+    if (!guard) {
+      return true;
+    }
     return value.every(guard);
   }
 
@@ -728,7 +786,9 @@ export class TypeGuard {
    * 检查是否为有效的ISO日期字符串
    */
   static isISODateString(value: unknown): value is string {
-    if (!this.isString(value)) return false;
+    if (!this.isString(value)) {
+      return false;
+    }
     const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
     return isoRegex.test(value) && !isNaN(Date.parse(value));
   }
@@ -737,7 +797,9 @@ export class TypeGuard {
    * 检查是否为Email格式
    */
   static isEmail(value: unknown): value is string {
-    if (!this.isString(value)) return false;
+    if (!this.isString(value)) {
+      return false;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   }
@@ -746,7 +808,9 @@ export class TypeGuard {
    * 检查是否为URL格式
    */
   static isURL(value: unknown): value is string {
-    if (!this.isString(value)) return false;
+    if (!this.isString(value)) {
+      return false;
+    }
     try {
       new URL(value);
       return true;
@@ -760,7 +824,7 @@ export class TypeGuard {
    */
   static hasProperty<K extends string | number | symbol>(
     obj: unknown,
-    key: K
+    key: K,
   ): obj is Record<K, unknown> {
     return this.isObject(obj) && key in obj;
   }
@@ -770,9 +834,11 @@ export class TypeGuard {
    */
   static hasProperties<T extends Record<string, unknown>>(
     obj: unknown,
-    keys: (keyof T)[]
+    keys: (keyof T)[],
   ): obj is T {
-    if (!this.isObject(obj)) return false;
+    if (!this.isObject(obj)) {
+      return false;
+    }
     return keys.every(key => key in obj);
   }
 }
@@ -785,8 +851,12 @@ export class SafeCast {
    * 安全转换为字符串
    */
   static toString(value: unknown, defaultValue: string = ''): string {
-    if (TypeGuard.isString(value)) return value;
-    if (TypeGuard.isNumber(value) || TypeGuard.isBoolean(value)) return String(value);
+    if (TypeGuard.isString(value)) {
+      return value;
+    }
+    if (TypeGuard.isNumber(value) || TypeGuard.isBoolean(value)) {
+      return String(value);
+    }
     return defaultValue;
   }
 
@@ -794,7 +864,9 @@ export class SafeCast {
    * 安全转换为数字
    */
   static toNumber(value: unknown, defaultValue: number = 0): number {
-    if (TypeGuard.isNumber(value)) return value;
+    if (TypeGuard.isNumber(value)) {
+      return value;
+    }
     if (TypeGuard.isString(value)) {
       const parsed = Number(value);
       return !isNaN(parsed) ? parsed : defaultValue;
@@ -806,7 +878,9 @@ export class SafeCast {
    * 安全转换为布尔值
    */
   static toBoolean(value: unknown, defaultValue: boolean = false): boolean {
-    if (TypeGuard.isBoolean(value)) return value;
+    if (TypeGuard.isBoolean(value)) {
+      return value;
+    }
     if (TypeGuard.isString(value)) {
       return value.toLowerCase() === 'true';
     }
@@ -820,9 +894,15 @@ export class SafeCast {
    * 安全转换为日期
    */
   static toDate(value: unknown, defaultValue: Date = new Date()): Date {
-    if (TypeGuard.isValidDate(value)) return value;
-    if (TypeGuard.isISODateString(value)) return new Date(value);
-    if (TypeGuard.isNumber(value)) return new Date(value);
+    if (TypeGuard.isValidDate(value)) {
+      return value;
+    }
+    if (TypeGuard.isISODateString(value)) {
+      return new Date(value);
+    }
+    if (TypeGuard.isNumber(value)) {
+      return new Date(value);
+    }
     return defaultValue;
   }
 
@@ -831,9 +911,11 @@ export class SafeCast {
    */
   static toObject<T extends Record<string, unknown>>(
     value: unknown,
-    defaultValue: T = {} as T
+    defaultValue: T = {} as T,
   ): T {
-    if (TypeGuard.isObject(value)) return value as T;
+    if (TypeGuard.isObject(value)) {
+      return value as T;
+    }
     return defaultValue;
   }
 
@@ -843,9 +925,11 @@ export class SafeCast {
   static toArray<T>(
     value: unknown,
     guard?: (item: unknown) => item is T,
-    defaultValue: T[] = []
+    defaultValue: T[] = [],
   ): T[] {
-    if (TypeGuard.isArray(value, guard)) return value;
+    if (TypeGuard.isArray(value, guard)) {
+      return value;
+    }
     return defaultValue;
   }
 
@@ -856,11 +940,13 @@ export class SafeCast {
     obj: unknown,
     key: string,
     guard: (value: unknown) => value is T,
-    defaultValue: T
+    defaultValue: T,
   ): T {
     if (TypeGuard.hasProperty(obj, key)) {
       const value = obj[key];
-      if (guard(value)) return value;
+      if (guard(value)) {
+        return value;
+      }
     }
     return defaultValue;
   }
@@ -916,12 +1002,24 @@ export function createErrorFromUnknown(error: unknown, context?: {
         message: error.message,
       };
 
-      if (context?.url !== undefined) networkParams.url = context.url;
-      if (context?.method !== undefined) networkParams.method = context.method;
-      if (context?.statusCode !== undefined) networkParams.statusCode = context.statusCode;
-      if (context?.severity !== undefined) networkParams.severity = context.severity;
-      if (context?.userId !== undefined) networkParams.userId = context.userId;
-      if (context?.requestId !== undefined) networkParams.requestId = context.requestId;
+      if (context?.url !== undefined) {
+        networkParams.url = context.url;
+      }
+      if (context?.method !== undefined) {
+        networkParams.method = context.method;
+      }
+      if (context?.statusCode !== undefined) {
+        networkParams.statusCode = context.statusCode;
+      }
+      if (context?.severity !== undefined) {
+        networkParams.severity = context.severity;
+      }
+      if (context?.userId !== undefined) {
+        networkParams.userId = context.userId;
+      }
+      if (context?.requestId !== undefined) {
+        networkParams.requestId = context.requestId;
+      }
 
       const { url, method, statusCode, severity, userId, requestId, ...restContext } = context || {};
       if (Object.keys(restContext || {}).length > 0) {
@@ -945,11 +1043,21 @@ export function createErrorFromUnknown(error: unknown, context?: {
         message: error.message,
       };
 
-      if (context?.field !== undefined) validationParams.field = context.field;
-      if (context?.value !== undefined) validationParams.value = context.value;
-      if (context?.severity !== undefined) validationParams.severity = context.severity;
-      if (context?.userId !== undefined) validationParams.userId = context.userId;
-      if (context?.requestId !== undefined) validationParams.requestId = context.requestId;
+      if (context?.field !== undefined) {
+        validationParams.field = context.field;
+      }
+      if (context?.value !== undefined) {
+        validationParams.value = context.value;
+      }
+      if (context?.severity !== undefined) {
+        validationParams.severity = context.severity;
+      }
+      if (context?.userId !== undefined) {
+        validationParams.userId = context.userId;
+      }
+      if (context?.requestId !== undefined) {
+        validationParams.requestId = context.requestId;
+      }
 
       const { field, value, severity, userId, requestId, ...restContext } = context || {};
       if (Object.keys(restContext || {}).length > 0) {
@@ -970,9 +1078,15 @@ export function createErrorFromUnknown(error: unknown, context?: {
         message: error.message,
       };
 
-      if (context?.severity !== undefined) authParams.severity = context.severity;
-      if (context?.userId !== undefined) authParams.userId = context.userId;
-      if (context?.requestId !== undefined) authParams.requestId = context.requestId;
+      if (context?.severity !== undefined) {
+        authParams.severity = context.severity;
+      }
+      if (context?.userId !== undefined) {
+        authParams.userId = context.userId;
+      }
+      if (context?.requestId !== undefined) {
+        authParams.requestId = context.requestId;
+      }
 
       const { severity, userId, requestId, ...restContext } = context || {};
       return new AuthenticationError({
@@ -995,11 +1109,21 @@ export function createErrorFromUnknown(error: unknown, context?: {
         message: error.message,
       };
 
-      if (context?.resource !== undefined) authzParams.resource = context.resource;
-      if (context?.action !== undefined) authzParams.action = context.action;
-      if (context?.severity !== undefined) authzParams.severity = context.severity;
-      if (context?.userId !== undefined) authzParams.userId = context.userId;
-      if (context?.requestId !== undefined) authzParams.requestId = context.requestId;
+      if (context?.resource !== undefined) {
+        authzParams.resource = context.resource;
+      }
+      if (context?.action !== undefined) {
+        authzParams.action = context.action;
+      }
+      if (context?.severity !== undefined) {
+        authzParams.severity = context.severity;
+      }
+      if (context?.userId !== undefined) {
+        authzParams.userId = context.userId;
+      }
+      if (context?.requestId !== undefined) {
+        authzParams.requestId = context.requestId;
+      }
 
       const { resource, action, severity, userId, requestId, ...restContext } = context || {};
       if (Object.keys(restContext || {}).length > 0) {
@@ -1025,11 +1149,21 @@ export function createErrorFromUnknown(error: unknown, context?: {
       originalError: error,
     };
 
-    if (context?.component !== undefined) systemParams.component = context.component;
-    if (context?.operation !== undefined) systemParams.operation = context.operation;
-    if (context?.severity !== undefined) systemParams.severity = context.severity;
-    if (context?.userId !== undefined) systemParams.userId = context.userId;
-    if (context?.requestId !== undefined) systemParams.requestId = context.requestId;
+    if (context?.component !== undefined) {
+      systemParams.component = context.component;
+    }
+    if (context?.operation !== undefined) {
+      systemParams.operation = context.operation;
+    }
+    if (context?.severity !== undefined) {
+      systemParams.severity = context.severity;
+    }
+    if (context?.userId !== undefined) {
+      systemParams.userId = context.userId;
+    }
+    if (context?.requestId !== undefined) {
+      systemParams.requestId = context.requestId;
+    }
 
     const { component, operation, severity, userId, requestId, originalError, ...restContext } = context || {};
     if (Object.keys(restContext || {}).length > 0) {
@@ -1055,11 +1189,21 @@ export function createErrorFromUnknown(error: unknown, context?: {
     originalError: error,
   };
 
-  if (context?.component !== undefined) unknownSystemParams.component = context.component;
-  if (context?.operation !== undefined) unknownSystemParams.operation = context.operation;
-  if (context?.severity !== undefined) unknownSystemParams.severity = context.severity;
-  if (context?.userId !== undefined) unknownSystemParams.userId = context.userId;
-  if (context?.requestId !== undefined) unknownSystemParams.requestId = context.requestId;
+  if (context?.component !== undefined) {
+    unknownSystemParams.component = context.component;
+  }
+  if (context?.operation !== undefined) {
+    unknownSystemParams.operation = context.operation;
+  }
+  if (context?.severity !== undefined) {
+    unknownSystemParams.severity = context.severity;
+  }
+  if (context?.userId !== undefined) {
+    unknownSystemParams.userId = context.userId;
+  }
+  if (context?.requestId !== undefined) {
+    unknownSystemParams.requestId = context.requestId;
+  }
 
   const { component: comp, operation: oper, severity: sev, userId: uid, requestId: rid, originalError: origErr, ...restContextUnknown } = context || {};
   if (Object.keys(restContextUnknown || {}).length > 0) {
@@ -1078,7 +1222,7 @@ export function wrapAsyncHandler<T extends any[], R>(
     userId?: string;
     requestId?: string;
     component?: string;
-  }
+  },
 ) {
   return async (...args: T): Promise<R> => {
     try {

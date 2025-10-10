@@ -2,13 +2,13 @@ import logger from '@/utils/logger';
 
 /**
  * 环境变量解析工具
- * 
+ *
  * 用于解析配置文件中的环境变量占位符，如 ${ENV_VAR}
  */
 
 /**
  * 解析字符串中的环境变量占位符
- * 
+ *
  * @param value 包含占位符的字符串，如 "${DB_HOST}"
  * @param defaultValue 如果环境变量未设置，使用的默认值
  * @returns 解析后的值
@@ -20,14 +20,14 @@ export function resolveEnvString(value: string, defaultValue?: string): string {
 
   // 匹配 ${VAR_NAME} 格式
   const envVarPattern = /\$\{([^}]+)\}/g;
-  
+
   return value.replace(envVarPattern, (match, envVarName) => {
     const envValue = process.env[envVarName];
-    
+
     if (envValue !== undefined) {
       return envValue;
     }
-    
+
     if (defaultValue !== undefined) {
       logger.warn(`Environment variable ${envVarName} not set, using default`, {
         component: 'envResolver',
@@ -36,7 +36,7 @@ export function resolveEnvString(value: string, defaultValue?: string): string {
       });
       return defaultValue;
     }
-    
+
     logger.warn(`Environment variable ${envVarName} not set, keeping placeholder`, {
       component: 'envResolver',
       envVarName,
@@ -47,7 +47,7 @@ export function resolveEnvString(value: string, defaultValue?: string): string {
 
 /**
  * 解析对象中的所有环境变量占位符（递归）
- * 
+ *
  * @param obj 需要解析的对象
  * @returns 解析后的对象
  */
@@ -70,11 +70,11 @@ export function resolveEnvInObject<T>(obj: T): T {
 
   if (typeof obj === 'object') {
     const resolved: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
       resolved[key] = resolveEnvInObject(value);
     }
-    
+
     return resolved as T;
   }
 
@@ -83,11 +83,11 @@ export function resolveEnvInObject<T>(obj: T): T {
 
 /**
  * 解析 JSONC 配置文件中的环境变量
- * 
+ *
  * 处理特殊的 JSONC 格式，如数字/布尔值的占位符：
  * - "port": ${DB_PORT}  -> 解析为数字
  * - "ssl": ${DB_SSL}    -> 解析为布尔值
- * 
+ *
  * @param configText JSONC 配置文件文本
  * @returns 解析后的配置文本
  */
@@ -95,18 +95,18 @@ export function resolveEnvInJsonc(configText: string): string {
   // 匹配 ${VAR_NAME} 格式，只允许字母、数字、下划线
   // 注意：[\s\S] 匹配任意字符（包括换行），但我们只需要变量名
   const envVarPattern = /\$\{([A-Z_][A-Z0-9_]*)\}/g;
-  
+
   return configText.replace(envVarPattern, (match, envVarName) => {
     // 清理变量名（移除所有空白字符，包括换行符）
     const cleanVarName = envVarName.replace(/\s+/g, '');
     const envValue = process.env[cleanVarName];
-    
+
     if (envValue !== undefined) {
       // 检查上下文，判断是否应该返回原始值（不带引号）
       // 这适用于数字和布尔值的情况
       return envValue;
     }
-    
+
     logger.warn(`Environment variable ${cleanVarName} not set, keeping placeholder`, {
       component: 'envResolver',
       envVarName: cleanVarName,
@@ -117,7 +117,7 @@ export function resolveEnvInJsonc(configText: string): string {
 
 /**
  * 从环境变量解析数字
- * 
+ *
  * @param envVar 环境变量名
  * @param defaultValue 默认值
  * @returns 解析后的数字
@@ -127,7 +127,7 @@ export function getEnvNumber(envVar: string, defaultValue: number): number {
   if (!value) {
     return defaultValue;
   }
-  
+
   const parsed = parseInt(value, 10);
   if (Number.isNaN(parsed)) {
     logger.warn(`Invalid number in environment variable ${envVar}, using default`, {
@@ -138,13 +138,13 @@ export function getEnvNumber(envVar: string, defaultValue: number): number {
     });
     return defaultValue;
   }
-  
+
   return parsed;
 }
 
 /**
  * 从环境变量解析布尔值
- * 
+ *
  * @param envVar 环境变量名
  * @param defaultValue 默认值
  * @returns 解析后的布尔值
@@ -154,17 +154,17 @@ export function getEnvBoolean(envVar: string, defaultValue: boolean): boolean {
   if (!value) {
     return defaultValue;
   }
-  
+
   const lowerValue = value.toLowerCase().trim();
-  
+
   if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes') {
     return true;
   }
-  
+
   if (lowerValue === 'false' || lowerValue === '0' || lowerValue === 'no') {
     return false;
   }
-  
+
   logger.warn(`Invalid boolean in environment variable ${envVar}, using default`, {
     component: 'envResolver',
     envVar,
@@ -176,7 +176,7 @@ export function getEnvBoolean(envVar: string, defaultValue: boolean): boolean {
 
 /**
  * 从环境变量获取字符串
- * 
+ *
  * @param envVar 环境变量名
  * @param defaultValue 默认值
  * @returns 环境变量值或默认值
@@ -184,4 +184,3 @@ export function getEnvBoolean(envVar: string, defaultValue: boolean): boolean {
 export function getEnvString(envVar: string, defaultValue: string): string {
   return process.env[envVar] || defaultValue;
 }
-

@@ -49,7 +49,7 @@ async function main() {
       case 'up': {
         console.log('🚀 执行数据库迁移...\n');
         const result = await manager.migrateUp();
-        
+
         if (result.executed.length === 0) {
           console.log('✅ 数据库已是最新状态 (跳过 %d 个迁移)\n', result.skipped);
         } else {
@@ -71,7 +71,7 @@ async function main() {
 
         console.log('🔄 回滚最后 %d 个迁移...\n', steps);
         const rolledBack = await manager.migrateDown(steps);
-        
+
         if (rolledBack.length === 0) {
           console.log('✅ 没有可回滚的迁移\n');
         } else {
@@ -86,7 +86,7 @@ async function main() {
 
       case 'status': {
         const status = await manager.getStatus();
-        
+
         console.log('📊 数据库迁移状态\n');
         console.log('总迁移数: %d', status.total);
         console.log('已执行: %d', status.executed.length);
@@ -114,7 +114,7 @@ async function main() {
       case 'mark': {
         const version = args[1];
         const name = args[2];
-        
+
         if (!version || !name) {
           console.error('❌ 错误: 缺少参数\n');
           console.log('用法: npm run migrate mark <version> <name>');
@@ -147,4 +147,3 @@ async function main() {
 }
 
 main();
-

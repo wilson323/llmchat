@@ -59,12 +59,12 @@ export class ChatInitService {
 
     // 额外校验：FastGPT 必须配置 appId（24位hex），避免将智能体ID误传给 FastGPT
     if (!agent.appId || !/^[a-fA-F0-9]{24}$/.test(agent.appId)) {
-      throw new Error(`FastGPT 智能体缺少有效的 appId 配置`);
+      throw new Error('FastGPT 智能体缺少有效的 appId 配置');
     }
 
     // 调用FastGPT API（传递真实的 FastGPT appId，而非本地的智能体ID）
     const initData = await this.callFastGPTInitAPI(agent, chatId);
-    
+
     // 缓存结果
     this.cache.set(cacheKey, {
       data: initData,
@@ -78,19 +78,19 @@ export class ChatInitService {
    * 获取初始化数据（流式）
    */
   async getInitDataStream(
-    appId: string, 
+    appId: string,
     chatId: string | undefined,
     onChunk: (chunk: string) => void,
     onComplete: (data: FastGPTInitResponse) => void,
-    onError: (error: Error) => void
+    onError: (error: Error) => void,
   ): Promise<void> {
     try {
       // 先获取完整的初始化数据
       const initData = await this.getInitData(appId, chatId);
-      
+
       // 提取开场白文本
       const welcomeText = initData.app.chatConfig.welcomeText || '';
-      
+
       if (!welcomeText) {
         // 如果没有开场白，直接返回完整数据
         onComplete(initData);
@@ -102,10 +102,10 @@ export class ChatInitService {
 
       // 流式输出开场白文本
       await this.streamWelcomeText(normalizedWelcomeText, onChunk);
-      
+
       // 流式输出完成后，返回完整数据
       onComplete(initData);
-      
+
     } catch (error) {
       onError(error instanceof Error ? error : new Error('获取初始化数据失败'));
     }
@@ -115,14 +115,14 @@ export class ChatInitService {
    * 调用FastGPT初始化API
    */
   private async callFastGPTInitAPI(
-    agent: AgentConfig, 
-    chatId?: string
+    agent: AgentConfig,
+    chatId?: string,
   ): Promise<FastGPTInitResponse> {
     try {
       // 构建FastGPT API URL
       const baseUrl = agent.endpoint.replace('/api/v1/chat/completions', '');
       const initUrl = `${baseUrl}/api/core/chat/init`;
-      
+
       // 构建请求参数：使用 agent.appId 作为 FastGPT 的 appId
       const params: any = { appId: agent.appId };
       if (chatId) {
@@ -139,7 +139,7 @@ export class ChatInitService {
         },
       });
 
-      const responseData = response.data as any;
+      const responseData = response.data;
       if (responseData.code !== 200) {
         throw new Error(`FastGPT API错误: ${responseData.message || '未知错误'}`);
       }
@@ -162,8 +162,8 @@ export class ChatInitService {
    * 流式输出开场白文本
    */
   private async streamWelcomeText(
-    text: string, 
-    onChunk: (chunk: string) => void
+    text: string,
+    onChunk: (chunk: string) => void,
   ): Promise<void> {
     // 将文本按字符分割，模拟打字机效果
     const chars = Array.from(text);
@@ -182,7 +182,9 @@ export class ChatInitService {
 
   // 将字面量换行标记标准化为真实换行，且统一为 \n
   private normalizeWelcomeText(text: string): string {
-    if (!text) return '';
+    if (!text) {
+      return '';
+    }
     return text
       // 已经存在的真实 CRLF -> LF
       .replace(/\r\n/g, '\n')

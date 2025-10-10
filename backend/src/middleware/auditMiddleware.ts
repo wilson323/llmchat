@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from "express";
-import { auditService } from "@/services/AuditService";
-import { AuditAction, AuditStatus, ResourceType } from "@/types/audit";
-import logger from "@/utils/logger";
+import { Request, Response, NextFunction } from 'express';
+import { auditService } from '@/services/AuditService';
+import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
+import logger from '@/utils/logger';
 
 /**
  * 审计中间件
@@ -41,7 +41,7 @@ declare module "express-serve-static-core" {
  */
 export function auditMiddleware(
   action?: AuditAction,
-  resourceType?: ResourceType
+  resourceType?: ResourceType,
 ) {
   return async (req: Request, res: Response, next: NextFunction) => {
     // 初始化审计上下文
@@ -50,8 +50,12 @@ export function auditMiddleware(
     };
 
     // 只添加非 undefined 的属性
-    if (action) auditContext.action = action;
-    if (resourceType) auditContext.resourceType = resourceType;
+    if (action) {
+      auditContext.action = action;
+    }
+    if (resourceType) {
+      auditContext.resourceType = resourceType;
+    }
 
     req.audit = auditContext;
 
@@ -67,7 +71,7 @@ export function auditMiddleware(
 
       // 调用原始的 json 方法
       return originalJson(body);
-    } as Response["json"];
+    } as Response['json'];
 
     next();
   };
@@ -100,7 +104,7 @@ async function recordAudit(req: Request, res: Response, responseBody: unknown) {
     if (
       status === AuditStatus.FAILURE &&
       responseBody &&
-      typeof responseBody === "object"
+      typeof responseBody === 'object'
     ) {
       const body = responseBody as Record<string, unknown>;
       errorMessage =
@@ -114,7 +118,7 @@ async function recordAudit(req: Request, res: Response, responseBody: unknown) {
 
     // 提取IP和User-Agent
     const ipAddress = extractIPAddress(req);
-    const userAgent = req.get("user-agent");
+    const userAgent = req.get('user-agent');
 
     // 构建详细信息
     const details: Record<string, unknown> = {
@@ -132,20 +136,33 @@ async function recordAudit(req: Request, res: Response, responseBody: unknown) {
     };
 
     // 只添加非 undefined 的属性
-    if (userId) logParams.userId = userId;
-    if (username) logParams.username = username;
-    if (req.audit?.resourceType)
+    if (userId) {
+      logParams.userId = userId;
+    }
+    if (username) {
+      logParams.username = username;
+    }
+    if (req.audit?.resourceType) {
       logParams.resourceType = req.audit.resourceType;
-    if (req.audit?.resourceId) logParams.resourceId = req.audit.resourceId;
-    if (ipAddress) logParams.ipAddress = ipAddress;
-    if (userAgent) logParams.userAgent = userAgent;
-    if (errorMessage) logParams.errorMessage = errorMessage;
+    }
+    if (req.audit?.resourceId) {
+      logParams.resourceId = req.audit.resourceId;
+    }
+    if (ipAddress) {
+      logParams.ipAddress = ipAddress;
+    }
+    if (userAgent) {
+      logParams.userAgent = userAgent;
+    }
+    if (errorMessage) {
+      logParams.errorMessage = errorMessage;
+    }
 
     await auditService.log(logParams);
   } catch (error) {
     // 审计失败不应该影响正常请求
-    logger.error("Failed to record audit log", {
-      component: "auditMiddleware",
+    logger.error('Failed to record audit log', {
+      component: 'auditMiddleware',
       error,
       path: req.path,
     });
@@ -159,41 +176,41 @@ function inferActionFromRequest(req: Request): AuditAction | null {
   const { method, path } = req;
 
   // 登录/登出
-  if (path.includes("/auth/login")) {
+  if (path.includes('/auth/login')) {
     return AuditAction.LOGIN;
   }
-  if (path.includes("/auth/logout")) {
+  if (path.includes('/auth/logout')) {
     return AuditAction.LOGOUT;
   }
 
   // 用户管理
-  if (path.includes("/users")) {
-    if (method === "POST") {
+  if (path.includes('/users')) {
+    if (method === 'POST') {
       return AuditAction.USER_CREATE;
     }
-    if (method === "PUT" || method === "PATCH") {
+    if (method === 'PUT' || method === 'PATCH') {
       return AuditAction.USER_UPDATE;
     }
-    if (method === "DELETE") {
+    if (method === 'DELETE') {
       return AuditAction.USER_DELETE;
     }
   }
 
   // 智能体管理
-  if (path.includes("/agents")) {
-    if (method === "POST") {
+  if (path.includes('/agents')) {
+    if (method === 'POST') {
       return AuditAction.AGENT_CREATE;
     }
-    if (method === "PUT" || method === "PATCH") {
+    if (method === 'PUT' || method === 'PATCH') {
       return AuditAction.AGENT_UPDATE;
     }
-    if (method === "DELETE") {
+    if (method === 'DELETE') {
       return AuditAction.AGENT_DELETE;
     }
   }
 
   // 配置管理
-  if (path.includes("/config") && (method === "PUT" || method === "PATCH")) {
+  if (path.includes('/config') && (method === 'PUT' || method === 'PATCH')) {
     return AuditAction.CONFIG_UPDATE;
   }
 
@@ -205,13 +222,13 @@ function inferActionFromRequest(req: Request): AuditAction | null {
  */
 function extractIPAddress(req: Request): string | undefined {
   // 尝试从 X-Forwarded-For 头获取（代理环境）
-  const forwardedFor = req.get("x-forwarded-for");
+  const forwardedFor = req.get('x-forwarded-for');
   if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim();
+    return forwardedFor.split(',')[0]?.trim();
   }
 
   // 尝试从 X-Real-IP 头获取
-  const realIp = req.get("x-real-ip");
+  const realIp = req.get('x-real-ip');
   if (realIp) {
     return realIp;
   }
@@ -248,19 +265,35 @@ export async function logAudit(params: {
   };
 
   // 只添加非 undefined 的属性
-  if (req.user?.id) logParams.userId = req.user.id;
-  if (req.user?.username) logParams.username = req.user.username;
-  if (resourceType) logParams.resourceType = resourceType;
-  if (resourceId) logParams.resourceId = resourceId;
-  if (details) logParams.details = details;
+  if (req.user?.id) {
+    logParams.userId = req.user.id;
+  }
+  if (req.user?.username) {
+    logParams.username = req.user.username;
+  }
+  if (resourceType) {
+    logParams.resourceType = resourceType;
+  }
+  if (resourceId) {
+    logParams.resourceId = resourceId;
+  }
+  if (details) {
+    logParams.details = details;
+  }
 
   const ipAddress = extractIPAddress(req);
-  if (ipAddress) logParams.ipAddress = ipAddress;
+  if (ipAddress) {
+    logParams.ipAddress = ipAddress;
+  }
 
-  const userAgent = req.get("user-agent");
-  if (userAgent) logParams.userAgent = userAgent;
+  const userAgent = req.get('user-agent');
+  if (userAgent) {
+    logParams.userAgent = userAgent;
+  }
 
-  if (errorMessage) logParams.errorMessage = errorMessage;
+  if (errorMessage) {
+    logParams.errorMessage = errorMessage;
+  }
 
   await auditService.log(logParams);
 }

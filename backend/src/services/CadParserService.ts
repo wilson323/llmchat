@@ -1,20 +1,20 @@
 /**
  * CAD 文件解析服务
- * 
+ *
  * 使用 dxf-parser 解析 DXF 文件
  */
 
 import DxfParser from 'dxf-parser';
-import { 
-  DxfEntity, 
-  CadFileInfo, 
+import {
+  DxfEntity,
+  CadFileInfo,
   Point3D,
   LineEntity,
   CircleEntity,
   ArcEntity,
   PolylineEntity,
   TextEntity,
-  DxfEntityType
+  DxfEntityType,
 } from '@llmchat/shared-types';
 import logger from '@/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
@@ -42,7 +42,7 @@ export class CadParserService {
 
       const dxf = this.parser.parseSync(dxfContent);
 
-      if (!dxf || !dxf.entities) {
+      if (!dxf?.entities) {
         throw new Error('DXF 文件解析失败：无法读取实体');
       }
 
@@ -167,7 +167,7 @@ export class CadParserService {
    */
   private updateBounds(
     entity: DxfEntity,
-    bounds: { minX: number; minY: number; maxX: number; maxY: number }
+    bounds: { minX: number; minY: number; maxX: number; maxY: number },
   ): void {
     const points: Point3D[] = [];
 
@@ -178,13 +178,13 @@ export class CadParserService {
       case 'CIRCLE':
         points.push(
           { x: entity.center.x - entity.radius, y: entity.center.y - entity.radius, z: 0 },
-          { x: entity.center.x + entity.radius, y: entity.center.y + entity.radius, z: 0 }
+          { x: entity.center.x + entity.radius, y: entity.center.y + entity.radius, z: 0 },
         );
         break;
       case 'ARC':
         points.push(
           { x: entity.center.x - entity.radius, y: entity.center.y - entity.radius, z: 0 },
-          { x: entity.center.x + entity.radius, y: entity.center.y + entity.radius, z: 0 }
+          { x: entity.center.x + entity.radius, y: entity.center.y + entity.radius, z: 0 },
         );
         break;
       case 'POLYLINE':
@@ -231,7 +231,7 @@ export class CadParserService {
    */
   queryEntities(
     entities: DxfEntity[],
-    filter?: { type?: DxfEntityType; layer?: string }
+    filter?: { type?: DxfEntityType; layer?: string },
   ): DxfEntity[] {
     let results = entities;
 

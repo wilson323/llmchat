@@ -25,16 +25,16 @@ function verifyToken(cookieToken: string | undefined, headerToken: string | unde
   if (!cookieToken || !headerToken) {
     return false;
   }
-  
+
   // 使用 timingSafeEqual 防止时序攻击
   try {
     const cookieBuffer = Buffer.from(cookieToken, 'hex');
     const headerBuffer = Buffer.from(headerToken, 'hex');
-    
+
     if (cookieBuffer.length !== headerBuffer.length) {
       return false;
     }
-    
+
     return crypto.timingSafeEqual(cookieBuffer, headerBuffer);
   } catch (error) {
     logger.warn('CSRF token 验证异常', { error });
@@ -44,7 +44,7 @@ function verifyToken(cookieToken: string | undefined, headerToken: string | unde
 
 /**
  * CSRF 保护中间件
- * 
+ *
  * 使用 Double Submit Cookie 模式：
  * 1. 服务器生成 token 存入 cookie
  * 2. 前端从 cookie 读取 token，放入请求头
@@ -122,7 +122,7 @@ export function csrfProtection(options: {
  */
 export function getCsrfToken(req: Request, res: Response): void {
   const token = generateToken();
-  
+
   res.cookie(CSRF_COOKIE_NAME, token, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',

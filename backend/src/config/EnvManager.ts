@@ -1,12 +1,12 @@
 /**
  * 环境变量管理器 - 高可用单例模式
- * 
+ *
  * 功能:
  * - 统一管理所有环境变量
  * - 启动时验证必需配置
  * - 提供类型安全的访问接口
  * - 支持降级默认值
- * 
+ *
  * 高可用特性:
  * - 启动时快速失败 (Fail Fast)
  * - 清晰的错误提示
@@ -45,7 +45,7 @@ export class EnvManager {
    */
   private loadEnv(): void {
     const envPath = path.resolve(__dirname, '../../.env');
-    
+
     // 开发环境必须有.env文件
     if (process.env.NODE_ENV !== 'production' && !existsSync(envPath)) {
       console.error('❌ .env file not found:', envPath);
@@ -75,14 +75,14 @@ export class EnvManager {
     const required = [
       // 安全配置
       'TOKEN_SECRET',
-      
+
       // 数据库配置
       'DB_HOST',
       'DB_PORT',
       'DB_USER',
       'DB_PASSWORD',
       'DB_NAME',
-      
+
       // Redis配置 (可选,降级到内存)
       // 'REDIS_HOST',
       // 'REDIS_PORT',
@@ -164,8 +164,10 @@ export class EnvManager {
    */
   public getInt(key: string, fallback: number = 0): number {
     const value = this.get(key);
-    if (!value) return fallback;
-    
+    if (!value) {
+      return fallback;
+    }
+
     const parsed = parseInt(value, 10);
     return isNaN(parsed) ? fallback : parsed;
   }
@@ -178,8 +180,10 @@ export class EnvManager {
    */
   public getBoolean(key: string, fallback: boolean = false): boolean {
     const value = this.get(key).toLowerCase();
-    if (!value) return fallback;
-    
+    if (!value) {
+      return fallback;
+    }
+
     return value === 'true' || value === '1' || value === 'yes';
   }
 
@@ -235,8 +239,8 @@ export class EnvManager {
 
     for (const [key, value] of this.config.entries()) {
       // 敏感信息脱敏
-      const isSensitive = sensitiveKeys.some(pattern => 
-        key.toUpperCase().includes(pattern)
+      const isSensitive = sensitiveKeys.some(pattern =>
+        key.toUpperCase().includes(pattern),
       );
 
       if (isSensitive) {
@@ -257,7 +261,7 @@ export class EnvManager {
     required: number;
     optional: number;
     missing: number;
-  } {
+    } {
     const requiredKeys = [
       'TOKEN_SECRET',
       'DB_HOST',
@@ -295,4 +299,3 @@ export class EnvManager {
 
 // 导出单例实例
 export const envManager = EnvManager.getInstance();
-

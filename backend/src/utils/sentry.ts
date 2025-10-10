@@ -1,12 +1,12 @@
 /**
  * Sentry 后端错误追踪配置
- * 
+ *
  * 功能：
  * - 自动捕获未处理异常
  * - Express中间件集成
  * - 性能监控
  * - 请求上下文追踪
- * 
+ *
  * 注意：适配 Sentry v10+ API
  */
 
@@ -21,7 +21,7 @@ export function initSentry(app: Express): void {
   // 仅在生产环境或明确启用时初始化
   if (process.env.NODE_ENV === 'production' || process.env.SENTRY_ENABLED === 'true') {
     const dsn = process.env.SENTRY_DSN;
-    
+
     if (!dsn) {
       console.warn('Sentry DSN未配置，错误追踪已禁用');
       return;
@@ -31,7 +31,7 @@ export function initSentry(app: Express): void {
       dsn,
       environment: process.env.NODE_ENV || 'development',
       release: process.env.APP_VERSION || 'unknown',
-      
+
       // 集成（Sentry v10+ 使用函数式API）
       integrations: [
         Sentry.httpIntegration(),
@@ -48,14 +48,14 @@ export function initSentry(app: Express): void {
         // 移除敏感数据
         if (event.request) {
           delete event.request.cookies;
-          
+
           // 清理headers中的敏感信息
           if (event.request.headers) {
             delete event.request.headers.authorization;
             delete event.request.headers['x-api-key'];
             delete event.request.headers.cookie;
           }
-          
+
           // 清理URL中的敏感参数
           if (event.request.url) {
             try {
@@ -72,10 +72,18 @@ export function initSentry(app: Express): void {
         // 清理请求体中的敏感数据
         if (event.request?.data) {
           const data = event.request.data as Record<string, unknown>;
-          if (data.password) data.password = '[Filtered]';
-          if (data.apiKey) data.apiKey = '[Filtered]';
-          if (data.token) data.token = '[Filtered]';
-          if (data.api_key) data.api_key = '[Filtered]';
+          if (data.password) {
+            data.password = '[Filtered]';
+          }
+          if (data.apiKey) {
+            data.apiKey = '[Filtered]';
+          }
+          if (data.token) {
+            data.token = '[Filtered]';
+          }
+          if (data.api_key) {
+            data.api_key = '[Filtered]';
+          }
         }
 
         return event;
@@ -118,9 +126,13 @@ export function setSentryUser(user: { id: string; email?: string; username?: str
   const userData: Sentry.User = {
     id: user.id,
   };
-  if (user.email) userData.email = user.email;
-  if (user.username) userData.username = user.username;
-  
+  if (user.email) {
+    userData.email = user.email;
+  }
+  if (user.username) {
+    userData.username = user.username;
+  }
+
   Sentry.setUser(userData);
 }
 
@@ -148,9 +160,9 @@ export function captureError(error: Error, context?: Record<string, unknown>): v
  * 添加面包屑
  */
 export function addBreadcrumb(
-  message: string, 
-  category: string, 
-  level: Sentry.SeverityLevel = 'info'
+  message: string,
+  category: string,
+  level: Sentry.SeverityLevel = 'info',
 ): void {
   Sentry.addBreadcrumb({
     message,

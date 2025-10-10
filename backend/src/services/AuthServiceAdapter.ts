@@ -7,10 +7,13 @@
  * - 渐进式迁移，保持向后兼容
  */
 
+
 import { AuthService, AuthUser, LoginResult } from "@/services/AuthService";
 import { AuthServiceV2, getAuthService } from "@/services/AuthServiceV2";
 import logger from "@/utils/logger";
 import { authService, isAuthV2 } from "@/services/authInstance";
+
+
 
 // 统一的接口定义
 export interface IAuthServiceAdapter {
@@ -34,7 +37,7 @@ export class AuthServiceV1Adapter implements IAuthServiceAdapter {
   async login(
     username: string,
     password: string,
-    ip?: string
+    ip?: string,
   ): Promise<LoginResult> {
     // V1不支持IP参数，忽略
     return this.service.login(username, password);
@@ -51,7 +54,7 @@ export class AuthServiceV1Adapter implements IAuthServiceAdapter {
   async changePassword(
     token: string,
     oldPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<void> {
     await this.service.changePassword(token, oldPassword, newPassword);
   }
@@ -66,7 +69,7 @@ export class AuthServiceV2Adapter implements IAuthServiceAdapter {
   async login(
     username: string,
     password: string,
-    ip?: string
+    ip?: string,
   ): Promise<LoginResult> {
     return this.service.login(username, password, ip);
   }
@@ -74,7 +77,7 @@ export class AuthServiceV2Adapter implements IAuthServiceAdapter {
   async profile(token: string): Promise<AuthUser> {
     const result = await this.service.validateToken(token);
     if (!result.valid || !result.user) {
-      throw new Error(result.error || "TOKEN_INVALID");
+      throw new Error(result.error || 'TOKEN_INVALID');
     }
     return result.user;
   }
@@ -86,12 +89,12 @@ export class AuthServiceV2Adapter implements IAuthServiceAdapter {
   async changePassword(
     token: string,
     oldPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<void> {
     // V2需要userId，从token中提取
     const result = await this.service.validateToken(token);
     if (!result.valid || !result.user) {
-      throw new Error("UNAUTHORIZED");
+      throw new Error('UNAUTHORIZED');
     }
     await this.service.changePassword(result.user.id, oldPassword, newPassword);
   }
@@ -106,13 +109,13 @@ export class AuthServiceV2Adapter implements IAuthServiceAdapter {
  */
 export function createAuthServiceAdapter(
   service: AuthService | AuthServiceV2,
-  isV2: boolean
+  isV2: boolean,
 ): IAuthServiceAdapter {
   if (isV2) {
-    logger.debug("创建AuthServiceV2Adapter");
+    logger.debug('创建AuthServiceV2Adapter');
     return new AuthServiceV2Adapter(service as AuthServiceV2);
   } else {
-    logger.debug("创建AuthServiceV1Adapter");
+    logger.debug('创建AuthServiceV1Adapter');
     return new AuthServiceV1Adapter(service as AuthService);
   }
 }
@@ -121,5 +124,6 @@ export function createAuthServiceAdapter(
  * 获取适配后的认证服务
  */
 export function getAuthServiceAdapter(): IAuthServiceAdapter {
+
   return createAuthServiceAdapter(authService, isAuthV2);
 }

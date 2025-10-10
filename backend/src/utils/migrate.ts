@@ -42,7 +42,7 @@ export class MigrationManager {
         executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
-    
+
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_schema_migrations_executed_at
         ON schema_migrations(executed_at DESC);
@@ -54,7 +54,7 @@ export class MigrationManager {
    */
   private async getExecutedMigrations(client: PoolClient): Promise<string[]> {
     const result = await client.query<{ version: string }>(
-      'SELECT version FROM schema_migrations ORDER BY version ASC'
+      'SELECT version FROM schema_migrations ORDER BY version ASC',
     );
     return result.rows.map(row => row.version);
   }
@@ -65,7 +65,7 @@ export class MigrationManager {
   private async recordMigration(client: PoolClient, migration: Migration): Promise<void> {
     await client.query(
       'INSERT INTO schema_migrations (version, name, executed_at) VALUES ($1, $2, NOW())',
-      [migration.version, migration.name]
+      [migration.version, migration.name],
     );
   }
 
@@ -75,7 +75,7 @@ export class MigrationManager {
   private async unrecordMigration(client: PoolClient, version: string): Promise<void> {
     await client.query(
       'DELETE FROM schema_migrations WHERE version = $1',
-      [version]
+      [version],
     );
   }
 
@@ -98,24 +98,24 @@ export class MigrationManager {
         }
 
         const [, version, name] = match;
-        
+
         if (!version || !name) {
           logger.warn(`迁移文件解析失败: ${file}`, { component: 'MigrationManager' });
           continue;
         }
-        
+
         const filePath = path.join(this.migrationsDir, file);
         const content = await fs.readFile(filePath, 'utf-8');
 
         // 支持 -- UP 和 -- DOWN 分隔符
         const parts = content.split(/-- DOWN/i);
         const upPart = parts[0];
-        
+
         if (!upPart) {
           logger.warn(`迁移文件缺少 UP 部分: ${file}`, { component: 'MigrationManager' });
           continue;
         }
-        
+
         const upSQL = upPart.replace(/-- UP/i, '').trim();
         const downSQL = parts[1]?.trim();
 
@@ -125,7 +125,7 @@ export class MigrationManager {
           up: upSQL,
           timestamp: new Date(),
         };
-        
+
         if (downSQL) {
           migration.down = downSQL;
         }
@@ -151,7 +151,7 @@ export class MigrationManager {
       const allMigrations = await this.loadMigrations();
 
       const pendingMigrations = allMigrations.filter(
-        m => !executedVersions.includes(m.version)
+        m => !executedVersions.includes(m.version),
       );
 
       if (pendingMigrations.length === 0) {
@@ -183,7 +183,7 @@ export class MigrationManager {
             error,
           });
           throw new Error(
-            `Migration ${migration.version} failed: ${error instanceof Error ? error.message : String(error)}`
+            `Migration ${migration.version} failed: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
@@ -247,7 +247,7 @@ export class MigrationManager {
             error,
           });
           throw new Error(
-            `Migration rollback ${version} failed: ${error instanceof Error ? error.message : String(error)}`
+            `Migration rollback ${version} failed: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
@@ -273,7 +273,7 @@ export class MigrationManager {
       const allMigrations = await this.loadMigrations();
 
       const executedResult = await client.query<MigrationRecord>(
-        'SELECT version, name, executed_at FROM schema_migrations ORDER BY version ASC'
+        'SELECT version, name, executed_at FROM schema_migrations ORDER BY version ASC',
       );
 
       const pending = allMigrations.filter(m => !executedVersions.includes(m.version));
@@ -297,7 +297,7 @@ export class MigrationManager {
       await this.ensureMigrationTable(client);
       await client.query(
         'INSERT INTO schema_migrations (version, name, executed_at) VALUES ($1, $2, NOW()) ON CONFLICT DO NOTHING',
-        [version, name]
+        [version, name],
       );
       logger.info(`迁移 ${version} 已标记为已执行`, { component: 'MigrationManager' });
     } finally {
@@ -312,4 +312,3 @@ export class MigrationManager {
 export function createMigrationManager(pool: Pool, migrationsDir?: string): MigrationManager {
   return new MigrationManager(pool, migrationsDir);
 }
-

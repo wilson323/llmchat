@@ -47,9 +47,15 @@ export class DifySessionController {
       }
 
       const params: any = {};
-      if (user) params.user = user as string;
-      if (limit) params.limit = parseInt(limit as string, 10);
-      if (last_id) params.last_id = last_id as string;
+      if (user) {
+        params.user = user as string;
+      }
+      if (limit) {
+        params.limit = parseInt(limit as string, 10);
+      }
+      if (last_id) {
+        params.last_id = last_id as string;
+      }
 
       const result = await difySessionService.getConversations(agent, params);
 
@@ -116,9 +122,15 @@ export class DifySessionController {
       }
 
       const params: any = { conversation_id };
-      if (user) params.user = user as string;
-      if (limit) params.limit = parseInt(limit as string, 10);
-      if (first_id) params.first_id = first_id as string;
+      if (user) {
+        params.user = user as string;
+      }
+      if (limit) {
+        params.limit = parseInt(limit as string, 10);
+      }
+      if (first_id) {
+        params.first_id = first_id as string;
+      }
 
       const result = await difySessionService.getConversationMessages(agent, params);
 
@@ -189,7 +201,7 @@ export class DifySessionController {
       const result = await difySessionService.getMessageDetail(
         agent,
         messageId,
-        user ? (user as string) : undefined
+        user ? (user as string) : undefined,
       );
 
       ApiResponseHandler.sendSuccess(res, result, {
@@ -259,7 +271,7 @@ export class DifySessionController {
       await difySessionService.deleteConversation(
         agent,
         conversationId,
-        user ? (user as string) : undefined
+        user ? (user as string) : undefined,
       );
 
       ApiResponseHandler.sendSuccess(res, null, {
@@ -329,7 +341,9 @@ export class DifySessionController {
         message_id: messageId,
         rating,
       };
-      if (user) params.user = user;
+      if (user) {
+        params.user = user;
+      }
 
       const result = await difySessionService.submitFeedback(agent, params);
 
@@ -400,7 +414,7 @@ export class DifySessionController {
       const result = await difySessionService.getSuggestedQuestions(
         agent,
         messageId,
-        user ? (user as string) : undefined
+        user ? (user as string) : undefined,
       );
 
       ApiResponseHandler.sendSuccess(res, result, {
@@ -420,4 +434,3 @@ export class DifySessionController {
     }
   }
 }
-

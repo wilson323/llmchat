@@ -1,6 +1,6 @@
 /**
  * Winston 日志配置
- * 
+ *
  * 提供结构化日志记录功能：
  * - 多级别日志 (info/warn/error/debug)
  * - 日志文件轮转 (按日期)
@@ -29,7 +29,7 @@ const customFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
   winston.format.metadata({ fillWith: ['service', 'component', 'environment'] }),
-  winston.format.json()
+  winston.format.json(),
 );
 
 /**
@@ -44,7 +44,7 @@ const consoleFormat = winston.format.combine(
       metaStr = '\n' + JSON.stringify(meta, null, 2);
     }
     return `${timestamp} [${level}]: ${message}${metaStr}`;
-  })
+  }),
 );
 
 /**
@@ -57,7 +57,7 @@ const appLogTransport = new DailyRotateFile({
   datePattern: 'YYYY-MM-DD',
   maxSize: '20m',
   maxFiles: '14d',
-  level: 'info'
+  level: 'info',
 });
 
 // 错误日志 (单独文件)
@@ -66,7 +66,7 @@ const errorLogTransport = new DailyRotateFile({
   datePattern: 'YYYY-MM-DD',
   maxSize: '20m',
   maxFiles: '30d',
-  level: 'error'
+  level: 'error',
 });
 
 // 审计日志 (敏感操作, 保留90天)
@@ -75,7 +75,7 @@ const auditLogTransport = new DailyRotateFile({
   datePattern: 'YYYY-MM-DD',
   maxSize: '50m',
   maxFiles: '90d',
-  level: 'warn'
+  level: 'warn',
 });
 
 /**
@@ -86,36 +86,36 @@ export const logger = winston.createLogger({
   format: customFormat,
   defaultMeta: {
     service: 'llmchat-backend',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   },
   transports: [
     appLogTransport,
     errorLogTransport,
-    auditLogTransport
+    auditLogTransport,
   ],
   exceptionHandlers: [
     new winston.transports.File({
-      filename: path.join(logDir, 'exceptions.log')
-    })
+      filename: path.join(logDir, 'exceptions.log'),
+    }),
   ],
   rejectionHandlers: [
     new winston.transports.File({
-      filename: path.join(logDir, 'rejections.log')
-    })
-  ]
+      filename: path.join(logDir, 'rejections.log'),
+    }),
+  ],
 });
 
 // 开发环境添加控制台输出
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: consoleFormat,
-    level: 'debug'
+    level: 'debug',
   }));
 }
 
 /**
  * 审计日志便捷方法
- * 
+ *
  * @param action 操作类型
  * @param details 详细信息
  */
@@ -124,13 +124,13 @@ export function logAudit(action: string, details: Record<string, unknown>): void
     action,
     ...details,
     timestamp: new Date().toISOString(),
-    auditType: 'security'
+    auditType: 'security',
   });
 }
 
 /**
  * 性能日志便捷方法
- * 
+ *
  * @param operation 操作名称
  * @param duration 耗时(ms)
  * @param metadata 额外元数据
@@ -138,7 +138,7 @@ export function logAudit(action: string, details: Record<string, unknown>): void
 export function logPerformance(
   operation: string,
   duration: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): void {
   logger.info('PERFORMANCE', {
     operation,
@@ -146,13 +146,13 @@ export function logPerformance(
     unit: 'ms',
     ...metadata,
     timestamp: new Date().toISOString(),
-    performanceType: 'metric'
+    performanceType: 'metric',
   });
 }
 
 /**
  * HTTP 请求日志便捷方法
- * 
+ *
  * @param method HTTP 方法
  * @param url 请求 URL
  * @param statusCode 状态码
@@ -164,10 +164,10 @@ export function logHttpRequest(
   url: string,
   statusCode: number,
   duration: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): void {
   const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
-  
+
   logger.log(level, 'HTTP_REQUEST', {
     method,
     url,
@@ -176,13 +176,13 @@ export function logHttpRequest(
     unit: 'ms',
     ...metadata,
     timestamp: new Date().toISOString(),
-    requestType: 'http'
+    requestType: 'http',
   });
 }
 
 /**
  * 数据库操作日志便捷方法
- * 
+ *
  * @param operation 操作类型 (SELECT/INSERT/UPDATE/DELETE)
  * @param table 表名
  * @param duration 耗时(ms)
@@ -192,7 +192,7 @@ export function logDatabaseOperation(
   operation: string,
   table: string,
   duration: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): void {
   logger.debug('DB_OPERATION', {
     operation,
@@ -201,13 +201,13 @@ export function logDatabaseOperation(
     unit: 'ms',
     ...metadata,
     timestamp: new Date().toISOString(),
-    operationType: 'database'
+    operationType: 'database',
   });
 }
 
 /**
  * 外部服务调用日志便捷方法
- * 
+ *
  * @param service 服务名称
  * @param operation 操作名称
  * @param success 是否成功
@@ -219,10 +219,10 @@ export function logExternalService(
   operation: string,
   success: boolean,
   duration: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): void {
   const level = success ? 'info' : 'warn';
-  
+
   logger.log(level, 'EXTERNAL_SERVICE', {
     service,
     operation,
@@ -231,10 +231,9 @@ export function logExternalService(
     unit: 'ms',
     ...metadata,
     timestamp: new Date().toISOString(),
-    serviceType: 'external'
+    serviceType: 'external',
   });
 }
 
 // 导出默认实例
 export default logger;
-

@@ -34,7 +34,7 @@ export class ChatHistoryService {
            agent_id = EXCLUDED.agent_id,
            title = COALESCE(EXCLUDED.title, chat_sessions.title),
            updated_at = NOW()`,
-        [sessionId, agentId, title || null]
+        [sessionId, agentId, title || null],
       );
     });
   }
@@ -59,7 +59,7 @@ export class ChatHistoryService {
              agent_id = EXCLUDED.agent_id,
              title = COALESCE(EXCLUDED.title, chat_sessions.title),
              updated_at = NOW()`
-          , [params.sessionId, params.agentId, params.titleHint || null]
+          , [params.sessionId, params.agentId, params.titleHint || null],
         );
 
         await client.query(
@@ -71,7 +71,7 @@ export class ChatHistoryService {
             params.role,
             params.content,
             JSON.stringify(params.metadata ?? null),
-          ]
+          ],
         );
 
         await client.query(
@@ -79,7 +79,7 @@ export class ChatHistoryService {
              SET updated_at = NOW(),
                  title = COALESCE($2, title)
            WHERE id = $1`,
-          [params.sessionId, params.titleHint || null]
+          [params.sessionId, params.titleHint || null],
         );
 
         await client.query('COMMIT');
@@ -110,7 +110,7 @@ export class ChatHistoryService {
       }>('SELECT * FROM chat_sessions WHERE id = $1', [sessionId]);
 
       const messageQueryParts: string[] = [
-        'SELECT * FROM chat_messages WHERE session_id = $1'
+        'SELECT * FROM chat_messages WHERE session_id = $1',
       ];
       const params: any[] = [sessionId];
 
@@ -143,12 +143,12 @@ export class ChatHistoryService {
     return {
       session: session
         ? {
-            id: session.id,
-            agentId: session.agent_id,
-            title: session.title,
-            createdAt: new Date(session.created_at).toISOString(),
-            updatedAt: new Date(session.updated_at).toISOString(),
-          }
+          id: session.id,
+          agentId: session.agent_id,
+          title: session.title,
+          createdAt: new Date(session.created_at).toISOString(),
+          updatedAt: new Date(session.updated_at).toISOString(),
+        }
         : null,
       messages: messages.map((msg) => ({
         id: msg.id,

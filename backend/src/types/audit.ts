@@ -126,4 +126,3 @@ export interface AuditLogQueryResult {
   pageSize: number;
   totalPages: number;
 }
-

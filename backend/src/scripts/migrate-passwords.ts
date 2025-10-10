@@ -1,18 +1,18 @@
 #!/usr/bin/env ts-node
 /**
  * 密码迁移脚本
- * 
+ *
  * 用途:
  * - 将现有password_plain字段转换为bcrypt哈希
  * - 更新password_hash字段
  * - 验证迁移结果
- * 
+ *
  * 使用:
  * npm run migrate:passwords
  * 或
  * ts-node -r tsconfig-paths/register backend/src/scripts/migrate-passwords.ts
- * 
- * ⚠️  警告: 
+ *
+ * ⚠️  警告:
  * - 执行前会备份数据
  * - 不可逆操作，请谨慎执行
  * - 确保已运行迁移007和008
@@ -87,7 +87,7 @@ class PasswordMigrator {
 
   private async checkConnection(): Promise<void> {
     console.log('🔍 检查数据库连接...');
-    
+
     await withClient(async (client) => {
       const { rows } = await client.query('SELECT NOW()');
       console.log(`✅ 数据库连接正常 (${rows[0].now})\n`);
@@ -96,7 +96,7 @@ class PasswordMigrator {
 
   private async checkRequiredFields(): Promise<void> {
     console.log('🔍 检查必需字段...');
-    
+
     await withClient(async (client) => {
       // 检查password_hash字段
       const { rows } = await client.query(`
@@ -107,7 +107,7 @@ class PasswordMigrator {
       `);
 
       const fields = rows.map((r: any) => r.column_name);
-      
+
       if (!fields.includes('password_hash')) {
         throw new Error('users表缺少password_hash字段，请先运行数据库迁移');
       }
@@ -118,7 +118,7 @@ class PasswordMigrator {
 
   private async getUsersToMigrate(): Promise<Array<UserRow>> {
     console.log('🔍 查询需要迁移的用户...');
-    
+
     const users = await withClient(async (client) => {
       const { rows } = await client.query<UserRow>(`
         SELECT id, username, password_plain, password_hash
@@ -158,11 +158,11 @@ class PasswordMigrator {
       try {
         await this.migrateUser(user);
         this.migratedCount++;
-        
+
         // 显示进度
         const progress = Math.round((this.migratedCount / users.length) * 100);
         process.stdout.write(`\r进度: ${progress}% (${this.migratedCount}/${users.length})`);
-        
+
       } catch (error: any) {
         this.errorCount++;
         logger.error('用户密码迁移失败', {
@@ -193,7 +193,7 @@ class PasswordMigrator {
              password_updated_at = CURRENT_TIMESTAMP,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $2`,
-        [passwordHash, user.id]
+        [passwordHash, user.id],
       );
     });
 
@@ -274,4 +274,3 @@ if (require.main === module) {
 }
 
 export { PasswordMigrator };
-

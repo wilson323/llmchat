@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 /**
  * 环境变量配置验证脚本
- * 
+ *
  * 用途:
  * - 启动前验证所有必需的环境变量
  * - 检查配置文件中的占位符是否都有对应环境变量
  * - 验证配置值的合法性
- * 
+ *
  * 使用:
  * npm run validate:env
  * 或
@@ -73,14 +73,14 @@ class EnvValidator {
     try {
       const envManager = EnvManager.getInstance();
       const stats = envManager.getStats();
-      
+
       this.result.info.push(
-        `✅ EnvManager初始化成功 (总计${stats.total}个变量)`
+        `✅ EnvManager初始化成功 (总计${stats.total}个变量)`,
       );
 
       if (stats.missing > 0) {
         this.result.errors.push(
-          `❌ 缺少${stats.missing}个必需环境变量`
+          `❌ 缺少${stats.missing}个必需环境变量`,
         );
         this.result.passed = false;
       }
@@ -95,7 +95,7 @@ class EnvValidator {
    */
   private validateRequiredVars(): void {
     const envManager = EnvManager.getInstance();
-    
+
     const requiredVars = [
       { key: 'TOKEN_SECRET', minLength: 32, description: 'JWT Token密钥' },
       { key: 'DB_HOST', minLength: 1, description: '数据库主机' },
@@ -113,7 +113,7 @@ class EnvValidator {
         const value = envManager.get(key);
         if (value.length < minLength) {
           this.result.errors.push(
-            `❌ ${key} 长度不足 (需要至少${minLength}字符)`
+            `❌ ${key} 长度不足 (需要至少${minLength}字符)`,
           );
           this.result.passed = false;
         } else {
@@ -128,7 +128,7 @@ class EnvValidator {
    */
   private validateRecommendedVars(): void {
     const envManager = EnvManager.getInstance();
-    
+
     const recommendedVars = [
       { key: 'REDIS_HOST', description: 'Redis主机 (Token存储)', impact: '单实例部署可用，多实例需Redis' },
       { key: 'REDIS_PORT', description: 'Redis端口', impact: '同上' },
@@ -140,7 +140,7 @@ class EnvValidator {
     for (const { key, description, impact } of recommendedVars) {
       if (!envManager.has(key)) {
         this.result.warnings.push(
-          `⚠️  推荐配置 ${key} 未设置\n   说明: ${description}\n   影响: ${impact}`
+          `⚠️  推荐配置 ${key} 未设置\n   说明: ${description}\n   影响: ${impact}`,
         );
       } else {
         this.result.info.push(`✅ ${key}: ${description} - OK`);
@@ -159,7 +159,7 @@ class EnvValidator {
 
     for (const file of configFiles) {
       const filePath = path.resolve(process.cwd(), file);
-      
+
       if (!fs.existsSync(filePath)) {
         this.result.warnings.push(`⚠️  配置文件不存在: ${file}`);
         continue;
@@ -171,12 +171,12 @@ class EnvValidator {
 
         if (placeholders.length > 0) {
           this.result.info.push(`\n📄 ${file} 中的占位符:`);
-          
+
           const envManager = EnvManager.getInstance();
           for (const placeholder of placeholders) {
             if (!envManager.has(placeholder)) {
               this.result.errors.push(
-                `❌ 占位符 \${${placeholder}} 在 ${file} 中使用但环境变量未设置`
+                `❌ 占位符 \${${placeholder}} 在 ${file} 中使用但环境变量未设置`,
               );
               this.result.passed = false;
             } else {
@@ -185,7 +185,7 @@ class EnvValidator {
           }
         } else {
           this.result.warnings.push(
-            `⚠️  ${file} 中未找到环境变量占位符 (可能已硬编码敏感信息)`
+            `⚠️  ${file} 中未找到环境变量占位符 (可能已硬编码敏感信息)`,
           );
         }
       } catch (error: any) {
@@ -224,7 +224,7 @@ class EnvValidator {
     const validEnvs = ['development', 'production', 'test'];
     if (!validEnvs.includes(nodeEnv)) {
       this.result.warnings.push(
-        `⚠️  NODE_ENV 值不标准: ${nodeEnv} (推荐: ${validEnvs.join('/')})`
+        `⚠️  NODE_ENV 值不标准: ${nodeEnv} (推荐: ${validEnvs.join('/')})`,
       );
     } else {
       this.result.info.push(`✅ NODE_ENV: ${nodeEnv} - OK`);
@@ -235,7 +235,7 @@ class EnvValidator {
       const tokenSecret = envManager.get('TOKEN_SECRET');
       if (tokenSecret.includes('change-in-production')) {
         this.result.errors.push(
-          `❌ TOKEN_SECRET 使用默认值，生产环境必须修改！`
+          '❌ TOKEN_SECRET 使用默认值，生产环境必须修改！',
         );
         this.result.passed = false;
       }
@@ -247,8 +247,10 @@ class EnvValidator {
    */
   private extractPlaceholders(content: string): string[] {
     const matches = content.match(/\$\{([^}]+)\}/g);
-    if (!matches) return [];
-    
+    if (!matches) {
+      return [];
+    }
+
     const placeholders = matches.map(match => match.slice(2, -1));
     return [...new Set(placeholders)]; // 去重
   }
@@ -303,7 +305,7 @@ class EnvValidator {
 // 执行验证
 async function main() {
   console.log('🚀 启动环境变量验证脚本...');
-  
+
   try {
     const validator = new EnvValidator();
     const result = await validator.validate();
@@ -328,4 +330,3 @@ main().catch(error => {
 });
 
 export { EnvValidator };
-

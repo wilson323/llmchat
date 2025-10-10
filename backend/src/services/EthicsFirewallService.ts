@@ -90,7 +90,7 @@ export class EthicsFirewallService {
    */
   public evaluateCommand(
     context: ProtectedRequestContext,
-    payload: EthicsCheckPayload
+    payload: EthicsCheckPayload,
   ): EthicsVerdict {
     // 基本校验
     if (!context.agentId || context.agentId === 'unknown') {

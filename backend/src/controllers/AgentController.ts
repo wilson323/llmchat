@@ -17,7 +17,7 @@ async function ensureAdminAuth(req: Request) {
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',
-      code: 'UNAUTHORIZED'
+      code: 'UNAUTHORIZED',
     });
   }
   const user = await authService.profile(token);
@@ -26,7 +26,7 @@ async function ensureAdminAuth(req: Request) {
       message: '需要管理员权限',
       code: 'FORBIDDEN',
       resource: 'admin',
-      action: 'access'
+      action: 'access',
     });
   }
   return user;
@@ -526,14 +526,14 @@ export class AgentController {
           throw new ValidationError({
             message: 'FastGPT需要提供appId',
             code: 'MISSING_APP_ID',
-            field: 'appId'
+            field: 'appId',
           });
         }
 
         // 临时注册agent用于API调用
         const agentId = 'temp-fetch-' + Date.now();
         tempAgent.id = agentId;
-        
+
         // 临时存储agent配置（不保存到数据库）
         // 实际实现中，我们应该调用chatInitService内部方法直接使用agent配置
         // 为了简化，这里我们构造响应数据
@@ -562,7 +562,7 @@ export class AgentController {
       } else if (provider === 'dify') {
         // 调用Dify初始化接口
         const difyInfo = await this.difyInitService.fetchAppInfoByCredentials(endpoint, apiKey);
-        
+
         agentInfo = {
           name: difyInfo.name,
           description: difyInfo.description,

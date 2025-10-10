@@ -81,7 +81,7 @@ export class GeoService {
 
     for (const token of tokens) {
       const matched = PROVINCE_MAPPINGS.find((item) =>
-        item.keywords.some((keyword) => token.includes(keyword))
+        item.keywords.some((keyword) => token.includes(keyword)),
       );
       if (matched) {
         return matched.name;
@@ -90,10 +90,12 @@ export class GeoService {
 
     // 对于 region 值可能是数字代码的情况，单独再匹配一次完整等值
     for (const value of [region, city]) {
-      if (!value) continue;
+      if (!value) {
+        continue;
+      }
       const normalized = value.toString().trim().toLowerCase();
       const matched = PROVINCE_MAPPINGS.find((item) =>
-        item.keywords.some((keyword) => keyword === normalized)
+        item.keywords.some((keyword) => keyword === normalized),
       );
       if (matched) {
         return matched.name;

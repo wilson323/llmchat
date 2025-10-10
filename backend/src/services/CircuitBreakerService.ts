@@ -54,7 +54,7 @@ export class CircuitBreaker {
   constructor(
     private readonly name: string,
     private readonly config: CircuitBreakerConfig,
-    private readonly events?: CircuitBreakerEvents
+    private readonly events?: CircuitBreakerEvents,
   ) {
     this.metrics = {
       state: this.state,
@@ -274,14 +274,14 @@ export class CircuitBreaker {
         return {
           healthy: true,
           state: this.state,
-          message: '服务正常'
+          message: '服务正常',
         };
 
       case CircuitState.HALF_OPEN:
         return {
           healthy: false,
           state: this.state,
-          message: '服务恢复中，正在测试'
+          message: '服务恢复中，正在测试',
         };
 
       case CircuitState.OPEN: {
@@ -289,7 +289,7 @@ export class CircuitBreaker {
         return {
           healthy: false,
           state: this.state,
-          message: `服务熔断，${Math.ceil(timeUntilReset / 1000)}秒后重试`
+          message: `服务熔断，${Math.ceil(timeUntilReset / 1000)}秒后重试`,
         };
       }
 
@@ -297,7 +297,7 @@ export class CircuitBreaker {
         return {
           healthy: false,
           state: this.state,
-          message: '未知状态'
+          message: '未知状态',
         };
     }
   }
@@ -325,7 +325,7 @@ export class CircuitBreakerManager {
   getCircuitBreaker(
     name: string,
     config?: CircuitBreakerConfig,
-    events?: CircuitBreakerEvents
+    events?: CircuitBreakerEvents,
   ): CircuitBreaker {
     let circuitBreaker = this.circuitBreakers.get(name);
 
@@ -347,7 +347,7 @@ export class CircuitBreakerManager {
   getAllCircuitBreakers(): { name: string; metrics: CircuitBreakerMetrics }[] {
     return Array.from(this.circuitBreakers.entries()).map(([name, circuitBreaker]) => ({
       name,
-      metrics: circuitBreaker.getMetrics()
+      metrics: circuitBreaker.getMetrics(),
     }));
   }
 
@@ -357,7 +357,7 @@ export class CircuitBreakerManager {
   getHealthStatus(): { name: string; healthy: boolean; state: CircuitState; message: string }[] {
     return Array.from(this.circuitBreakers.entries()).map(([name, circuitBreaker]) => ({
       name,
-      ...circuitBreaker.getHealthStatus()
+      ...circuitBreaker.getHealthStatus(),
     }));
   }
 

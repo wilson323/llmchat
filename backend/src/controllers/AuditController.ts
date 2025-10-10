@@ -29,24 +29,44 @@ export class AuditController {
       } = req.query;
 
       const queryParams: any = {};
-      
+
       // 只添加非 undefined 的属性
-      if (userId) queryParams.userId = userId as string;
+      if (userId) {
+        queryParams.userId = userId as string;
+      }
       if (action) {
         queryParams.action = Array.isArray(action)
           ? (action as AuditAction[])
           : (action as AuditAction);
       }
-      if (resourceType) queryParams.resourceType = resourceType as ResourceType;
-      if (resourceId) queryParams.resourceId = resourceId as string;
-      if (status) queryParams.status = status as AuditStatus;
-      if (startDate) queryParams.startDate = new Date(startDate as string);
-      if (endDate) queryParams.endDate = new Date(endDate as string);
-      if (limit) queryParams.limit = parseInt(limit as string, 10);
-      if (offset) queryParams.offset = parseInt(offset as string, 10);
-      if (orderBy) queryParams.orderBy = orderBy as 'timestamp' | 'action' | 'status';
-      if (orderDirection) queryParams.orderDirection = orderDirection as 'ASC' | 'DESC';
-      
+      if (resourceType) {
+        queryParams.resourceType = resourceType as ResourceType;
+      }
+      if (resourceId) {
+        queryParams.resourceId = resourceId as string;
+      }
+      if (status) {
+        queryParams.status = status as AuditStatus;
+      }
+      if (startDate) {
+        queryParams.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        queryParams.endDate = new Date(endDate as string);
+      }
+      if (limit) {
+        queryParams.limit = parseInt(limit as string, 10);
+      }
+      if (offset) {
+        queryParams.offset = parseInt(offset as string, 10);
+      }
+      if (orderBy) {
+        queryParams.orderBy = orderBy as 'timestamp' | 'action' | 'status';
+      }
+      if (orderDirection) {
+        queryParams.orderDirection = orderDirection as 'ASC' | 'DESC';
+      }
+
       const result = await auditService.query(queryParams);
 
       ApiResponseHandler.sendSuccess(res, result, {
@@ -85,11 +105,19 @@ export class AuditController {
       const { limit, offset, startDate, endDate } = req.query;
 
       const options: any = {};
-      if (limit) options.limit = parseInt(limit as string, 10);
-      if (offset) options.offset = parseInt(offset as string, 10);
-      if (startDate) options.startDate = new Date(startDate as string);
-      if (endDate) options.endDate = new Date(endDate as string);
-      
+      if (limit) {
+        options.limit = parseInt(limit as string, 10);
+      }
+      if (offset) {
+        options.offset = parseInt(offset as string, 10);
+      }
+      if (startDate) {
+        options.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        options.endDate = new Date(endDate as string);
+      }
+
       const result = await auditService.getUserAuditLogs(userId, options);
 
       return ApiResponseHandler.sendSuccess(res, result, {
@@ -129,13 +157,17 @@ export class AuditController {
       const { limit, offset } = req.query;
 
       const options: any = {};
-      if (limit) options.limit = parseInt(limit as string, 10);
-      if (offset) options.offset = parseInt(offset as string, 10);
-      
+      if (limit) {
+        options.limit = parseInt(limit as string, 10);
+      }
+      if (offset) {
+        options.offset = parseInt(offset as string, 10);
+      }
+
       const result = await auditService.getResourceAuditLogs(
         resourceType as ResourceType,
         resourceId,
-        options
+        options,
       );
 
       return ApiResponseHandler.sendSuccess(res, result, {
@@ -166,7 +198,7 @@ export class AuditController {
     try {
       const { limit } = req.query;
       const logs = await auditService.getRecentLogs(
-        limit ? parseInt(limit as string, 10) : undefined
+        limit ? parseInt(limit as string, 10) : undefined,
       );
 
       ApiResponseHandler.sendSuccess(res, logs, {
@@ -196,11 +228,19 @@ export class AuditController {
       const { limit, offset, startDate, endDate } = req.query;
 
       const options: any = {};
-      if (limit) options.limit = parseInt(limit as string, 10);
-      if (offset) options.offset = parseInt(offset as string, 10);
-      if (startDate) options.startDate = new Date(startDate as string);
-      if (endDate) options.endDate = new Date(endDate as string);
-      
+      if (limit) {
+        options.limit = parseInt(limit as string, 10);
+      }
+      if (offset) {
+        options.offset = parseInt(offset as string, 10);
+      }
+      if (startDate) {
+        options.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        options.endDate = new Date(endDate as string);
+      }
+
       const result = await auditService.getFailedLogs(options);
 
       ApiResponseHandler.sendSuccess(res, result, {
@@ -238,18 +278,30 @@ export class AuditController {
       } = req.query;
 
       const queryParams: any = {};
-      if (userId) queryParams.userId = userId as string;
+      if (userId) {
+        queryParams.userId = userId as string;
+      }
       if (action) {
         queryParams.action = Array.isArray(action)
           ? (action as AuditAction[])
           : (action as AuditAction);
       }
-      if (resourceType) queryParams.resourceType = resourceType as ResourceType;
-      if (resourceId) queryParams.resourceId = resourceId as string;
-      if (status) queryParams.status = status as AuditStatus;
-      if (startDate) queryParams.startDate = new Date(startDate as string);
-      if (endDate) queryParams.endDate = new Date(endDate as string);
-      
+      if (resourceType) {
+        queryParams.resourceType = resourceType as ResourceType;
+      }
+      if (resourceId) {
+        queryParams.resourceId = resourceId as string;
+      }
+      if (status) {
+        queryParams.status = status as AuditStatus;
+      }
+      if (startDate) {
+        queryParams.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        queryParams.endDate = new Date(endDate as string);
+      }
+
       const csv = await auditService.exportToCSV(queryParams);
 
       res.setHeader('Content-Type', 'text/csv');
@@ -276,11 +328,15 @@ export class AuditController {
   async getStatistics(req: Request, res: Response) {
     try {
       const { startDate, endDate } = req.query;
-      
+
       const options: { startDate?: Date; endDate?: Date } = {};
-      if (startDate) options.startDate = new Date(startDate as string);
-      if (endDate) options.endDate = new Date(endDate as string);
-      
+      if (startDate) {
+        options.startDate = new Date(startDate as string);
+      }
+      if (endDate) {
+        options.endDate = new Date(endDate as string);
+      }
+
       const statistics = await auditService.getStatistics(options);
 
       ApiResponseHandler.sendSuccess(res, statistics, {
@@ -303,4 +359,3 @@ export class AuditController {
 }
 
 export const auditController = new AuditController();
-

@@ -1,6 +1,6 @@
 /**
  * 阿里云 DashScope API 服务
- * 
+ *
  * 封装通义千问系列模型的 API 调用
  * 支持标准 OpenAI 兼容接口和 Function Calling
  */
@@ -99,7 +99,7 @@ export class DashScopeService {
    */
   async chatCompletion(
     messages: ChatMessage[],
-    options?: ChatOptions & { tools?: CadFunctionTool[] }
+    options?: ChatOptions & { tools?: CadFunctionTool[] },
   ): Promise<DashScopeResponse> {
     const request: DashScopeRequest = {
       model: this.config.model,
@@ -124,7 +124,7 @@ export class DashScopeService {
 
       const response = await this.client.post<DashScopeResponse>(
         '/chat/completions',
-        request
+        request,
       );
 
       logger.info('[DashScopeService] 请求成功', {
@@ -145,7 +145,7 @@ export class DashScopeService {
    */
   async *chatCompletionStream(
     messages: ChatMessage[],
-    options?: ChatOptions & { tools?: CadFunctionTool[] }
+    options?: ChatOptions & { tools?: CadFunctionTool[] },
   ): AsyncGenerator<string, void, unknown> {
     const request: DashScopeRequest = {
       model: this.config.model,
@@ -180,7 +180,7 @@ export class DashScopeService {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            
+
             if (data === '[DONE]') {
               logger.info('[DashScopeService] 流式响应结束');
               return;
@@ -189,7 +189,7 @@ export class DashScopeService {
             try {
               const parsed = JSON.parse(data);
               const content = parsed.choices[0]?.delta?.content;
-              
+
               if (content) {
                 yield content;
               }

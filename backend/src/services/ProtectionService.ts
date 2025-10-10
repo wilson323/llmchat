@@ -73,36 +73,36 @@ export class ProtectionService {
       ip: {
         windowMs: 60000, // 1分钟
         maxRequests: parseInt(process.env.RATE_LIMIT_POINTS || '100'),
-        keyGenerator: (req: Request) => req.ip || 'unknown'
+        keyGenerator: (req: Request) => req.ip || 'unknown',
       },
       user: {
         windowMs: 60000, // 1分钟
         maxRequests: 50,
-        keyGenerator: (req: Request) => (req as any).user?.id || 'anonymous'
+        keyGenerator: (req: Request) => (req as any).user?.id || 'anonymous',
       },
       endpoint: {
         windowMs: 60000, // 1分钟
         maxRequests: 200,
-        keyGenerator: (req: Request) => `${req.method}:${req.path}`
-      }
+        keyGenerator: (req: Request) => `${req.method}:${req.path}`,
+      },
     });
 
     this.retryService = new RetryService(
       this.config.retry,
       this.config.fallback,
-      this.config.deduplication
+      this.config.deduplication,
     );
 
     this.monitoringService = new MonitoringService(
       this.circuitBreakerManager,
-      this.multiDimensionRateLimiter
+      this.multiDimensionRateLimiter,
     );
 
     logger.info('保护服务初始化完成', {
       circuitBreaker: this.config.circuitBreaker,
       rateLimit: this.config.rateLimit,
       retry: this.config.retry,
-      monitoring: this.config.monitoring.enabled
+      monitoring: this.config.monitoring.enabled,
     });
   }
 
@@ -111,7 +111,7 @@ export class ProtectionService {
    */
   async executeProtectedRequest<T>(
     context: ProtectedRequestContext,
-    operation: () => Promise<T>
+    operation: () => Promise<T>,
   ): Promise<T> {
     const startTime = Date.now();
     let success = false;
@@ -134,24 +134,24 @@ export class ProtectionService {
               agentId: context.agentId,
               error: err.message,
               state: metrics.state,
-              failureCount: metrics.failureCount
+              failureCount: metrics.failureCount,
             });
           },
           onSuccess: (responseTime, metrics) => {
             logger.debug('熔断器请求成功', {
               agentId: context.agentId,
               responseTime,
-              state: metrics.state
+              state: metrics.state,
             });
-          }
-        }
+          },
+        },
       );
 
       // 3. 执行带重试的操作
       const result = await this.retryService.executeWithRetryAndDeduplication(
         `${context.agentId}_${context.requestId}`,
         () => circuitBreaker.execute(operation),
-        `agent_${context.agentId}`
+        `agent_${context.agentId}`,
       );
 
       success = true;
@@ -178,7 +178,7 @@ export class ProtectionService {
     const mockReq = {
       ip: context.ip,
       method: 'POST',
-      path: `/api/chat/completions`,
+      path: '/api/chat/completions',
       user: context.userId ? { id: context.userId } : undefined,
       get: (header: string) => '',
       header: (header: string) => '',
@@ -212,7 +212,7 @@ export class ProtectionService {
       rawTrailers: [],
       upgrade: false,
       res: undefined as any,
-      next: undefined as any
+      next: undefined as any,
     } as unknown as Request;
 
     const checkResult = this.multiDimensionRateLimiter.isAllowed(mockReq);
@@ -221,7 +221,7 @@ export class ProtectionService {
       const failedResult = checkResult.results.find(r => !r.allowed);
       return {
         allowed: false,
-        reason: failedResult ? `维度限制触发: ${failedResult.remaining}/${failedResult.resetTime}` : '未知限流原因'
+        reason: failedResult ? `维度限制触发: ${failedResult.remaining}/${failedResult.resetTime}` : '未知限流原因',
       };
     }
 
@@ -266,7 +266,7 @@ export class ProtectionService {
         res.status(500).json({
           code: 'PROTECTION_CONTEXT_MISSING',
           message: '保护上下文缺失',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
         return;
       }
@@ -279,7 +279,7 @@ export class ProtectionService {
         logger.error('受保护请求失败', {
           requestId: context.requestId,
           agentId: context.agentId,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
 
         // 如果是降级响应，返回成功状态
@@ -294,7 +294,7 @@ export class ProtectionService {
           code: this.getErrorCode(error as Error),
           message: (error as Error).message,
           requestId: context.requestId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     };
@@ -306,11 +306,21 @@ export class ProtectionService {
   private getErrorStatusCode(error: Error): number {
     const message = error.message.toLowerCase();
 
-    if (message.includes('熔断器')) return 503;
-    if (message.includes('限流')) return 429;
-    if (message.includes('超时')) return 408;
-    if (message.includes('网络')) return 502;
-    if (message.includes('不可用')) return 503;
+    if (message.includes('熔断器')) {
+      return 503;
+    }
+    if (message.includes('限流')) {
+      return 429;
+    }
+    if (message.includes('超时')) {
+      return 408;
+    }
+    if (message.includes('网络')) {
+      return 502;
+    }
+    if (message.includes('不可用')) {
+      return 503;
+    }
 
     return 500;
   }
@@ -321,11 +331,21 @@ export class ProtectionService {
   private getErrorCode(error: Error): string {
     const message = error.message.toLowerCase();
 
-    if (message.includes('熔断器')) return 'CIRCUIT_BREAKER_OPEN';
-    if (message.includes('限流')) return 'RATE_LIMIT_EXCEEDED';
-    if (message.includes('超时')) return 'REQUEST_TIMEOUT';
-    if (message.includes('网络')) return 'NETWORK_ERROR';
-    if (message.includes('不可用')) return 'SERVICE_UNAVAILABLE';
+    if (message.includes('熔断器')) {
+      return 'CIRCUIT_BREAKER_OPEN';
+    }
+    if (message.includes('限流')) {
+      return 'RATE_LIMIT_EXCEEDED';
+    }
+    if (message.includes('超时')) {
+      return 'REQUEST_TIMEOUT';
+    }
+    if (message.includes('网络')) {
+      return 'NETWORK_ERROR';
+    }
+    if (message.includes('不可用')) {
+      return 'SERVICE_UNAVAILABLE';
+    }
 
     return 'INTERNAL_ERROR';
   }
@@ -349,19 +369,18 @@ export class ProtectionService {
         performance: this.monitoringService.getPerformanceMetrics(),
         sla: this.monitoringService.getSLAMetrics(),
         health: this.monitoringService.getSystemHealth(),
-        alerts: this.monitoringService.getActiveAlerts()
+        alerts: this.monitoringService.getActiveAlerts(),
       },
       overall: {
         totalRequests: 0, // 从监控服务获取
         successfulRequests: 0,
         failedRequests: 0,
         averageResponseTime: 0,
-        systemHealth: this.monitoringService.getSystemHealth().status
-      }
+        systemHealth: this.monitoringService.getSystemHealth().status,
+      },
     };
   }
 
-  
   /**
    * 手动重置熔断器
    */
@@ -413,14 +432,14 @@ export class ProtectionService {
         successThreshold: parseInt(process.env.CIRCUIT_BREAKER_SUCCESS_THRESHOLD || '3'),
         timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '10000'),
         resetTimeout: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT || '30000'),
-        monitoringEnabled: true
+        monitoringEnabled: true,
       },
       rateLimit: {
         windowMs: 60000,
         maxRequests: parseInt(process.env.RATE_LIMIT_POINTS || '100'),
         enableCacheProtection: true,
         enableBurstProtection: true,
-        burstLimit: 20
+        burstLimit: 20,
       },
       retry: {
         maxRetries: parseInt(process.env.RETRY_MAX_RETRIES || '3'),
@@ -429,29 +448,29 @@ export class ProtectionService {
         backoffFactor: parseFloat(process.env.RETRY_BACKOFF_FACTOR || '2'),
         enableJitter: process.env.RETRY_ENABLE_JITTER === 'true',
         retryableErrors: ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'NETWORK_ERROR'],
-        retryableStatusCodes: [408, 429, 500, 502, 503, 504]
+        retryableStatusCodes: [408, 429, 500, 502, 503, 504],
       },
       fallback: {
         enabled: process.env.FALLBACK_ENABLED === 'true',
         fallbackResponse: {
           error: '服务暂时不可用，请稍后重试',
           fallback: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         cacheFallbackResponse: true,
         maxCacheSize: parseInt(process.env.FALLBACK_MAX_CACHE_SIZE || '100'),
-        cacheTTL: parseInt(process.env.FALLBACK_CACHE_TTL || '300000')
+        cacheTTL: parseInt(process.env.FALLBACK_CACHE_TTL || '300000'),
       },
       deduplication: {
         enabled: true,
         deduplicationWindow: 30000,
-        maxConcurrentRequests: 100
+        maxConcurrentRequests: 100,
       },
       monitoring: {
         enabled: process.env.MONITORING_ENABLED === 'true',
         metricsInterval: parseInt(process.env.MONITORING_METRICS_INTERVAL || '60000'),
         healthCheckInterval: parseInt(process.env.MONITORING_HEALTH_CHECK_INTERVAL || '60000'),
-        slaUpdateInterval: parseInt(process.env.MONITORING_SLA_UPDATE_INTERVAL || '60000')
+        slaUpdateInterval: parseInt(process.env.MONITORING_SLA_UPDATE_INTERVAL || '60000'),
       },
       alerts: {
         consoleEnabled: process.env.ALERT_CONSOLE_ENABLED === 'true',
@@ -462,9 +481,9 @@ export class ProtectionService {
           smtpHost: process.env.ALERT_EMAIL_SMTP_HOST,
           smtpPort: parseInt(process.env.ALERT_EMAIL_SMTP_PORT || '587'),
           username: process.env.ALERT_EMAIL_USERNAME,
-          password: process.env.ALERT_EMAIL_PASSWORD
-        }
-      }
+          password: process.env.ALERT_EMAIL_PASSWORD,
+        },
+      },
     };
 
     return {
@@ -477,7 +496,7 @@ export class ProtectionService {
       fallback: { ...defaultConfig.fallback, ...config?.fallback },
       deduplication: { ...defaultConfig.deduplication, ...config?.deduplication },
       monitoring: { ...defaultConfig.monitoring, ...config?.monitoring },
-      alerts: { ...defaultConfig.alerts, ...config?.alerts }
+      alerts: { ...defaultConfig.alerts, ...config?.alerts },
     };
   }
 
