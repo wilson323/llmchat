@@ -99,6 +99,8 @@ import { OptimizedChatProxyService } from '@/services/OptimizedChatProxyService'
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService, ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
+import { authService } from '@/services/authInstance';
+import { AuthUser } from '@/services/AuthService';
 import { analyticsService } from '@/services/analyticsInstance';
 import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
 import {
@@ -1279,6 +1281,25 @@ export class ChatController {
    */
   getChatHistory = async (req: Request, res: Response): Promise<void> => {
     try {
+      // 添加认证检查
+      let authUser: AuthUser;
+      try {
+        authUser = await requireAuthenticatedUser(req);
+      } catch (authError) {
+        const message = authError instanceof Error && authError.message === 'TOKEN_EXPIRED'
+          ? '登录已过期，请重新登录'
+          : '未授权访问';
+
+        const apiError: ApiError = {
+          code: authError instanceof Error ? authError.message : 'UNAUTHORIZED',
+          message,
+          timestamp: new Date().toISOString(),
+        };
+
+        res.status(401).json(apiError);
+        return;
+      }
+
       const { chatId: pathChatId, sessionId } = req.params as { chatId?: string; sessionId?: string };
       const chatId = pathChatId || sessionId;
 
@@ -1327,6 +1348,21 @@ export class ChatController {
       }
 
       const detail: FastGPTChatHistoryDetail = await this.fastgptSessionService.getHistoryDetail(agentId, chatId);
+
+      // 添加权限检查 - 确保用户只能访问自己的会话记录
+      if (
+        detail.sessionInfo.userId &&
+        detail.sessionInfo.userId !== authUser.id &&
+        authUser.role !== 'admin'
+      ) {
+        const apiError: ApiError = {
+          code: 'FORBIDDEN',
+          message: '无权访问该会话记录',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(403).json(apiError);
+        return;
+      }
 
       ApiResponseHandler.sendSuccess(res, detail, {
         message: '获取聊天历史详情成功',

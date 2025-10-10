@@ -372,6 +372,9 @@ export class FastGPTSessionService {
       appId: data?.appId || data?.app_id,
       title: title ? String(title) : undefined,
       messages,
+      sessionInfo: {
+        userId: data?.userId || data?.user_id || null,
+      },
       metadata: {
         total: data?.total,
         hasMore: data?.hasMore,

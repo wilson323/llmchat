@@ -20,6 +20,7 @@ export interface StoredChatSession {
   id: string;
   agentId: string;
   title: string | null;
+  userId: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -323,6 +323,9 @@ export interface FastGPTChatHistoryDetail {
   title?: string | undefined;
   messages: FastGPTChatHistoryMessage[];
   metadata?: Record<string, any> | undefined;
+  sessionInfo?: {
+    userId?: string | null;
+  };
 }
 
 export interface ProductPreviewBoundingBox {
