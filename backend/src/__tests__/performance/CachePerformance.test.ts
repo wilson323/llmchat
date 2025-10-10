@@ -1,20 +1,30 @@
 /**
  * 缓存性能测试
- * 测试Redis缓存系统的性能表现
+ * 测试Redis缓存系统的性能表现（使用Mock Redis）
  */
 
-import { getCacheService } from '../../services/CacheService';
+import { TestCacheService } from '../services/TestCacheService';
 
 describe('Cache Performance Tests', () => {
-  let cacheService: any;
+  let cacheService: TestCacheService;
 
   beforeAll(async () => {
-    cacheService = getCacheService();
+    // 创建测试专用的缓存服务
+    cacheService = new TestCacheService();
     await cacheService.connect();
+
+    console.log('✅ 测试缓存服务初始化成功，将执行缓存性能测试');
+  });
+
+  beforeEach(() => {
+    // 清空缓存数据
+    cacheService.clear();
   });
 
   afterAll(async () => {
-    await cacheService.disconnect();
+    if (cacheService) {
+      await cacheService.disconnect();
+    }
   });
 
   describe('Basic Cache Operations', () => {
@@ -97,7 +107,7 @@ describe('Cache Performance Tests', () => {
 
       // 测试命中率
       for (let i = 0; i < totalOperations; i++) {
-        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        const randomKey = keys[Math.floor(Math.random() * keys.length)]!;
         const result = await cacheService.get(randomKey);
         if (result) hits++;
       }
@@ -114,9 +124,6 @@ describe('Cache Performance Tests', () => {
 
   describe('Cache Statistics', () => {
     it('should track performance metrics', async () => {
-      // 清空统计
-      cacheService.resetStats();
-
       // 执行一些操作
       await cacheService.set('stats-test-1', { data: 'test1' });
       await cacheService.set('stats-test-2', { data: 'test2' });
@@ -178,6 +185,67 @@ describe('Cache Performance Tests', () => {
       expect(memoryIncrease).toBeLessThan(20 * 1024 * 1024);
 
       console.log(`📊 Memory Usage: Increase ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB for ${operations} operations`);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle TTL expiration correctly', async () => {
+      const testData = { message: 'will expire' };
+
+      // 设置1秒TTL
+      await cacheService.set('expire-test', testData, { ttl: 1 });
+
+      // 立即获取应该成功
+      let result = await cacheService.get('expire-test');
+      expect(result).toEqual(testData);
+
+      // 等待1.1秒后应该过期
+      await new Promise(resolve => setTimeout(resolve, 1100));
+      result = await cacheService.get('expire-test');
+      expect(result).toBeNull();
+    });
+
+    it('should handle large data objects', async () => {
+      const largeData = {
+        id: 1,
+        payload: 'x'.repeat(10000), // 10KB数据
+        metadata: {
+          created: new Date().toISOString(),
+          tags: Array.from({ length: 100 }, (_, i) => `tag-${i}`)
+        }
+      };
+
+      const startTime = Date.now();
+      await cacheService.set('large-data', largeData);
+      const setTime = Date.now() - startTime;
+
+      const getStartTime = Date.now();
+      const result = await cacheService.get('large-data');
+      const getTime = Date.now() - getStartTime;
+
+      expect(result).toEqual(largeData);
+      expect(setTime).toBeLessThan(200); // 大数据设置应在200ms内完成
+      expect(getTime).toBeLessThan(100); // 大数据获取应在100ms内完成
+
+      console.log(`📊 Large Data Performance - Set: ${setTime}ms, Get: ${getTime}ms`);
+    });
+
+    it('should handle data correctly in edge cases', async () => {
+      // 测试设置和获取
+      await cacheService.set('test-key', 'test-value');
+      const result = await cacheService.get('test-key');
+      expect(result).toEqual('test-value');
+
+      // 测试不存在的键
+      const nonExistent = await cacheService.get('non-existent-key');
+      expect(nonExistent).toBeNull();
+
+      // 测试删除操作
+      const deleted = await cacheService.del('test-key');
+      expect(deleted).toBe(1);
+
+      const afterDelete = await cacheService.get('test-key');
+      expect(afterDelete).toBeNull();
     });
   });
 });

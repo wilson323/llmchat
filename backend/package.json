@@ -20,7 +20,8 @@
     "migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate.ts",
     "migrate:up": "npm run migrate up",
     "migrate:down": "npm run migrate down",
-    "migrate:status": "npm run migrate status"
+    "migrate:status": "npm run migrate status",
+    "prepare": "husky"
   },
   "dependencies": {
     "@llmchat/shared-types": "workspace:*",

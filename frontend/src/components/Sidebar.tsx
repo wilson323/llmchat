@@ -338,7 +338,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                   ? 'bg-brand/10 text-foreground'
                   : 'hover:bg-brand/10 text-foreground'
               } ${switchingSessionId === session.id ? 'opacity-50 pointer-events-none' : ''}`}
-              onClick={() => handleSwitchSession(session)}
+              onClick={() => {
+                void handleSwitchSession(session);
+              }}
             >
               {/* 添加加载指示器 */}
               {switchingSessionId === session.id ? (
@@ -569,7 +571,9 @@ handleCancelEdit();
         cancelText={t('取消')}
         destructive
         onClose={closeDeleteDialog}
-        onConfirm={confirmDeleteSession}
+        onConfirm={() => {
+            void confirmDeleteSession();
+          }}
       />
     </>
   );

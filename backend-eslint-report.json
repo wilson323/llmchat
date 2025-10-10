@@ -1,0 +1,18 @@
+
+> llmchat@1.0.0 backend:lint /mnt/data/ss/wss/llmchat
+> cd backend && pnpm run lint "--" "--format=json"
+
+
+> @llmchat/backend@1.0.0 lint /mnt/data/ss/wss/llmchat/backend
+> eslint src/**/*.ts "--" "--format=json"
+
+
+Oops! Something went wrong! :(
+
+ESLint: 8.57.1
+
+No files matching the pattern "--format=json" were found.
+Please check for typing mistakes in the pattern.
+
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 2.[39m
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

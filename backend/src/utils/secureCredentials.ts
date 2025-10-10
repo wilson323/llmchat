@@ -27,7 +27,7 @@ export class SecureCredentialsManager {
       process.env.DATABASE_URL || '',
       process.env.NODE_ENV || 'development',
       process.env.HOSTNAME || '',
-      'llmchat-credentials-salt-2024' // Fixed salt component
+      'llmchat-credentials-salt-2024', // Fixed salt component
     ];
 
     // Create combined secret
@@ -50,15 +50,15 @@ export class SecureCredentialsManager {
 
       const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
 
-      let encrypted = Buffer.concat([
+      const encrypted = Buffer.concat([
         cipher.update(plaintext, 'utf8'),
-        cipher.final()
+        cipher.final(),
       ]);
 
       return {
         data: Buffer.from(encrypted).toString('base64'),
         iv: iv.toString('base64'),
-        algorithm: this.ALGORITHM
+        algorithm: this.ALGORITHM,
       };
     } catch (error) {
       logger.error('[SecureCredentialsManager] Encryption failed', { error });
@@ -77,9 +77,9 @@ export class SecureCredentialsManager {
       const decipher = crypto.createDecipheriv(encryptedData.algorithm, key, iv);
 
       const encryptedBuffer = Buffer.from(encryptedData.data, 'base64');
-      let decrypted = Buffer.concat([
+      const decrypted = Buffer.concat([
         decipher.update(encryptedBuffer),
-        decipher.final()
+        decipher.final(),
       ]);
 
       return decrypted.toString('utf8');

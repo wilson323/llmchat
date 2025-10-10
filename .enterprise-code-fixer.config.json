@@ -1,0 +1,143 @@
+{
+  "$schema": "./.enterprise-fixer-schema.json",
+  "mode": "dry-run",
+  "backup": true,
+  "maxFileSize": 1048576,
+  "memoryLimit": 524288000,
+  "maxConcurrentFiles": 5,
+  "rules": {
+    "ref-current": {
+      "level": "error",
+      "autoFix": false,
+      "maxRiskLevel": "medium",
+      "description": "移除依赖数组中的ref.current引用",
+      "riskReason": "可能导致不必要的重新渲染"
+    },
+    "object-literals": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "high",
+      "description": "修复对象字面量类型问题",
+      "riskReason": "类型安全风险，可能影响运行时行为"
+    },
+    "unused-variables": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "low",
+      "description": "移除未使用的变量",
+      "riskReason": "代码清理，低风险"
+    },
+    "missing-types": {
+      "level": "info",
+      "autoFix": false,
+      "maxRiskLevel": "medium",
+      "description": "添加缺失的类型注解",
+      "riskReason": "类型安全改进，中等风险"
+    },
+    "commonjs-require": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "high",
+      "description": "转换CommonJS require为ES模块导入",
+      "riskReason": "模块系统变更，高风险"
+    },
+    "unstable-hooks": {
+      "level": "error",
+      "autoFix": false,
+      "maxRiskLevel": "high",
+      "description": "修复不稳定的React Hook使用",
+      "riskReason": "Hook使用模式错误，高风险"
+    },
+    "implicit-any": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "medium",
+      "description": "修复隐式any类型",
+      "riskReason": "类型安全风险"
+    },
+    "non-null-assertion": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "medium",
+      "description": "检查非空断言的使用",
+      "riskReason": "运行时错误风险"
+    },
+    "console-logging": {
+      "level": "info",
+      "autoFix": false,
+      "maxRiskLevel": "low",
+      "description": "检查控制台日志输出",
+      "riskReason": "生产环境代码清理"
+    },
+    "hardcoded-values": {
+      "level": "warning",
+      "autoFix": false,
+      "maxRiskLevel": "medium",
+      "description": "检查硬编码值",
+      "riskReason": "配置安全风险"
+    }
+  },
+  "filePatterns": [
+    "src/**/*.{ts,tsx}",
+    "lib/**/*.{ts,tsx}",
+    "components/**/*.{ts,tsx}",
+    "utils/**/*.{ts,tsx}",
+    "services/**/*.{ts,tsx}",
+    "hooks/**/*.{ts,tsx}",
+    "types/**/*.{ts,tsx}"
+  ],
+  "excludePatterns": [
+    "**/*.test.{ts,tsx}",
+    "**/*.spec.{ts,tsx}",
+    "**/*.stories.{ts,tsx}",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.next/**",
+    "**/.nuxt/**",
+    "**/.cache/**",
+    "**/temp/**",
+    "**/tmp/**"
+  ],
+  "validation": {
+    "preFix": true,
+    "postFix": true,
+    "syntaxCheck": true,
+    "typeCheck": true,
+    "impactAnalysis": true,
+    "crossFileAnalysis": true
+  },
+  "reporting": {
+    "format": "console",
+    "detailLevel": "detailed",
+    "includeImpactAnalysis": true,
+    "includeCodeDiff": true,
+    "outputFile": null,
+    "groupBy": "severity"
+  },
+  "integration": {
+    "gitHooks": true,
+    "ciIntegration": true,
+    "teamReview": true,
+    "rollbackSupport": true
+  },
+  "safety": {
+    "maxFilesPerSession": 100,
+    "maxFixesPerFile": 10,
+    "requireConfirmation": true,
+    "emergencyStop": true
+  },
+  "performance": {
+    "enableCaching": true,
+    "cacheDir": ".enterprise-fixer-cache",
+    "parallelProcessing": true,
+    "timeoutPerFile": 30000
+  },
+  "notifications": {
+    "slack": null,
+    "email": null,
+    "teams": null,
+    "webhook": null
+  }
+}

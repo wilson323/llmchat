@@ -1,13 +1,14 @@
-import type { JsonValue } from './dynamic';
+// 使用shared-types中的JsonValue，避免循环依赖
+import type { JsonValue, JsonObject } from '@llmchat/shared-types';
 
 // 重新导出 JsonValue 以便其他模块使用
-export type { JsonValue };
+export type { JsonValue, JsonObject };
 import type { ErrorCategory, ErrorSeverity } from './errors';
 
 /**
  * API响应接口
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = JsonValue> {
   code: number;
   message: string;
   data: T;

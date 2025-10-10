@@ -1,0 +1,66 @@
+{
+  "eslint": {
+    "maxErrors": 0,
+    "maxWarnings": 10,
+    "errorWeight": 10,
+    "warningWeight": 2,
+    "description": "ESLint代码质量检查阈值"
+  },
+  "security": {
+    "maxCritical": 0,
+    "maxHigh": 0,
+    "maxModerate": 5,
+    "criticalWeight": 50,
+    "highWeight": 20,
+    "moderateWeight": 5,
+    "description": "安全漏洞检查阈值"
+  },
+  "testCoverage": {
+    "minCoverage": 80,
+    "minStatements": 80,
+    "minBranches": 70,
+    "minFunctions": 80,
+    "minLines": 80,
+    "description": "测试覆盖率要求"
+  },
+  "build": {
+    "maxSizeMB": 50,
+    "maxTimeSeconds": 120,
+    "description": "构建产物大小和时间限制"
+  },
+  "dependencies": {
+    "maxOutdated": 10,
+    "maxHighVulns": 0,
+    "requireLicenseCheck": true,
+    "description": "依赖包管理要求"
+  },
+  "performance": {
+    "maxBundleSizeKB": 500,
+    "maxLoadTimeMs": 3000,
+    "description": "性能指标阈值"
+  },
+  "quality": {
+    "minOverallScore": 80,
+    "criticalBlocking": true,
+    "failOnWarnings": false,
+    "description": "整体质量要求"
+  },
+  "enforcement": {
+    "preCommit": {
+      "enabled": true,
+      "checks": ["eslint"],
+      "failOnError": true
+    },
+    "prePush": {
+      "enabled": true,
+      "checks": ["eslint", "testCoverage", "build"],
+      "failOnError": true
+    },
+    "ci": {
+      "enabled": true,
+      "checks": ["all"],
+      "failOnError": true,
+      "generateReport": true
+    }
+  }
+}

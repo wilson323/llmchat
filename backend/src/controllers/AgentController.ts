@@ -8,6 +8,7 @@ import { DifyInitService } from '@/services/DifyInitService';
 import { ApiError, AgentConfig } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 import logger from '@/utils/logger';
+import { HTTP_STATUS } from '@/constants/httpStatus';
 import { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
@@ -34,7 +35,7 @@ async function ensureAdminAuth(req: Request) {
 
 function handleAdminAuthError(error: unknown, res: Response): boolean {
   if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-    res.status(403).json({
+    res.status(HTTP_STATUS.FORBIDDEN).json({
       code: 'UNAUTHORIZED',
       message: '需要管理员权限',
       timestamp: new Date().toISOString(),
@@ -130,7 +131,7 @@ export class AgentController {
    * 获取可用智能体列表
    * GET /api/agents
    */
-  getAgents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgents = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const includeInactive = req.query.includeInactive === 'true';
 
@@ -144,7 +145,7 @@ export class AgentController {
         metadata: { extra: { total: agents.length } },
       });
     } catch (error) {
-      logger.error('获取智能体列表失败', { error });
+      logger.error('获取智能体列表失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENTS_FAILED',
         message: '获取智能体列表失败',
@@ -155,7 +156,7 @@ export class AgentController {
         apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -163,7 +164,7 @@ export class AgentController {
    * 获取特定智能体信息
    * GET /api/agents/:id
    */
-  getAgent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgent = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
 
@@ -173,7 +174,7 @@ export class AgentController {
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
         };
-        res.status(400).json(apiError);
+        res.status(HTTP_STATUS.BAD_REQUEST).json(apiError);
         return;
       }
 
@@ -197,7 +198,7 @@ export class AgentController {
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
-      logger.error('获取智能体信息失败', { error });
+      logger.error('获取智能体信息失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENT_FAILED',
         message: '获取智能体信息失败',
@@ -208,18 +209,18 @@ export class AgentController {
         apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
   createAgent = async (req: Request, res: Response): Promise<void> => {
     try {
       await ensureAdminAuth(req);
-      const { error, value } = this.createAgentSchema.validate(req.body, { abortEarly: false });
+      const { error, value } = this.createAgentSchema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d) => d.message).join('; '),
+          message: error.details.map((d: any) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
@@ -234,8 +235,8 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('创建智能体失败', { error });
-      res.status(500).json({
+      logger.error('创建智能体失败', { error: error as Error });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'CREATE_AGENT_FAILED',
         message: '创建智能体失败',
         timestamp: new Date().toISOString(),
@@ -247,7 +248,7 @@ export class AgentController {
    * 检查智能体状态
    * GET /api/agents/:id/status
    */
-  getAgentStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getAgentStatus = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
 
@@ -257,7 +258,7 @@ export class AgentController {
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
         };
-        res.status(400).json(apiError);
+        res.status(HTTP_STATUS.BAD_REQUEST).json(apiError);
         return;
       }
 
@@ -268,7 +269,7 @@ export class AgentController {
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
-      logger.error('检查智能体状态失败', { error });
+      logger.error('检查智能体状态失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENT_STATUS_FAILED',
         message: '检查智能体状态失败',
@@ -279,7 +280,7 @@ export class AgentController {
         apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -287,7 +288,7 @@ export class AgentController {
    * 重新加载智能体配置
    * POST /api/agents/reload
    */
-  reloadAgents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  reloadAgents = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       await ensureAdminAuth(req);
       const configs = await this.agentService.reloadAgents();
@@ -303,7 +304,7 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('重新加载智能体配置失败', { error });
+      logger.error('重新加载智能体配置失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'RELOAD_AGENTS_FAILED',
         message: '重新加载智能体配置失败',
@@ -314,7 +315,7 @@ export class AgentController {
         apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -322,7 +323,7 @@ export class AgentController {
    * 验证智能体配置
    * GET /api/agents/:id/validate
    */
-  validateAgent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  validateAgent = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
 
@@ -332,7 +333,7 @@ export class AgentController {
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
         };
-        res.status(400).json(apiError);
+        res.status(HTTP_STATUS.BAD_REQUEST).json(apiError);
         return;
       }
 
@@ -349,7 +350,7 @@ export class AgentController {
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
     } catch (error) {
-      logger.error('验证智能体配置失败', { error });
+      logger.error('验证智能体配置失败', { error: error as Error });
 
       const apiError: ApiError = {
         code: 'VALIDATE_AGENT_FAILED',
@@ -361,7 +362,7 @@ export class AgentController {
         apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -369,19 +370,19 @@ export class AgentController {
    * 更新智能体配置（启用/禁用、编辑）
    * POST /api/agents/:id/update
    */
-  updateAgent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  updateAgent = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       await ensureAdminAuth(req);
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({ code: 'INVALID_AGENT_ID', message: '智能体ID不能为空', timestamp: new Date().toISOString() });
+        res.status(HTTP_STATUS.BAD_REQUEST).json({ code: 'INVALID_AGENT_ID', message: '智能体ID不能为空', timestamp: new Date().toISOString() });
         return;
       }
-      const { error, value } = this.updateAgentSchema.validate(req.body || {}, { abortEarly: false });
+      const { error, value } = this.updateAgentSchema.validate(req.body || {}, { abortEarly: false }) as { error?: any; value?: any };
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d) => d.message).join('; '),
+          message: error.details.map((d: any) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
@@ -396,8 +397,8 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('更新智能体失败', { error });
-      res.status(500).json({ code: 'UPDATE_AGENT_FAILED', message: '更新智能体失败', timestamp: new Date().toISOString() });
+      logger.error('更新智能体失败', { error: error as Error });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'UPDATE_AGENT_FAILED', message: '更新智能体失败', timestamp: new Date().toISOString() });
     }
   };
 
@@ -406,7 +407,7 @@ export class AgentController {
       await ensureAdminAuth(req);
       const { id } = req.params;
       if (!id) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -422,24 +423,24 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('删除智能体失败', { error });
-      res.status(500).json({ code: 'DELETE_AGENT_FAILED', message: '删除智能体失败', timestamp: new Date().toISOString() });
+      logger.error('删除智能体失败', { error: error as Error });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'DELETE_AGENT_FAILED', message: '删除智能体失败', timestamp: new Date().toISOString() });
     }
   };
 
   importAgents = async (req: Request, res: Response): Promise<void> => {
     try {
       await ensureAdminAuth(req);
-      const { error, value } = this.importSchema.validate(req.body, { abortEarly: false });
+      const { error, value } = this.importSchema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d) => d.message).join('; '),
+          message: error.details.map((d: any) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
       }
-      const agents = await this.agentService.importAgents(value.agents);
+      const agents = await this.agentService.importAgents((value).agents);
       ApiResponseHandler.sendSuccess(res, agents.map((agent) => this.toSafeAgent(agent)), {
         message: '导入智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
@@ -448,8 +449,8 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('导入智能体失败', { error });
-      res.status(500).json({ code: 'IMPORT_AGENT_FAILED', message: '导入智能体失败', timestamp: new Date().toISOString() });
+      logger.error('导入智能体失败', { error: error as Error });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'IMPORT_AGENT_FAILED', message: '导入智能体失败', timestamp: new Date().toISOString() });
     }
   };
 
@@ -474,17 +475,17 @@ export class AgentController {
         }),
       });
 
-      const { error, value } = schema.validate(req.body, { abortEarly: false });
+      const { error, value } = schema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d) => d.message).join('; '),
+          message: error.details.map((d: any) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
       }
 
-      const { provider, endpoint, apiKey, appId } = value;
+      const { provider, endpoint, apiKey, appId } = value as { provider: any; endpoint: any; apiKey: any; appId: any };
 
       // 构造临时智能体配置用于API调用
       const tempAgent: AgentConfig = {
@@ -583,8 +584,8 @@ export class AgentController {
       if (handleAdminAuthError(error, res)) {
         return;
       }
-      logger.error('获取智能体信息失败', { error });
-      res.status(500).json({
+      logger.error('获取智能体信息失败', { error: error as Error });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'FETCH_AGENT_INFO_FAILED',
         message: error instanceof Error ? error.message : '获取智能体信息失败',
         timestamp: new Date().toISOString(),

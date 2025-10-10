@@ -4,7 +4,7 @@
     "lib": ["ES2020"],
     "module": "commonjs",
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -37,15 +37,12 @@
       "@/utils/*": ["utils/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "jest.config.ts", "scripts/**/*"],
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "src/**/Optimized*",
-    "src/docs/swagger.ts",
-    "src/middleware/auditMiddleware.ts",
-    "src/middleware/requestId.ts"
+    "src/docs"
   ]
 }

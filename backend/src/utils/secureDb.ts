@@ -149,7 +149,7 @@ export function createSecurePoolConfig(pg: PostgresConfig): PoolConfig {
     database: pg.database,
     user: pg.user,
     passwordMasked: maskPassword(decryptedPassword),
-    passwordEncrypted: isEncrypted
+    passwordEncrypted: isEncrypted,
   });
 
   return {
@@ -197,7 +197,7 @@ export function validateSecureConfig(config: SecurePgConfig): boolean {
       logger.error('[secureDb] Required database fields missing', {
         hasHost: !!pg.host,
         hasUser: !!pg.user,
-        hasDatabase: !!pg.database
+        hasDatabase: !!pg.database,
       });
       return false;
     }

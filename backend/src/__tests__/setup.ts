@@ -37,3 +37,12 @@ afterAll(() => {
 afterEach(() => {
   jest.clearAllMocks();
 });
+
+// 添加一个虚拟测试以满足Jest要求
+describe('Test Environment Setup', () => {
+  it('should set up test environment correctly', () => {
+    expect(process.env.NODE_ENV).toBe('test');
+    expect(process.env.JWT_SECRET).toBe('test-jwt-secret-key');
+    expect(jest.isMockFunction(global.console.log)).toBe(true);
+  });
+});

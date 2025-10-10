@@ -26,11 +26,43 @@
     "install:all": "pnpm install",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "prepare": "husky install",
+    "security:audit": "./scripts/security-audit.sh",
+    "security:check": "node scripts/pre-commit-security-check.js",
+    "security:config": "cd backend && ts-node src/scripts/secure-config-manager.ts",
+    "enterprise:fix": "cd backend && ts-node src/scripts/enterprise-code-fixer.ts",
+    "enterprise:fix:interactive": "cd backend && ts-node src/scripts/enterprise-code-fixer.ts --mode fix",
+    "enterprise:fix:auto": "cd backend && ts-node src/scripts/enterprise-code-fixer.ts --mode auto-fix",
+    "pre-commit": "lint-staged",
+    "pre-commit-check": "pnpm run type-check && pnpm run lint && pnpm run security:check",
+    "quality-check": "node scripts/quality-check.js",
+    "quality-check:pre-commit": "node scripts/quality-check.js --pre-commit",
+    "quality-monitor": "node scripts/quality-monitor.js",
+    "quality-trend": "node scripts/quality-trend-tracker.js",
+    "quality-report": "node scripts/quality-monitor.js && node scripts/quality-trend-tracker.js",
+    "quality-gates": "node scripts/enhanced-quality-gates.js",
+    "quality-gates:pre-commit": "node scripts/enhanced-quality-gates.js --pre-commit",
+    "quality-gates:pre-push": "node scripts/enhanced-quality-gates.js --pre-push",
+    "quality-gates:ci": "node scripts/enhanced-quality-gates.js --ci-mode",
+    "quality-gates:thresholds": "node scripts/enhanced-quality-gates.js --thresholds",
+    "quality-dashboard": "node scripts/quality-dashboard.js",
+    "quality-dashboard:serve": "node scripts/quality-dashboard.js --serve",
+    "quality-dashboard:watch": "node scripts/quality-dashboard.js --serve --watch",
+    "quality-improvement": "node scripts/continuous-improvement.js",
+    "quality-improvement:update": "node scripts/continuous-improvement.js --update",
+    "quality-improvement:report": "node scripts/continuous-improvement.js --report-only",
+    "security:sanitize": "pnpm run security:audit && pnpm run security:check",
+    "enterprise:rules": "node -e \"console.log('📋 企业级规则: 禁止正则表达式代码替换，使用AST操作'); console.log('📖 详情: .enterprise-code-rules.md')\"",
+    "enterprise:validate": "node -e \"try { const config = require('./.enterprise-code-fixer.config.json'); console.log('✅ 企业级配置验证通过'); } catch(e) { console.error('❌ 配置验证失败:', e.message); process.exit(1); }\""
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
-    "concurrently": "^8.2.2"
+    "chalk": "^5.6.2",
+    "concurrently": "^8.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.3",
+    "prettier": "^3.6.2"
   },
   "workspaces": [
     "backend",
@@ -41,5 +73,8 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@8.15.0",
+  "lint-staged": {
+    "configFile": ".lintstagedrc.js"
+  }
 }

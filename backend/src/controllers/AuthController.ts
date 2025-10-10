@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'; // [L1]
 import { logger } from '@/utils/logger'; // [L2]
 import { AuthServiceV2 } from '@/services/AuthServiceV2'; // [L3]
+import { toEnhancedError, ExpressErrorHandler } from '@/utils/errorHandler'; // [L4]
 
 /**
  * 认证控制器
@@ -51,16 +52,18 @@ export class AuthController { // [L10]
         }, // [L50]
         timestamp: new Date().toISOString(), // [L51]
       }); // [L52]
-    } catch (error: any) { // [L53]
-      logger.error('用户登录失败', { error }); // [L54]
-      const statusCode = error?.code === 'AUTH_FAILED' ? 401 : 500; // [L55]
-      res.status(statusCode).json({ // [L56]
-        code: error?.code || 'LOGIN_ERROR', // [L57]
-        message: error?.message || '登录失败', // [L58]
-        data: null, // [L59]
-        timestamp: new Date().toISOString(), // [L60]
-      }); // [L61]
-    } // [L62]
+    } catch (error: unknown) { // [L53]
+      const enhancedError = toEnhancedError(error, {
+        operation: 'user_login',
+        requestId: req.headers['x-request-id'] as string
+      }); // [L54]
+
+      logger.error('用户登录失败', { error: enhancedError }); // [L55]
+      const statusCode = ExpressErrorHandler.getStatusCode(enhancedError); // [L56]
+      const errorResponse = ExpressErrorHandler.createErrorResponse(enhancedError, req.headers['x-request-id'] as string); // [L57]
+
+      res.status(statusCode).json(errorResponse); // [L58]
+    } // [L59]
   } // [L63]
 
   // TRACE-auth-20251005-认证路径统一JSON响应 // [L65]

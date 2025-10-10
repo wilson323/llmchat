@@ -1,0 +1,124 @@
+name: Quality Monitoring
+
+on:
+  schedule:
+    # 每周一上午9点运行质量监控
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  quality-monitoring:
+    name: Quality Monitoring & Trend Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 📊 Generate quality report
+        run: |
+          mkdir -p reports/quality
+          pnpm run quality-monitor
+
+      - name: 📈 Analyze quality trends
+        run: pnpm run quality-trend
+
+      - name: 📋 Upload quality reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-monitoring-reports
+          path: reports/quality/
+          retention-days: 90
+
+      - name: 📧 Create issue for quality problems
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const improvementPlan = JSON.parse(fs.readFileSync('reports/quality/improvement-plan.json', 'utf8'));
+
+              if (improvementPlan.priority === 'critical' || improvementPlan.priority === 'high') {
+                const title = `🚨 Quality Alert: ${improvementPlan.priority.toUpperCase()} Priority Issues`;
+                const body = `
+            ## Quality Monitoring Alert
+
+                **Priority**: ${improvementPlan.priority.toUpperCase()}
+                **Date**: ${new Date().toISOString().split('T')[0]}
+
+                ### Required Actions:
+                ${improvementPlan.actions.map(action =>
+                  `- **${action.action}** (${action.impact} impact)\n  - ${action.description}\n  - Owner: ${action.owner}\n  - Due: ${action.dueDate}`
+                ).join('\n\n')}
+
+                ### Next Steps:
+                1. Review and assign actions to responsible team members
+                2. Update action status as work progresses
+                3. Monitor quality trends in subsequent reports
+
+                ---
+                *This issue was automatically created by the quality monitoring workflow*
+                `;
+
+                github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: body,
+                  labels: ['quality', 'automated', improvementPlan.priority]
+                });
+              }
+            } catch (error) {
+              console.log('Could not read improvement plan:', error.message);
+            }
+
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: quality-monitoring
+    if: always()
+
+    steps:
+      - name: Download reports
+        uses: actions/download-artifact@v3
+        with:
+          name: quality-monitoring-reports
+          path: reports/
+
+      - name: 📊 Display quality summary
+        run: |
+          echo "# 📊 Quality Monitoring Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "reports/quality-trend.json" ]; then
+            echo "## 📈 Quality Trend Data" >> $GITHUB_STEP_SUMMARY
+            echo "Data points available: $(cat reports/quality-trend.json | jq length)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f "reports/improvement-plan.json" ]; then
+            echo "## 🎯 Current Improvement Plan" >> $GITHUB_STEP_SUMMARY
+            priority=$(cat reports/improvement-plan.json | jq -r .priority)
+            actions=$(cat reports/improvement-plan.json | jq '.actions | length')
+            echo "- Priority: $priority" >> $GITHUB_STEP_SUMMARY
+            echo "- Actions: $actions" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi

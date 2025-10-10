@@ -1,6 +1,7 @@
 import winston from 'winston';
 import path from 'path';
 import { Request } from 'express';
+import { JsonValue } from '@llmchat/shared-types';
 
 /**
  * 日志级别
@@ -8,41 +9,76 @@ import { Request } from 'express';
 export type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly';
 
 /**
- * 结构化日志上下文
+ * 错误信息结构
+ */
+export interface ErrorInfo {
+  name: string;
+  message: string;
+  stack?: string;
+  code?: string;
+}
+
+/**
+ * 性能信息结构
+ */
+export interface PerformanceInfo {
+  memoryUsage?: NodeJS.MemoryUsage;
+  cpuUsage?: NodeJS.CpuUsage;
+  operation?: string;
+  duration?: number;
+}
+
+/**
+ * 业务信息结构
+ */
+export interface BusinessInfo {
+  agentId?: string;
+  chatId?: string;
+  action?: string;
+  sessionId?: string;
+  [key: string]: JsonValue;
+}
+
+/**
+ * 安全信息结构
+ */
+export interface SecurityInfo {
+  ip?: string;
+  userAgent?: string;
+  suspicious?: boolean;
+  threat?: string;
+  event?: string;
+  userId?: string;
+}
+
+/**
+ * 结构化日志上下文 - 完全类型安全
  */
 export interface LogContext {
+  // 请求上下文
   requestId?: string;
   userId?: string;
   method?: string;
   url?: string;
   statusCode?: number;
   duration?: number;
-  error?: {
-    name: string;
-    message: string;
-    stack?: string;
-    code?: string;
-  };
-  performance?: {
-    memoryUsage?: NodeJS.MemoryUsage;
-    cpuUsage?: NodeJS.CpuUsage;
-    operation?: string;
-    duration?: number;
-  };
-  business?: {
-    agentId?: string;
-    chatId?: string;
-    action?: string;
-    [key: string]: any;
-  };
-  security?: {
-    ip?: string;
-    userAgent?: string;
-    suspicious?: boolean;
-    threat?: string;
-    event?: string;
-  };
-  [key: string]: any;
+  ip?: string;    // IP地址
+  origin?: string; // 来源地址
+
+  // 错误上下文
+  error?: ErrorInfo;
+
+  // 性能上下文
+  performance?: PerformanceInfo;
+
+  // 业务上下文
+  business?: BusinessInfo;
+
+  // 安全上下文
+  security?: SecurityInfo;
+
+  // 自定义扩展上下文 - 类型安全
+  custom?: Record<string, JsonValue>;
 }
 
 /**
@@ -247,27 +283,37 @@ export class StructuredLogger {
    * 记录HTTP请求开始
    */
   public logRequestStart(req: Request): void {
-    const requestId = (req as any).requestId;
-    const userId = (req as any).user?.id;
+    // 类型安全的请求扩展接口
+    interface EnhancedRequest extends Request {
+      requestId?: string;
+      user?: { id: string };
+    }
+
+    const enhancedReq = req as EnhancedRequest;
+    const requestId = enhancedReq.requestId;
+    const userId = enhancedReq.user?.id;
     const userAgent = req.get('User-Agent');
     const ip = req.ip || req.connection.remoteAddress;
+
+    const securityContext: SecurityInfo = {};
+    if (userAgent) {
+      securityContext.userAgent = userAgent;
+    }
+    if (ip) {
+      securityContext.ip = ip;
+    }
+    if (userId) {
+      securityContext.userId = userId;
+    }
 
     const context: LogContext = {
       method: req.method,
       url: req.originalUrl || req.url,
+      ...(Object.keys(securityContext).length > 0 && { security: securityContext }),
     };
 
     if (requestId) {
       context.requestId = requestId;
-    }
-    if (userId) {
-      context.userId = userId;
-    }
-    if (userAgent) {
-      context.userAgent = userAgent;
-    }
-    if (ip) {
-      context.ip = ip;
     }
 
     this.http('Request started', context);
@@ -277,8 +323,15 @@ export class StructuredLogger {
    * 记录HTTP请求完成
    */
   public logRequestComplete(req: Request, statusCode: number, duration: number): void {
-    const requestId = (req as any).requestId;
-    const userId = (req as any).user?.id;
+    // 类型安全的请求扩展接口
+    interface EnhancedRequest extends Request {
+      requestId?: string;
+      user?: { id: string };
+    }
+
+    const enhancedReq = req as EnhancedRequest;
+    const requestId = enhancedReq.requestId;
+    const userId = enhancedReq.user?.id;
 
     const context: LogContext = {
       method: req.method,
@@ -301,17 +354,26 @@ export class StructuredLogger {
    * 记录API错误
    */
   public logApiError(error: Error, req?: Request, context?: LogContext): void {
+    // 类型安全的请求扩展接口
+    interface EnhancedRequest extends Request {
+      requestId?: string;
+      user?: { id: string };
+    }
+
+    const enhancedReq = req as EnhancedRequest;
+    const errorInfo: ErrorInfo = {
+      name: error.name,
+      message: error.message,
+      ...(error.stack && { stack: error.stack }),
+      ...((error as any).code && { code: (error as any).code }),
+    };
+
     const errorContext: LogContext = {
-      ...(req && { requestId: (req as any).requestId }),
+      error: errorInfo,
+      ...(req && { requestId: enhancedReq.requestId }),
       ...(req?.method && { method: req.method }),
       ...(req && { url: req.originalUrl || req.url }),
-      ...(req && { userId: (req as any).user?.id }),
-      error: {
-        name: error.name,
-        message: error.message,
-        ...(error.stack && { stack: error.stack }),
-        ...(error as any).code && { code: (error as any).code },
-      },
+      ...(req && enhancedReq.user?.id && { userId: enhancedReq.user.id }),
       ...context,
     };
 

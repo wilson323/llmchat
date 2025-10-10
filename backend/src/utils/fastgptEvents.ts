@@ -1,9 +1,14 @@
 const normalizeEventKey = (name: string) => name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
+// 安全的正则表达式转义函数
+const escapeRegExp = (string: string): string => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 const buildPatternMatcher = (patterns: Array<string | RegExp>) => {
   const normalizedPatterns = patterns.map((pattern) =>
     typeof pattern === 'string'
-      ? new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      ? new RegExp(escapeRegExp(pattern), 'i')
       : pattern,
   );
 

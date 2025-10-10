@@ -5,7 +5,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import logger from '@/utils/logger';
+import { SecureJWT } from '@/utils/secureJwt';
+import { safeLogger } from '@/utils/logSanitizer';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -25,10 +26,11 @@ export function authenticateJWT() {
       const authHeader = req.headers.authorization;
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        logger.warn('缺少 Authorization header', {
+        safeLogger.warn('缺少 Authorization header', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
+          userAgent: req.get('User-Agent'),
         });
 
         res.status(401).json({
@@ -41,40 +43,51 @@ export function authenticateJWT() {
 
       const token = authHeader.substring(7); // 移除 "Bearer " 前缀
 
-      // 验证 JWT（使用与 AuthServiceV2 相同的密钥）
-      const jwtSecret = process.env.TOKEN_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
-      const decoded = jwt.verify(token, jwtSecret) as {
-        sub?: string;      // AuthServiceV2 使用 sub 存储 user id
-        id?: string;       // 兼容旧格式
-        username: string;
-        role: 'admin' | 'user';
-      };
+      // 检查令牌是否已撤销
+      const isRevoked = await SecureJWT.isTokenRevoked(token);
+      if (isRevoked) {
+        safeLogger.warn('JWT token 已被撤销', {
+          component: 'jwtAuth',
+          path: req.path,
+          ip: req.ip,
+        });
 
-      // 兼容 AuthServiceV2 的 JWT payload 格式（使用 sub 字段）
-      const userId = decoded.sub || decoded.id;
+        res.status(401).json({
+          success: false,
+          code: 'TOKEN_REVOKED',
+          message: '认证令牌已被撤销，请重新登录',
+        });
+        return;
+      }
+
+      // 使用安全的JWT验证
+      const decoded = SecureJWT.verifyToken(token);
 
       // 将用户信息附加到请求对象
       (req as AuthenticatedRequest).user = {
-        id: userId!,
-        username: decoded.username,
-        role: decoded.role,
+        id: decoded.sub || decoded.userId || '',
+        username: decoded.username || 'user',
+        role: (decoded.role as 'user' | 'admin') || 'user',
       };
 
-      logger.debug('JWT 认证成功', {
+      safeLogger.info('JWT 认证成功', {
         component: 'jwtAuth',
-        userId: userId,
+        userId: decoded.sub,
         username: decoded.username,
         role: decoded.role,
         path: req.path,
+        tokenId: decoded.jti,
+        tokenTTL: SecureJWT.getTokenTTL(token),
       });
 
       next();
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
-        logger.warn('JWT token 已过期', {
+        safeLogger.warn('JWT token 已过期', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
+          expiredAt: error.expiredAt,
         });
 
         res.status(401).json({
@@ -86,7 +99,7 @@ export function authenticateJWT() {
       }
 
       if (error instanceof jwt.JsonWebTokenError) {
-        logger.warn('无效的 JWT token', {
+        safeLogger.warn('无效的 JWT token', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
@@ -101,11 +114,11 @@ export function authenticateJWT() {
         return;
       }
 
-      logger.error('JWT 认证失败', {
+      safeLogger.error('JWT 认证失败', {
         component: 'jwtAuth',
         path: req.path,
         ip: req.ip,
-        error,
+        error: error instanceof Error ? error.message : String(error),
       });
 
       res.status(500).json({

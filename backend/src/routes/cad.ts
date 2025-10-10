@@ -5,24 +5,63 @@
 import { Router, type Router as RouterType } from 'express';
 import multer from 'multer';
 import { CadController } from '@/controllers/CadController';
+import { SecureUpload } from '@/utils/secureUpload';
+import { safeLogger } from '@/utils/logSanitizer';
+import { authenticateJWT } from '@/middleware/jwtAuth';
 
 const router: RouterType = Router();
 const cadController = new CadController();
 
-// 配置文件上传
+// 安全配置文件上传
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
+    fileSize: 10 * 1024 * 1024, // 10MB limit for security
+    files: 1, // Only allow one file at a time
   },
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype === 'application/dxf' ||
-      file.originalname.toLowerCase().endsWith('.dxf')
-    ) {
+  fileFilter: async (req, file, cb) => {
+    try {
+      // Basic MIME type check first
+      if (!file.originalname.toLowerCase().endsWith('.dxf')) {
+        return cb(new Error('只支持 DXF 文件格式'));
+      }
+
+      // Set appropriate MIME type for DXF files
+      file.mimetype = 'application/dxf';
+
+      // Perform security validation
+      const uploadConfig = {
+        maxFileSize: 10 * 1024 * 1024, // 10MB
+        allowedMimeTypes: ['application/dxf', 'text/plain'],
+        allowedExtensions: ['.dxf'],
+        requireAuthentication: false, // DXF upload doesn't require auth for now
+        scanForMalware: true,
+        generateHashes: true,
+      };
+
+      const validation = await SecureUpload.validateFile(file, uploadConfig);
+
+      if (!validation.isValid) {
+        const errorMessage = validation.errors && validation.errors.length > 0
+          ? validation.errors.join('; ')
+          : '文件验证失败';
+        return cb(new Error(`文件安全验证失败: ${errorMessage}`));
+      }
+
+      if (validation.warnings && validation.warnings.length > 0) {
+        safeLogger.warn('[CAD Route] File upload validation warnings', {
+          filename: file.originalname,
+          warnings: validation.warnings,
+        });
+      }
+
       cb(null, true);
-    } else {
-      cb(new Error('只支持 DXF 文件格式'));
+    } catch (error) {
+      safeLogger.error('[CAD Route] File validation error', {
+        filename: file.originalname,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      cb(new Error('文件验证过程中发生错误'));
     }
   },
 });
@@ -30,36 +69,36 @@ const upload = multer({
 /**
  * @route POST /api/cad/upload
  * @desc 上传 DXF 文件
- * @access Public
+ * @access Private
  */
-router.post('/upload', upload.single('file'), cadController.uploadDxf);
+router.post('/upload', authenticateJWT(), upload.single('file'), cadController.uploadDxf);
 
 /**
  * @route GET /api/cad/tools
  * @desc 获取 Function Calling 工具定义
- * @access Public
+ * @access Private
  */
-router.get('/tools', cadController.getFunctionTools);
+router.get('/tools', authenticateJWT(), cadController.getFunctionTools);
 
 /**
  * @route GET /api/cad/:fileId
  * @desc 获取 CAD 文件信息
- * @access Public
+ * @access Private
  */
-router.get('/:fileId', cadController.getCadFile);
+router.get('/:fileId', authenticateJWT(), cadController.getCadFile);
 
 /**
  * @route POST /api/cad/:fileId/execute
  * @desc 执行 CAD 操作
- * @access Public
+ * @access Private
  */
-router.post('/:fileId/execute', cadController.executeCadOperation);
+router.post('/:fileId/execute', authenticateJWT(), cadController.executeCadOperation);
 
 /**
  * @route GET /api/cad/:fileId/export
  * @desc 导出 DXF 文件
- * @access Public
+ * @access Private
  */
-router.get('/:fileId/export', cadController.exportDxf);
+router.get('/:fileId/export', authenticateJWT(), cadController.exportDxf);
 
 export default router;

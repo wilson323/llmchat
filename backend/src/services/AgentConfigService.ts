@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { AgentConfig, Agent, AgentStatus, AgentHealthStatus } from '@/types';
+import { AgentConfig, Agent, AgentStatus, AgentHealthStatus, JsonValue } from '@/types';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import {
@@ -36,10 +36,10 @@ type AgentDbRow = {
   max_tokens: number | null;
   temperature: number | null;
   system_prompt: string | null;
-  capabilities: any;
-  rate_limit: any;
-  features: any;
-  metadata: any;
+  capabilities: JsonValue | null;      // 明确JSON类型，替代any
+  rate_limit: JsonValue | null;         // 配置结构，替代any
+  features: JsonValue | null;           // 特性配置，替代any
+  metadata: JsonValue | null;           // 元数据，替代any
   is_active: boolean;
   created_at: Date | string;
   updated_at: Date | string;
@@ -405,7 +405,7 @@ export class AgentConfigService {
             : [],
           isActive: item.isActive ?? true,
           features: this.ensureFeatureDefaults(
-            item.features as AgentConfig['features'] | undefined,
+            item.features,
           ),
           createdAt: item.createdAt
             ? String(item.createdAt)
@@ -474,6 +474,13 @@ export class AgentConfigService {
 
   private applyCacheFromRows(rows: AgentDbRow[]): AgentConfig[] {
     this.agents.clear();
+
+    // 确保 rows 是一个数组
+    if (!Array.isArray(rows)) {
+      logger.warn('applyCacheFromRows received non-array data', { rows });
+      return [];
+    }
+
     const configs = rows.map((row) => this.mapRowToConfig(row));
     configs.forEach((cfg) => this.agents.set(cfg.id, cfg));
     this.lastLoadTime = Date.now();
@@ -515,7 +522,9 @@ export class AgentConfigService {
   }
 
   private mapRowToConfig(row: AgentDbRow): AgentConfig {
-    const features = this.ensureFeatureDefaults(row.features || {});
+    const features = this.ensureFeatureDefaults(
+      typeof row.features === 'object' && row.features !== null ? row.features as AgentConfig['features'] : undefined
+    );
     return {
       id: row.id,
       name: row.name,
@@ -523,7 +532,7 @@ export class AgentConfigService {
       endpoint: row.endpoint,
       apiKey: row.api_key,
       model: row.model,
-      capabilities: Array.isArray(row.capabilities) ? row.capabilities : [],
+      capabilities: Array.isArray(row.capabilities) ? row.capabilities as string[] : [],
       provider: row.provider,
       isActive: row.is_active,
       features,
@@ -539,7 +548,12 @@ export class AgentConfigService {
       ...(row.system_prompt !== null && row.system_prompt !== undefined
         ? { systemPrompt: row.system_prompt }
         : {}),
-      ...(row.rate_limit ? { rateLimit: row.rate_limit } : {}),
+      ...(row.rate_limit && typeof row.rate_limit === 'object' ? {
+        rateLimit: {
+          requestsPerMinute: (row.rate_limit as any).requestsPerMinute || 60,
+          tokensPerMinute: (row.rate_limit as any).tokensPerMinute || 60000
+        }
+      } : {}),
     };
   }
 

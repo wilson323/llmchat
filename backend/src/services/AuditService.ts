@@ -30,9 +30,7 @@ export class AuditService {
     return getPool();
   }
 
-  constructor() {
-    // 构造函数不再初始化 pool，改为使用 getter 延迟获取
-  }
+  // 构造函数不再需要，使用 getter 延迟获取连接池
 
   /**
    * 记录审计日志（使用优化的数据库连接）

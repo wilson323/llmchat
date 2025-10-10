@@ -1,0 +1,276 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Enterprise Code Fixer Configuration Schema",
+  "description": "Schema for the enterprise-level TypeScript code fixing tool configuration",
+  "type": "object",
+  "required": [
+    "mode",
+    "backup",
+    "maxFileSize",
+    "memoryLimit",
+    "maxConcurrentFiles",
+    "rules",
+    "filePatterns",
+    "excludePatterns",
+    "validation"
+  ],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["dry-run", "fix", "auto-fix"],
+      "description": "Fixing mode: dry-run (preview only), fix (interactive), auto-fix (automatic)",
+      "default": "dry-run"
+    },
+    "backup": {
+      "type": "boolean",
+      "description": "Whether to create backups before fixing",
+      "default": true
+    },
+    "maxFileSize": {
+      "type": "number",
+      "description": "Maximum file size in bytes to process",
+      "default": 1048576
+    },
+    "memoryLimit": {
+      "type": "number",
+      "description": "Memory usage limit in bytes",
+      "default": 524288000
+    },
+    "maxConcurrentFiles": {
+      "type": "integer",
+      "description": "Maximum number of files to process concurrently",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 20
+    },
+    "rules": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z-]+$": {
+          "type": "object",
+          "required": ["level", "autoFix", "maxRiskLevel"],
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["error", "warning", "info"],
+              "description": "Severity level for this rule"
+            },
+            "autoFix": {
+              "type": "boolean",
+              "description": "Whether this rule can be automatically fixed"
+            },
+            "maxRiskLevel": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "Maximum risk level for auto-fixing"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of what this rule fixes"
+            },
+            "riskReason": {
+              "type": "string",
+              "description": "Reason for the risk level"
+            }
+          }
+        }
+      }
+    },
+    "filePatterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Glob patterns for files to include",
+      "default": ["src/**/*.{ts,tsx}"]
+    },
+    "excludePatterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Glob patterns for files to exclude",
+      "default": ["**/*.test.{ts,tsx}", "**/node_modules/**"]
+    },
+    "validation": {
+      "type": "object",
+      "required": ["preFix", "postFix", "syntaxCheck"],
+      "properties": {
+        "preFix": {
+          "type": "boolean",
+          "description": "Validate syntax before fixing",
+          "default": true
+        },
+        "postFix": {
+          "type": "boolean",
+          "description": "Validate syntax after fixing",
+          "default": true
+        },
+        "syntaxCheck": {
+          "type": "boolean",
+          "description": "Perform TypeScript syntax checking",
+          "default": true
+        },
+        "typeCheck": {
+          "type": "boolean",
+          "description": "Perform TypeScript type checking",
+          "default": true
+        },
+        "impactAnalysis": {
+          "type": "boolean",
+          "description": "Analyze fix impact before applying",
+          "default": true
+        },
+        "crossFileAnalysis": {
+          "type": "boolean",
+          "description": "Analyze cross-file dependencies",
+          "default": false
+        }
+      }
+    },
+    "reporting": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["console", "json", "html", "markdown"],
+          "description": "Report output format",
+          "default": "console"
+        },
+        "detailLevel": {
+          "type": "string",
+          "enum": ["summary", "detailed", "verbose"],
+          "description": "Level of detail in the report",
+          "default": "detailed"
+        },
+        "includeImpactAnalysis": {
+          "type": "boolean",
+          "description": "Include impact analysis in reports",
+          "default": true
+        },
+        "includeCodeDiff": {
+          "type": "boolean",
+          "description": "Include code diff in reports",
+          "default": true
+        },
+        "outputFile": {
+          "type": ["string", "null"],
+          "description": "Output file for reports (null for console)",
+          "default": null
+        },
+        "groupBy": {
+          "type": "string",
+          "enum": ["severity", "rule", "file"],
+          "description": "How to group issues in the report",
+          "default": "severity"
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "properties": {
+        "gitHooks": {
+          "type": "boolean",
+          "description": "Integrate with Git hooks",
+          "default": true
+        },
+        "ciIntegration": {
+          "type": "boolean",
+          "description": "Integrate with CI/CD pipelines",
+          "default": true
+        },
+        "teamReview": {
+          "type": "boolean",
+          "description": "Require team review for high-risk fixes",
+          "default": true
+        },
+        "rollbackSupport": {
+          "type": "boolean",
+          "description": "Support automatic rollback on failure",
+          "default": true
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "properties": {
+        "maxFilesPerSession": {
+          "type": "integer",
+          "description": "Maximum files to process in one session",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "maxFixesPerFile": {
+          "type": "integer",
+          "description": "Maximum fixes to apply to a single file",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50
+        },
+        "requireConfirmation": {
+          "type": "boolean",
+          "description": "Require user confirmation for all fixes",
+          "default": true
+        },
+        "emergencyStop": {
+          "type": "boolean",
+          "description": "Stop processing on critical errors",
+          "default": true
+        }
+      }
+    },
+    "performance": {
+      "type": "object",
+      "properties": {
+        "enableCaching": {
+          "type": "boolean",
+          "description": "Enable result caching",
+          "default": true
+        },
+        "cacheDir": {
+          "type": "string",
+          "description": "Directory for caching results",
+          "default": ".enterprise-fixer-cache"
+        },
+        "parallelProcessing": {
+          "type": "boolean",
+          "description": "Enable parallel file processing",
+          "default": true
+        },
+        "timeoutPerFile": {
+          "type": "integer",
+          "description": "Timeout per file in milliseconds",
+          "default": 30000,
+          "minimum": 5000,
+          "maximum": 300000
+        }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "properties": {
+        "slack": {
+          "type": ["object", "null"],
+          "description": "Slack webhook configuration",
+          "default": null
+        },
+        "email": {
+          "type": ["object", "null"],
+          "description": "Email notification configuration",
+          "default": null
+        },
+        "teams": {
+          "type": ["object", "null"],
+          "description": "Microsoft Teams webhook configuration",
+          "default": null
+        },
+        "webhook": {
+          "type": ["object", "null"],
+          "description": "Generic webhook configuration",
+          "default": null
+        }
+      }
+    }
+  }
+}

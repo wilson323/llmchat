@@ -1,0 +1,346 @@
+{
+  "phases": [
+    {
+      "name": "Phase 1 - Blocker Issues",
+      "priority": "blocker",
+      "description": "修复阻塞性问题，确保代码正常运行",
+      "estimatedTime": "2-3 days",
+      "categories": [
+        {
+          "name": "syntax-errors",
+          "description": "语法错误和未使用变量",
+          "rules": [
+            "@typescript-eslint/no-unused-vars",
+            "no-unreachable",
+            "no-constant-condition",
+            "no-unsafe-finally"
+          ],
+          "strategy": "auto-fix-or-prefix-underscore",
+          "risk": "low",
+          "batchSize": 30,
+          "verification": ["syntax-check", "compile-check"]
+        },
+        {
+          "name": "security-issues",
+          "description": "安全问题",
+          "rules": [
+            "no-debugger",
+            "no-eval",
+            "no-alert",
+            "no-script-url",
+            "no-implied-eval",
+            "no-new-func"
+          ],
+          "strategy": "auto-remove",
+          "risk": "very-low",
+          "batchSize": 50,
+          "verification": ["security-check", "run-tests"]
+        },
+        {
+          "name": "duplicate-imports",
+          "description": "重复导入和无用构造函数",
+          "rules": [
+            "no-duplicate-imports",
+            "no-useless-constructor",
+            "no-empty",
+            "no-extra-boolean-cast",
+            "no-extra-semi"
+          ],
+          "strategy": "auto-fix",
+          "risk": "low",
+          "batchSize": 40,
+          "verification": ["compile-check", "import-check"]
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 - Major Issues",
+      "priority": "major",
+      "description": "修复代码质量问题，大部分可自动处理",
+      "estimatedTime": "2 days",
+      "categories": [
+        {
+          "name": "variable-declarations",
+          "description": "变量声明优化",
+          "rules": [
+            "prefer-const",
+            "no-var"
+          ],
+          "strategy": "auto-fix",
+          "risk": "low",
+          "batchSize": 60,
+          "verification": ["run-tests", "build-check"]
+        },
+        {
+          "name": "control-structures",
+          "description": "控制结构优化",
+          "rules": [
+            "eqeqeq",
+            "curly",
+            "brace-style",
+            "default-case",
+            "no-fallthrough",
+            "no-unneeded-ternary"
+          ],
+          "strategy": "auto-fix",
+          "risk": "low",
+          "batchSize": 50,
+          "verification": ["run-tests"]
+        },
+        {
+          "name": "typescript-best-practices",
+          "description": "TypeScript最佳实践",
+          "rules": [
+            "@typescript-eslint/prefer-nullish-coalescing",
+            "@typescript-eslint/prefer-optional-chain",
+            "@typescript-eslint/no-unnecessary-type-assertion",
+            "@typescript-eslint/prefer-as-const",
+            "@typescript-eslint/prefer-includes"
+          ],
+          "strategy": "auto-fix-with-review",
+          "risk": "medium",
+          "batchSize": 30,
+          "verification": ["type-check", "run-tests"]
+        },
+        {
+          "name": "code-style",
+          "description": "代码风格统一",
+          "rules": [
+            "comma-dangle",
+            "quotes",
+            "semi",
+            "indent",
+            "max-len",
+            "object-curly-spacing",
+            "array-bracket-spacing",
+            "computed-property-spacing",
+            "func-call-spacing",
+            "key-spacing",
+            "keyword-spacing",
+            "linebreak-style",
+            "no-multiple-empty-lines",
+            "no-trailing-spaces",
+            "space-before-blocks",
+            "space-before-function-paren",
+            "space-in-parens",
+            "space-infix-ops",
+            "space-unary-ops",
+            "spaced-comment"
+          ],
+          "strategy": "auto-fix",
+          "risk": "very-low",
+          "batchSize": 100,
+          "verification": ["format-check"]
+        }
+      ]
+    },
+    {
+      "name": "Phase 3 - Critical Issues",
+      "priority": "critical",
+      "description": "谨慎处理类型安全问题，需要人工审查",
+      "estimatedTime": "3-5 days",
+      "categories": [
+        {
+          "name": "type-safety",
+          "description": "类型安全改进",
+          "rules": [
+            "@typescript-eslint/no-explicit-any"
+          ],
+          "strategy": "categorized-approach",
+          "risk": "high",
+          "batchSize": 20,
+          "subcategories": {
+            "third-party": {
+              "description": "第三方库接口",
+              "strategy": "preserve-with-comment",
+              "example": "// @ts-ignore - Third party library type"
+            },
+            "api-response": {
+              "description": "API响应处理",
+              "strategy": "define-interface",
+              "action": "创建接口定义"
+            },
+            "temp-vars": {
+              "description": "临时变量",
+              "strategy": "add-type-annotation",
+              "action": "添加类型注解"
+            },
+            "legacy-code": {
+              "description": "遗留代码",
+              "strategy": "preserve-with-todo",
+              "action": "标记TODO并计划重构"
+            }
+          },
+          "verification": ["type-check", "run-tests", "manual-review"]
+        },
+        {
+          "name": "unsafe-operations",
+          "description": "不安全操作处理",
+          "rules": [
+            "@typescript-eslint/no-unsafe-assignment",
+            "@typescript-eslint/no-unsafe-call",
+            "@typescript-eslint/no-unsafe-member-access",
+            "@typescript-eslint/no-unsafe-return",
+            "@typescript-eslint/no-unsafe-argument"
+          ],
+          "strategy": "gradual-typing",
+          "risk": "medium",
+          "batchSize": 25,
+          "approach": "add-annotations-gradually",
+          "verification": ["type-check", "run-tests", "manual-review"]
+        },
+        {
+          "name": "async-issues",
+          "description": "异步操作处理",
+          "rules": [
+            "@typescript-eslint/no-floating-promises",
+            "@typescript-eslint/no-misused-promises",
+            "@typescript-eslint/require-await",
+            "@typescript-eslint/return-await",
+            "@typescript-eslint/await-thenable"
+          ],
+          "strategy": "async-handling",
+          "risk": "medium-high",
+          "batchSize": 15,
+          "approach": "add-await-or-catch",
+          "verification": ["run-tests", "async-check", "manual-review"]
+        }
+      ]
+    },
+    {
+      "name": "Phase 4 - Minor Issues",
+      "priority": "minor",
+      "description": "统一代码风格，完成最后的清理工作",
+      "estimatedTime": "1 day",
+      "categories": [
+        {
+          "name": "formatting",
+          "description": "格式化优化",
+          "rules": [
+            "comma-spacing",
+            "comma-style",
+            "no-mixed-spaces-and-tabs",
+            "no-regex-spaces",
+            "unicode-bom"
+          ],
+          "strategy": "auto-fix",
+          "risk": "very-low",
+          "batchSize": 100,
+          "verification": ["format-check"]
+        },
+        {
+          "name": "naming",
+          "description": "命名规范",
+          "rules": [
+            "no-useless-rename",
+            "camelcase",
+            "new-cap",
+            "no-shadow",
+            "no-undef-init"
+          ],
+          "strategy": "auto-fix",
+          "risk": "low",
+          "batchSize": 30,
+          "verification": ["run-tests"]
+        },
+        {
+          "name": "comments",
+          "description": "注释格式化",
+          "rules": [
+            "spaced-comment",
+            "multiline-comment-style",
+            "lines-around-comment"
+          ],
+          "strategy": "auto-fix",
+          "risk": "very-low",
+          "batchSize": 50,
+          "verification": ["format-check"]
+        }
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "name": "backend",
+      "path": "backend/src",
+      "description": "后端服务代码",
+      "priority": 1,
+      "testCommand": "pnpm run backend:test",
+      "buildCommand": "pnpm run backend:build"
+    },
+    {
+      "name": "frontend",
+      "path": "frontend/src",
+      "description": "前端应用代码",
+      "priority": 2,
+      "testCommand": "pnpm run frontend:test",
+      "buildCommand": "pnpm run frontend:build"
+    },
+    {
+      "name": "shared-types",
+      "path": "shared-types/src",
+      "description": "共享类型定义",
+      "priority": 3,
+      "testCommand": "pnpm run test:types",
+      "buildCommand": "pnpm run build:types"
+    }
+  ],
+  "excludePaths": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".git",
+    ".vscode",
+    ".idea",
+    "*.min.js",
+    "*.bundle.js",
+    "*.config.js",
+    "config/",
+    "scripts/",
+    "docs/",
+    "reports/"
+  ],
+  "testPatterns": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**/*",
+    "**/test/**/*",
+    "**/tests/**/*"
+  ],
+  "qualityGates": {
+    "maxErrorsPerFile": 5,
+    "maxWarningsPerFile": 20,
+    "maxTotalErrors": 100,
+    "maxTotalWarnings": 500,
+    "requiredTestCoverage": 80,
+    "maxBuildTimeIncrease": 10
+  },
+  "verificationSteps": [
+    "syntax-check",
+    "compile-check",
+    "type-check",
+    "run-tests",
+    "build-check",
+    "format-check",
+    "security-check",
+    "async-check",
+    "import-check",
+    "manual-review"
+  ],
+  "backupSettings": {
+    "autoBackup": true,
+    "backupBeforePhase": true,
+    "backupBeforeCategory": false,
+    "maxBackups": 10,
+    "backupRetention": "7d"
+  },
+  "notificationSettings": {
+    "notifyOnPhaseComplete": true,
+    "notifyOnFailure": true,
+    "notifyOnHighRisk": true,
+    "notificationChannels": ["console", "file"]
+  }
+}

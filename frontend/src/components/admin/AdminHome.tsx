@@ -32,6 +32,18 @@ import { Input } from '@/components/ui/Input';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 
+// Type definition for GeoJSON map data
+interface GeoJSONFeature {
+  type: string;
+  geometry?: any;
+  properties?: any;
+}
+
+interface GeoJSONData {
+  type: string;
+  features: GeoJSONFeature[];
+}
+
 import { useAuthStore } from '@/store/authStore';
 import { logoutApi, changePasswordApi } from '@/services/authApi';
 import { getSystemInfo, getLogsPage, getUsers, exportLogsCsv, createUser, updateUser, resetUserPassword, type SystemInfo, type LogItem, type AdminUser } from '@/services/adminApi';
@@ -90,14 +102,14 @@ const ensureChinaMap = async () => {
       throw new Error(`HTTP ${response.status}: 地图资源加载失败`);
     }
 
-    const chinaMap = await response.json();
+    const chinaMap: GeoJSONData = await response.json();
 
     // 验证地图数据完整性
     if (!chinaMap?.features || !Array.isArray(chinaMap.features)) {
       throw new Error('地图数据格式无效');
     }
 
-    echarts.registerMap('china', chinaMap);
+    echarts.registerMap('china', chinaMap as any);
     hasRegisteredChinaMap = true;
     console.log('[AdminHome] ✅ 中国地图加载成功');
   } catch (error) {
@@ -126,7 +138,7 @@ export default function AdminHome() {
   const location = useLocation();
   useEffect(() => {
     const m = location.pathname.match(/^\/home\/?([^\/]+)?/);
-    const tab = (m && m[1]) || 'dashboard';
+    const tab = m?.[1] ?? 'dashboard';
     const allowed = new Set(['dashboard', 'users', 'analytics', 'documents', 'settings', 'logs', 'agents', 'monitoring', 'sessions']);
     setActiveItem(allowed.has(tab) ? (tab as any) : 'dashboard');
   }, [location.pathname]);
@@ -144,7 +156,7 @@ export default function AdminHome() {
         onClose={() => setIsSidebarOpen(false)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        username={user?.username || '\u0000'}
+        username={user?.username ?? '\u0000'}
         activeItem={activeItem}
         onChangeActive={(id) => navigate(`/home/${id}`)}
         onLogout={onLogout}
@@ -156,7 +168,7 @@ export default function AdminHome() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           sidebarCollapsed={sidebarCollapsed}
-          username={user?.username || '\u0000'}
+          username={user?.username ?? '\u0000'}
           onLogout={onLogout}
           onChangePassword={() => setShowChangePwd(true)}
           title={{
@@ -196,7 +208,8 @@ export default function AdminHome() {
         {activeItem === 'monitoring' && <SLADashboard />}
       </div>
       {showChangePwd && <ChangePasswordDialog onClose={() => setShowChangePwd(false)} onSuccess={() => {
- setShowChangePwd(false); onLogout();
+ setShowChangePwd(false);
+    void onLogout();
 }} />}
     </div>
   );
@@ -481,7 +494,7 @@ function useDashboardConversationAnalytics(): DashboardConversationAnalytics {
   useEffect(() => {
     let cancelled = false;
     setAgentsLoading(true);
-    (async () => {
+    void (async () => {
       try {
         const list = await listAgents({ includeInactive: true });
         if (cancelled) {
@@ -584,7 +597,7 @@ function ConversationsTrendCard({ analytics }: { analytics: DashboardConversatio
 
   const selectedAgentLabel = filters.agentId === 'all'
     ? t('全部智能体')
-    : agentNameMap.get(filters.agentId) || t('未知智能体');
+    : agentNameMap.get(filters.agentId) ?? t('未知智能体');
 
   const chartOption = useMemo(() => {
     if (!series || series.buckets.length === 0) {
@@ -597,9 +610,9 @@ function ConversationsTrendCard({ analytics }: { analytics: DashboardConversatio
       return null;
     }
     const xAxisLabels = series.buckets.map((bucket) => formatDateLabel(bucket.date));
-    const legendLabels = agentIds.map((id) => agentNameMap.get(id) || id);
+    const legendLabels = agentIds.map((id) => agentNameMap.get(id) ?? id);
     const seriesData = agentIds.map((agentId) => ({
-      name: agentNameMap.get(agentId) || agentId,
+      name: agentNameMap.get(agentId) ?? agentId,
       type: 'line',
       smooth: true,
       symbol: 'circle',
@@ -928,7 +941,7 @@ function ConversationSummaryCard({ analytics }: { analytics: DashboardConversati
         <div className="space-y-1">
           <div className="text-muted-foreground/80">{t('主力智能体')}</div>
           <div className="text-sm font-semibold text-foreground">
-            {comparisonLoading && filters.agentId === 'all' ? '—' : (topAgent?.name || t('暂无数据'))}
+            {comparisonLoading && filters.agentId === 'all' ? '—' : (topAgent?.name ?? t('暂无数据'))}
           </div>
           {topAgent && (
             <div className="text-[11px] text-muted-foreground">{t('请求次数')}：{topAgent.count}</div>
@@ -1277,7 +1290,7 @@ function ServerParamsCard() {
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         setLoading(true);
         const d = await getSystemInfo();
@@ -1521,7 +1534,7 @@ function UsersManagement() {
               if (!username) {
 return;
 }
-              const password = window.prompt(t('请输入初始密码（至少6位）')) || '';
+              const password = window.prompt(t('请输入初始密码（至少6位）')) ?? '';
               try {
                 const u = await createUser({ username, password });
                 setUsers((prev)=>[u, ...prev]);
@@ -1550,8 +1563,8 @@ return;
                     <tr key={u.id}>
                       <td className="py-2">{u.id}</td>
                       <td className="py-2">{u.username}</td>
-                      <td className="py-2">{u.role || '-'}</td>
-                      <td className="py-2">{u.status || '-'}</td>
+                      <td className="py-2">{u.role ?? '-'}</td>
+                      <td className="py-2">{u.status ?? '-'}</td>
                       <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
 
                       <td className="py-2">

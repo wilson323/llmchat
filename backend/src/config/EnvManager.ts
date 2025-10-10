@@ -16,6 +16,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { existsSync } from 'fs';
+import { safeLogger } from '../utils/logSanitizer';
 
 export class EnvManager {
   private static instance: EnvManager;
@@ -48,8 +49,8 @@ export class EnvManager {
 
     // 开发环境必须有.env文件
     if (process.env.NODE_ENV !== 'production' && !existsSync(envPath)) {
-      console.error('❌ .env file not found:', envPath);
-      console.error('📝 Please create .env file based on .env.example');
+      safeLogger.error('❌ .env file not found', { path: envPath });
+      safeLogger.error('📝 Please create .env file based on .env.example');
       process.exit(1);
     }
 
@@ -57,15 +58,15 @@ export class EnvManager {
     if (existsSync(envPath)) {
       const result = dotenv.config({ path: envPath });
       if (result.error) {
-        console.error('❌ Failed to load .env file:', result.error);
+        safeLogger.error('❌ Failed to load .env file', { error: result.error.message });
         process.exit(1);
       }
-      console.log('✅ Loaded .env file from:', envPath);
+      safeLogger.info('✅ Loaded .env file', { path: envPath });
     }
 
     // 转换为Map (系统环境变量优先)
     this.config = new Map(Object.entries(process.env as Record<string, string>));
-    console.log(`✅ Loaded ${this.config.size} environment variables`);
+    safeLogger.info('✅ Loaded environment variables', { count: this.config.size });
   }
 
   /**
@@ -115,20 +116,20 @@ export class EnvManager {
 
     // 打印警告
     if (warnings.length > 0) {
-      console.warn('⚠️  Missing recommended environment variables:');
-      warnings.forEach(key => console.warn(`   - ${key} (using default or degraded mode)`));
+      safeLogger.warn('⚠️  Missing recommended environment variables', {
+        variables: warnings.map(key => `${key} (using default or degraded mode)`),
+      });
     }
 
     // 必需配置缺失则退出
     if (missing.length > 0) {
-      console.error('❌ Missing required environment variables:');
-      missing.forEach(key => console.error(`   - ${key}`));
-      console.error('\n📝 Please set these variables in .env file or environment');
-      console.error('💡 Refer to .env.example for template\n');
+      safeLogger.error('❌ Missing required environment variables', { variables: missing });
+      safeLogger.error('📝 Please set these variables in .env file or environment');
+      safeLogger.error('💡 Refer to .env.example for template');
       process.exit(1);
     }
 
-    console.log('✅ All required environment variables validated');
+    safeLogger.info('✅ All required environment variables validated');
   }
 
   /**
@@ -289,11 +290,11 @@ export class EnvManager {
       throw new Error('Hot reload is disabled in production');
     }
 
-    console.log('🔄 Reloading environment variables...');
+    safeLogger.info('🔄 Reloading environment variables...');
     this.config.clear();
     this.loadEnv();
     this.validateRequired();
-    console.log('✅ Environment variables reloaded');
+    safeLogger.info('✅ Environment variables reloaded');
   }
 }
 

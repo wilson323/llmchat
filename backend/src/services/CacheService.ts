@@ -36,10 +36,15 @@ export class CacheService {
     hitRate: 0,
   };
 
-  constructor(
-    private readonly prefix: string = 'llmchat',
-    private readonly defaultTTL: number = 300, // 5 分钟
-  ) {}
+  private readonly prefix: string = 'llmchat';
+  private readonly defaultTTL: number = 300; // 5 分钟
+
+  /**
+   * 检查是否已连接
+   */
+  isConnected(): boolean {
+    return this.connected && this.client !== null;
+  }
 
   /**
    * 连接到 Redis
@@ -361,13 +366,6 @@ export class CacheService {
   }
 
   /**
-   * 获取连接状态
-   */
-  isConnected(): boolean {
-    return this.connected;
-  }
-
-  /**
    * Ping Redis
    */
   async ping(): Promise<boolean> {
@@ -381,6 +379,40 @@ export class CacheService {
     } catch (error) {
       logger.error('Redis ping 失败', { error });
       return false;
+    }
+  }
+
+  /**
+   * 健康检查
+   */
+  async healthCheck(): Promise<{ status: string; details: { stats: CacheStats; redisConnected: boolean } }> {
+    if (!this.client) {
+      return {
+        status: 'down',
+        details: {
+          stats: this.stats,
+          redisConnected: false,
+        },
+      };
+    }
+
+    try {
+      const pong = await this.client.ping();
+      return {
+        status: pong === 'PONG' ? 'healthy' : 'degraded',
+        details: {
+          stats: this.stats,
+          redisConnected: this.connected,
+        },
+      };
+    } catch (error) {
+      return {
+        status: 'down',
+        details: {
+          stats: this.stats,
+          redisConnected: false,
+        },
+      };
     }
   }
 }

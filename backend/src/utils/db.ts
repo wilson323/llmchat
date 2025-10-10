@@ -347,14 +347,16 @@ export async function initDB(): Promise<void> {
         ON chat_geo_events (agent_id, created_at);
     `);
 
-    // 首次空库自动种子管理员（仅非生产环境）——按明文存储
+    // 首次空库自动种子管理员（仅非生产环境）——使用安全哈希
     const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM users');
     const count = parseInt(rows[0]?.count || '0', 10);
     if (count === 0) {
+      const { salt, hash } = hashPassword('admin');
       await client.query(
-        'INSERT INTO users(username, password_salt, password_hash, password_plain, role, status) VALUES ($1,$2,$3,$4,$5,$6)',
-        ['admin', '', '', 'admin', 'admin', 'active'],
+        'INSERT INTO users(username, password_salt, password_hash, role, status) VALUES ($1,$2,$3,$4,$5)',
+        ['admin', salt, hash, 'admin', 'active'],
       );
+      logger.info('[initDB] ✅ 安全管理员账户已创建（密码：admin，请立即修改）');
     }
   });
 

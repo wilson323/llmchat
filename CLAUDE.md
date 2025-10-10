@@ -63,6 +63,121 @@ cp backend/.env.example backend/.env
 
 # 配置智能体（如需自定义）
 cp config/agents.example.json config/agents.json
+
+# 🔐 安全配置（生产环境必需）
+# 设置强密码的JWT密钥（至少32字符）
+# 设置数据库连接加密密钥
+# 配置安全环境变量
+```
+
+## 🔒 安全配置
+
+### 必需环境变量（生产环境）
+
+```bash
+# JWT安全配置
+TOKEN_SECRET="your-super-secure-jwt-secret-min-32-chars-long"
+JWT_ALGORITHM="HS256"
+JWT_EXPIRES_IN="1h"
+JWT_ISSUER="llmchat-backend"
+JWT_AUDIENCE="llmchat-frontend"
+
+# 凭证加密密钥
+CREDENTIALS_SALT="your-unique-credentials-salt-here"
+DATABASE_ENCRYPTION_KEY="your-database-encryption-key"
+
+# 数据库安全
+DATABASE_URL="postgresql://username:password@localhost:5432/database?sslmode=require"
+# 注意：数据库密码现在会被加密存储
+
+# 应用安全
+NODE_ENV="production"
+FRONTEND_URL="https://your-domain.com"
+RATE_LIMIT_WINDOW_MS="900000"  # 15分钟
+RATE_LIMIT_MAX_REQUESTS="100"
+```
+
+### 安全最佳实践
+
+1. **JWT密钥安全**
+   - 使用至少32字符的随机字符串
+   - 定期轮换JWT密钥
+   - 不要在代码中硬编码密钥
+
+2. **数据库安全**
+   - 数据库密码使用加密存储
+   - 启用SSL连接
+   - 使用强密码策略
+
+3. **文件上传安全**
+   - 限制文件类型和大小
+   - 扫描恶意软件
+   - 用户认证必需
+
+4. **日志安全**
+   - 敏感信息自动脱敏
+   - 不记录密码和令牌
+   - 使用结构化日志
+
+5. **API安全**
+   - 所有管理端点需要认证
+   - 实施请求速率限制
+   - 使用CORS策略
+
+6. **密码安全**
+   - 使用bcrypt或SHA-256加盐哈希
+   - 不存储明文密码
+   - 强制密码复杂度要求
+
+### 安全修复说明
+
+#### 已修复的关键安全漏洞
+
+1. **🚨 明文密码存储（已修复）**
+   - 移除了数据库中的明文密码列
+   - 实现了密码的安全哈希存储
+   - 使用盐值+SHA-256加密
+
+2. **⚠️ 敏感信息日志（已修复）**
+   - 实现了日志脱敏系统
+   - 自动屏蔽密码、令牌、API密钥
+   - 安全的数据库连接字符串日志
+
+3. **🔐 JWT配置问题（已修复）**
+   - 强制使用强JWT密钥
+   - 实现了完整的JWT验证
+   - 添加了令牌撤销支持
+
+4. **📁 文件上传安全（已修复）**
+   - 实现了全面的文件验证
+   - 添加了恶意软件扫描
+   - 强制要求用户认证
+
+### 安全工具和模块
+
+- `src/utils/secureCredentials.ts` - 凭据加密管理
+- `src/utils/secureDb.ts` - 安全数据库配置
+- `src/utils/secureJwt.ts` - 安全JWT管理
+- `src/utils/secureUpload.ts` - 安全文件上传验证
+- `src/utils/logSanitizer.ts` - 日志脱敏工具
+
+### 生产环境安全检查清单
+
+```bash
+# 1. 验证JWT配置
+node -e "const { SecureJWT } = require('./dist/utils/secureJwt'); const validation = SecureJWT.validateConfiguration(); console.log('JWT配置验证:', validation);"
+
+# 2. 检查数据库安全
+node -e "const { SecureCredentialsManager } = require('./dist/utils/secureCredentials'); console.log('加密可用:', SecureCredentialsManager.isEncryptionAvailable());"
+
+# 3. 验证环境变量
+pnpm run validate:env
+
+# 4. 运行安全测试
+pnpm run test:security  # 如果有安全测试
+
+# 5. 检查依赖漏洞
+pnpm audit --audit-level high
 ```
 
 ### 开发模式
@@ -237,6 +352,56 @@ pnpm start           # 启动后端服务 (node dist/index.js)
 - **输入验证**: Joi验证schema
 - **保护中间件**: 防止恶意请求和滥用
 - **环境变量**: 敏感信息通过环境变量管理
+
+## 🚨 企业级代码安全准则
+
+### ⚠️ 严格禁止的危险操作
+- **禁止使用正则表达式替换代码** - 绝对禁止使用 `.replace(/regex/, replacement)` 修改源代码
+- **禁止动态构造正则表达式** - 绝对禁止 `new RegExp(userInput)` 用于代码处理
+- **禁止使用sed/awk进行代码修改** - 绝对禁止使用命令行工具修改代码文件
+- **禁止使用字符串替换修改结构化数据** - 必须使用专门的解析器
+- **禁止企业级自动修复** - 所有修复必须经过影响分析和人工确认
+
+### ✅ 企业级安全替代方案
+- **AST优先修复**: 使用TypeScript编译器API进行精确的AST操作
+- **类型安全修复**: 使用专门的类型检查和修复工具
+- **配置文件**: 使用专门的配置解析库（如dotenv、config等）
+- **代码重构**: 使用企业级AST解析器进行代码变换
+- **文本处理**: 仅限用于日志处理和数据清理，不用于代码修改
+
+### 🔒 企业级安全检查机制
+项目集成了多层安全检查：
+1. `pnpm run security:audit` - 全面安全审计
+2. `pnpm run security:check` - 提交前安全检查
+3. `pnpm run enterprise:fix` - 企业级安全代码修复工具
+4. Pre-commit hooks自动阻止危险代码提交
+5. 企业级修复影响分析和风险控制
+6. 原子操作和100%回滚机制
+
+### 🏢 企业级修复工具
+```bash
+# 企业级安全修复（推荐）
+pnpm run enterprise:fix              # 企业级修复工具（dry-run模式）
+pnpm run enterprise:fix --mode fix     # 交互式修复模式
+pnpm run enterprise:fix --config custom.json  # 使用自定义配置
+```
+
+### 📊 修复影响分析
+每个修复都包含完整的影响分析：
+- **语义变化**: none | minor | major
+- **性能影响**: none | low | medium | high
+- **可读性变化**: none | positive | negative
+- **破坏风险**: none | low | medium | high
+- **置信度**: 0-100%
+- **变化描述**: 详细的修复说明
+
+### 🛡️ 安全配置原则
+- 首次运行必须使用 `dry-run` 模式
+- 高风险问题（error）默认必须人工确认
+- 不要在生产环境使用 `auto-fix` 模式
+- 所有修复都有完整的备份和回滚机制
+- 修复前后进行语法和类型验证
+- 限制文件大小和内存使用防止系统过载
 
 ## 🔍 调试和开发
 
@@ -428,6 +593,63 @@ CREATE INDEX idx_users_email ON users(email);
 - 后端: 生产构建移除 source map
 
 ## 🔧 常见问题排查
+
+### 🔒 安全相关问题
+
+**问题**: JWT认证失败，提示"无效的认证令牌"
+```bash
+# 检查JWT配置
+echo $TOKEN_SECRET
+
+# 验证密钥长度（至少32字符）
+echo ${#TOKEN_SECRET}
+
+# 检查JWT格式
+node -e "const { SecureJWT } = require('./dist/utils/secureJwt'); try { const config = SecureJWT.getConfig(); console.log('JWT配置有效'); } catch(e) { console.error('JWT配置错误:', e.message); }"
+```
+
+**问题**: 数据库连接失败
+```bash
+# 检查加密配置
+echo $CREDENTIALS_SALT
+
+# 验证环境变量
+pnpm run validate:env
+
+# 检查数据库连接字符串格式（密码将被自动脱敏）
+echo $DATABASE_URL | node -e "const { LogSanitizer } = require('./dist/utils/logSanitizer'); console.log('连接字符串:', LogSanitizer.maskConnectionString(require('fs').readFileSync(0, 'utf8').trim()));"
+```
+
+**问题**: 文件上传被拒绝
+```bash
+# 检查文件大小限制
+# CAD文件限制：10MB
+
+# 验证文件类型
+# 只允许.dxf文件
+
+# 检查用户认证
+# 所有CAD端点现在需要JWT认证
+```
+
+**问题**: 密码重置失败
+```bash
+# 确保使用正确的密码哈希
+# 系统现在使用SHA-256加盐哈希
+
+# 检查数据库连接
+# 密码重置需要数据库访问权限
+```
+
+**问题**: 日志中出现敏感信息
+```bash
+# 检查日志脱敏是否正常工作
+# 密码、令牌、API密钥应该被自动屏蔽
+
+# 验证安全日志记录
+grep -i "password\|token\|secret" logs/app.log | head -5
+# 应该看到脱敏后的日志，如：****或 token***
+```
 
 ### 编译和类型错误
 

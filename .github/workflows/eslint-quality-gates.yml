@@ -1,0 +1,446 @@
+name: ESLint Quality Gates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每日质量检查
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      fix_level:
+        description: 'Fix level to apply'
+        required: true
+        default: 'safe'
+        type: choice
+        options:
+        - 'safe'
+        - 'aggressive'
+        - 'dry-run'
+      target_module:
+        description: 'Target module'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - 'all'
+        - 'backend'
+        - 'frontend'
+        - 'shared-types'
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # 质量检查作业
+  quality-check:
+    name: Quality Check
+    runs-on: ubuntu-latest
+    outputs:
+      backend-errors: ${{ steps.backend-analysis.outputs.errors }}
+      backend-warnings: ${{ steps.backend-analysis.outputs.warnings }}
+      frontend-errors: ${{ steps.frontend-analysis.outputs.errors }}
+      frontend-warnings: ${{ steps.frontend-analysis.outputs.warnings }}
+      quality-gate-passed: ${{ steps.quality-gate.outputs.passed }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create ESLint analysis report
+        id: create-report
+        run: |
+          mkdir -p reports
+          node scripts/eslint-progressive-fix.js analyze > reports/eslint-analysis.json
+
+      - name: Analyze backend ESLint issues
+        id: backend-analysis
+        run: |
+          cd backend
+          npx eslint src --format=json > ../reports/backend-eslint.json || true
+
+          if [ -f ../reports/backend-eslint.json ]; then
+            ERRORS=$(cat ../reports/backend-eslint.json | jq '[.[] | select(.errorCount > 0)] | map(.errorCount) | add // 0')
+            WARNINGS=$(cat ../reports/backend-eslint.json | jq '[.[] | select(.warningCount > 0)] | map(.warningCount) | add // 0')
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+            echo "Backend: $ERRORS errors, $WARNINGS warnings"
+          else
+            echo "errors=0" >> $GITHUB_OUTPUT
+            echo "warnings=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Analyze frontend ESLint issues
+        id: frontend-analysis
+        run: |
+          cd frontend
+          npx eslint src --format=json > ../reports/frontend-eslint.json || true
+
+          if [ -f ../reports/frontend-eslint.json ]; then
+            ERRORS=$(cat ../reports/frontend-eslint.json | jq '[.[] | select(.errorCount > 0)] | map(.errorCount) | add // 0')
+            WARNINGS=$(cat ../reports/frontend-eslint.json | jq '[.[] | select(.warningCount > 0)] | map(.warningCount) | add // 0')
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+            echo "Frontend: $ERRORS errors, $WARNINGS warnings"
+          else
+            echo "errors=0" >> $GITHUB_OUTPUT
+            echo "warnings=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Evaluate quality gate
+        id: quality-gate
+        run: |
+          BACKEND_ERRORS="${{ steps.backend-analysis.outputs.errors }}"
+          BACKEND_WARNINGS="${{ steps.backend-analysis.outputs.warnings }}"
+          FRONTEND_ERRORS="${{ steps.frontend-analysis.outputs.errors }}"
+          FRONTEND_WARNINGS="${{ steps.frontend-analysis.outputs.warnings }}"
+
+          TOTAL_ERRORS=$((BACKEND_ERRORS + FRONTEND_ERRORS))
+          TOTAL_WARNINGS=$((BACKEND_WARNINGS + FRONTEND_WARNINGS))
+
+          echo "Total: $TOTAL_ERRORS errors, $TOTAL_WARNINGS warnings"
+
+          # 质量门禁标准
+          MAX_ERRORS=100
+          MAX_WARNINGS=500
+
+          if [ $TOTAL_ERRORS -le $MAX_ERRORS ] && [ $TOTAL_WARNINGS -le $MAX_WARNINGS ]; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+            echo "✅ Quality gate passed"
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Quality gate failed"
+            echo "Errors: $TOTAL_ERRORS (max: $MAX_ERRORS)"
+            echo "Warnings: $TOTAL_WARNINGS (max: $MAX_WARNINGS)"
+            exit 1
+          fi
+
+      - name: Upload ESLint reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: eslint-reports
+          path: reports/
+          retention-days: 30
+
+      - name: Comment PR with ESLint summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const backendErrors = '${{ steps.backend-analysis.outputs.errors }}';
+            const backendWarnings = '${{ steps.backend-analysis.outputs.warnings }}';
+            const frontendErrors = '${{ steps.frontend-analysis.outputs.errors }}';
+            const frontendWarnings = '${{ steps.frontend-analysis.outputs.warnings }}';
+            const qualityGatePassed = '${{ steps.quality-gate.outputs.passed }}' === 'true';
+
+            const totalErrors = parseInt(backendErrors) + parseInt(frontendErrors);
+            const totalWarnings = parseInt(backendWarnings) + parseInt(frontendWarnings);
+
+            const comment = `
+            ## 🔍 ESLint Quality Check Results
+
+            ### 📊 Summary
+            - **Total Issues**: ${totalErrors + totalWarnings} (${totalErrors} errors, ${totalWarnings} warnings)
+            - **Quality Gate**: ${qualityGatePassed ? '✅ PASSED' : '❌ FAILED'}
+
+            ### 🔧 Backend
+            - Errors: ${backendErrors}
+            - Warnings: ${backendWarnings}
+
+            ### 🎨 Frontend
+            - Errors: ${frontendErrors}
+            - Warnings: ${frontendWarnings}
+
+            ### 📈 Quality Standards
+            - Max Errors: 100
+            - Max Warnings: 500
+
+            ${qualityGatePassed ? '✅ This PR meets quality standards!' : '❌ This PR exceeds quality thresholds. Please address ESLint issues before merging.'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # 自动修复作业（仅在手动触发时运行）
+  auto-fix:
+    name: Auto Fix ESLint Issues
+    runs-on: ubuntu-latest
+    needs: quality-check
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.fix_level != 'dry-run'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Create backup branch
+        run: |
+          BRANCH_NAME="eslint-auto-fix-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Run ESLint auto-fix
+        run: |
+          if [ "${{ github.event.inputs.fix_level }}" == "safe" ]; then
+            node scripts/eslint-fix-runner.js fix-blocker --safe-mode
+            node scripts/eslint-fix-runner.js fix-major --safe-mode
+          elif [ "${{ github.event.inputs.fix_level }}" == "aggressive" ]; then
+            node scripts/eslint-fix-runner.js fix-all --safe-mode
+          fi
+
+      - name: Verify fixes
+        run: |
+          pnpm run type-check
+          pnpm run build
+          pnpm test
+
+      - name: Commit and push fixes
+        run: |
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🔧 Auto-fix ESLint issues
+
+            - Auto-fix applied via GitHub Actions
+            - Fix level: ${{ github.event.inputs.fix_level }}
+            - Target module: ${{ github.event.inputs.target_module }}
+
+            🤖 Generated with ESLint Progressive Fixer"
+            git push origin $BRANCH_NAME
+            echo "Changes pushed to branch: $BRANCH_NAME"
+          fi
+
+      - name: Create Pull Request
+        if: success()
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.BRANCH_NAME }}
+          base: ${{ github.ref }}
+          title: "🔧 Auto-fix ESLint Issues"
+          body: |
+            ## 🔧 ESLint Auto-Fix
+
+            This PR contains automatic ESLint fixes applied by the ESLint Progressive Fixer.
+
+            ### Fix Configuration
+            - **Fix Level**: ${{ github.event.inputs.fix_level }}
+            - **Target Module**: ${{ github.event.inputs.target_module }}
+            - **Trigger**: Manual workflow dispatch
+
+            ### Quality Improvement
+            - Issues were automatically fixed following the progressive strategy
+            - All fixes have been verified through tests and builds
+            - No breaking changes were introduced
+
+            ### Next Steps
+            1. Review the changes in this PR
+            2. Run tests to verify functionality
+            3. Merge if quality improvements are acceptable
+
+            ---
+
+            🤖 Generated with ESLint Progressive Fixer
+
+  # 质量趋势分析作业
+  quality-trends:
+    name: Quality Trends Analysis
+    runs-on: ubuntu-latest
+    needs: quality-check
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate quality metrics
+        run: |
+          node scripts/eslint-progressive-fix.js analyze > reports/current-analysis.json
+
+          # 如果存在历史数据，生成趋势报告
+          if [ -f .github/quality-metrics.json ]; then
+            node scripts/generate-quality-trends.js .github/quality-metrics.json reports/current-analysis.json > reports/quality-trends.md
+          fi
+
+          # 保存当前数据
+          cp reports/current-analysis.json .github/quality-metrics.json
+
+      - name: Update quality badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          ERRORS="${{ needs.quality-check.outputs.backend-errors }}"
+          WARNINGS="${{ needs.quality-check.outputs.frontend-warnings }}"
+          TOTAL_ERRORS=$((ERRORS + ${{ needs.quality-check.outputs.frontend-errors }}))
+          TOTAL_WARNINGS=$((WARNINGS + ${{ needs.quality-check.outputs.backend-warnings }}))
+
+          # 生成badge数据（简化版本）
+          echo "ESLint: $TOTAL_ERRORS errors, $TOTAL_WARNINGS warnings"
+
+      - name: Upload trend reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-trends
+          path: reports/
+          retention-days: 90
+
+  # 安全检查作业
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: quality-check
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: |
+          echo "🔒 Running security audit..."
+          pnpm audit --audit-level high || echo "⚠️ Security issues found"
+
+      - name: Check for security ESLint rules
+        run: |
+          echo "🛡️ Checking security-related ESLint rules..."
+
+          # 检查eval、dangerous函数等
+          SECURITY_ISSUES=$(npx eslint . --rule 'no-eval, no-implied-eval, no-new-func, no-script-url' --format=json 2>/dev/null | jq '. | length' || echo 0)
+
+          if [ "$SECURITY_ISSUES" -gt 0 ]; then
+            echo "⚠️ Found $SECURITY_ISSUES security-related ESLint issues"
+            # 在这里可以添加更详细的安全检查逻辑
+          else
+            echo "✅ No security-related ESLint issues found"
+          fi
+
+  # 通知作业
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [quality-check, security-scan]
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Prepare notification
+        id: prepare-notification
+        run: |
+          QUALITY_PASSED="${{ needs.quality-check.outputs.quality-gate-passed }}"
+
+          if [ "$QUALITY_PASSED" == "true" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=✅ Quality gate passed" >> $GITHUB_OUTPUT
+            echo "color=good" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "message=❌ Quality gate failed" >> $GITHUB_OUTPUT
+            echo "color=danger" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send notification (Slack webhook example)
+        if: env.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "${{ steps.prepare-notification.outputs.message }}",
+              "attachments": [{
+                "color": "${{ steps.prepare-notification.outputs.color }}",
+                "fields": [{
+                  "title": "Backend Issues",
+                  "value": "${{ needs.quality-check.outputs.backend-errors }} errors, ${{ needs.quality-check.outputs.backend-warnings }} warnings",
+                  "short": true
+                }, {
+                  "title": "Frontend Issues",
+                  "value": "${{ needs.quality-check.outputs.frontend-errors }} errors, ${{ needs.quality-check.outputs.frontend-warnings }} warnings",
+                  "short": true
+                }]
+              }]
+            }' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

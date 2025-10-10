@@ -1,0 +1,30 @@
+
+> @llmchat/backend@1.0.0 lint /mnt/data/ss/wss/llmchat/backend
+> eslint src/**/*.ts "--format=json"
+
+
+Oops! Something went wrong! :(
+
+ESLint: 8.57.1
+
+Error: Cannot read config file: /mnt/data/ss/wss/llmchat/backend/.eslintrc.cjs
+Error: Cannot find module './config/eslint/backend.cjs'
+Require stack:
+- /mnt/data/ss/wss/llmchat/backend/.eslintrc.cjs
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/@eslint+eslintrc@2.1.4/node_modules/@eslint/eslintrc/dist/eslintrc.cjs
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/eslint@8.57.1/node_modules/eslint/lib/cli-engine/cli-engine.js
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/eslint@8.57.1/node_modules/eslint/lib/eslint/eslint.js
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/eslint@8.57.1/node_modules/eslint/lib/eslint/index.js
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/eslint@8.57.1/node_modules/eslint/lib/cli.js
+- /mnt/data/ss/wss/llmchat/node_modules/.pnpm/eslint@8.57.1/node_modules/eslint/bin/eslint.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1401:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.require (node:internal/modules/cjs/loader:1487:12)
+    at require (node:internal/modules/helpers:135:16)
+    at Object.<anonymous> (/mnt/data/ss/wss/llmchat/backend/.eslintrc.cjs:2:23)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+ ELIFECYCLE  Command failed with exit code 2.

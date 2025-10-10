@@ -81,7 +81,7 @@ export const deepClone = <T>(obj: T): T => {
  * 检查是否为空对象
  */
 export const isEmpty = (obj: any): boolean => {
-  if (obj == null) {
+  if (obj === null) {
     return true;
   }
   if (Array.isArray(obj) || typeof obj === 'string') {
