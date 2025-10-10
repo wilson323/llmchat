@@ -190,7 +190,7 @@ function main(): void {
     console.log('   - 定期检查安全配置');
 
   } catch (error) {
-    console.error('\n❌ 验证过程中发生错误:', error.message);
+    console.error('\n❌ 验证过程中发生错误:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 }

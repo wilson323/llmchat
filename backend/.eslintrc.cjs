@@ -40,4 +40,4 @@ module.exports = {
     'prefer-const': 'warn',
     'no-var': 'error'
   }
-};
+}

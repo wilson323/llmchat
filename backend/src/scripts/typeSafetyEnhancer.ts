@@ -102,7 +102,7 @@ class TypeSafetyEnhancer {
         description: 'Using "any" type reduces type safety',
         suggestion: this.suggestAnyReplacement(node, sourceFile),
         severity: 'warning',
-        code: ts.getTextOfNode(node),
+        code: node.getText(),
       });
     }
 
@@ -117,7 +117,7 @@ class TypeSafetyEnhancer {
           description: 'Function missing return type annotation',
           suggestion: this.suggestReturnType(node, sourceFile),
           severity: 'info',
-          code: ts.getTextOfNode(node),
+          code: node.getText(),
         });
       }
     }
@@ -134,7 +134,7 @@ class TypeSafetyEnhancer {
           description: 'Unsafe type assertion to "any"',
           suggestion: 'Replace with proper type or type guard',
           severity: 'error',
-          code: ts.getTextOfNode(node),
+          code: node.getText(),
         });
       }
     }
@@ -314,7 +314,7 @@ class TypeSafetyEnhancer {
   /**
    * Generate summary statistics
    */
-  private generateSummary() {
+  public generateSummary() {
     return {
       total: this.issues.length,
       errors: this.issues.filter(i => i.severity === 'error').length,
@@ -333,7 +333,7 @@ class TypeSafetyEnhancer {
       if (!grouped[issue.type]) {
         grouped[issue.type] = [];
       }
-      grouped[issue.type].push(issue);
+      grouped[issue.type]!.push(issue);
     }
 
     return grouped;

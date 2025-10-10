@@ -77,6 +77,11 @@ export interface LogContext {
   // 安全上下文
   security?: SecurityInfo;
 
+  // 扩展的安全上下文
+  userAgent?: string;
+  contentLength?: number;
+  allowedOrigins?: string[];
+
   // 自定义扩展上下文 - 类型安全
   custom?: Record<string, JsonValue>;
 }
@@ -431,8 +436,8 @@ export class StructuredLogger {
       business: {
         externalService: service,
         operation,
-        statusCode,
-        duration,
+        ...(statusCode && { statusCode }),
+        ...(duration && { duration }),
       },
     };
 

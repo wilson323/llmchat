@@ -63,7 +63,7 @@ class ResponseOptimizer {
         method: req.method,
         url: req.url,
         statusCode: res.statusCode,
-        contentLength: res.get('Content-Length'),
+        ...(res.get('Content-Length') && { contentLength: parseInt(res.get('Content-Length')!) }),
         cacheHit: res.get('X-Cache') === 'HIT',
       },
     });

@@ -43,6 +43,5 @@ module.exports = {
     }
   ],
 
-  // 忽略文件
-  ignorePath: '.gitignore'
+  // 忽略文件 - 由.prettierignore处理
 };

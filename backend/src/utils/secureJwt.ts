@@ -71,12 +71,16 @@ export class SecureJWT {
   static createToken(payload: JWTPayload): string {
     const config = this.getConfig();
 
-    const options: jwt.SignOptions = {
-      expiresIn: config.expiresIn,
+      const options: jwt.SignOptions = {
       issuer: config.issuer,
       audience: config.audience,
       algorithm: config.algorithm as jwt.Algorithm,
     };
+
+    // expiresIn is handled separately to avoid type issues
+    if (config.expiresIn) {
+      (options as any).expiresIn = config.expiresIn;
+    }
 
     return jwt.sign(payload, config.secret, options);
   }

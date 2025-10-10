@@ -152,7 +152,7 @@ class EnterpriseCodeFixer {
         const results = await this.safeFixFile(file);
         allResults.push(...results);
       } catch (error) {
-        console.error(`❌ 文件处理失败: ${file} - ${error.message}`);
+        console.error(`❌ 文件处理失败: ${file} - ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
     }
@@ -401,7 +401,7 @@ class EnterpriseCodeFixer {
         console.log(`🔄 已回滚: ${filePath}`);
       }
 
-      console.error(`修复失败: ${error.message}`);
+      console.error(`修复失败: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -442,7 +442,7 @@ class EnterpriseCodeFixer {
       );
 
       // 使用TypeScript编译器进行语法检查
-      const diagnostics = ts.getPreEmitDiagnostics(sourceFile);
+      const diagnostics = ts.getPreEmitDiagnostics(ts.createProgram([filePath], {}));
       return diagnostics.length === 0;
     } catch {
       return false;
@@ -467,7 +467,7 @@ class EnterpriseCodeFixer {
 
       const errors = diagnostics
         .filter(d => d.category === ts.DiagnosticCategory.Error)
-        .map(d => d.messageText);
+        .map(d => typeof d.messageText === 'string' ? d.messageText : d.messageText?.toString() || '');
 
       return {
         success: errors.length === 0,
@@ -568,7 +568,7 @@ class BackupManager {
     await this.ensureBackupDir();
 
     const backupContent = fs.readFileSync(filePath);
-    const checksum = this.calculateChecksum(backupContent);
+    const checksum = this.calculateChecksum(backupContent.toString());
 
     // 创建备份信息文件
     const backupInfo = {

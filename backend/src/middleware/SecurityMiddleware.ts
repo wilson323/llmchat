@@ -302,9 +302,9 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     const contentLength = req.get('Content-Length');
     if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB
       securityLogger.logSecurityEvent('Request size limit exceeded', {
-        ip: req.ip,
-        contentLength,
+        ...(req.ip && { ip: req.ip }),
         url: req.url,
+        contentLength: parseInt(contentLength),
       });
       res.status(413).json({
         error: 'Request Entity Too Large',
@@ -317,7 +317,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     const contentType = req.get('Content-Type');
     if (req.method !== 'GET' && !contentType && req.body) {
       securityLogger.logSecurityEvent('Missing Content-Type header', {
-        ip: req.ip,
+        ...(req.ip && { ip: req.ip }),
         method: req.method,
         url: req.url,
       });
@@ -332,7 +332,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     if (contentType?.includes('application/json') && req.body) {
       if (typeof req.body === 'string' && !SecurityUtils.isValidJSON(req.body)) {
         securityLogger.logSecurityEvent('Invalid JSON in request body', {
-          ip: req.ip,
+          ...(req.ip && { ip: req.ip }),
           method: req.method,
           url: req.url,
         });
@@ -347,7 +347,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     next();
   } catch (error) {
     securityLogger.logSecurityEvent('Request validation error', {
-      ip: req.ip,
+      ...(req.ip && { ip: req.ip }),
       error: {
         name: 'ValidationError',
         message: error instanceof Error ? error.message : String(error),
@@ -377,7 +377,7 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
   if (config.blockedIPs.includes(clientInfo.ip)) {
     securityLogger.logSecurityEvent('Blocked IP attempted access', {
       ip: clientInfo.ip,
-      userAgent: clientInfo.userAgent,
+      ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
       url: req.url,
     });
     res.status(403).json({
@@ -404,7 +404,7 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
         threat: threats.map(t => t.type).join(', '),
       },
       business: {
-        detectedThreats: threats,
+        detectedThreats: threats as any,
       },
     };
 
@@ -427,8 +427,10 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
   if (clientInfo.isSuspicious && clientInfo.threatLevel > 2) {
     securityLogger.logSecurityEvent('Suspicious user agent detected', {
       ip: clientInfo.ip,
-      userAgent: clientInfo.userAgent,
-      threatLevel: clientInfo.threatLevel,
+      ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
+      custom: {
+        threatLevel: clientInfo.threatLevel,
+      },
       url: req.url,
     });
   }
@@ -507,10 +509,11 @@ export const rateLimitMiddleware = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
+    const userAgent = req.get('User-Agent');
     securityLogger.logSecurityEvent('Rate limit exceeded', {
-      ip: req.ip,
+      ...(req.ip && { ip: req.ip }),
       url: req.url,
-      userAgent: req.get('User-Agent'),
+      ...(userAgent && { userAgent }),
     });
     res.status(429).json({
       error: 'Too Many Requests',
@@ -530,10 +533,11 @@ export const strictRateLimitMiddleware = rateLimit({
     message: 'Rate limit exceeded for sensitive operations.',
   },
   handler: (req, res) => {
+    const userAgent = req.get('User-Agent');
     securityLogger.logSecurityEvent('Strict rate limit exceeded', {
-      ip: req.ip,
+      ...(req.ip && { ip: req.ip }),
       url: req.url,
-      userAgent: req.get('User-Agent'),
+      ...(userAgent && { userAgent }),
     });
     res.status(429).json({
       error: 'Too Many Requests',

@@ -71,7 +71,7 @@ export function toEnhancedError(
       severity: 'medium',
       timestamp: new Date().toISOString(),
       ...context
-    };
+    } as EnhancedError;
   }
 
   if (typeof error === 'string') {
@@ -82,7 +82,7 @@ export function toEnhancedError(
       severity: 'medium',
       timestamp: new Date().toISOString(),
       ...context
-    };
+    } as EnhancedError;
   }
 
   return {
@@ -93,7 +93,7 @@ export function toEnhancedError(
     severity: 'medium',
     timestamp: new Date().toISOString(),
     ...context
-  };
+  } as EnhancedError;
 }
 
 /**
