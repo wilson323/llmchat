@@ -7,6 +7,8 @@
  * - 开发环境可选依赖
  */
 
+import type { ReactNode } from 'react';
+
 export const initSentry = async () => {
   console.info('ℹ️  Sentry未配置，错误追踪功能禁用（开发模式）');
 };
@@ -23,5 +25,4 @@ export const setUser = (user: any) => {
   console.debug('👤 [Sentry Stub] 用户:', user);
 };
 
-export const ErrorBoundary = ({ children }: { children: React.ReactNode }) => children;
-
+export const ErrorBoundary = ({ children }: { children: ReactNode }) => children;
