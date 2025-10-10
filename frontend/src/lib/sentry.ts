@@ -17,17 +17,23 @@ type IntegrationLike = {
   setupOnce: (...args: unknown[]) => void;
 };
 
-type ExtendedSentryModule = typeof import('@sentry/react') & {
-  Replay?: new (...args: any[]) => IntegrationLike;
+// Minimal Sentry surface to avoid hard dependency on @sentry/react types
+interface SentryLikeBase {
+  init: (options: unknown) => void;
+  setUser?: (user: { id: string; email?: string; username?: string } | null) => void;
+  addBreadcrumb?: (crumb: unknown) => void;
+  captureException?: (error: unknown, context?: unknown) => void;
+  captureMessage?: (message: string, context?: unknown) => void;
+  startTransaction?: (context: { name: string; op: string }) => unknown;
   reactRouterV6Instrumentation?: (
     history: History,
     location: Location
   ) => (...args: unknown[]) => void;
-  startTransaction?: (context: { name: string; op: string }) => unknown;
-};
+  Replay?: new (...args: unknown[]) => IntegrationLike;
+}
 
-type BrowserTracingCtor = new (...args: any[]) => IntegrationLike;
-
+type ExtendedSentryModule = SentryLikeBase;
+type BrowserTracingCtor = new (...args: unknown[]) => IntegrationLike;
 // 尝试导入Sentry（可选依赖）
 let Sentry: ExtendedSentryModule | null = null;
 let BrowserTracing: BrowserTracingCtor | null = null;
