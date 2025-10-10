@@ -23,14 +23,14 @@ export function authenticateJWT() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers.authorization;
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         logger.warn('缺少 Authorization header', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
         });
-        
+
         res.status(401).json({
           success: false,
           code: 'AUTHENTICATION_REQUIRED',
@@ -38,9 +38,9 @@ export function authenticateJWT() {
         });
         return;
       }
-      
+
       const token = authHeader.substring(7); // 移除 "Bearer " 前缀
-      
+
       // 验证 JWT（使用与 AuthServiceV2 相同的密钥）
       const jwtSecret = process.env.TOKEN_SECRET || process.env.JWT_SECRET || 'default-secret-change-in-production';
       const decoded = jwt.verify(token, jwtSecret) as {
@@ -49,17 +49,17 @@ export function authenticateJWT() {
         username: string;
         role: 'admin' | 'user';
       };
-      
+
       // 兼容 AuthServiceV2 的 JWT payload 格式（使用 sub 字段）
       const userId = decoded.sub || decoded.id;
-      
+
       // 将用户信息附加到请求对象
       (req as AuthenticatedRequest).user = {
         id: userId!,
         username: decoded.username,
         role: decoded.role,
       };
-      
+
       logger.debug('JWT 认证成功', {
         component: 'jwtAuth',
         userId: userId,
@@ -67,7 +67,7 @@ export function authenticateJWT() {
         role: decoded.role,
         path: req.path,
       });
-      
+
       next();
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
@@ -76,7 +76,7 @@ export function authenticateJWT() {
           path: req.path,
           ip: req.ip,
         });
-        
+
         res.status(401).json({
           success: false,
           code: 'TOKEN_EXPIRED',
@@ -84,7 +84,7 @@ export function authenticateJWT() {
         });
         return;
       }
-      
+
       if (error instanceof jwt.JsonWebTokenError) {
         logger.warn('无效的 JWT token', {
           component: 'jwtAuth',
@@ -92,7 +92,7 @@ export function authenticateJWT() {
           ip: req.ip,
           error: error.message,
         });
-        
+
         res.status(401).json({
           success: false,
           code: 'INVALID_TOKEN',
@@ -100,14 +100,14 @@ export function authenticateJWT() {
         });
         return;
       }
-      
+
       logger.error('JWT 认证失败', {
         component: 'jwtAuth',
         path: req.path,
         ip: req.ip,
         error,
       });
-      
+
       res.status(500).json({
         success: false,
         code: 'AUTHENTICATION_ERROR',

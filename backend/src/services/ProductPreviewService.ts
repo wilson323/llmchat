@@ -37,8 +37,12 @@ interface ProductPreviewApiResponse {
 }
 
 const normalizeDataUrl = (image: string): string => {
-  if (!image) return image;
-  if (image.startsWith('data:')) return image;
+  if (!image) {
+    return image;
+  }
+  if (image.startsWith('data:')) {
+    return image;
+  }
   return `data:image/png;base64,${image}`;
 };
 
@@ -97,8 +101,12 @@ export class ProductPreviewService {
 
     // 豆包 Ark v3 支持 image 数组与顺序生成选项
     const images: string[] = [];
-    if (payload.sceneImage) images.push(normalizeDataUrl(payload.sceneImage));
-    if (payload.productImage) images.push(normalizeDataUrl(payload.productImage));
+    if (payload.sceneImage) {
+      images.push(normalizeDataUrl(payload.sceneImage));
+    }
+    if (payload.productImage) {
+      images.push(normalizeDataUrl(payload.productImage));
+    }
     if (images.length > 0) {
       requestBody.image = images;
       requestBody.sequential_image_generation = 'auto';
@@ -120,23 +128,23 @@ export class ProductPreviewService {
     });
 
     const result: ProductPreviewResult = {};
-    
+
     // 安全地添加可选属性
     const requestId = data?.requestId || data?.RequestId || data?.request_id;
     if (requestId !== undefined) {
       result.requestId = requestId;
     }
-    
+
     const traceId = data?.traceId || data?.TraceId;
     if (traceId !== undefined) {
       result.traceId = traceId;
     }
-    
+
     const status = data?.status || data?.Status;
     if (status !== undefined) {
       result.status = status;
     }
-    
+
     result.raw = data as unknown as Record<string, unknown>;
 
     const urlCandidate =

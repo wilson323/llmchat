@@ -1,13 +1,13 @@
 /**
  * 增强版速率限制中间件 V2
- * 
+ *
  * 特性:
  * - Redis集中化存储（支持多实例部署）
  * - 内存降级模式（Redis不可用时）
  * - 灵活的限流策略（按IP/用户/端点）
  * - 详细的限流指标
  * - 白名单支持
- * 
+ *
  * 向后兼容:
  * - 保留原rateLimiter接口
  */
@@ -45,7 +45,7 @@ export const RATE_LIMIT_PRESETS = {
     blockDuration: 60,
     keyPrefix: 'rl:api:',
   },
-  
+
   // 聊天接口限流
   chat: {
     points: 30,
@@ -53,7 +53,7 @@ export const RATE_LIMIT_PRESETS = {
     blockDuration: 120,
     keyPrefix: 'rl:chat:',
   },
-  
+
   // 管理接口限流
   admin: {
     points: 200,
@@ -61,7 +61,7 @@ export const RATE_LIMIT_PRESETS = {
     blockDuration: 30,
     keyPrefix: 'rl:admin:',
   },
-  
+
   // 登录接口限流（防止暴力破解）
   login: {
     points: 5,
@@ -69,7 +69,7 @@ export const RATE_LIMIT_PRESETS = {
     blockDuration: 900, // 15分钟
     keyPrefix: 'rl:login:',
   },
-  
+
   // 注册接口限流
   register: {
     points: 3,
@@ -272,9 +272,9 @@ export function createRateLimiter(options: RateLimitOptions = {}) {
  */
 function defaultKeyGenerator(req: Request): string {
   // 优先使用真实IP（信任代理）
-  const ip = req.ip || 
-             req.headers['x-forwarded-for'] || 
-             req.headers['x-real-ip'] || 
+  const ip = req.ip ||
+             req.headers['x-forwarded-for'] ||
+             req.headers['x-real-ip'] ||
              req.socket.remoteAddress ||
              'anonymous';
   const finalIp = Array.isArray(ip) ? ip[0] : ip;
@@ -317,13 +317,13 @@ function isWhitelisted(req: Request, whitelist: Array<string>): boolean {
 function setRateLimitHeaders(
   res: Response,
   rateLimiterRes: RateLimiterRes,
-  config: RateLimitConfig
+  config: RateLimitConfig,
 ): void {
   res.set({
     'X-RateLimit-Limit': config.points.toString(),
     'X-RateLimit-Remaining': rateLimiterRes.remainingPoints.toString(),
     'X-RateLimit-Reset': new Date(
-      Date.now() + rateLimiterRes.msBeforeNext
+      Date.now() + rateLimiterRes.msBeforeNext,
     ).toISOString(),
   });
 }
@@ -335,7 +335,7 @@ function handleRateLimitExceeded(
   req: Request,
   res: Response,
   rejRes: any,
-  config: RateLimitConfig
+  config: RateLimitConfig,
 ): void {
   const msBeforeNext = rejRes?.msBeforeNext || 60000;
   const retryAfter = Math.round(msBeforeNext / 1000);
@@ -413,4 +413,3 @@ export { rateLimiterManager };
 
 // 向后兼容旧接口
 export { apiRateLimiter as rateLimiter, apiRateLimiter as rateLimiterMiddleware };
-

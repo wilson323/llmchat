@@ -81,9 +81,15 @@ export const deepClone = <T>(obj: T): T => {
  * 检查是否为空对象
  */
 export const isEmpty = (obj: any): boolean => {
-  if (obj == null) return true;
-  if (Array.isArray(obj) || typeof obj === 'string') return obj.length === 0;
-  if (typeof obj === 'object') return Object.keys(obj).length === 0;
+  if (obj == null) {
+    return true;
+  }
+  if (Array.isArray(obj) || typeof obj === 'string') {
+    return obj.length === 0;
+  }
+  if (typeof obj === 'object') {
+    return Object.keys(obj).length === 0;
+  }
   return false;
 };
 
@@ -91,12 +97,14 @@ export const isEmpty = (obj: any): boolean => {
  * 格式化文件大小
  */
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
-  
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
@@ -104,7 +112,9 @@ export const formatFileSize = (bytes: number): string => {
  * 截断字符串
  */
 export const truncateString = (str: string, maxLength: number): string => {
-  if (str.length <= maxLength) return str;
+  if (str.length <= maxLength) {
+    return str;
+  }
   return str.slice(0, maxLength - 3) + '...';
 };
 

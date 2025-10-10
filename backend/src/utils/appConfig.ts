@@ -51,15 +51,17 @@ const CONFIG_CANDIDATES = [
 export function loadAppConfig(): AppConfig {
   for (const file of CONFIG_CANDIDATES) {
     try {
-      if (!fs.existsSync(file)) continue;
+      if (!fs.existsSync(file)) {
+        continue;
+      }
       const raw = fs.readFileSync(file, 'utf-8');
       const stripped = stripJsonComments(raw);
-      
+
       // 解析环境变量占位符
       const resolved = resolveEnvInJsonc(stripped);
-      
+
       const config = JSON.parse(resolved) as AppConfig;
-      
+
       // 应用环境变量覆盖（环境变量优先级更高）
       if (config.database?.postgres) {
         config.database.postgres.host = getEnvString('DB_HOST', config.database.postgres.host);
@@ -69,11 +71,11 @@ export function loadAppConfig(): AppConfig {
         config.database.postgres.database = getEnvString('DB_NAME', config.database.postgres.database);
         config.database.postgres.ssl = getEnvBoolean('DB_SSL', config.database.postgres.ssl || false);
       }
-      
+
       if (config.auth) {
         config.auth.tokenTTLSeconds = getEnvNumber('TOKEN_TTL', config.auth.tokenTTLSeconds || 86400);
       }
-      
+
       return config;
     } catch (error) {
       logger.warn('[AppConfig] Failed to parse configuration', { file, error });
@@ -102,7 +104,9 @@ export function resolveLoggingExportersFromEnv(): LoggingExporterConfig[] {
 }
 
 function parseHeadersEnv(headers?: string | null): Record<string, string> | undefined {
-  if (!headers) return undefined;
+  if (!headers) {
+    return undefined;
+  }
   try {
     const parsed = JSON.parse(headers);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -118,7 +122,9 @@ function parseHeadersEnv(headers?: string | null): Record<string, string> | unde
 }
 
 function parseNumberEnv(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
+  if (!value) {
+    return fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }

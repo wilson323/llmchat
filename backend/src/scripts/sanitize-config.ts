@@ -1,17 +1,17 @@
 #!/usr/bin/env ts-node
 /**
  * 配置文件脱敏脚本
- * 
+ *
  * 用途:
  * - 自动将config文件中的敏感信息替换为环境变量占位符
  * - 生成.env文件模板
  * - 备份原始配置
- * 
+ *
  * 使用:
  * npm run sanitize:config
  * 或
  * ts-node backend/src/scripts/sanitize-config.ts
- * 
+ *
  * ⚠️  警告: 执行前会自动备份原配置文件
  */
 
@@ -71,7 +71,7 @@ class ConfigSanitizer {
 
     fs.copyFileSync(filePath, fullBackupPath);
     console.log(`📦 备份: ${filePath} -> ${backupPath}`);
-    
+
     return backupPath;
   }
 
@@ -80,7 +80,7 @@ class ConfigSanitizer {
    */
   private async sanitizeAgentsConfig(): Promise<void> {
     const filePath = path.resolve(process.cwd(), 'config/agents.json');
-    
+
     if (!fs.existsSync(filePath)) {
       console.log('⚠️  config/agents.json 不存在，跳过');
       return;
@@ -92,7 +92,7 @@ class ConfigSanitizer {
     // 读取
     const content = fs.readFileSync(filePath, 'utf-8');
     let config: any;
-    
+
     try {
       config = JSON.parse(content);
     } catch (error) {
@@ -123,7 +123,7 @@ class ConfigSanitizer {
         // 替换Endpoint (如果包含敏感信息)
         if (agent.endpoint && !agent.endpoint.startsWith('${')) {
           if (agent.endpoint.includes('api.fastgpt.in') || agent.endpoint.includes('localhost')) {
-            const envVarName = `FASTGPT_ENDPOINT`;
+            const envVarName = 'FASTGPT_ENDPOINT';
             if (!this.extractedVars.has(envVarName)) {
               this.extractedVars.set(envVarName, agent.endpoint.replace(/\/chat\/completions.*$/, ''));
             }
@@ -139,7 +139,7 @@ class ConfigSanitizer {
       fs.writeFileSync(
         filePath,
         JSON.stringify(config, null, 2),
-        'utf-8'
+        'utf-8',
       );
       console.log('✅ config/agents.json 已脱敏');
     } else {
@@ -152,7 +152,7 @@ class ConfigSanitizer {
    */
   private async sanitizeMainConfig(): Promise<void> {
     const filePath = path.resolve(process.cwd(), 'config/config.jsonc');
-    
+
     if (!fs.existsSync(filePath)) {
       console.log('⚠️  config/config.jsonc 不存在，跳过');
       return;
@@ -163,7 +163,7 @@ class ConfigSanitizer {
 
     // 读取 (处理JSONC注释)
     const content = fs.readFileSync(filePath, 'utf-8');
-    
+
     // 移除注释以解析
     const jsonContent = content
       .replace(/\/\*[\s\S]*?\*\//g, '') // 块注释
@@ -221,7 +221,7 @@ class ConfigSanitizer {
           // 替换数据库配置中的值
           newContent = newContent.replace(
             new RegExp(`"${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g'),
-            `"\${${envVar}}"`
+            `"\${${envVar}}"`,
           );
         }
       }
@@ -238,7 +238,7 @@ class ConfigSanitizer {
    */
   private generateEnvFile(): void {
     const envPath = path.resolve(process.cwd(), 'backend/.env');
-    
+
     if (fs.existsSync(envPath)) {
       console.log('⚠️  backend/.env 已存在，不会覆盖');
       console.log('💡 提取的环境变量将显示在下方，请手动添加到.env文件');
@@ -276,7 +276,7 @@ class ConfigSanitizer {
     console.log('📊 配置脱敏报告');
     console.log('='.repeat(60) + '\n');
 
-    console.log(`✅ 配置文件脱敏完成！\n`);
+    console.log('✅ 配置文件脱敏完成！\n');
 
     if (this.extractedVars.size > 0) {
       console.log(`📝 提取的环境变量 (${this.extractedVars.size}个):\n`);
@@ -320,4 +320,3 @@ if (require.main === module) {
 }
 
 export { ConfigSanitizer };
-

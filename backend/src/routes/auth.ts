@@ -8,7 +8,7 @@ const authController = new AuthController();
 
 /**
  * 认证路由
- * 
+ *
  * 所有认证相关的端点
  */
 

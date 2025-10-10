@@ -68,7 +68,7 @@ export function protectedApiMiddleware() {
       res.status(500).json({
         code: 'PROTECTION_CONTEXT_MISSING',
         message: '保护上下文缺失',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return;
     }
@@ -168,7 +168,7 @@ export function protectedChatMiddleware() {
       res.status(500).json({
         code: 'PROTECTION_CONTEXT_MISSING',
         message: '保护上下文缺失',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       return;
     }
@@ -202,7 +202,7 @@ export function protectedChatMiddleware() {
         logger.warn('伦理防火墙阻断(Chat)', {
           requestId: context.requestId,
           agentId: context.agentId,
-          error: typedError.message
+          error: typedError.message,
         });
         res.status(403).json({
           code: 'POLICY_VIOLATION',
@@ -235,7 +235,7 @@ export function protectedChatMiddleware() {
       logger.error('受保护聊天中间件错误', {
         requestId: context.requestId,
         agentId: context.agentId,
-        error: typedError.message
+        error: typedError.message,
       });
 
       // 如果是降级响应，返回成功状态
@@ -310,7 +310,7 @@ async function checkRateLimit(req: Request, protectionService: { multiDimensionR
       upgrade: false,
       // 方法
       res: undefined as unknown,
-      next: undefined as unknown
+      next: undefined as unknown,
     } as unknown as Request;
 
     const checkResult = protectionService.multiDimensionRateLimiter.isAllowed(mockReq);
@@ -329,7 +329,7 @@ async function checkRateLimit(req: Request, protectionService: { multiDimensionR
         reason: `维度限制触发: ${failedResult?.remaining || 0}`,
         ...(failedResult?.retryAfter !== undefined && { retryAfter: failedResult.retryAfter }),
         ...(failedResult?.remaining !== undefined && { remaining: failedResult.remaining }),
-        ...(failedResult?.resetTime !== undefined && { resetTime: failedResult.resetTime })
+        ...(failedResult?.resetTime !== undefined && { resetTime: failedResult.resetTime }),
       };
 
       if (failedResult?.remaining !== undefined) {
@@ -368,7 +368,7 @@ function checkCircuitBreakerHealth(agentId: string, protectionService: { circuit
     if (agentCircuitBreaker && !agentCircuitBreaker.healthy) {
       return {
         healthy: false,
-        message: agentCircuitBreaker.message || '熔断器状态未知'
+        message: agentCircuitBreaker.message || '熔断器状态未知',
       };
     }
 
@@ -391,11 +391,21 @@ function checkCircuitBreakerHealth(agentId: string, protectionService: { circuit
 function getErrorStatusCode(error: Error): number {
   const message = error.message.toLowerCase();
 
-  if (message.includes('熔断器')) return 503;
-  if (message.includes('限流')) return 429;
-  if (message.includes('超时')) return 408;
-  if (message.includes('网络')) return 502;
-  if (message.includes('不可用')) return 503;
+  if (message.includes('熔断器')) {
+    return 503;
+  }
+  if (message.includes('限流')) {
+    return 429;
+  }
+  if (message.includes('超时')) {
+    return 408;
+  }
+  if (message.includes('网络')) {
+    return 502;
+  }
+  if (message.includes('不可用')) {
+    return 503;
+  }
 
   return 500;
 }
@@ -406,11 +416,21 @@ function getErrorStatusCode(error: Error): number {
 function getErrorCode(error: Error): string {
   const message = error.message.toLowerCase();
 
-  if (message.includes('熔断器')) return 'CIRCUIT_BREAKER_OPEN';
-  if (message.includes('限流')) return 'RATE_LIMIT_EXCEEDED';
-  if (message.includes('超时')) return 'REQUEST_TIMEOUT';
-  if (message.includes('网络')) return 'NETWORK_ERROR';
-  if (message.includes('不可用')) return 'SERVICE_UNAVAILABLE';
+  if (message.includes('熔断器')) {
+    return 'CIRCUIT_BREAKER_OPEN';
+  }
+  if (message.includes('限流')) {
+    return 'RATE_LIMIT_EXCEEDED';
+  }
+  if (message.includes('超时')) {
+    return 'REQUEST_TIMEOUT';
+  }
+  if (message.includes('网络')) {
+    return 'NETWORK_ERROR';
+  }
+  if (message.includes('不可用')) {
+    return 'SERVICE_UNAVAILABLE';
+  }
 
   return 'INTERNAL_ERROR';
 }
@@ -440,7 +460,7 @@ export function monitoringMetricsMiddleware() {
       protectionService.getMonitoringService().recordRequest(
         responseTime,
         success,
-        success ? undefined : `HTTP_${res.statusCode}`
+        success ? undefined : `HTTP_${res.statusCode}`,
       );
     });
 
@@ -470,13 +490,13 @@ export function enhancedHealthCheckMiddleware() {
           performanceMetrics,
           activeAlerts: activeAlerts.length,
           circuitBreakers: protectionService.getAllCircuitBreakers().length,
-          rateLimiters: protectionService.getAllRateLimitMetrics().length
-        }
+          rateLimiters: protectionService.getAllRateLimitMetrics().length,
+        },
       };
 
       // 根据系统健康状态设置HTTP状态码
       const statusCode = systemHealth.status === 'healthy' ? 200 :
-                        systemHealth.status === 'warning' ? 200 : 503;
+        systemHealth.status === 'warning' ? 200 : 503;
 
       res.status(statusCode).json(healthData);
       return;

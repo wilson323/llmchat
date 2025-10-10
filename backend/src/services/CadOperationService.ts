@@ -1,6 +1,6 @@
 /**
  * CAD 操作服务
- * 
+ *
  * 负责 CAD 实体的增删改查操作
  * 使用 dxf-writer 生成修改后的 DXF 文件
  */
@@ -172,7 +172,7 @@ export class CadOperationService {
 
         case 'POLYLINE':
         case 'LWPOLYLINE':
-          entity.vertices.forEach(v => {
+          entity.vertices.forEach((v: { x: number; y: number; z: number }) => {
             v.x += params.offset.x;
             v.y += params.offset.y;
             v.z += params.offset.z;
@@ -297,7 +297,7 @@ export class CadOperationService {
               entity.start.x,
               entity.start.y,
               entity.end.x,
-              entity.end.y
+              entity.end.y,
             );
             break;
 
@@ -311,7 +311,7 @@ export class CadOperationService {
               entity.center.y,
               entity.radius,
               entity.startAngle,
-              entity.endAngle
+              entity.endAngle,
             );
             break;
 
@@ -322,7 +322,7 @@ export class CadOperationService {
               entity.position.y,
               entity.height,
               entity.rotation || 0,
-              entity.text
+              entity.text,
             );
             break;
 

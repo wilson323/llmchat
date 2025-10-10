@@ -14,7 +14,7 @@ const rateLimiter = new RateLimiterMemory({
 export const rateLimiterMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const key = req.ip || 'anonymous';
@@ -23,14 +23,14 @@ export const rateLimiterMiddleware = async (
   } catch (rejRes: any) {
     const remainingPoints = rejRes?.remainingPoints || 0;
     const msBeforeNext = rejRes?.msBeforeNext || 60000;
-    
+
     res.set({
       'Retry-After': Math.round(msBeforeNext / 1000),
       'X-RateLimit-Limit': '100',
       'X-RateLimit-Remaining': remainingPoints.toString(),
       'X-RateLimit-Reset': new Date(Date.now() + msBeforeNext).toISOString(),
     });
-    
+
     res.status(429).json({
       code: 'RATE_LIMIT_EXCEEDED',
       message: '请求过于频繁，请稍后再试',

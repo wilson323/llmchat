@@ -3,7 +3,7 @@ import {
   SessionEvent,
   SessionEventType,
   EventQueryParams,
-  PaginatedResponse
+  PaginatedResponse,
 } from '@/types';
 import logger from '@/utils/logger';
 
@@ -48,7 +48,7 @@ export class SessionEventService {
       userId?: string;
       userAgent?: string;
       ipAddress?: string;
-    }
+    },
   ): Promise<SessionEvent> {
     const event: SessionEvent = {
       id: randomUUID(),
@@ -86,40 +86,40 @@ export class SessionEventService {
    */
   async queryEvents(
     agentId: string,
-    params: EventQueryParams
+    params: EventQueryParams,
   ): Promise<PaginatedResponse<SessionEvent>> {
     let agentEvents = this.events.get(agentId) || [];
 
     // 过滤条件
     if (params.sessionIds && params.sessionIds.length > 0) {
       agentEvents = agentEvents.filter(event =>
-        params.sessionIds!.includes(event.sessionId)
+        params.sessionIds!.includes(event.sessionId),
       );
     }
 
     if (params.eventTypes && params.eventTypes.length > 0) {
       agentEvents = agentEvents.filter(event =>
-        params.eventTypes!.includes(event.eventType)
+        params.eventTypes!.includes(event.eventType),
       );
     }
 
     if (params.startDate) {
       const startDate = new Date(params.startDate);
       agentEvents = agentEvents.filter(event =>
-        new Date(event.timestamp) >= startDate
+        new Date(event.timestamp) >= startDate,
       );
     }
 
     if (params.endDate) {
       const endDate = new Date(params.endDate);
       agentEvents = agentEvents.filter(event =>
-        new Date(event.timestamp) <= endDate
+        new Date(event.timestamp) <= endDate,
       );
     }
 
     if (params.userId) {
       agentEvents = agentEvents.filter(event =>
-        event.userId === params.userId
+        event.userId === params.userId,
       );
     }
 
@@ -171,7 +171,7 @@ export class SessionEventService {
    */
   async getSessionEvents(
     agentId: string,
-    sessionId: string
+    sessionId: string,
   ): Promise<SessionEvent[]> {
     const agentEvents = this.events.get(agentId) || [];
     return agentEvents
@@ -184,7 +184,7 @@ export class SessionEventService {
    */
   async getEventStats(
     agentId: string,
-    dateRange?: { start: string; end: string }
+    dateRange?: { start: string; end: string },
   ): Promise<{
     totalEvents: number;
     eventTypeStats: Array<{ type: SessionEventType; count: number }>;
@@ -268,7 +268,7 @@ export class SessionEventService {
 
     const originalCount = agentEvents.length;
     const filteredEvents = agentEvents.filter((event: SessionEvent) =>
-      new Date(event.timestamp) >= cutoffDate
+      new Date(event.timestamp) >= cutoffDate,
     );
 
     this.events.set(agentId, filteredEvents);
@@ -286,7 +286,7 @@ export class SessionEventService {
    */
   async deleteEvents(
     agentId: string,
-    eventIds: string[]
+    eventIds: string[],
   ): Promise<{ success: number; failed: number; errors: string[] }> {
     const agentEvents = this.events.get(agentId) || [];
     const results = { success: 0, failed: 0, errors: [] as string[] };
@@ -317,7 +317,7 @@ export class SessionEventService {
    */
   async exportEvents(
     agentId: string,
-    params: EventQueryParams & { format: 'json' | 'csv' }
+    params: EventQueryParams & { format: 'json' | 'csv' },
   ): Promise<{ filename: string; data: string }> {
     const result = await this.queryEvents(agentId, params);
     const events = result.data;
@@ -330,14 +330,14 @@ export class SessionEventService {
           exportedAt: new Date().toISOString(),
           totalEvents: events.length,
           agentId,
-          filters: params
+          filters: params,
         },
-        events
+        events,
       };
 
       return {
         filename: `events_${agentId}_${timestamp}.json`,
-        data: JSON.stringify(exportData, null, 2)
+        data: JSON.stringify(exportData, null, 2),
       };
     } else {
       // CSV格式
@@ -349,7 +349,7 @@ export class SessionEventService {
         'User ID',
         'User Agent',
         'IP Address',
-        'Metadata'
+        'Metadata',
       ];
 
       const csvRows = [headers.join(',')];
@@ -363,14 +363,14 @@ export class SessionEventService {
           event.userId || '',
           `"${this.escapeCsv(event.userAgent || '')}"`,
           `"${event.ipAddress || ''}"`,
-          `"${this.escapeCsv(JSON.stringify(event.metadata || {}))}"`
+          `"${this.escapeCsv(JSON.stringify(event.metadata || {}))}"`,
         ];
         csvRows.push(row.join(','));
       });
 
       return {
         filename: `events_${agentId}_${timestamp}.csv`,
-        data: csvRows.join('\n')
+        data: csvRows.join('\n'),
       };
     }
   }
@@ -391,7 +391,7 @@ export class SessionEventService {
       sessionIds?: string[];
       eventTypes?: SessionEventType[];
       since?: string;
-    } = {}
+    } = {},
   ): Promise<AsyncIterable<SessionEvent>> {
     const since = params.since ? new Date(params.since) : new Date(Date.now() - 60000); // 默认最近1分钟
 
@@ -402,9 +402,15 @@ export class SessionEventService {
     const filteredEvents = agentEvents.filter(event => {
       const eventDate = new Date(event.timestamp);
 
-      if (eventDate < since) return false;
-      if (params.sessionIds && !params.sessionIds.includes(event.sessionId)) return false;
-      if (params.eventTypes && !params.eventTypes.includes(event.eventType)) return false;
+      if (eventDate < since) {
+        return false;
+      }
+      if (params.sessionIds && !params.sessionIds.includes(event.sessionId)) {
+        return false;
+      }
+      if (params.eventTypes && !params.eventTypes.includes(event.eventType)) {
+        return false;
+      }
 
       return true;
     });
@@ -421,9 +427,9 @@ export class SessionEventService {
               }
             }
             return { value: undefined, done: true };
-          }
+          },
         };
-      }
+      },
     };
   }
 }

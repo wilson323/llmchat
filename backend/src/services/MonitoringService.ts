@@ -127,26 +127,26 @@ export class PerformanceMonitor {
       timestamp: new Date(),
       cpu: {
         usage: (cpuUsage.user + cpuUsage.system) / 1000000, // 转换为秒
-        loadAverage: os.loadavg()
+        loadAverage: os.loadavg(),
       },
       memory: {
         used: memUsage.heapUsed,
         free: memUsage.heapTotal - memUsage.heapUsed,
         total: memUsage.heapTotal,
-        usagePercentage: (memUsage.heapUsed / memUsage.heapTotal) * 100
+        usagePercentage: (memUsage.heapUsed / memUsage.heapTotal) * 100,
       },
       requests: {
         total: this.requestCounts.total,
         successful: this.requestCounts.successful,
         failed: this.requestCounts.failed,
         averageResponseTime: this.calculateAverageResponseTime(),
-        requestsPerSecond: this.calculateRequestsPerSecond(now)
+        requestsPerSecond: this.calculateRequestsPerSecond(now),
       },
       errors: {
         total: Array.from(this.errorCounts.values()).reduce((sum, count) => sum + count, 0),
         rate: this.calculateErrorRate(),
-        topErrors: this.getTopErrors()
-      }
+        topErrors: this.getTopErrors(),
+      },
     };
 
     this.metrics.push(metrics);
@@ -185,7 +185,9 @@ export class PerformanceMonitor {
    * 计算平均响应时间
    */
   private calculateAverageResponseTime(): number {
-    if (this.responseTimes.length === 0) return 0;
+    if (this.responseTimes.length === 0) {
+      return 0;
+    }
     return this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length;
   }
 
@@ -201,7 +203,9 @@ export class PerformanceMonitor {
    * 计算错误率
    */
   private calculateErrorRate(): number {
-    if (this.requestCounts.total === 0) return 0;
+    if (this.requestCounts.total === 0) {
+      return 0;
+    }
     return (this.requestCounts.failed / this.requestCounts.total) * 100;
   }
 
@@ -216,7 +220,7 @@ export class PerformanceMonitor {
     return sortedErrors.map(([error, count]) => ({
       error,
       count,
-      lastOccurred: new Date()
+      lastOccurred: new Date(),
     }));
   }
 
@@ -256,7 +260,9 @@ export class PerformanceMonitor {
    * 获取指标历史
    */
   getMetricsHistory(minutes?: number): PerformanceMetrics[] {
-    if (!minutes) return this.metrics;
+    if (!minutes) {
+      return this.metrics;
+    }
 
     const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
     return this.metrics.filter(metric => metric.timestamp >= cutoffTime);
@@ -292,7 +298,7 @@ export class AlertManager {
         duration: 300, // 5分钟
         severity: 'high',
         channels: [{ type: 'console', config: {}, enabled: true }],
-        cooldown: 900 // 15分钟冷却
+        cooldown: 900, // 15分钟冷却
       },
       {
         id: 'high_memory_usage',
@@ -305,7 +311,7 @@ export class AlertManager {
         duration: 300,
         severity: 'high',
         channels: [{ type: 'console', config: {}, enabled: true }],
-        cooldown: 900
+        cooldown: 900,
       },
       {
         id: 'high_error_rate',
@@ -318,7 +324,7 @@ export class AlertManager {
         duration: 180, // 3分钟
         severity: 'medium',
         channels: [{ type: 'console', config: {}, enabled: true }],
-        cooldown: 600
+        cooldown: 600,
       },
       {
         id: 'slow_response_time',
@@ -331,8 +337,8 @@ export class AlertManager {
         duration: 300,
         severity: 'medium',
         channels: [{ type: 'console', config: {}, enabled: true }],
-        cooldown: 600
-      }
+        cooldown: 600,
+      },
     ];
 
     defaultRules.forEach(rule => this.addRule(rule));
@@ -351,10 +357,14 @@ export class AlertManager {
    */
   checkAlerts(metrics: PerformanceMetrics): void {
     this.rules.forEach(rule => {
-      if (!rule.enabled) return;
+      if (!rule.enabled) {
+        return;
+      }
 
       const metricValue = this.getMetricValue(metrics, rule.metric);
-      if (metricValue === undefined) return;
+      if (metricValue === undefined) {
+        return;
+      }
 
       const triggered = this.evaluateCondition(metricValue, rule.threshold, rule.operator);
 
@@ -415,7 +425,7 @@ export class AlertManager {
       severity: rule.severity,
       timestamp: now,
       resolved: false,
-      metrics: { metricValue, threshold: rule.threshold }
+      metrics: { metricValue, threshold: rule.threshold },
     };
 
     this.alerts.set(alertId, alert);
@@ -428,7 +438,7 @@ export class AlertManager {
       message: alert.message,
       severity: rule.severity,
       metricValue,
-      threshold: rule.threshold
+      threshold: rule.threshold,
     });
   }
 
@@ -446,7 +456,7 @@ export class AlertManager {
 
       logger.info('告警已解决', { ruleName: rule.name,
         alertId: alert.id,
-        duration: alert.resolvedAt.getTime() - alert.timestamp.getTime()
+        duration: alert.resolvedAt.getTime() - alert.timestamp.getTime(),
       });
     });
   }
@@ -456,7 +466,9 @@ export class AlertManager {
    */
   private sendAlert(alert: Alert, rule: AlertRule): void {
     rule.channels.forEach(channel => {
-      if (!channel.enabled) return;
+      if (!channel.enabled) {
+        return;
+      }
 
       switch (channel.type) {
         case 'console':
@@ -485,8 +497,8 @@ export class AlertManager {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           alert,
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       });
 
       if (!response.ok) {
@@ -545,7 +557,7 @@ export class SLAMonitor {
       errorRate: 0,
       throughput: 0,
       uptime: 100,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
 
     // 每分钟更新SLA指标
@@ -594,7 +606,7 @@ export class SLAMonitor {
       p99: this.getPercentile(sortedTimes, 99),
       average: this.responseTimes.length > 0
         ? this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length
-        : 0
+        : 0,
     };
 
     // 计算吞吐量（每分钟请求数）
@@ -606,7 +618,7 @@ export class SLAMonitor {
       errorRate,
       throughput,
       uptime: uptimePercentage,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
@@ -614,7 +626,9 @@ export class SLAMonitor {
    * 计算百分位数
    */
   private getPercentile(sortedArray: number[], percentile: number): number {
-    if (sortedArray.length === 0) return 0;
+    if (sortedArray.length === 0) {
+      return 0;
+    }
     const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
     const value = sortedArray[Math.max(0, index)];
     return value ?? 0;
@@ -638,7 +652,7 @@ export class SystemHealthChecker {
     private performanceMonitor: PerformanceMonitor,
     private alertManager: AlertManager,
     private circuitBreakerManager: any,
-    private rateLimitService: any
+    private rateLimitService: any,
   ) {
     this.healthStatus = {
       status: 'healthy',
@@ -648,10 +662,10 @@ export class SystemHealthChecker {
         database: true,
         circuitBreakers: true,
         rateLimiters: true,
-        externalServices: true
+        externalServices: true,
       },
       alerts: 0,
-      lastCheck: new Date()
+      lastCheck: new Date(),
     };
 
     // 每分钟检查一次健康状态
@@ -734,14 +748,14 @@ export class SystemHealthChecker {
       score,
       components,
       alerts: activeAlerts.length,
-      lastCheck: new Date()
+      lastCheck: new Date(),
     };
 
     if (status !== 'healthy') {
       logger.warn('系统健康状态', { status,
         score,
         components,
-        activeAlerts: activeAlerts.length
+        activeAlerts: activeAlerts.length,
       });
     }
   }
@@ -765,7 +779,7 @@ export class MonitoringService {
 
   constructor(
     circuitBreakerManager: any,
-    rateLimitService: any
+    rateLimitService: any,
   ) {
     this.performanceMonitor = new PerformanceMonitor();
     this.alertManager = new AlertManager();
@@ -774,7 +788,7 @@ export class MonitoringService {
       this.performanceMonitor,
       this.alertManager,
       circuitBreakerManager,
-      rateLimitService
+      rateLimitService,
     );
 
     logger.info('监控服务启动完成');

@@ -50,7 +50,7 @@ export class SlidingWindowRateLimiter {
 
   constructor(
     private readonly config: RateLimitConfig,
-    private readonly name: string = 'default'
+    private readonly name: string = 'default',
   ) {
     // 定期清理过期数据
     this.cleanupInterval = setInterval(() => {
@@ -59,7 +59,7 @@ export class SlidingWindowRateLimiter {
 
     logger.info('滑动窗口限流器初始化完成', { name: this.name,
       windowMs: this.config.windowMs,
-      maxRequests: this.config.maxRequests
+      maxRequests: this.config.maxRequests,
     });
   }
 
@@ -79,12 +79,12 @@ export class SlidingWindowRateLimiter {
 
     // 清理过期记录
     metrics.windowRecords = metrics.windowRecords.filter(
-      record => record.timestamp > windowStart
+      record => record.timestamp > windowStart,
     );
 
     // 计算当前窗口内的请求数
     const currentCount = metrics.windowRecords.reduce(
-      (sum, record) => sum + record.count, 0
+      (sum, record) => sum + record.count, 0,
     );
 
     // 更新请求统计
@@ -103,7 +103,7 @@ export class SlidingWindowRateLimiter {
     if (allowed) {
       // 记录当前请求
       const existingRecord = metrics.windowRecords.find(
-        record => Math.abs(record.timestamp - now) < 1000 // 1秒内的请求合并
+        record => Math.abs(record.timestamp - now) < 1000, // 1秒内的请求合并
       );
 
       if (existingRecord) {
@@ -122,7 +122,7 @@ export class SlidingWindowRateLimiter {
       allowed,
       remaining,
       resetTime,
-      totalHits: metrics.totalRequests
+      totalHits: metrics.totalRequests,
     };
 
     if (!allowed && retryAfter !== undefined) {
@@ -144,7 +144,7 @@ export class SlidingWindowRateLimiter {
       peakRate: 0,
       averageResponseTime: 0,
       lastRequestTime: new Date(),
-      windowRecords: []
+      windowRecords: [],
     };
   }
 
@@ -159,7 +159,7 @@ export class SlidingWindowRateLimiter {
     this.windows.forEach((metrics, key) => {
       const originalLength = metrics.windowRecords.length;
       metrics.windowRecords = metrics.windowRecords.filter(
-        record => record.timestamp > windowStart
+        record => record.timestamp > windowStart,
       );
 
       if (metrics.windowRecords.length === 0 && originalLength > 0) {
@@ -253,7 +253,7 @@ export class MultiDimensionRateLimiter {
 
     return {
       allowed,
-      results: results.map(r => r.result)
+      results: results.map(r => r.result),
     };
   }
 
@@ -281,7 +281,7 @@ export class MultiDimensionRateLimiter {
   getAllMetrics(): { dimension: string; metrics: RateLimitMetrics[] }[] {
     return Array.from(this.limiters.entries()).map(([dimension, limiter]) => ({
       dimension,
-      metrics: limiter.getMetrics()
+      metrics: limiter.getMetrics(),
     }));
   }
 
@@ -407,7 +407,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
  * 创建多维度限流中间件
  */
 export function createMultiDimensionRateLimitMiddleware(
-  configs: { [dimension: string]: RateLimitConfig }
+  configs: { [dimension: string]: RateLimitConfig },
 ) {
   const multiLimiter = new MultiDimensionRateLimiter(configs);
   const cacheProtector = new CacheBreachProtector();

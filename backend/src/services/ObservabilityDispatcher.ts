@@ -96,7 +96,7 @@ export class ObservabilityDispatcher {
             logger.warn('[ObservabilityDispatcher] Export failed', { exporterType: exporter.type, error });
           }
         }
-      })
+      }),
     );
     this.flushing = false;
     if (this.queue.length) {
@@ -105,8 +105,12 @@ export class ObservabilityDispatcher {
   }
 
   private async sendToExporter(exporter: RuntimeExporter, events: ObservabilityEvent[]): Promise<void> {
-    if (!events.length) return;
-    if (!exporter.endpoint) return;
+    if (!events.length) {
+      return;
+    }
+    if (!exporter.endpoint) {
+      return;
+    }
 
     switch (exporter.type) {
       case 'elasticsearch':
@@ -165,7 +169,7 @@ export class ObservabilityDispatcher {
     await axios.post(
       `${exporter.endpoint}?query=${encodeURIComponent(`INSERT INTO ${table} FORMAT JSONEachRow`)}`,
       payload,
-      config
+      config,
     );
   }
 }

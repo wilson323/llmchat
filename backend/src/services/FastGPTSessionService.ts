@@ -13,7 +13,7 @@ import {
   ExportOptions,
   SessionEvent,
   SessionEventType,
-  EventQueryParams
+  EventQueryParams,
 } from '@/types';
 import { getErrorMessage } from '@/utils/helpers';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
@@ -117,7 +117,7 @@ export class FastGPTSessionService {
 
   /**
    * 计算 FastGPT 基础 URL
-   * 
+   *
    * 修复URL重复问题：
    * 输入: http://171.43.138.237:3000/v1/api/v1/chat/completions
    * 输出: http://171.43.138.237:3000
@@ -126,22 +126,22 @@ export class FastGPTSessionService {
     if (!agent.endpoint) {
       throw new Error('FastGPT 智能体缺少 endpoint 配置');
     }
-    
+
     // 清理空格和末尾斜杠
     let cleaned = agent.endpoint.replace(/[`\s]+/g, '').replace(/\/$/, '');
-    
+
     // 移除 /chat/completions 后缀
     if (cleaned.endsWith(FASTGPT_COMPLETIONS_SUFFIX)) {
       cleaned = cleaned.slice(0, -FASTGPT_COMPLETIONS_SUFFIX.length);
     }
-    
+
     // 🔧 关键修复：统一移除末尾的API路径，避免重复拼接
     // 支持多种格式：/v1/api/v1, /api/v1, /v1
     cleaned = cleaned
       .replace(/\/v1\/api\/v1\/?$/, '')  // 移除 /v1/api/v1 或 /v1/api/v1/
       .replace(/\/api\/v1\/?$/, '')      // 移除 /api/v1 或 /api/v1/
       .replace(/\/v1\/?$/, '');          // 移除 /v1 或 /v1/
-    
+
     return cleaned;
   }
 
@@ -163,7 +163,7 @@ export class FastGPTSessionService {
     options: {
       params?: Record<string, any>;
       data?: Record<string, any>;
-    } = {}
+    } = {},
   ) {
     const baseUrl = this.getBaseUrl(agent);
     const headers = {
@@ -179,20 +179,20 @@ export class FastGPTSessionService {
 
       try {
         if (attempt.method === 'get') {
-          return await this.httpClient.get<T>(url, { 
-            params: options.params || {}, 
-            headers 
+          return await this.httpClient.get<T>(url, {
+            params: options.params || {},
+            headers,
           });
         }
         if (attempt.method === 'delete') {
-          return await this.httpClient.delete<T>(url, { 
-            params: options.params || {}, 
-            headers 
+          return await this.httpClient.delete<T>(url, {
+            params: options.params || {},
+            headers,
           });
         }
-        return await this.httpClient.post<T>(url, options.data, { 
-          params: options.params || {}, 
-          headers 
+        return await this.httpClient.post<T>(url, options.data, {
+          params: options.params || {},
+          headers,
         });
       } catch (error: any) {
         lastError = error;
@@ -202,20 +202,20 @@ export class FastGPTSessionService {
           const v1Url = `${baseUrl}/v1${cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`}`;
           try {
             if (attempt.method === 'get') {
-              return await this.httpClient.get<T>(v1Url, { 
-                params: options.params || {}, 
-                headers 
+              return await this.httpClient.get<T>(v1Url, {
+                params: options.params || {},
+                headers,
               });
             }
             if (attempt.method === 'delete') {
-              return await this.httpClient.delete<T>(v1Url, { 
-                params: options.params || {}, 
-                headers 
+              return await this.httpClient.delete<T>(v1Url, {
+                params: options.params || {},
+                headers,
               });
             }
-            return await this.httpClient.post<T>(v1Url, options.data, { 
-              params: options.params || {}, 
-              headers 
+            return await this.httpClient.post<T>(v1Url, options.data, {
+              params: options.params || {},
+              headers,
             });
           } catch (v1Error) {
             lastError = v1Error;
@@ -230,7 +230,7 @@ export class FastGPTSessionService {
   private buildEndpointAttempts(
     bases: string[],
     suffixes: string[],
-    method: RequestDescriptor['method']
+    method: RequestDescriptor['method'],
   ): RequestDescriptor[] {
     const attempts: RequestDescriptor[] = [];
     const seen = new Set<string>();
@@ -254,7 +254,7 @@ export class FastGPTSessionService {
     cache: Map<string, CacheEntry<T>>,
     key: string,
     policy: AdaptiveTtlPolicy,
-    fetcher: () => Promise<T>
+    fetcher: () => Promise<T>,
   ): Promise<T> {
     const now = Date.now();
     const cached = cache.get(key);
@@ -391,12 +391,12 @@ export class FastGPTSessionService {
     const attempts = this.buildEndpointAttempts(
       this.historyEndpointBases,
       ['list', 'getHistoryList', 'getHistories'],
-      'get'
+      'get',
     );
 
     const cacheKey = buildCacheKey(
       agentId,
-      `list:${params.page || 1}:${params.pageSize || 'default'}`
+      `list:${params.page || 1}:${params.pageSize || 'default'}`,
     );
 
     return this.getWithCache(this.historyListCache, cacheKey, this.historyListPolicy, async () => {
@@ -423,7 +423,7 @@ export class FastGPTSessionService {
     const attempts = this.buildEndpointAttempts(
       this.historyEndpointBases,
       ['detail', 'getHistory', 'messages'],
-      'get'
+      'get',
     );
 
     const cacheKey = buildCacheKey(agentId, `detail:${chatId}`);
@@ -447,7 +447,7 @@ export class FastGPTSessionService {
     const attempts = this.buildEndpointAttempts(
       this.historyEndpointBases,
       ['delete', 'removeHistory', 'delHistory'],
-      'post'
+      'post',
     );
 
     const response = await this.requestWithFallback(agent, attempts, { data });
@@ -484,7 +484,7 @@ export class FastGPTSessionService {
       dataId: string;
       userGoodFeedback?: string;
       userBadFeedback?: string;
-    }
+    },
   ): Promise<void> {
     const agent = await this.ensureFastGPTAgent(agentId);
 
@@ -504,11 +504,11 @@ export class FastGPTSessionService {
     const attempts = this.buildEndpointAttempts(
       this.feedbackEndpointBases,
       ['updateUserFeedback'],
-      'post'
+      'post',
     );
 
     const response = await this.requestWithFallback(agent, attempts, { data });
-    const respPayload = response.data as any;
+    const respPayload = response.data;
     if (respPayload?.code && respPayload.code !== 200) {
       throw new Error(respPayload?.message || 'FastGPT 更新反馈失败');
     }
@@ -516,9 +516,11 @@ export class FastGPTSessionService {
 
   prepareRetryPayload(
     detail: FastGPTChatHistoryDetail,
-    targetDataId: string
+    targetDataId: string,
   ): { messages: ChatMessage[]; responseChatItemId?: string } | null {
-    if (!detail || !Array.isArray(detail.messages)) return null;
+    if (!detail || !Array.isArray(detail.messages)) {
+      return null;
+    }
 
     const index = detail.messages.findIndex((msg) => msg.dataId === targetDataId || msg.id === targetDataId);
     if (index === -1) {
@@ -560,7 +562,7 @@ export class FastGPTSessionService {
    */
   async listHistoriesEnhanced(
     agentId: string,
-    params?: SessionListParams
+    params?: SessionListParams,
   ): Promise<PaginatedResponse<FastGPTChatHistorySummary>> {
     const agent = await this.ensureFastGPTAgent(agentId);
 
@@ -600,7 +602,7 @@ export class FastGPTSessionService {
     const attempts = this.buildEndpointAttempts(
       this.historyEndpointBases,
       ['listEnhanced', 'getHistoryListEnhanced', 'getHistoriesEnhanced', 'list'],
-      'get'
+      'get',
     );
 
     try {
@@ -644,7 +646,7 @@ export class FastGPTSessionService {
    */
   private applyLocalFilteringAndPagination(
     sessions: FastGPTChatHistorySummary[],
-    params?: SessionListParams
+    params?: SessionListParams,
   ): PaginatedResponse<FastGPTChatHistorySummary> {
     let filteredSessions = [...sessions];
 
@@ -652,32 +654,32 @@ export class FastGPTSessionService {
     if (params?.startDate) {
       const startDate = new Date(params.startDate);
       filteredSessions = filteredSessions.filter(session =>
-        new Date(session.createdAt) >= startDate
+        new Date(session.createdAt) >= startDate,
       );
     }
     if (params?.endDate) {
       const endDate = new Date(params.endDate);
       filteredSessions = filteredSessions.filter(session =>
-        new Date(session.updatedAt) <= endDate
+        new Date(session.updatedAt) <= endDate,
       );
     }
 
     // 标签过滤
     if (params?.tags && params.tags.length > 0) {
       filteredSessions = filteredSessions.filter(session =>
-        session.tags && params.tags!.some(tag => session.tags!.includes(tag))
+        session.tags && params.tags!.some(tag => session.tags!.includes(tag)),
       );
     }
 
     // 消息数量过滤
     if (params?.minMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount || 0) >= params.minMessageCount!
+        (session.messageCount || 0) >= params.minMessageCount!,
       );
     }
     if (params?.maxMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount || 0) <= params.maxMessageCount!
+        (session.messageCount || 0) <= params.maxMessageCount!,
       );
     }
 
@@ -685,7 +687,7 @@ export class FastGPTSessionService {
     if (params?.searchKeyword) {
       const keyword = params.searchKeyword.toLowerCase();
       filteredSessions = filteredSessions.filter(session =>
-        session.title.toLowerCase().includes(keyword)
+        session.title.toLowerCase().includes(keyword),
       );
     }
 
@@ -749,7 +751,7 @@ export class FastGPTSessionService {
    */
   async batchOperation(
     agentId: string,
-    options: BatchOperationOptions
+    options: BatchOperationOptions,
   ): Promise<{ success: number; failed: number; errors: string[] }> {
     const agent = await this.ensureFastGPTAgent(agentId);
     const results = { success: 0, failed: 0, errors: [] as string[] };
@@ -761,7 +763,7 @@ export class FastGPTSessionService {
             await this.deleteHistory(agentId, sessionId);
             // 记录删除事件
             await this.recordEvent(agentId, sessionId, 'deleted', {
-              reason: 'batch_operation'
+              reason: 'batch_operation',
             });
             break;
 
@@ -769,7 +771,7 @@ export class FastGPTSessionService {
             // 归档操作 - 可以通过添加特定标签实现
             await this.addTagsToSession(agentId, sessionId, ['archived']);
             await this.recordEvent(agentId, sessionId, 'archived', {
-              reason: 'batch_operation'
+              reason: 'batch_operation',
             });
             break;
 
@@ -778,7 +780,7 @@ export class FastGPTSessionService {
               await this.addTagsToSession(agentId, sessionId, options.tags);
               await this.recordEvent(agentId, sessionId, 'tags_updated', {
                 tags: options.tags,
-                operation: 'add'
+                operation: 'add',
               });
             }
             break;
@@ -788,7 +790,7 @@ export class FastGPTSessionService {
               await this.removeTagsFromSession(agentId, sessionId, options.tags);
               await this.recordEvent(agentId, sessionId, 'tags_updated', {
                 tags: options.tags,
-                operation: 'remove'
+                operation: 'remove',
               });
             }
             break;
@@ -818,7 +820,7 @@ export class FastGPTSessionService {
   private async addTagsToSession(
     agentId: string,
     sessionId: string,
-    tags: string[]
+    tags: string[],
   ): Promise<void> {
     // 这里需要根据FastGPT的具体API来实现
     // 由于当前API可能不直接支持标签操作，可以使用updateUserFeedback的变体
@@ -833,7 +835,7 @@ export class FastGPTSessionService {
   private async removeTagsFromSession(
     agentId: string,
     sessionId: string,
-    tags: string[]
+    tags: string[],
   ): Promise<void> {
     logger.debug('从会话移除标签', { sessionId, tags });
     // 实际实现需要调用相应的FastGPT API
@@ -844,7 +846,7 @@ export class FastGPTSessionService {
    */
   async exportSessions(
     agentId: string,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<{ filename: string; data: string | Buffer }> {
     // 获取符合条件的会话
     const result = await this.listHistoriesEnhanced(agentId, options.filters);
@@ -879,7 +881,7 @@ export class FastGPTSessionService {
       format: options.format,
       sessionCount: sessions.length,
       includeMessages: options.includeMessages,
-      includeMetadata: options.includeMetadata
+      includeMetadata: options.includeMetadata,
     });
 
     return { filename, data: exportData };
@@ -890,7 +892,7 @@ export class FastGPTSessionService {
    */
   private async exportToJson(
     sessions: FastGPTChatHistorySummary[],
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<string> {
     const exportData = {
       metadata: {
@@ -898,9 +900,9 @@ export class FastGPTSessionService {
         totalSessions: sessions.length,
         includeMessages: options.includeMessages || false,
         includeMetadata: options.includeMetadata || false,
-        filters: options.filters
+        filters: options.filters,
       },
-      sessions: [] as any[]
+      sessions: [] as any[],
     };
 
     for (const session of sessions) {
@@ -910,7 +912,7 @@ export class FastGPTSessionService {
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         messageCount: session.messageCount,
-        tags: session.tags
+        tags: session.tags,
       };
 
       // 包含元数据
@@ -940,7 +942,7 @@ export class FastGPTSessionService {
    */
   private async exportToCsv(
     sessions: FastGPTChatHistorySummary[],
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<string> {
     const headers = [
       'Chat ID',
@@ -948,7 +950,7 @@ export class FastGPTSessionService {
       'Created At',
       'Updated At',
       'Message Count',
-      'Tags'
+      'Tags',
     ];
 
     if (options.includeMetadata) {
@@ -964,7 +966,7 @@ export class FastGPTSessionService {
         session.createdAt,
         session.updatedAt,
         session.messageCount || 0,
-        `"${(session.tags || []).join(';')}"`
+        `"${(session.tags || []).join(';')}"`,
       ];
 
       if (options.includeMetadata && session.raw) {
@@ -982,7 +984,7 @@ export class FastGPTSessionService {
    */
   private async exportToExcel(
     sessions: FastGPTChatHistorySummary[],
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<Buffer> {
     // 这里需要使用xlsx库来生成Excel文件
     // 由于当前环境可能没有安装，先返回CSV格式的Buffer
@@ -1009,7 +1011,7 @@ export class FastGPTSessionService {
       userId?: string;
       userAgent?: string;
       ipAddress?: string;
-    }
+    },
   ): Promise<void> {
     try {
       await this.eventService.recordEvent(
@@ -1017,7 +1019,7 @@ export class FastGPTSessionService {
         sessionId,
         eventType,
         metadata,
-        context
+        context,
       );
     } catch (error) {
       logger.error('记录会话事件失败', { error });
@@ -1030,7 +1032,7 @@ export class FastGPTSessionService {
    */
   async queryEvents(
     agentId: string,
-    params: EventQueryParams
+    params: EventQueryParams,
   ): Promise<PaginatedResponse<SessionEvent>> {
     try {
       return await this.eventService.queryEvents(agentId, params);
@@ -1067,7 +1069,7 @@ export class FastGPTSessionService {
 
     const result = await this.listHistoriesEnhanced(agentId, {
       ...params,
-      pageSize: 1000
+      pageSize: 1000,
     });
 
     const sessions = result.data;
@@ -1110,7 +1112,7 @@ export class FastGPTSessionService {
       totalMessages,
       averageMessagesPerSession: Math.round(averageMessagesPerSession * 100) / 100,
       topTags,
-      recentActivity
+      recentActivity,
     };
   }
 }

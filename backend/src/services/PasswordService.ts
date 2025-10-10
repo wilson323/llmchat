@@ -77,7 +77,7 @@ export class PasswordService {
       throw new SystemError({
         message: 'Password verification failed',
         code: 'PASSWORD_VERIFY_ERROR',
-        originalError: error
+        originalError: error,
       });
     }
   }
@@ -133,7 +133,7 @@ export class PasswordService {
     return {
       valid: score >= 3,
       score: Math.min(4, score),
-      feedback
+      feedback,
     };
   }
 
@@ -145,14 +145,14 @@ export class PasswordService {
     if (!password || typeof password !== 'string') {
       throw new ValidationError({
         message: 'Password must be a non-empty string',
-        code: 'INVALID_PASSWORD_FORMAT'
+        code: 'INVALID_PASSWORD_FORMAT',
       });
     }
 
     if (password.length < this.minLength || password.length > this.maxLength) {
       throw new ValidationError({
         message: `Password length must be between ${this.minLength} and ${this.maxLength} characters`,
-        code: 'INVALID_PASSWORD_LENGTH'
+        code: 'INVALID_PASSWORD_LENGTH',
       });
     }
   }
@@ -170,8 +170,8 @@ export class PasswordService {
             return;
           }
 
-          resolve(derivedKey as Buffer);
-        }
+          resolve(derivedKey);
+        },
       );
     });
   }
@@ -179,4 +179,3 @@ export class PasswordService {
 
 // 导出单例实例
 export const passwordService = new PasswordService();
-

@@ -112,7 +112,7 @@ export class DifyInitService {
         message: `智能体不存在: ${agentId}`,
         code: 'AGENT_NOT_FOUND',
         resourceType: 'agent',
-        resourceId: agentId
+        resourceId: agentId,
       });
     }
 
@@ -121,7 +121,7 @@ export class DifyInitService {
         message: `智能体 ${agentId} 不是Dify类型，无法获取初始化数据`,
         code: 'INVALID_PROVIDER_TYPE',
         field: 'provider',
-        value: agent.provider
+        value: agent.provider,
       });
     }
 
@@ -164,9 +164,9 @@ export class DifyInitService {
       return response.data;
 
     } catch (error) {
-      logger.error('❌ Dify Info API调用失败', { 
-        agentId: agent.id, 
-        error: error instanceof Error ? error.message : error 
+      logger.error('❌ Dify Info API调用失败', {
+        agentId: agent.id,
+        error: error instanceof Error ? error.message : error,
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
@@ -177,7 +177,7 @@ export class DifyInitService {
           code: 'DIFY_INFO_API_ERROR',
           service: 'Dify',
           endpoint: `${agent.endpoint}/info`,
-          originalError: axiosError
+          originalError: axiosError,
         });
       }
       throw error;
@@ -206,9 +206,9 @@ export class DifyInitService {
       return response.data;
 
     } catch (error) {
-      logger.error('❌ Dify Parameters API调用失败', { 
-        agentId: agent.id, 
-        error: error instanceof Error ? error.message : error 
+      logger.error('❌ Dify Parameters API调用失败', {
+        agentId: agent.id,
+        error: error instanceof Error ? error.message : error,
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
@@ -219,7 +219,7 @@ export class DifyInitService {
           code: 'DIFY_PARAMETERS_API_ERROR',
           service: 'Dify',
           endpoint: `${agent.endpoint}/parameters`,
-          originalError: axiosError
+          originalError: axiosError,
         });
       }
       throw error;
@@ -231,7 +231,7 @@ export class DifyInitService {
    */
   async fetchAppInfoByCredentials(
     endpoint: string,
-    apiKey: string
+    apiKey: string,
   ): Promise<{
     name: string;
     description: string;
@@ -349,9 +349,9 @@ export class DifyInitService {
       return result;
 
     } catch (error) {
-      logger.error('❌ Dify应用信息获取失败', { 
-        endpoint, 
-        error: error instanceof Error ? error.message : error 
+      logger.error('❌ Dify应用信息获取失败', {
+        endpoint,
+        error: error instanceof Error ? error.message : error,
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
@@ -361,7 +361,7 @@ export class DifyInitService {
           message: `Dify API调用失败 (${statusCode || 'unknown'}): ${message}`,
           code: 'DIFY_API_ERROR',
           service: 'Dify',
-          originalError: axiosError
+          originalError: axiosError,
         });
       }
       throw error;
@@ -389,4 +389,3 @@ export class DifyInitService {
     }
   }
 }
-

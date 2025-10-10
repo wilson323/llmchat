@@ -1,4 +1,4 @@
-import React, { useState, memo, useEffect } from 'react';
+import React, { useState, memo, useEffect, useCallback } from 'react';
 import { User, Copy, Check, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -15,8 +15,10 @@ import { chatService } from '@/services/api';
 import { ReasoningTrail } from './ReasoningTrail';
 import { EventTrail } from './EventTrail';
 import { useA11yAnnouncer } from '@/hooks/useA11yAnnouncer';
-
 import { useI18n } from '@/i18n';
+import {
+  usePerformanceMonitor
+} from '@/utils/performanceOptimizer';
 
 // 回调函数类型定义
 interface InteractiveCallbacks {
@@ -55,20 +57,37 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   onInteractiveSelect,
   onInteractiveFormSubmit
 }) => {
+  // 🚀 性能监控
+  usePerformanceMonitor('MessageItem');
+
   const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const {
     announceStreamingStatus,
     announceNewMessage
   } = useA11yAnnouncer();
-  // 类型守卫函数
-  const isInteractiveSelect = (params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveSelectParams => {
+  // 🚀 性能优化：使用useCallback缓存事件处理函数
+  const isInteractiveSelect = useCallback((params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveSelectParams => {
     return 'userSelectOptions' in params;
-  };
+  }, []);
 
-  const isInteractiveInput = (params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveInputParams => {
+  const isInteractiveInput = useCallback((params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveInputParams => {
     return 'inputForm' in params;
-  };
+  }, []);
+
+  const handleCopy = useCallback(async () => {
+    if (copied) return;
+
+    const content = message.AI || message.HUMAN || '';
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }, [message.AI, message.HUMAN, copied, setCopied]);
+
 
   // 交互节点专用渲染（优先于普通 HUMAN/AI 文本）
   if (message.interactive) {
@@ -293,16 +312,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     }
   };
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content || '');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error(t('复制失败'), err);
-    }
-  };
-
+  
   const formatTime = (timestamp?: number) => {
     const time = timestamp ? new Date(timestamp) : new Date();
     return time.toLocaleTimeString(locale, {

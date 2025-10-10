@@ -33,19 +33,19 @@ export function getPool(): Pool {
 
 export async function initDB(): Promise<void> {
   logger.info('[initDB] 开始初始化数据库...');
-  
+
   const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
   logger.info('[initDB] 配置文件加载成功');
-  
+
   // 替换配置中的环境变量占位符
   const cfg = deepReplaceEnvVariables(rawCfg);
   const pg = cfg.database?.postgres;
-  
+
   if (!pg) {
     logger.error('[initDB] 数据库配置缺失');
     throw new Error('DATABASE_CONFIG_MISSING');
   }
-  
+
   logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
 
   // 先连接到 postgres 默认数据库，检查并创建目标数据库
@@ -62,15 +62,15 @@ export async function initDB(): Promise<void> {
   try {
     const client = await tempPool.connect();
     logger.info('[initDB] 成功连接到 postgres 数据库');
-    
+
     try {
       // 检查数据库是否存在
       logger.info(`[initDB] 检查数据库 "${pg.database}" 是否存在...`);
       const result = await client.query(
-        `SELECT 1 FROM pg_database WHERE datname = $1`,
-        [pg.database]
+        'SELECT 1 FROM pg_database WHERE datname = $1',
+        [pg.database],
       );
-      
+
       if (result.rows.length === 0) {
         // 数据库不存在，创建它
         logger.info(`🔨 数据库 "${pg.database}" 不存在，正在创建...`);
@@ -109,7 +109,7 @@ export async function initDB(): Promise<void> {
     connectionTimeoutMillis: 10_000,  // 10秒连接超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
   });
-  
+
   logger.info('[initDB] 数据库连接池创建成功');
 
   // 建表（若不存在）
@@ -128,7 +128,7 @@ export async function initDB(): Promise<void> {
     `);
 
     // 明文密码列（若不存在则添加）
-    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_plain TEXT;`);
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_plain TEXT;');
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS logs (
@@ -261,12 +261,12 @@ export async function initDB(): Promise<void> {
     `);
 
     // 首次空库自动种子管理员（仅非生产环境）——按明文存储
-    const { rows } = await client.query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM users`);
+    const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM users');
     const count = parseInt(rows[0]?.count || '0', 10);
     if (count === 0) {
       await client.query(
-        `INSERT INTO users(username, password_salt, password_hash, password_plain, role, status) VALUES ($1,$2,$3,$4,$5,$6)`,
-        ['admin', '', '', 'admin', 'admin', 'active']
+        'INSERT INTO users(username, password_salt, password_hash, password_plain, role, status) VALUES ($1,$2,$3,$4,$5,$6)',
+        ['admin', '', '', 'admin', 'admin', 'active'],
       );
     }
   });
@@ -307,13 +307,13 @@ export async function closeDB(): Promise<void> {
 
 async function seedAgentsFromFile(): Promise<void> {
   logger.info('🌱 [seedAgentsFromFile] 开始执行智能体种子函数...');
-  
+
   const filePathCandidates = [
     path.resolve(__dirname, '../../../config/agents.json'),  // 从 backend/src/utils 到根目录 config
     path.resolve(process.cwd(), 'config/agents.json'),       // 从当前工作目录
-    path.resolve(process.cwd(), '../config/agents.json')     // 如果 cwd 是 backend
+    path.resolve(process.cwd(), '../config/agents.json'),     // 如果 cwd 是 backend
   ];
-  
+
   logger.info('[seedAgentsFromFile] 候选文件路径', { paths: filePathCandidates });
 
   let fileContent: string | null = null;
@@ -358,9 +358,9 @@ async function seedAgentsFromFile(): Promise<void> {
   await withClient(async (client) => {
     const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM agent_configs');
     const count = parseInt(rows[0]?.count || '0', 10);
-    
+
     logger.info(`[seedAgentsFromFile] 数据库现有智能体数量: ${count}`);
-    
+
     // 🔧 修复：即使有数据也执行UPSERT（使用ON CONFLICT）
     // if (count > 0) {
     //   return;
@@ -422,8 +422,7 @@ async function seedAgentsFromFile(): Promise<void> {
         logger.error('[seedAgentsFromFile] 导入智能体失败', { agentId: agent?.id, error: e });
       }
     }
-    
+
     logger.info(`✅ [seedAgentsFromFile] 智能体种子完成，共处理 ${resolvedAgents.length} 个智能体`);
   });
 }
-

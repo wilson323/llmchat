@@ -112,7 +112,7 @@ import {
   FastGPTChatHistorySummary,
   FastGPTChatHistoryDetail,
   FeedbackRequest,
-  FastGPTInitResponse
+  FastGPTInitResponse,
 } from '@/types';
 import { JsonValue, DynamicTypeGuard, SafeAccess, FastGPTEventPayload } from '@/types/dynamic';
 import type { SSEEventData } from '@/types/provider';
@@ -191,7 +191,7 @@ export class ChatController {
             mimeType: Joi.string().required(),
             size: Joi.number().min(0).required(),
             source: Joi.string().valid('upload', 'voice', 'external').optional(),
-          })
+          }),
         ).optional(),
         voiceNote: Joi.object({
           id: Joi.string().optional(),
@@ -201,7 +201,7 @@ export class ChatController {
           size: Joi.number().min(0).optional(),
         }).optional(),
         metadata: Joi.object().optional(),
-      })
+      }),
     ).min(1).required().messages({
       'array.min': '至少需要一条消息',
       'any.required': '消息列表不能为空',
@@ -234,7 +234,7 @@ export class ChatController {
         mimeType: Joi.string().required(),
         size: Joi.number().min(0).required(),
         source: Joi.string().valid('upload', 'voice', 'external').optional(),
-      })
+      }),
     ).optional(),
     voiceNote: Joi.object({
       id: Joi.string().optional(),
@@ -310,7 +310,7 @@ export class ChatController {
   private decorateMessages(
     messages: ChatMessage[],
     attachments?: ChatAttachmentMetadata[] | null,
-    voiceNote?: VoiceNoteMetadata | null
+    voiceNote?: VoiceNoteMetadata | null,
   ): ChatMessage[] {
     const list = (messages || []).map((msg) => {
       const result: ChatMessage = {
@@ -349,14 +349,14 @@ export class ChatController {
       attachments.forEach((att, idx) => {
         mergedAttachments.push(att);
         summary.push(
-          `附件${idx + 1}: ${att.name} (${formatFileSize(att.size)}) -> ${att.url}`
+          `附件${idx + 1}: ${att.name} (${formatFileSize(att.size)}) -> ${att.url}`,
         );
       });
     }
 
     if (voiceNote) {
       summary.push(
-        `语音: ${voiceNote.duration.toFixed(1)} 秒 (${voiceNote.mimeType}) -> ${voiceNote.url}`
+        `语音: ${voiceNote.duration.toFixed(1)} 秒 (${voiceNote.mimeType}) -> ${voiceNote.url}`,
       );
     }
 
@@ -460,7 +460,7 @@ export class ChatController {
     agentId: string,
     messages: ChatMessage[],
     attachments?: ChatAttachmentMetadata[] | null,
-    voiceNote?: VoiceNoteMetadata | null
+    voiceNote?: VoiceNoteMetadata | null,
   ): Promise<void> {
     const lastUser = this.findLastUserMessage(messages);
     if (!lastUser) {
@@ -472,11 +472,11 @@ export class ChatController {
         agentId,
         role: 'user',
         content: lastUser.content,
-        ...(attachments && attachments.length || voiceNote ? {
+        ...(attachments?.length || voiceNote ? {
           metadata: {
-            attachments: attachments && attachments.length ? attachments : undefined,
+            attachments: attachments?.length ? attachments : undefined,
             voiceNote: voiceNote || null,
-          }
+          },
         } : {}),
         ...(lastUser.id ? { messageId: lastUser.id } : {}),
         titleHint: this.buildSessionTitle(messages),
@@ -533,7 +533,7 @@ export class ChatController {
       const decoratedMessages = this.decorateMessages(
         Array.isArray(messages) ? messages : [],
         attachments,
-        voiceNote
+        voiceNote,
       );
 
       // 检查智能体是否存在
@@ -561,7 +561,7 @@ export class ChatController {
       await this.historyService.ensureSession(
         sessionId,
         agentId,
-        this.buildSessionTitle(decoratedMessages)
+        this.buildSessionTitle(decoratedMessages),
       );
 
       await this.recordGeoSnapshot(req, agentId, sessionId);
@@ -571,7 +571,7 @@ export class ChatController {
         agentId,
         decoratedMessages,
         attachments,
-        voiceNote
+        voiceNote,
       );
 
       logger.debug('🧪 [chatCompletions] 入参(归一化)', {
@@ -594,7 +594,7 @@ export class ChatController {
           sessionId,
           attachments,
           voiceNote || null,
-          protectionContext
+          protectionContext,
         );
       } else {
         await this.handleNormalRequest(
@@ -605,7 +605,7 @@ export class ChatController {
           sessionId,
           attachments,
           voiceNote || null,
-          protectionContext
+          protectionContext,
         );
       }
     } catch (unknownError) {
@@ -628,7 +628,7 @@ export class ChatController {
         message: typedError.getUserMessage(),
         timestamp: typedError.timestamp,
         ...(process.env.NODE_ENV === 'development' && typedError.context && {
-          details: typedError.context as JsonValue
+          details: typedError.context as JsonValue,
         }),
       };
 
@@ -648,14 +648,14 @@ export class ChatController {
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
     _voiceNote?: VoiceNoteMetadata | null,
-    protectionContext?: ProtectedRequestContext
+    protectionContext?: ProtectedRequestContext,
   ): Promise<void> {
     try {
       const response = await this.chatService.sendMessage(
         agentId,
         messages,
         options,
-        protectionContext
+        protectionContext,
       );
       const assistantContent =
         response?.choices?.[0]?.message?.content || '';
@@ -667,7 +667,7 @@ export class ChatController {
           role: 'assistant',
           content: assistantContent,
           ...(options?.responseChatItemId ? {
-            metadata: { responseChatItemId: options.responseChatItemId }
+            metadata: { responseChatItemId: options.responseChatItemId },
           } : {}),
         });
       } catch (unknownError) {
@@ -721,7 +721,7 @@ export class ChatController {
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
     _voiceNote?: VoiceNoteMetadata | null,
-    protectionContext?: ProtectedRequestContext
+    protectionContext?: ProtectedRequestContext,
   ): Promise<void> {
     try {
       // 标准 SSE 响应头
@@ -774,7 +774,9 @@ export class ChatController {
         options,
         // 事件透传回调：关注 FastGPT 的 interactive 以及 chatId 事件
         (eventName: string, data: SSEEventData) => {
-          if (!eventName) return;
+          if (!eventName) {
+            return;
+          }
 
           if (eventName === 'interactive') {
             let payloadPreview = '[Unserializable]';
@@ -787,7 +789,7 @@ export class ChatController {
           }
 
           if (eventName === 'chatId') {
-            const dataObj = (typeof data === 'object' && data !== null) ? data as Record<string, JsonValue> : {};
+            const dataObj = (typeof data === 'object' && data !== null) ? data : {};
             const chatId = (dataObj.chatId || dataObj.id || data) as string | JsonValue;
             logger.debug('🆔 透传本次使用的 chatId', { chatId });
             this.sendSSEEvent(res, 'chatId', DynamicDataConverter.toSafeJsonValue(data));
@@ -797,7 +799,7 @@ export class ChatController {
           logger.debug('📎 透传 FastGPT 事件', { eventName });
           this.sendSSEEvent(res, eventName, DynamicDataConverter.toSafeJsonValue(data));
         },
-        protectionContext
+        protectionContext,
       );
 
       if (assistantContent) {
@@ -808,7 +810,7 @@ export class ChatController {
             role: 'assistant',
             content: assistantContent,
             ...(options?.responseChatItemId ? {
-              metadata: { responseChatItemId: options.responseChatItemId }
+              metadata: { responseChatItemId: options.responseChatItemId },
             } : {}),
           });
         } catch (unknownError) {
@@ -956,7 +958,7 @@ export class ChatController {
   private async handleInitNormalRequest(
     res: Response,
     appId: string,
-    chatId?: string
+    chatId?: string,
   ): Promise<void> {
     try {
       const initData = await this.initService.getInitData(appId, chatId);
@@ -984,7 +986,7 @@ export class ChatController {
   private async handleInitStreamRequest(
     res: Response,
     appId: string,
-    chatId?: string
+    chatId?: string,
   ): Promise<void> {
     try {
       // 设置SSE响应头
@@ -1007,7 +1009,7 @@ export class ChatController {
         id: generateId(),
         timestamp: new Date().toISOString(),
         appId,
-        type: 'init'
+        type: 'init',
       } as JsonValue);
 
       // 调用流式初始化服务
@@ -1023,7 +1025,7 @@ export class ChatController {
           logger.debug('✅ 初始化数据获取完成');
           this.sendSSEEvent(res, 'complete', DynamicDataConverter.toSafeJsonValue({
             data: initData,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           }));
           this.sendSSEEvent(res, 'end', {
             timestamp: new Date().toISOString(),
@@ -1047,7 +1049,7 @@ export class ChatController {
             timestamp: new Date().toISOString(),
           } as JsonValue);
           res.end();
-        }
+        },
       );
 
     } catch (unknownError) {
@@ -1154,7 +1156,6 @@ export class ChatController {
     }
   };
 
-
   /**
    * 获取会话历史列表
    * GET /api/chat/history?agentId=xxx
@@ -1204,7 +1205,7 @@ export class ChatController {
       }
       const histories: FastGPTChatHistorySummary[] = await this.fastgptSessionService.listHistories(
         agentId,
-        pagination
+        pagination,
       );
 
       const extraMetadata: Record<string, JsonValue> = {};
@@ -1417,8 +1418,6 @@ export class ChatController {
     }
   };
 
-
-
   private async ensureUploadDirectory(): Promise<void> {
     try {
       await fs.mkdir(this.uploadDir, { recursive: true });
@@ -1501,8 +1500,6 @@ export class ChatController {
       res.status(500).json(apiError);
     }
   };
-
-
 
   /**
    * 清空指定智能体的历史
@@ -1592,7 +1589,7 @@ export class ChatController {
       const historyDetail = await this.fastgptSessionService.getHistoryDetail(agentId, chatId);
       const prepared = this.fastgptSessionService.prepareRetryPayload(historyDetail, dataId);
 
-      if (!prepared || !prepared.messages || prepared.messages.length === 0) {
+      if (!prepared?.messages || prepared.messages.length === 0) {
         const apiError: ApiError = {
           code: 'RETRY_TARGET_NOT_FOUND',
           message: '未找到可重新生成的用户消息',
@@ -1645,11 +1642,21 @@ export class ChatController {
   private getErrorStatusCode(error: Error): number {
     const message = error.message.toLowerCase();
 
-    if (message.includes('熔断器')) return 503;
-    if (message.includes('限流')) return 429;
-    if (message.includes('超时')) return 408;
-    if (message.includes('网络')) return 502;
-    if (message.includes('不可用')) return 503;
+    if (message.includes('熔断器')) {
+      return 503;
+    }
+    if (message.includes('限流')) {
+      return 429;
+    }
+    if (message.includes('超时')) {
+      return 408;
+    }
+    if (message.includes('网络')) {
+      return 502;
+    }
+    if (message.includes('不可用')) {
+      return 503;
+    }
 
     return 500;
   }
@@ -1660,11 +1667,21 @@ export class ChatController {
   private getErrorCode(error: Error): string {
     const message = error.message.toLowerCase();
 
-    if (message.includes('熔断器')) return 'CIRCUIT_BREAKER_OPEN';
-    if (message.includes('限流')) return 'RATE_LIMIT_EXCEEDED';
-    if (message.includes('超时')) return 'REQUEST_TIMEOUT';
-    if (message.includes('网络')) return 'NETWORK_ERROR';
-    if (message.includes('不可用')) return 'SERVICE_UNAVAILABLE';
+    if (message.includes('熔断器')) {
+      return 'CIRCUIT_BREAKER_OPEN';
+    }
+    if (message.includes('限流')) {
+      return 'RATE_LIMIT_EXCEEDED';
+    }
+    if (message.includes('超时')) {
+      return 'REQUEST_TIMEOUT';
+    }
+    if (message.includes('网络')) {
+      return 'NETWORK_ERROR';
+    }
+    if (message.includes('不可用')) {
+      return 'SERVICE_UNAVAILABLE';
+    }
 
     return 'INTERNAL_ERROR';
   }

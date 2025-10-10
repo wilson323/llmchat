@@ -5,7 +5,7 @@ const router: RouterType = Router();
 
 /**
  * Dify 会话管理路由
- * 
+ *
  * 所有路由需要提供 agentId 查询参数
  */
 
@@ -28,4 +28,3 @@ router.post('/messages/:messageId/feedback', DifySessionController.submitFeedbac
 router.get('/messages/:messageId/suggested', DifySessionController.getSuggestedQuestions);
 
 export default router;
-

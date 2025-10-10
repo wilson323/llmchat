@@ -33,7 +33,11 @@ llmchat/
 │       │   ├── agents/      # 智能体相关组件
 │       │   ├── chat/        # 聊天相关组件
 │       │   ├── admin/       # 管理后台组件
-│       │   └── theme/       # 主题相关组件
+│       │   ├── theme/       # 主题相关组件
+│       │   ├── ui/          # 基础UI组件
+│       │   ├── cad/         # CAD文件处理组件
+│       │   ├── voice/       # 语音通话组件
+│       │   └── workspace/   # 工作区组件
 │       ├── store/           # Zustand状态管理
 │       ├── services/        # API服务层
 │       ├── hooks/           # React Hooks
@@ -664,3 +668,7 @@ docker run -p 3001:3001 llmchat
 - 健康检查端点: `GET /health`
 - 数据库连接检查: `GET /health/db`
 - 外部服务检查: `GET /health/external`
+
+## Task Master AI Instructions
+**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
+@./.taskmaster/CLAUDE.md

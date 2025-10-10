@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import PerformanceDashboard from '@/components/monitoring/PerformanceDashboard';
 
 // ========================================
 // 代码分割：懒加载组件
@@ -116,6 +117,9 @@ function App() {
           
           {/* 全局通知 */}
           <Toaster />
+
+          {/* 性能监控仪表板 */}
+          <PerformanceDashboard />
         </Router>
       </ThemeProvider>
     </ErrorBoundary>

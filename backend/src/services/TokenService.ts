@@ -101,7 +101,7 @@ export class TokenService {
     userId: string,
     username: string,
     role: 'admin' | 'user',
-    metadata?: Partial<TokenMetadata>
+    metadata?: Partial<TokenMetadata>,
   ): Promise<string> {
     await this.ensureRedisConnected();
 
@@ -194,7 +194,7 @@ export class TokenService {
       } else if (error instanceof jwt.TokenExpiredError) {
         logger.info('Token expired', {
           component: 'TokenService',
-          expiredAt: (error as jwt.TokenExpiredError).expiredAt,
+          expiredAt: (error).expiredAt,
         });
       } else {
         logger.error('Token verification error', {
@@ -211,7 +211,7 @@ export class TokenService {
    */
   async refreshAccessToken(
     refreshToken: string,
-    userId: string
+    userId: string,
   ): Promise<{ accessToken: string; newRefreshToken: string } | null> {
     await this.ensureRedisConnected();
 
@@ -339,12 +339,12 @@ export class TokenService {
    * 辅助方法 - 从数据库获取用户信息
    */
   private async getUserInfo(
-    userId: string
+    userId: string,
   ): Promise<{ username: string; role: 'admin' | 'user' } | null> {
     try {
       const result = await this.pool.query(
         'SELECT username, role FROM users WHERE id = $1',
-        [userId]
+        [userId],
       );
 
       if (result.rows.length === 0) {
@@ -399,4 +399,3 @@ export class TokenService {
     logger.info('TokenService Redis connection closed', { component: 'TokenService' });
   }
 }
-

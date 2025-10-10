@@ -27,7 +27,7 @@ export function initOpenTelemetry(): NodeSDK | null {
     // 配置追踪导出器
     const traceExporter = new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-      headers: process.env.OTEL_EXPORTER_OTLP_HEADERS 
+      headers: process.env.OTEL_EXPORTER_OTLP_HEADERS
         ? JSON.parse(process.env.OTEL_EXPORTER_OTLP_HEADERS)
         : {},
     });
@@ -38,7 +38,7 @@ export function initOpenTelemetry(): NodeSDK | null {
         [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || 'llmchat-backend',
         [ATTR_SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
         [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
-      })
+      }),
     );
 
     // 初始化 SDK

@@ -7,7 +7,7 @@ const router: RouterType = Router();
 
 /**
  * 审计日志路由
- * 
+ *
  * 所有审计接口都需要 JWT 认证 + 管理员权限
  */
 
@@ -36,4 +36,3 @@ router.get('/export', adminGuard(), auditController.exportLogs.bind(auditControl
 router.get('/statistics', adminGuard(), auditController.getStatistics.bind(auditController));
 
 export default router;
-

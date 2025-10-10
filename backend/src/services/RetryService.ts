@@ -77,7 +77,7 @@ export class RequestDeduplicator {
     logger.info('请求去重器初始化完成', {
       enabled: this.config.enabled,
       deduplicationWindow: this.config.deduplicationWindow,
-      maxConcurrentRequests: this.config.maxConcurrentRequests
+      maxConcurrentRequests: this.config.maxConcurrentRequests,
     });
   }
 
@@ -86,7 +86,7 @@ export class RequestDeduplicator {
    */
   async execute<T>(
     key: string,
-    operation: () => Promise<T>
+    operation: () => Promise<T>,
   ): Promise<T> {
     if (!this.config.enabled) {
       return operation();
@@ -121,7 +121,7 @@ export class RequestDeduplicator {
    */
   private async executeWithMetrics<T>(
     key: string,
-    operation: () => Promise<T>
+    operation: () => Promise<T>,
   ): Promise<T> {
     const startTime = Date.now();
     const metrics: RequestMetrics = {
@@ -129,7 +129,7 @@ export class RequestDeduplicator {
       attempts: 1,
       totalDuration: 0,
       fallbackUsed: false,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     try {
@@ -158,7 +158,7 @@ export class RequestDeduplicator {
       request.method || 'GET',
       request.url || request.endpoint || '',
       JSON.stringify(request.data || request.body || {}),
-      JSON.stringify(request.params || request.query || {})
+      JSON.stringify(request.params || request.query || {}),
     ];
 
     return Buffer.from(keyParts.join('|')).toString('base64');
@@ -221,14 +221,14 @@ export class RetryService {
   constructor(
     private retryConfig: RetryConfig,
     private fallbackConfig: FallbackConfig,
-    deduplicationConfig?: RequestDeduplicationConfig
+    deduplicationConfig?: RequestDeduplicationConfig,
   ) {
     this.deduplicator = new RequestDeduplicator(
       deduplicationConfig || {
         enabled: true,
         deduplicationWindow: 30000, // 30秒
-        maxConcurrentRequests: 1000  // 最大支持1000并发
-      }
+        maxConcurrentRequests: 1000,  // 最大支持1000并发
+      },
     );
 
     // 设置默认的可重试错误和状态码
@@ -240,7 +240,7 @@ export class RetryService {
         'ENOTFOUND',
         'EAI_AGAIN',
         'NETWORK_ERROR',
-        'TIMEOUT_ERROR'
+        'TIMEOUT_ERROR',
       ];
     }
 
@@ -251,7 +251,7 @@ export class RetryService {
     logger.info('重试服务初始化完成', {
       maxRetries: this.retryConfig.maxRetries,
       baseDelay: this.retryConfig.baseDelay,
-      fallbackEnabled: this.fallbackConfig.enabled
+      fallbackEnabled: this.fallbackConfig.enabled,
     });
   }
 
@@ -260,7 +260,7 @@ export class RetryService {
    */
   async executeWithRetry<T>(
     operation: () => Promise<T>,
-    context?: string
+    context?: string,
   ): Promise<RetryResult<T>> {
     let lastError: Error | undefined;
     let totalDelay = 0;
@@ -276,7 +276,7 @@ export class RetryService {
           context,
           attempt: attempt + 1,
           duration,
-          totalDelay
+          totalDelay,
         });
 
         return {
@@ -284,7 +284,7 @@ export class RetryService {
           data: result,
           attempts: attempt + 1,
           totalDelay,
-          fallbackUsed: false
+          fallbackUsed: false,
         };
       } catch (error) {
         lastError = error as Error;
@@ -307,7 +307,7 @@ export class RetryService {
           maxRetries: this.retryConfig.maxRetries + 1,
           error: lastError.message,
           delay,
-          nextRetryIn: new Date(Date.now() + delay).toISOString()
+          nextRetryIn: new Date(Date.now() + delay).toISOString(),
         });
 
         // 等待后重试
@@ -323,7 +323,7 @@ export class RetryService {
         data: fallbackResult,
         attempts: this.retryConfig.maxRetries + 1,
         totalDelay,
-        fallbackUsed: true
+        fallbackUsed: true,
       };
     }
 
@@ -334,14 +334,14 @@ export class RetryService {
       totalAttempts: this.retryConfig.maxRetries + 1,
       duration,
       totalDelay,
-      finalError: lastError?.message
+      finalError: lastError?.message,
     });
 
     const result: RetryResult<T> = {
       success: false,
       attempts: this.retryConfig.maxRetries + 1,
       totalDelay,
-      fallbackUsed: false
+      fallbackUsed: false,
     };
 
     if (lastError) {
@@ -357,7 +357,7 @@ export class RetryService {
   async executeWithRetryAndDeduplication<T>(
     requestKey: string,
     operation: () => Promise<T>,
-    context?: string
+    context?: string,
   ): Promise<RetryResult<T>> {
     return this.deduplicator.execute(requestKey, async () => {
       return this.executeWithRetry(operation, context);
@@ -388,7 +388,7 @@ export class RetryService {
       'connection',
       'socket',
       'econnreset',
-      'etimedout'
+      'etimedout',
     ];
 
     return retryablePatterns.some(pattern => errorMessage.includes(pattern));
@@ -431,7 +431,7 @@ export class RetryService {
   private async executeFallback<T>(error: Error): Promise<T> {
     logger.warn('执行降级处理', {
       error: error.message,
-      fallbackProvider: this.fallbackConfig.fallbackProvider
+      fallbackProvider: this.fallbackConfig.fallbackProvider,
     });
 
     // 检查缓存
@@ -455,7 +455,7 @@ export class RetryService {
       fallbackResponse = {
         error: '服务暂时不可用，请稍后重试',
         fallback: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       } as T;
     }
 
@@ -477,7 +477,7 @@ export class RetryService {
 
       this.fallbackCache.set(cacheKey, {
         data: fallbackResponse,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -531,9 +531,9 @@ export function createDefaultRetryConfig(): RetryConfig {
       'ENOTFOUND',
       'EAI_AGAIN',
       'NETWORK_ERROR',
-      'TIMEOUT_ERROR'
+      'TIMEOUT_ERROR',
     ],
-    retryableStatusCodes: [408, 429, 500, 502, 503, 504]
+    retryableStatusCodes: [408, 429, 500, 502, 503, 504],
   };
 }
 
@@ -546,10 +546,10 @@ export function createDefaultFallbackConfig(): FallbackConfig {
     fallbackResponse: {
       error: '服务暂时不可用，请稍后重试',
       fallback: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     },
     cacheFallbackResponse: true,
     maxCacheSize: 100,
-    cacheTTL: 300000 // 5分钟
+    cacheTTL: 300000, // 5分钟
   };
 }

@@ -24,8 +24,16 @@ import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types'
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
 import { perfMonitor } from '@/utils/performanceMonitor';
+import {
+  memoryMonitor,
+  resourceManager,
+  usePerformanceMonitor
+} from '@/utils/performanceOptimizer';
 
 export const ChatContainer: React.FC = () => {
+  // 🚀 性能监控和资源管理
+  usePerformanceMonitor('ChatContainer');
+
   // 🚀 性能优化：精确订阅，只订阅需要的状态
   const messages = useMessageStore((state) => state.messages);
   const isStreaming = useMessageStore((state) => state.isStreaming);
@@ -183,6 +191,30 @@ export const ChatContainer: React.FC = () => {
       }
     });
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
+
+  // 内存监控
+  useEffect(() => {
+    const memoryCleanup = memoryMonitor.addMemoryObserver((data: { memory: number; trend: string }) => {
+      if (data.trend === 'increasing' && data.memory > 50 * 1024 * 1024) {
+        console.warn('ChatContainer: Memory usage increasing', data);
+        // 触发垃圾回收提示
+        if (window.gc) {
+          window.gc();
+        }
+      }
+    });
+
+    return () => {
+      memoryCleanup();
+    };
+  }, []);
+
+  // 组件卸载时清理资源
+  useEffect(() => {
+    return () => {
+      resourceManager.cleanup();
+    };
+  }, []);
 
   // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
   // 此组件现在只负责渲染标准聊天界面

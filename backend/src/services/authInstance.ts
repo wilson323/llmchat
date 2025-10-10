@@ -1,6 +1,6 @@
 /**
  * 认证服务实例配置
- * 
+ *
  * 渐进式迁移策略:
  * - 通过环境变量USE_AUTH_V2控制使用新旧服务
  * - 默认使用V2（新服务）
@@ -23,10 +23,9 @@ if (useAuthV2) {
 }
 
 // 导出统一接口（兼容旧代码）
-export const authService = useAuthV2 
-  ? getAuthServiceV2() 
+export const authService = useAuthV2
+  ? getAuthServiceV2()
   : new AuthService();
 
 // 导出类型（用于Controller）
 export const isAuthV2 = useAuthV2;
-

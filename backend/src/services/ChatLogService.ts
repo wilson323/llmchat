@@ -78,12 +78,16 @@ export class ChatLogService {
   }
 
   private appendFile(entry: object) {
-    if (!this.enabled) return;
+    if (!this.enabled) {
+      return;
+    }
     this.ensureDir();
     const line = JSON.stringify(entry) + '\n';
     try {
       fs.appendFile(this.getLogFilePath(), line, (err) => {
-        if (err) logger.warn('[ChatLogService] 写入日志失败', { error: err });
+        if (err) {
+          logger.warn('[ChatLogService] 写入日志失败', { error: err });
+        }
       });
     } catch (e) {
       logger.warn('[ChatLogService] 追加日志异常', { error: e });
@@ -108,7 +112,9 @@ export class ChatLogService {
     rawResponse?: any;
     normalizedResponse?: any;
   }) {
-    if (!this.enabled || !this.recordNormal) return;
+    if (!this.enabled || !this.recordNormal) {
+      return;
+    }
     const entry: NormalLogEntry = {
       timestamp: new Date().toISOString(),
       type: 'normal',
@@ -142,7 +148,9 @@ export class ChatLogService {
     eventType: string;
     data: any;
   }) {
-    if (!this.enabled || !this.recordStream) return;
+    if (!this.enabled || !this.recordStream) {
+      return;
+    }
     const entry: StreamLogEntry = {
       timestamp: new Date().toISOString(),
       type: 'stream',
@@ -171,10 +179,18 @@ export class ChatLogService {
         payload: params.data ?? null,
         timestamp: entry.timestamp,
       };
-      if (params.provider) obsPayload.provider = params.provider;
-      if (params.endpoint) obsPayload.endpoint = params.endpoint;
-      if (params.chatId) obsPayload.chatId = params.chatId;
-      if (params.eventType) obsPayload.eventType = params.eventType;
+      if (params.provider) {
+        obsPayload.provider = params.provider;
+      }
+      if (params.endpoint) {
+        obsPayload.endpoint = params.endpoint;
+      }
+      if (params.chatId) {
+        obsPayload.chatId = params.chatId;
+      }
+      if (params.eventType) {
+        obsPayload.eventType = params.eventType;
+      }
       this.pushObservability('stream', level, obsPayload);
     }
   }
@@ -190,10 +206,12 @@ export class ChatLogService {
       eventType?: string;
       payload: any;
       timestamp: string;
-    }
+    },
   ) {
     try {
-      if (!this.observability.isEnabled()) return;
+      if (!this.observability.isEnabled()) {
+        return;
+      }
       const event: import('./ObservabilityDispatcher').ObservabilityEvent = {
         timestamp: payload.timestamp,
         channel,
@@ -219,4 +237,3 @@ export class ChatLogService {
     }
   }
 }
-

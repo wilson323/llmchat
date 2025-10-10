@@ -258,22 +258,22 @@ export interface FastGPTInitResponse {
     chatConfig: {
       questionGuide: boolean;
       ttsConfig: { type: string };
-      whisperConfig: { 
-        open: boolean; 
-        autoSend: boolean; 
-        autoTTSResponse: boolean 
+      whisperConfig: {
+        open: boolean;
+        autoSend: boolean;
+        autoTTSResponse: boolean
       };
-      chatInputGuide: { 
-        open: boolean; 
-        textList: string[]; 
-        customUrl: string 
+      chatInputGuide: {
+        open: boolean;
+        textList: string[];
+        customUrl: string
       };
       instruction: string;
       variables: any[];
-      fileSelectConfig: { 
-        canSelectFile: boolean; 
-        canSelectImg: boolean; 
-        maxFiles: number 
+      fileSelectConfig: {
+        canSelectFile: boolean;
+        canSelectImg: boolean;
+        maxFiles: number
       };
       welcomeText: string;
     };

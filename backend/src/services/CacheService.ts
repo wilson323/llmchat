@@ -38,7 +38,7 @@ export class CacheService {
 
   constructor(
     private readonly prefix: string = 'llmchat',
-    private readonly defaultTTL: number = 300 // 5 分钟
+    private readonly defaultTTL: number = 300, // 5 分钟
   ) {}
 
   /**
@@ -96,7 +96,7 @@ export class CacheService {
       // 等待连接完成
       await this.client.ping();
       this.connected = true;
-      
+
       logger.info('✓ Redis 缓存服务已启动', { prefix: this.prefix, defaultTTL: this.defaultTTL });
     } catch (error) {
       logger.error('Redis 连接失败', { error });
@@ -275,12 +275,12 @@ export class CacheService {
     try {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.incr(fullKey);
-      
+
       // 如果是新 key，设置过期时间
       if (result === 1 && options?.ttl) {
         await this.client.expire(fullKey, options.ttl);
       }
-      
+
       return result;
     } catch (error) {
       logger.error('缓存递增失败', { key, error });
@@ -295,7 +295,7 @@ export class CacheService {
   async getOrSet<T>(
     key: string,
     fallback: () => Promise<T>,
-    options?: CacheOptions
+    options?: CacheOptions,
   ): Promise<T | null> {
     // 尝试从缓存获取
     const cached = await this.get<T>(key, options);
@@ -306,10 +306,10 @@ export class CacheService {
     try {
       // 缓存未命中，执行 fallback
       const value = await fallback();
-      
+
       // 写入缓存
       await this.set(key, value, options);
-      
+
       return value;
     } catch (error) {
       logger.error('getOrSet fallback 执行失败', { key, error });
@@ -321,14 +321,14 @@ export class CacheService {
    * 分布式锁（简单实现）
    */
   async lock(key: string, ttl: number = 10): Promise<boolean> {
-    return await this.set(`lock:${key}`, Date.now(), { ttl, nx: true });
+    return this.set(`lock:${key}`, Date.now(), { ttl, nx: true });
   }
 
   /**
    * 释放分布式锁
    */
   async unlock(key: string): Promise<boolean> {
-    return await this.del(`lock:${key}`);
+    return this.del(`lock:${key}`);
   }
 
   /**
@@ -414,7 +414,7 @@ export function Cacheable(key: string, ttl: number = 300) {
   return function (
     _target: any,
     _propertyKey: string,
-    descriptor: PropertyDescriptor
+    descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;
 

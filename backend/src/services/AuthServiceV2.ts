@@ -1,13 +1,13 @@
 /**
  * 增强版认证服务 V2
- * 
+ *
  * 安全特性:
  * - bcrypt密码哈希验证
  * - JWT token签名与验证
  * - Redis可选支持（Token黑名单、会话管理）
  * - 速率限制集成
  * - 审计日志记录
- * 
+ *
  * 向后兼容:
  * - 保留原AuthService接口
  * - 支持渐进式迁移
@@ -84,12 +84,12 @@ export class AuthServiceV2 {
 
   constructor() {
     const envManager = EnvManager.getInstance();
-    
+
     // 获取JWT密钥
     this.tokenSecret = envManager.get('TOKEN_SECRET');
     if (!this.tokenSecret || this.tokenSecret.length < 32) {
       throw new Error(
-        'TOKEN_SECRET must be set and at least 32 characters long for security'
+        'TOKEN_SECRET must be set and at least 32 characters long for security',
       );
     }
 
@@ -106,7 +106,7 @@ export class AuthServiceV2 {
   private initRedis(): void {
     const envManager = EnvManager.getInstance();
     const redisHost = envManager.get('REDIS_HOST', '');
-    
+
     if (!redisHost) {
       logger.info('Redis未配置，使用内存模式（单实例部署）');
       return;
@@ -148,12 +148,12 @@ export class AuthServiceV2 {
 
     // 1. 查询用户
     const dbUser = await this.findUserByUsername(username);
-    
+
     if (!dbUser) {
       logger.warn('登录失败：用户不存在', { username, ip });
       throw new AuthenticationError({
         message: '用户名或密码错误',
-        code: 'INVALID_CREDENTIALS'
+        code: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -163,38 +163,38 @@ export class AuthServiceV2 {
       throw new BusinessLogicError({
         message: '账号未激活',
         code: 'ACCOUNT_INACTIVE',
-        rule: 'account_status'
+        rule: 'account_status',
       });
     }
 
     // 3. 检查账号锁定
     if (dbUser.locked_until && new Date(dbUser.locked_until) > new Date()) {
       const remainingMinutes = Math.ceil(
-        (new Date(dbUser.locked_until).getTime() - Date.now()) / 60000
+        (new Date(dbUser.locked_until).getTime() - Date.now()) / 60000,
       );
       logger.warn('登录失败：账号已锁定', {
         username,
         lockedUntil: dbUser.locked_until,
-      remainingMinutes,
-      ip,
-    });
-    throw new BusinessLogicError({
-      message: `账号已被锁定，请在 ${remainingMinutes} 分钟后重试`,
-      code: 'ACCOUNT_LOCKED',
-      rule: 'max_login_attempts',
-      data: { remainingMinutes }
-    });
+        remainingMinutes,
+        ip,
+      });
+      throw new BusinessLogicError({
+        message: `账号已被锁定，请在 ${remainingMinutes} 分钟后重试`,
+        code: 'ACCOUNT_LOCKED',
+        rule: 'max_login_attempts',
+        data: { remainingMinutes },
+      });
     }
 
     // 4. 验证密码
     const passwordValid = await bcrypt.compare(password, dbUser.password_hash);
-    
+
     if (!passwordValid) {
       await this.handleFailedLogin(dbUser.id);
       logger.warn('登录失败：密码错误', { username, ip });
       throw new AuthenticationError({
         message: '用户名或密码错误',
-        code: 'INVALID_CREDENTIALS'
+        code: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -241,7 +241,7 @@ export class AuthServiceV2 {
       // 2. 检查黑名单（如果有Redis）
       if (this.redis && payload.jti) {
         const isBlacklisted = await this.redis.exists(
-          `${TOKEN_BLACKLIST_PREFIX}${payload.jti}`
+          `${TOKEN_BLACKLIST_PREFIX}${payload.jti}`,
         );
         if (isBlacklisted) {
           return { valid: false, error: 'TOKEN_REVOKED' };
@@ -280,7 +280,7 @@ export class AuthServiceV2 {
 
     try {
       const payload = jwt.decode(token) as JWTPayload;
-      if (!payload || !payload.jti) {
+      if (!payload?.jti) {
         return;
       }
 
@@ -290,7 +290,7 @@ export class AuthServiceV2 {
         await this.redis.setex(
           `${TOKEN_BLACKLIST_PREFIX}${payload.jti}`,
           ttl,
-          '1'
+          '1',
         );
       }
 
@@ -311,15 +311,15 @@ export class AuthServiceV2 {
       const payload = jwt.verify(refreshToken, this.tokenSecret) as JWTPayload;
 
       // 重新查询用户确保状态正确
-    const dbUser = await this.findUserById(payload.sub);
-    if (!dbUser || dbUser.status !== 'active') {
-      throw new ResourceError({
-        message: '用户不存在或未激活',
-        code: 'USER_NOT_FOUND_OR_INACTIVE',
-        resourceType: 'user',
-        resourceId: payload.sub
-      });
-    }
+      const dbUser = await this.findUserById(payload.sub);
+      if (!dbUser || dbUser.status !== 'active') {
+        throw new ResourceError({
+          message: '用户不存在或未激活',
+          code: 'USER_NOT_FOUND_OR_INACTIVE',
+          resourceType: 'user',
+          resourceId: payload.sub,
+        });
+      }
 
       const user: AuthUser = {
         id: dbUser.id,
@@ -341,7 +341,7 @@ export class AuthServiceV2 {
       logger.error('Token刷新失败', { error: error.message });
       throw new AuthenticationError({
         message: 'Refresh Token 无效或已过期',
-        code: 'REFRESH_TOKEN_INVALID'
+        code: 'REFRESH_TOKEN_INVALID',
       });
     }
   }
@@ -352,7 +352,7 @@ export class AuthServiceV2 {
   async changePassword(
     userId: string,
     oldPassword: string,
-    newPassword: string
+    newPassword: string,
   ): Promise<void> {
     // 1. 查询用户
     const dbUser = await this.findUserById(userId);
@@ -361,7 +361,7 @@ export class AuthServiceV2 {
         message: '用户不存在',
         code: 'USER_NOT_FOUND',
         resourceType: 'user',
-        resourceId: userId
+        resourceId: userId,
       });
     }
 
@@ -370,7 +370,7 @@ export class AuthServiceV2 {
     if (!oldPasswordValid) {
       throw new AuthenticationError({
         message: '原密码错误',
-        code: 'INVALID_OLD_PASSWORD'
+        code: 'INVALID_OLD_PASSWORD',
       });
     }
 
@@ -386,7 +386,7 @@ export class AuthServiceV2 {
         `UPDATE users 
          SET password_hash = $1, password_updated_at = CURRENT_TIMESTAMP 
          WHERE id = $2`,
-        [newPasswordHash, userId]
+        [newPasswordHash, userId],
       );
     });
 
@@ -404,7 +404,7 @@ export class AuthServiceV2 {
   async register(
     username: string,
     password: string,
-    email?: string
+    email?: string,
   ): Promise<AuthUser> {
     // 1. 验证密码强度
     this.validatePasswordStrength(password);
@@ -416,7 +416,7 @@ export class AuthServiceV2 {
         message: '用户名已存在',
         code: 'USERNAME_ALREADY_EXISTS',
         rule: 'unique_username',
-        data: { username }
+        data: { username },
       });
     }
 
@@ -429,7 +429,7 @@ export class AuthServiceV2 {
       await client.query(
         `INSERT INTO users (id, username, email, password_hash, role, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        [userId, username, email || null, passwordHash, 'user', 'active']
+        [userId, username, email || null, passwordHash, 'user', 'active'],
       );
     });
 
@@ -451,7 +451,7 @@ export class AuthServiceV2 {
     if (!result.valid || !result.user) {
       throw new AuthenticationError({
         message: 'Token 验证失败',
-        code: result.error || 'UNAUTHORIZED'
+        code: result.error || 'UNAUTHORIZED',
       });
     }
     return result.user;
@@ -493,7 +493,7 @@ export class AuthServiceV2 {
          FROM users 
          WHERE username = $1 
          LIMIT 1`,
-        [username]
+        [username],
       );
       return rows[0] || null;
     });
@@ -508,7 +508,7 @@ export class AuthServiceV2 {
          FROM users 
          WHERE id = $1 
          LIMIT 1`,
-        [userId]
+        [userId],
       );
       return rows[0] || null;
     });
@@ -522,13 +522,13 @@ export class AuthServiceV2 {
         `UPDATE users 
          SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1 
          WHERE id = $1`,
-        [userId]
+        [userId],
       );
 
       // 检查是否需要锁定
       const { rows } = await client.query(
         'SELECT failed_login_attempts FROM users WHERE id = $1',
-        [userId]
+        [userId],
       );
 
       const attempts = rows[0]?.failed_login_attempts || 0;
@@ -536,7 +536,7 @@ export class AuthServiceV2 {
         const lockUntil = new Date(Date.now() + ACCOUNT_LOCK_DURATION * 1000);
         await client.query(
           'UPDATE users SET locked_until = $1 WHERE id = $2',
-          [lockUntil, userId]
+          [lockUntil, userId],
         );
         logger.warn('账号已锁定', { userId, lockUntil });
       }
@@ -547,7 +547,7 @@ export class AuthServiceV2 {
     await withClient(async (client) => {
       await client.query(
         'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1',
-        [userId]
+        [userId],
       );
     });
   }
@@ -556,13 +556,15 @@ export class AuthServiceV2 {
     await withClient(async (client) => {
       await client.query(
         'UPDATE users SET last_login_at = CURRENT_TIMESTAMP, last_login_ip = $1 WHERE id = $2',
-        [ip || null, userId]
+        [ip || null, userId],
       );
     });
   }
 
   private async storeSession(userId: string, token: string, ip?: string): Promise<void> {
-    if (!this.redis) return;
+    if (!this.redis) {
+      return;
+    }
 
     try {
       const sessionData = JSON.stringify({
@@ -581,35 +583,35 @@ export class AuthServiceV2 {
       throw new ValidationError({
         message: '密码长度至少8位',
         code: 'PASSWORD_TOO_SHORT',
-        field: 'password'
+        field: 'password',
       });
     }
     if (!/[A-Z]/.test(password)) {
       throw new ValidationError({
         message: '密码必须包含大写字母',
         code: 'PASSWORD_MISSING_UPPERCASE',
-        field: 'password'
+        field: 'password',
       });
     }
     if (!/[a-z]/.test(password)) {
       throw new ValidationError({
         message: '密码必须包含小写字母',
         code: 'PASSWORD_MISSING_LOWERCASE',
-        field: 'password'
+        field: 'password',
       });
     }
     if (!/[0-9]/.test(password)) {
       throw new ValidationError({
         message: '密码必须包含数字',
         code: 'PASSWORD_MISSING_NUMBER',
-        field: 'password'
+        field: 'password',
       });
     }
     if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       throw new ValidationError({
         message: '密码必须包含特殊字符',
         code: 'PASSWORD_MISSING_SPECIAL_CHAR',
-        field: 'password'
+        field: 'password',
       });
     }
   }
@@ -634,4 +636,3 @@ export function getAuthService(): AuthServiceV2 {
   }
   return authServiceInstance;
 }
-
