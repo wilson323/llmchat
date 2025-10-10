@@ -208,8 +208,14 @@ export async function initDB(): Promise<void> {
       );
     `);
 
-    // 明文密码列（若不存在则添加）
-    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_plain TEXT;');
+    // 移除明文密码列（安全修复）
+    try {
+      await client.query('ALTER TABLE users DROP COLUMN IF EXISTS password_plain;');
+      logger.info('[initDB] ✅ 已移除不安全的明文密码列');
+    } catch (error) {
+      // 列可能不存在，忽略错误
+      logger.info('[initDB] 明文密码列不存在或已移除');
+    }
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS logs (

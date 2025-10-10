@@ -50,8 +50,10 @@ export class SecureCredentialsManager {
 
       const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
 
-      let encrypted = cipher.update(plaintext, 'utf8');
-      encrypted += cipher.final();
+      let encrypted = Buffer.concat([
+        cipher.update(plaintext, 'utf8'),
+        cipher.final()
+      ]);
 
       return {
         data: Buffer.from(encrypted).toString('base64'),
@@ -75,8 +77,10 @@ export class SecureCredentialsManager {
       const decipher = crypto.createDecipheriv(encryptedData.algorithm, key, iv);
 
       const encryptedBuffer = Buffer.from(encryptedData.data, 'base64');
-      let decrypted = decipher.update(encryptedBuffer);
-      decrypted += decipher.final();
+      let decrypted = Buffer.concat([
+        decipher.update(encryptedBuffer),
+        decipher.final()
+      ]);
 
       return decrypted.toString('utf8');
     } catch (error) {
