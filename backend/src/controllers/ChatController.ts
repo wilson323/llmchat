@@ -1548,7 +1548,7 @@ export class ChatController {
       const { limit, offset, role: roleRaw } = value as {
         limit?: number;
         offset?: number;
-        role?: string | string[];
+        role?: unknown;
       };
 
       const queryOptions: ChatHistoryQueryOptions = {};
@@ -1559,20 +1559,9 @@ export class ChatController {
         queryOptions.offset = offset;
       }
 
-      type HistoryRole = (typeof ChatController.supportedHistoryRoles)[number];
-      const allowedRoles = ChatController.supportedHistoryRoles;
-      if (roleRaw) {
-        const roleList = Array.isArray(roleRaw) ? roleRaw : roleRaw.split(',');
-        const normalizedRoles = roleList
-          .map((role) => {
-            const trimmed = role.trim() as HistoryRole;
-            return allowedRoles.includes(trimmed) ? trimmed : undefined;
-          })
-          .filter((role): role is HistoryRole => role !== undefined);
-
-        if (normalizedRoles.length > 0) {
-          queryOptions.roles = normalizedRoles;
-        }
+      const normalizedRoles = this.parseHistoryRoleFilter(roleRaw);
+      if (normalizedRoles.length > 0) {
+        queryOptions.roles = normalizedRoles;
       }
 
       const history = await this.historyService.getHistory(sessionId, queryOptions);
@@ -1740,6 +1729,57 @@ export class ChatController {
       res.status(500).json(apiError);
     }
   };
+
+  /**
+   * 解析请求中的角色过滤参数，兼容多种格式避免运行时异常
+   */
+  private parseHistoryRoleFilter(roleValue: unknown): Array<(typeof ChatController.supportedHistoryRoles)[number]> {
+    type HistoryRole = (typeof ChatController.supportedHistoryRoles)[number];
+    if (roleValue === undefined || roleValue === null) {
+      return [];
+    }
+
+    const allowed = new Set<HistoryRole>(ChatController.supportedHistoryRoles);
+    const result = new Set<HistoryRole>();
+
+    const collect = (raw: unknown) => {
+      if (typeof raw !== 'string') {
+        return;
+      }
+      const normalized = raw.trim().toLowerCase();
+      if (allowed.has(normalized as HistoryRole)) {
+        result.add(normalized as HistoryRole);
+      }
+    };
+
+    if (Array.isArray(roleValue)) {
+      roleValue.forEach(collect);
+    } else if (typeof roleValue === 'string') {
+      const trimmed = roleValue.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(collect);
+          } else {
+            collect(parsed);
+          }
+        } catch (parseError) {
+          logger.warn('角色过滤参数解析失败，回退到逗号分隔解析', {
+            raw: roleValue,
+            error: parseError instanceof Error ? parseError.message : String(parseError),
+          });
+          trimmed.split(',').forEach(collect);
+        }
+      } else {
+        trimmed.split(',').forEach(collect);
+      }
+    } else if (typeof roleValue === 'object') {
+      Object.values(roleValue as Record<string, unknown>).forEach(collect);
+    }
+
+    return Array.from(result);
+  }
 
   /**
    * 获取错误状态码
