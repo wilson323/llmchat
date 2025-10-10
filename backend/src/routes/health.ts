@@ -1,11 +1,15 @@
 /**
  * 增强版健康检查路由
- * 支持基础检查、详细检查、就绪检查、存活检查
+ * 支持基础检查、详细检查、就绪检查、存活检查、性能监控
  */
 
 import { Router, Request, Response, type Router as RouterType } from 'express';
 import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
+import { performanceOptimizer } from '@/utils/PerformanceOptimizer';
+import { performanceMonitor } from '@/middleware/PerformanceMonitor';
+import { databaseQueryOptimizer } from '@/utils/DatabaseQueryOptimizer';
+import { connectionPoolOptimizer } from '@/utils/ConnectionPoolOptimizer';
 
 const router: RouterType = Router();
 
@@ -214,6 +218,222 @@ router.get('/startup', async (_req: Request, res: Response) => {
     });
   }
 });
+
+/**
+ * 性能监控检查
+ * GET /health/performance
+ * 获取系统性能指标和统计信息
+ */
+router.get('/performance', async (_req: Request, res: Response) => {
+  try {
+    // 获取性能优化器统计
+    const optimizerStats = performanceOptimizer.getPerformanceStats();
+
+    // 获取性能监控器统计
+    const monitorSummary = performanceMonitor.calculatePerformanceSummary();
+
+    // 获取数据库查询优化器统计
+    const dbQueryStats = databaseQueryOptimizer.getPerformanceStats();
+
+    // 获取连接池优化器统计
+    const poolStats = connectionPoolOptimizer.getPoolStats();
+
+    // 获取慢请求列表
+    const slowRequests = performanceMonitor.getSlowRequests().slice(0, 10);
+
+    // 获取错误请求列表
+    const errorRequests = performanceMonitor.getErrorRequests().slice(0, 10);
+
+    // 获取当前系统资源使用情况
+    const memUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
+
+    // 检查数据库健康状态
+    const dbHealth = await checkDatabaseHealth();
+
+    // 计算系统健康评分
+    const healthScore = calculateHealthScore({
+      memory: memUsage,
+      optimizerStats,
+      monitorSummary,
+      dbHealth,
+      dbQueryStats,
+      poolStats,
+    });
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      healthScore,
+      system: {
+        memory: {
+          rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
+          heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+          heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+          heapUsedPercent: `${((memUsage.heapUsed / memUsage.heapTotal) * 100).toFixed(2)}%`,
+          external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
+        },
+        cpu: {
+          user: `${(cpuUsage.user / 1000000).toFixed(2)}s`,
+          system: `${(cpuUsage.system / 1000000).toFixed(2)}s`,
+        },
+        uptime: process.uptime(),
+      },
+      performance: {
+        optimizer: optimizerStats,
+        monitor: monitorSummary,
+        slowRequests: slowRequests.map(req => ({
+          requestId: req.requestId,
+          method: req.method,
+          url: req.url,
+          duration: `${req.duration}ms`,
+          statusCode: req.statusCode,
+          timestamp: req.timestamp,
+        })),
+        errorRequests: errorRequests.map(req => ({
+          requestId: req.requestId,
+          method: req.method,
+          url: req.url,
+          statusCode: req.statusCode,
+          timestamp: req.timestamp,
+          errors: req.errors,
+        })),
+      },
+      database: {
+        health: dbHealth,
+        queries: {
+          totalQueries: dbQueryStats.totalQueries,
+          avgDuration: `${dbQueryStats.avgDuration}ms`,
+          slowQueries: dbQueryStats.slowQueries,
+          cacheHitRate: `${(dbQueryStats.cacheHitRate * 100).toFixed(2)}%`,
+          topSlowQueries: dbQueryStats.topSlowQueries.slice(0, 5),
+        },
+        connectionPool: {
+          totalConnections: poolStats.totalConnections,
+          activeConnections: poolStats.activeConnections,
+          idleConnections: poolStats.idleConnections,
+          waitingClients: poolStats.waitingClients,
+          utilizationRate: `${((poolStats.activeConnections / poolStats.maxConnections) * 100).toFixed(2)}%`,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Performance health check failed', { error });
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Performance monitoring failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * 计算系统健康评分（0-100）
+ */
+function calculateHealthScore(context: {
+  memory: NodeJS.MemoryUsage;
+  optimizerStats: any;
+  monitorSummary: any;
+  dbHealth: { healthy: boolean; latency?: number };
+  dbQueryStats: any;
+  poolStats: any;
+}): number {
+  let score = 100;
+
+  // 内存使用率评分 (权重: 25%)
+  const memoryUsagePercent = (context.memory.heapUsed / context.memory.heapTotal) * 100;
+  if (memoryUsagePercent > 90) {
+    score -= 25;
+  } else if (memoryUsagePercent > 80) {
+    score -= 15;
+  } else if (memoryUsagePercent > 70) {
+    score -= 8;
+  }
+
+  // 错误率评分 (权重: 20%)
+  const errorRate = context.monitorSummary.errorRate || 0;
+  if (errorRate > 0.1) { // 错误率超过10%
+    score -= 20;
+  } else if (errorRate > 0.05) { // 错误率超过5%
+    score -= 12;
+  } else if (errorRate > 0.01) { // 错误率超过1%
+    score -= 4;
+  }
+
+  // 平均响应时间评分 (权重: 15%)
+  const avgResponseTime = context.monitorSummary.averageResponseTime || 0;
+  if (avgResponseTime > 5000) { // 超过5秒
+    score -= 15;
+  } else if (avgResponseTime > 2000) { // 超过2秒
+    score -= 8;
+  } else if (avgResponseTime > 1000) { // 超过1秒
+    score -= 4;
+  }
+
+  // 数据库健康评分 (权重: 12%)
+  if (!context.dbHealth.healthy) {
+    score -= 12;
+  } else if (context.dbHealth.latency && context.dbHealth.latency > 1000) { // 超过1秒
+    score -= 8;
+  } else if (context.dbHealth.latency && context.dbHealth.latency > 500) { // 超过500ms
+    score -= 4;
+  }
+
+  // 数据库查询性能评分 (权重: 10%)
+  const avgQueryDuration = context.dbQueryStats.avgDuration || 0;
+  const queryErrorRate = context.dbQueryStats.totalQueries > 0 ?
+    (context.dbQueryStats.connectionErrors / context.dbQueryStats.totalQueries) : 0;
+
+  if (avgQueryDuration > 2000) { // 超过2秒
+    score -= 6;
+  } else if (avgQueryDuration > 1000) { // 超过1秒
+    score -= 3;
+  }
+
+  if (queryErrorRate > 0.05) { // 错误率超过5%
+    score -= 8;
+  } else if (queryErrorRate > 0.02) { // 错误率超过2%
+    score -= 4;
+  }
+
+  // 连接池使用率评分 (权重: 8%)
+  const poolUtilization = context.poolStats.maxConnections > 0 ?
+    (context.poolStats.activeConnections / context.poolStats.maxConnections) : 0;
+
+  if (poolUtilization > 0.9) { // 超过90%
+    score -= 5;
+  } else if (poolUtilization > 0.8) { // 超过80%
+    score -= 3;
+  } else if (poolUtilization > 0.6) { // 超过60%
+    score -= 1;
+  }
+
+  // 连接池等待评分 (权重: 5%)
+  if (context.poolStats.waitingClients > 10) {
+    score -= 5;
+  } else if (context.poolStats.waitingClients > 5) {
+    score -= 2;
+  }
+
+  // 查询缓存命中率评分 (权重: 5%)
+  const cacheHitRate = context.dbQueryStats.cacheHitRate || 0;
+  if (cacheHitRate < 0.3) { // 命中率低于30%
+    score -= 3;
+  } else if (cacheHitRate < 0.5) { // 命中率低于50%
+    score -= 1;
+  }
+
+  // 请求数量评分 (权重: 5%)
+  const requestsPerMinute = context.monitorSummary.requestsPerMinute || 0;
+  if (requestsPerMinute > 1000) {
+    score -= 5;
+  } else if (requestsPerMinute > 500) {
+    score -= 2;
+  }
+
+  return Math.max(0, Math.round(score));
+}
 
 export default router;
 export { router as healthRoutes };

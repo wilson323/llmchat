@@ -11,6 +11,8 @@ import {
   ResourceType,
 } from '@/types/audit';
 import { SystemError } from '@/types/errors';
+import { databaseQueryOptimizer, createOptimizedQuery } from '@/utils/DatabaseQueryOptimizer';
+import { connectionPoolOptimizer, createOptimizedConnection } from '@/utils/ConnectionPoolOptimizer';
 
 /**
  * 审计日志服务
@@ -35,7 +37,7 @@ export class AuditService {
   }
 
   /**
-   * 记录审计日志
+   * 记录审计日志（使用优化的数据库连接）
    */
   async log(params: CreateAuditLogParams): Promise<AuditLog> {
     const {
@@ -51,8 +53,10 @@ export class AuditService {
       errorMessage,
     } = params;
 
+    const optimizedQuery = createOptimizedQuery();
+
     try {
-      const result = await this.pool.query<AuditLog>(
+      const result = await optimizedQuery(
         `INSERT INTO audit_logs (
           user_id, username, action, resource_type, resource_id,
           details, ip_address, user_agent, status, error_message
@@ -70,9 +74,13 @@ export class AuditService {
           status,
           errorMessage,
         ],
+        {
+          enableCache: false, // INSERT操作不需要缓存
+          queryType: 'insert',
+        }
       );
 
-      const auditLog = this.mapRowToAuditLog(result.rows[0]);
+      const auditLog = this.mapRowToAuditLog((result as any).rows[0]);
 
       // 同时写入 Winston 日志
       logger.info('AUDIT_LOG', {
@@ -97,7 +105,7 @@ export class AuditService {
   }
 
   /**
-   * 查询审计日志
+   * 查询审计日志（使用优化的数据库连接）
    */
   async query(query: AuditLogQuery): Promise<AuditLogQueryResult> {
     const {
@@ -113,6 +121,8 @@ export class AuditService {
       orderBy = 'timestamp',
       orderDirection = 'DESC',
     } = query;
+
+    const optimizedQuery = createOptimizedQuery();
 
     try {
       // 构建查询条件
@@ -162,22 +172,30 @@ export class AuditService {
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-      // 查询总数
-      const countResult = await this.pool.query<{ count: string }>(
+      // 查询总数（使用缓存）
+      const countResult = await optimizedQuery(
         `SELECT COUNT(*) as count FROM audit_logs ${whereClause}`,
         values,
+        {
+          enableCache: true,
+          queryType: 'select',
+        }
       );
-      const total = parseInt(countResult.rows[0]?.count || '0', 10);
+      const total = parseInt((countResult as any).rows[0]?.count || '0', 10);
 
-      // 查询数据
-      const dataResult = await this.pool.query<AuditLog>(
+      // 查询数据（使用缓存）
+      const dataResult = await optimizedQuery(
         `SELECT * FROM audit_logs ${whereClause}
          ORDER BY ${orderBy} ${orderDirection}
          LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
         [...values, limit, offset],
+        {
+          enableCache: true,
+          queryType: 'select',
+        }
       );
 
-      const logs = dataResult.rows.map((row) => this.mapRowToAuditLog(row));
+      const logs = (dataResult as any).rows.map((row: any) => this.mapRowToAuditLog(row));
 
       const page = Math.floor(offset / limit) + 1;
       const totalPages = Math.ceil(total / limit);

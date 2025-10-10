@@ -105,14 +105,38 @@ export class PerformanceMonitor {
   private requestCounts = { total: 0, successful: 0, failed: 0 };
   private lastMetricsTime = Date.now();
   private maxMetricsHistory = 1000;
+  private metricsInterval?: NodeJS.Timeout;
 
   constructor() {
+    this.start();
+  }
+
+  /**
+   * 启动性能监控
+   */
+  start(): void {
+    if (this.metricsInterval) {
+      logger.warn('性能监控器已在运行');
+      return;
+    }
+
     // 每分钟收集一次指标
-    setInterval(() => {
+    this.metricsInterval = setInterval(() => {
       this.collectMetrics();
-    }, 60000);
+    }, 60000) as any;
 
     logger.info('性能监控器启动');
+  }
+
+  /**
+   * 停止性能监控
+   */
+  stop(): void {
+    if (this.metricsInterval) {
+      clearInterval(this.metricsInterval);
+      this.metricsInterval = undefined as any;
+      logger.info('性能监控器已停止');
+    }
   }
 
   /**
@@ -549,6 +573,7 @@ export class SLAMonitor {
   private totalRequests = 0;
   private successfulRequests = 0;
   private responseTimes: number[] = [];
+  private slaInterval?: NodeJS.Timeout;
 
   constructor() {
     this.slaMetrics = {
@@ -560,12 +585,35 @@ export class SLAMonitor {
       lastUpdated: new Date(),
     };
 
+    this.start();
+  }
+
+  /**
+   * 启动SLA监控
+   */
+  start(): void {
+    if (this.slaInterval) {
+      logger.warn('SLA监控器已在运行');
+      return;
+    }
+
     // 每分钟更新SLA指标
-    setInterval(() => {
+    this.slaInterval = setInterval(() => {
       this.updateSLAMetrics();
-    }, 60000);
+    }, 60000) as any;
 
     logger.info('SLA监控器启动');
+  }
+
+  /**
+   * 停止SLA监控
+   */
+  stop(): void {
+    if (this.slaInterval) {
+      clearInterval(this.slaInterval);
+      this.slaInterval = undefined as any;
+      logger.info('SLA监控器已停止');
+    }
   }
 
   /**
@@ -647,6 +695,7 @@ export class SLAMonitor {
  */
 export class SystemHealthChecker {
   private healthStatus: SystemHealth;
+  private healthInterval?: NodeJS.Timeout;
 
   constructor(
     private performanceMonitor: PerformanceMonitor,
@@ -668,12 +717,35 @@ export class SystemHealthChecker {
       lastCheck: new Date(),
     };
 
+    this.start();
+  }
+
+  /**
+   * 启动健康检查
+   */
+  start(): void {
+    if (this.healthInterval) {
+      logger.warn('系统健康检查器已在运行');
+      return;
+    }
+
     // 每分钟检查一次健康状态
-    setInterval(() => {
+    this.healthInterval = setInterval(() => {
       this.checkSystemHealth();
-    }, 60000);
+    }, 60000) as any;
 
     logger.info('系统健康检查器启动');
+  }
+
+  /**
+   * 停止健康检查
+   */
+  stop(): void {
+    if (this.healthInterval) {
+      clearInterval(this.healthInterval);
+      this.healthInterval = undefined as any;
+      logger.info('系统健康检查器已停止');
+    }
   }
 
   /**

@@ -95,7 +95,7 @@ class ErrorExtractor {
 }
 
 import { AgentConfigService } from '@/services/AgentConfigService';
-import { ChatProxyService } from '@/services/ChatProxyService';
+import { OptimizedChatProxyService } from '@/services/OptimizedChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService, ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
@@ -138,7 +138,7 @@ import { generateId, formatFileSize } from '@/utils/helpers';
  */
 export class ChatController {
   private agentService: AgentConfigService;
-  private chatService: ChatProxyService;
+  private chatService: OptimizedChatProxyService;
   private initService: ChatInitService;
   private historyService: ChatHistoryService;
   private fastgptSessionService: FastGPTSessionService;
@@ -148,7 +148,7 @@ export class ChatController {
 
   constructor() {
     this.agentService = new AgentConfigService();
-    this.chatService = new ChatProxyService(this.agentService);
+    this.chatService = new OptimizedChatProxyService();
     this.initService = new ChatInitService(this.agentService);
     this.historyService = new ChatHistoryService();
     this.fastgptSessionService = new FastGPTSessionService(this.agentService);
@@ -666,8 +666,7 @@ export class ChatController {
       const response = await this.chatService.sendMessage(
         agentId,
         messages,
-        options,
-        protectionContext,
+        options
       );
       const assistantContent =
         response?.choices?.[0]?.message?.content || '';
@@ -810,8 +809,7 @@ export class ChatController {
 
           logger.debug('📎 透传 FastGPT 事件', { eventName });
           this.sendSSEEvent(res, eventName, DynamicDataConverter.toSafeJsonValue(data));
-        },
-        protectionContext,
+        }
       );
 
       if (assistantContent) {

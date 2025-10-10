@@ -26,6 +26,9 @@ importers:
       '@sentry/profiling-node':
         specifier: ^10.17.0
         version: 10.19.0
+      '@types/lru-cache':
+        specifier: ^7.10.10
+        version: 7.10.10
       axios:
         specifier: ^1.6.2
         version: 1.12.2
@@ -74,6 +77,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
+      lru-cache:
+        specifier: ^11.2.2
+        version: 11.2.2
       mongodb:
         specifier: ^6.20.0
         version: 6.20.0
@@ -3893,6 +3899,13 @@ packages:
       '@types/ms': 2.1.0
       '@types/node': 20.19.20
     dev: true
+
+  /@types/lru-cache@7.10.10:
+    resolution: {integrity: sha512-nEpVRPWW9EBmx2SCfNn3ClYxPL7IktPX12HhIoSc/H5mMjdeW3+YsXIpseLQ2xF35+OcpwKQbEUw5VtqE4PDNA==}
+    deprecated: This is a stub types definition. lru-cache provides its own type definitions, so you do not need this installed.
+    dependencies:
+      lru-cache: 11.2.2
+    dev: false
 
   /@types/mdast@4.0.4:
     resolution: {integrity: sha512-kGaNbPh1k7AFzgpud/gMdvIm5xuECykRR+JnWKQno9TAXVa6WIVCGTPvYGekIDL4uwCZQSYbUxNBSb1aUo79oA==}
@@ -7948,6 +7961,11 @@ packages:
   /lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
     dev: true
+
+  /lru-cache@11.2.2:
+    resolution: {integrity: sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==}
+    engines: {node: 20 || >=22}
+    dev: false
 
   /lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
