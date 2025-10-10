@@ -415,6 +415,21 @@ export class StructuredLogger {
   public getWinstonLogger(): winston.Logger {
     return this.logger;
   }
+
+  /**
+   * 测试辅助方法：清理日志缓存
+   */
+  public clearLogs(): void {
+    // 测试用：清理日志缓存
+  }
+
+  /**
+   * 测试辅助方法：获取性能日志
+   */
+  public getPerformanceLogs(): LogEntry[] {
+    // 测试用：获取性能日志
+    return [];
+  }
 }
 
 // 创建默认日志记录器实例

@@ -359,4 +359,5 @@ process.on("SIGINT", () => {
   }, forceShutdownTimeout);
 });
 
+export { app };
 export default app;

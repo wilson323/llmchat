@@ -4,7 +4,7 @@
  */
 
 import request from 'supertest';
-import { app } from '../../app';
+import { app } from '../../index';
 import { getCacheService } from '../../services/CacheService';
 import { performanceLogger } from '../../utils/StructuredLogger';
 
