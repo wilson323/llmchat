@@ -7,7 +7,7 @@
  * - 开发环境可选依赖
  */
 
-export const initSentry = () => {
+export const initSentry = async () => {
   console.info('ℹ️  Sentry未配置，错误追踪功能禁用（开发模式）');
 };
 

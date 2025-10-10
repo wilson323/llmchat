@@ -9,26 +9,27 @@
  * - 敏感信息过滤
  */
 
-// Sentry import - optional, use dynamic import to avoid type errors
-let Sentry: {
-  captureException: (
-    error: Error,
-    options?: { extra?: Record<string, unknown>; level?: string }
-  ) => void;
-  captureMessage: (
-    message: string,
-    options?: { level?: string; extra?: Record<string, unknown> }
-  ) => void;
-} | null = null;
+type SentryModule = typeof import('@sentry/react');
 
-if (typeof window !== "undefined") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
-    Sentry = require("@sentry/react") as typeof Sentry;
-  } catch {
-    // Sentry not installed, will use stub
+// Sentry import - optional, use dynamic import to avoid bundling errors
+let Sentry: SentryModule | null = null;
+
+async function ensureSentryLoaded(): Promise<void> {
+  if (Sentry || typeof window === 'undefined') {
+    return;
   }
+
+  try {
+    const sentryModule = await import('@sentry/react');
+    Sentry = sentryModule;
+  } catch {
+    // Sentry 未安装，保持为空即可降级
+    Sentry = null;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  void ensureSentryLoaded();
 }
 
 /**

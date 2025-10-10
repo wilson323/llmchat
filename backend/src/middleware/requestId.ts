@@ -6,14 +6,9 @@
 import { Request, Response, NextFunction } from "express";
 import { generateId } from "@/utils/helpers";
 
-// 扩展Request类型以包含requestId
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  // ^ 忽略namespace警告，因为这是扩展Express命名空间的标准方法
-  namespace Express {
-    interface Request {
-      requestId?: string;
-    }
+declare module "express-serve-static-core" {
+  interface Request {
+    requestId?: string;
   }
 }
 

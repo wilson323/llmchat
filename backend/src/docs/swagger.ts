@@ -8,6 +8,8 @@
 // 注意：需要安装依赖
 // pnpm add -D swagger-jsdoc swagger-ui-express @types/swagger-jsdoc @types/swagger-ui-express
 
+import type { Application, RequestHandler, Request, Response } from "express";
+
 /**
  * Swagger配置选项
  */
@@ -181,33 +183,32 @@ export const swaggerOptions = {
  * import { setupSwagger } from '@/docs/swagger';
  *
  * // 在index.ts中
- * setupSwagger(app);
+ * await setupSwagger(app);
  * ```
  */
-export function setupSwagger(app: any) {
+
+async function loadOptionalModule<T>(moduleId: string): Promise<T> {
+  const imported = await import(moduleId);
+  return (imported.default ?? imported) as T;
+}
+
+export async function setupSwagger(app: Application): Promise<void> {
   try {
-    // 动态导入（避免在未安装依赖时报错）
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
-    const swaggerJsdoc = require("swagger-jsdoc");
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
-    const swaggerUi = require("swagger-ui-express");
+    const [swaggerJsdoc, swaggerUi] = await Promise.all([
+      loadOptionalModule<any>("swagger-jsdoc"),
+      loadOptionalModule<{ serve: RequestHandler; setup: typeof import('swagger-ui-express')['setup'] }>(
+        "swagger-ui-express"
+      ),
+    ]);
 
     const specs = swaggerJsdoc(swaggerOptions);
 
-    // Swagger UI路由
-    app.use(
-      "/api-docs",
-      swaggerUi.serve,
-      swaggerUi.setup(specs, {
-        customCss: ".swagger-ui .topbar { display: none }",
-        customSiteTitle: "LLMChat API文档",
-      })
-    );
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
+      customCss: ".swagger-ui .topbar { display: none }",
+      customSiteTitle: "LLMChat API文档",
+    }));
 
-    // JSON格式的API文档
-    app.get("/api-docs.json", (_req: any, res: any) => {
+    app.get("/api-docs.json", (_req: Request, res: Response) => {
       res.setHeader("Content-Type", "application/json");
       res.send(specs);
     });

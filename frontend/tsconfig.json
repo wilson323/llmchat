@@ -24,9 +24,14 @@
       "@/services/*": ["services/*"],
       "@/types/*": ["types/*"],
       "@/utils/*": ["utils/*"],
-      "@/styles/*": ["styles/*"]
+      "@/styles/*": ["styles/*"],
+      "@llmchat/shared-types": ["../../shared-types/src/index.ts"],
+      "@llmchat/shared-types/*": ["../../shared-types/src/*"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./tsconfig.node.json" },
+    { "path": "../shared-types/tsconfig.json" }
+  ]
 }
