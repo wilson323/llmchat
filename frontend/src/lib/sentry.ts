@@ -12,31 +12,73 @@
  * - 不影响应用启动
  */
 
+type IntegrationLike = {
+  name: string;
+  setupOnce: (...args: unknown[]) => void;
+};
+
+type ExtendedSentryModule = typeof import('@sentry/react') & {
+  Replay?: new (...args: any[]) => IntegrationLike;
+  reactRouterV6Instrumentation?: (
+    history: History,
+    location: Location
+  ) => (...args: unknown[]) => void;
+  startTransaction?: (context: { name: string; op: string }) => unknown;
+};
+
+type BrowserTracingCtor = new (...args: any[]) => IntegrationLike;
+
 // 尝试导入Sentry（可选依赖）
-let Sentry: any = null;
-let BrowserTracing: any = null;
+let Sentry: ExtendedSentryModule | null = null;
+let BrowserTracing: BrowserTracingCtor | null = null;
 let sentryAvailable = false;
+let sentryLoadPromise: Promise<void> | null = null;
 
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
-  const sentryModule = require("@sentry/react");
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // ^ 使用require()动态导入可选依赖，避免在依赖未安装时报错
-  const tracingModule = require("@sentry/tracing");
+async function ensureSentryLoaded(): Promise<void> {
+  if (sentryAvailable || typeof window === 'undefined') {
+    return;
+  }
 
-  Sentry = sentryModule;
-  BrowserTracing = tracingModule.BrowserTracing;
-  sentryAvailable = true;
-} catch (error) {
-  console.info("ℹ️  Sentry未安装，错误追踪功能禁用");
-  sentryAvailable = false;
+  if (sentryLoadPromise) {
+    await sentryLoadPromise;
+    return;
+  }
+
+  sentryLoadPromise = (async () => {
+    try {
+      const [sentryModule, tracingModule] = await Promise.all([
+        import('@sentry/react'),
+        import('@sentry/tracing'),
+      ]);
+
+      Sentry = sentryModule as ExtendedSentryModule;
+      BrowserTracing =
+        ((tracingModule as { BrowserTracing?: BrowserTracingCtor }).BrowserTracing ??
+        null);
+      sentryAvailable = true;
+    } catch (error) {
+      console.info('ℹ️  Sentry未安装，错误追踪功能禁用', error);
+      Sentry = null;
+      BrowserTracing = null;
+      sentryAvailable = false;
+    } finally {
+      sentryLoadPromise = null;
+    }
+  })();
+
+  await sentryLoadPromise;
+}
+
+if (typeof window !== 'undefined') {
+  void ensureSentryLoaded();
 }
 
 /**
  * 初始化Sentry
  */
-export function initSentry() {
+export async function initSentry(): Promise<void> {
+  await ensureSentryLoaded();
+
   // 检查Sentry是否可用
   if (!sentryAvailable || !Sentry) {
     return;
@@ -51,27 +93,40 @@ export function initSentry() {
       return;
     }
 
+    const integrations: Parameters<typeof Sentry.init>[0]['integrations'] = [];
+
+    if (
+      BrowserTracing &&
+      typeof Sentry.reactRouterV6Instrumentation === 'function'
+    ) {
+      integrations?.push(
+        new BrowserTracing({
+          routingInstrumentation: Sentry.reactRouterV6Instrumentation(
+            // React Router v6需要手动传入
+            window.history,
+            window.location
+          ),
+        })
+      );
+    }
+
+    if (typeof Sentry.Replay === 'function') {
+      integrations?.push(
+        new Sentry.Replay({
+          // Session回放配置
+          maskAllText: true,
+          blockAllMedia: true,
+        })
+      );
+    }
+
     Sentry.init({
       dsn,
       environment: import.meta.env.MODE,
       release: import.meta.env.VITE_APP_VERSION || "unknown",
 
       // 集成
-      integrations: [
-        new BrowserTracing({
-          // 路由追踪
-          routingInstrumentation: Sentry.reactRouterV6Instrumentation(
-            // React Router v6需要手动传入
-            window.history,
-            window.location
-          ),
-        }),
-        new Sentry.Replay({
-          // Session回放配置
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
-      ],
+      integrations,
 
       // 性能监控（低延时：仅采样部分请求）
       tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0, // 生产环境10%采样，降低开销

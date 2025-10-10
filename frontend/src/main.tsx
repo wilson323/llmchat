@@ -25,7 +25,7 @@ async function initOptionalFeatures() {
   // 1. Sentry错误追踪（可选）
   try {
     const { initSentry } = await import('./lib/sentry');
-    initSentry();
+    await initSentry();
   } catch {
     console.info('ℹ️  Sentry未启用');
   }

@@ -21,7 +21,7 @@
     "backend:lint:fix": "cd backend && pnpm run lint:fix",
     "frontend:lint": "cd frontend && pnpm run lint",
     "frontend:lint:fix": "cd frontend && pnpm run lint:fix",
-    "type-check": "pnpm run frontend:type-check",
+    "type-check": "pnpm --filter @llmchat/shared-types build && pnpm run frontend:type-check",
     "frontend:type-check": "cd frontend && pnpm run type-check",
     "install:all": "pnpm install",
     "test:e2e": "playwright test",

@@ -97,7 +97,7 @@ class ErrorExtractor {
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
-import { ChatHistoryService } from '@/services/ChatHistoryService';
+import { ChatHistoryService, ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { analyticsService } from '@/services/analyticsInstance';
 import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
@@ -144,6 +144,7 @@ export class ChatController {
   private fastgptSessionService: FastGPTSessionService;
   private protectionService = getProtectionService();
   private uploadDir: string;
+  private static readonly supportedHistoryRoles = ['user', 'assistant', 'system'] as const;
 
   constructor() {
     this.agentService = new AgentConfigService();
@@ -259,6 +260,17 @@ export class ChatController {
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
     }),
+  });
+
+  private historyMessagesSchema = Joi.object({
+    limit: Joi.number().integer().min(1).max(200).optional(),
+    offset: Joi.number().integer().min(0).optional(),
+    role: Joi.alternatives()
+      .try(
+        Joi.string(),
+        Joi.array().items(Joi.string())
+      )
+      .optional(),
   });
 
   private historyDeleteSchema = Joi.object({
@@ -1505,69 +1517,90 @@ export class ChatController {
 
 
   /**
+   * 获取会话消息列表
+   * GET /api/chat/sessions/:sessionId/messages
+   */
+  getSessionMessages = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { sessionId } = req.params as { sessionId?: string };
+
+      if (!sessionId) {
+        const apiError: ApiError = {
+          code: 'VALIDATION_ERROR',
+          message: 'sessionId 不能为空',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(400).json(apiError);
+        return;
+      }
+
+      const { error, value } = this.historyMessagesSchema.validate(req.query);
+      if (error) {
+        const apiError: ApiError = {
+          code: 'VALIDATION_ERROR',
+          message: ErrorExtractor.extractMessage(error) || '请求参数校验失败',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(400).json(apiError);
+        return;
+      }
+
+      const { limit, offset, role: roleRaw } = value as {
+        limit?: number;
+        offset?: number;
+        role?: unknown;
+      };
+
+      const queryOptions: ChatHistoryQueryOptions = {};
+      if (typeof limit === 'number') {
+        queryOptions.limit = limit;
+      }
+      if (typeof offset === 'number') {
+        queryOptions.offset = offset;
+      }
+
+      const normalizedRoles = this.parseHistoryRoleFilter(roleRaw);
+      if (normalizedRoles.length > 0) {
+        queryOptions.roles = normalizedRoles;
+      }
+
+      const history = await this.historyService.getHistory(sessionId, queryOptions);
+
+      if (!history.session) {
+        const apiError: ApiError = {
+          code: 'SESSION_NOT_FOUND',
+          message: `未找到会话: ${sessionId}`,
+          timestamp: new Date().toISOString(),
+        };
+        res.status(404).json(apiError);
+        return;
+      }
+
+      ApiResponseHandler.sendSuccess(res, history, {
+        message: '获取会话消息成功',
+        ...(req.requestId ? { requestId: req.requestId } : {}),
+      });
+    } catch (unknownError) {
+      const typedError = createErrorFromUnknown(unknownError, {
+        component: 'ChatController',
+        operation: 'getSessionMessages',
+        url: req.originalUrl,
+        method: req.method,
+      });
+      logger.error('获取会话消息失败', { error: typedError.message });
+
+      const apiError = typedError.toApiError();
+      const status = this.getErrorStatusCode(typedError);
+      res.status(status).json(apiError);
+    }
+  };
+
+  /**
    * 清空指定智能体的历史
    * DELETE /api/chat/history?agentId=xxx
    */
   clearChatHistories = async (req: Request, res: Response): Promise<void> => {
     try {
-
-      const { sessionId } = req.params;
-      const limitRaw = req.query.limit;
-      const offsetRaw = req.query.offset;
-      const roleRaw = req.query.role;
-
-      let limit: number | undefined;
-      if (typeof limitRaw !== 'undefined') {
-        const parsedLimit = parseInt(String(limitRaw), 10);
-        if (Number.isNaN(parsedLimit)) {
-          const apiError: ApiError = {
-            code: 'VALIDATION_ERROR',
-            message: 'limit 必须是数字',
-            timestamp: new Date().toISOString(),
-          };
-          res.status(400).json(apiError);
-          return;
-        }
-        limit = parsedLimit;
-      }
-
-      let offset: number | undefined;
-      if (typeof offsetRaw !== 'undefined') {
-        const parsedOffset = parseInt(String(offsetRaw), 10);
-        if (Number.isNaN(parsedOffset)) {
-          const apiError: ApiError = {
-            code: 'VALIDATION_ERROR',
-            message: 'offset 必须是数字',
-            timestamp: new Date().toISOString(),
-          };
-          res.status(400).json(apiError);
-          return;
-        }
-        offset = parsedOffset;
-      }
-      let roles: Array<'user' | 'assistant' | 'system'> | undefined;
-
-      if (roleRaw) {
-        const roleList = Array.isArray(roleRaw)
-          ? roleRaw
-          : String(roleRaw).split(',');
-        roles = roleList
-          .map((r) => r.trim())
-          .filter((r): r is 'user' | 'assistant' | 'system' =>
-            ['user', 'assistant', 'system'].includes(r)
-          );
-      }
-
-      const history = await this.historyService.getHistory(sessionId, {
-        limit,
-        offset,
-        roles,
-      });
-
-      if (!history.session) {
-        res.status(404).json({
-          code: 'SESSION_NOT_FOUND',
-          message: `未找到会话: ${sessionId}`,
       const { error, value } = this.historyDeleteSchema.validate(req.query);
       if (error) {
         const apiError: ApiError = {
@@ -1696,6 +1729,57 @@ export class ChatController {
       res.status(500).json(apiError);
     }
   };
+
+  /**
+   * 解析请求中的角色过滤参数，兼容多种格式避免运行时异常
+   */
+  private parseHistoryRoleFilter(roleValue: unknown): Array<(typeof ChatController.supportedHistoryRoles)[number]> {
+    type HistoryRole = (typeof ChatController.supportedHistoryRoles)[number];
+    if (roleValue === undefined || roleValue === null) {
+      return [];
+    }
+
+    const allowed = new Set<HistoryRole>(ChatController.supportedHistoryRoles);
+    const result = new Set<HistoryRole>();
+
+    const collect = (raw: unknown) => {
+      if (typeof raw !== 'string') {
+        return;
+      }
+      const normalized = raw.trim().toLowerCase();
+      if (allowed.has(normalized as HistoryRole)) {
+        result.add(normalized as HistoryRole);
+      }
+    };
+
+    if (Array.isArray(roleValue)) {
+      roleValue.forEach(collect);
+    } else if (typeof roleValue === 'string') {
+      const trimmed = roleValue.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(collect);
+          } else {
+            collect(parsed);
+          }
+        } catch (parseError) {
+          logger.warn('角色过滤参数解析失败，回退到逗号分隔解析', {
+            raw: roleValue,
+            error: parseError instanceof Error ? parseError.message : String(parseError),
+          });
+          trimmed.split(',').forEach(collect);
+        }
+      } else {
+        trimmed.split(',').forEach(collect);
+      }
+    } else if (typeof roleValue === 'object') {
+      Object.values(roleValue as Record<string, unknown>).forEach(collect);
+    }
+
+    return Array.from(result);
+  }
 
   /**
    * 获取错误状态码

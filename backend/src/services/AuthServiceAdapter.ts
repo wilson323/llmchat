@@ -10,6 +10,7 @@
 import { AuthService, AuthUser, LoginResult } from "@/services/AuthService";
 import { AuthServiceV2, getAuthService } from "@/services/AuthServiceV2";
 import logger from "@/utils/logger";
+import { authService, isAuthV2 } from "@/services/authInstance";
 
 // 统一的接口定义
 export interface IAuthServiceAdapter {
@@ -120,8 +121,5 @@ export function createAuthServiceAdapter(
  * 获取适配后的认证服务
  */
 export function getAuthServiceAdapter(): IAuthServiceAdapter {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // ^ 使用require()动态导入以避免模块循环依赖
-  const { authService, isAuthV2 } = require("./authInstance");
   return createAuthServiceAdapter(authService, isAuthV2);
 }
