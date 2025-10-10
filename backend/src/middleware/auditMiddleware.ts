@@ -9,27 +9,7 @@ import logger from '@/utils/logger';
  * 自动记录关键HTTP请求的审计日志
  */
 
-/**
- * 扩展 Request 以支持审计上下文
- */
-export interface AuditContext {
-  action?: AuditAction;
-  resourceType?: ResourceType;
-  resourceId?: string;
-  details?: Record<string, unknown>;
-  skipAudit?: boolean;
-}
-
-declare module "express-serve-static-core" {
-  interface Request {
-    audit?: AuditContext;
-    user?: {
-      id: string;
-      username: string;
-      role: string;
-    };
-  }
-}
+import type { AuditContext } from '@/types/express';
 
 /**
  * 审计日志中间件

@@ -6,12 +6,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { generateId } from '@/utils/helpers';
 
-declare module "express-serve-static-core" {
-  interface Request {
-    requestId?: string;
-  }
-}
-
 /**
  * 为每个请求添加唯一ID
  */
