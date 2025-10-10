@@ -1587,7 +1587,31 @@ export class ChatController {
       logger.error('获取会话消息失败', { error: typedError.message });
 
       const apiError = typedError.toApiError();
-      const status = this.getErrorStatusCode(typedError);
+      let status = this.getErrorStatusCode(typedError);
+
+      const originalErrorObj = SafeAccess.getObject(typedError.context, 'originalError');
+      const originalError = originalErrorObj as Error | undefined;
+      if (originalError) {
+        const errCode = ErrorExtractor.extractCode(originalError);
+        const axiosStatus = ErrorExtractor.extractStatus(originalError);
+        if (errCode === 'NOT_FOUND') {
+          status = 404;
+          apiError.code = 'SESSION_NOT_FOUND';
+        } else if (errCode === 'INVALID_PROVIDER' || errCode === 'INVALID_APP_ID') {
+          status = 400;
+          apiError.code = errCode;
+        } else if (axiosStatus === 404) {
+          status = 502;
+          apiError.code = 'UPSTREAM_NOT_FOUND';
+        } else if (axiosStatus === 401) {
+          status = 401;
+          apiError.code = 'UPSTREAM_UNAUTHORIZED';
+        } else if (axiosStatus === 408) {
+          status = 504;
+          apiError.code = 'UPSTREAM_TIMEOUT';
+        }
+      }
+
       res.status(status).json(apiError);
     }
   };
