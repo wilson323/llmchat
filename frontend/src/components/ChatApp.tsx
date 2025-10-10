@@ -1,18 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { Header } from "./Header";
-import { Sidebar } from "./Sidebar";
-import { ChatContainer } from "./chat/ChatContainer";
-import { KeyboardHelpPanel } from "./KeyboardHelpPanel";
-import { useChatStore } from "@/store/chatStore";
-import { useUIStore } from "@/store/uiStore";
-import { useKeyboardManager } from "@/hooks/useKeyboardManager";
+import React, { useEffect, useState } from 'react';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import { ChatContainer } from './chat/ChatContainer';
+import { KeyboardHelpPanel } from './KeyboardHelpPanel';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useChatStore } from '@/store/chatStore';
+import { useUIStore } from '@/store/uiStore';
+import { useKeyboardManager, KeyboardShortcut } from '@/hooks/useKeyboardManager';
 
 const ChatApp: React.FC = () => {
   const { initializeAgentSessions } = useChatStore();
   const { setAgentSelectorOpen } = useUIStore();
   const { registerShortcuts } = useKeyboardManager();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
-  const [registeredShortcuts, setRegisteredShortcuts] = useState<any[]>([]);
+  const [registeredShortcuts, setRegisteredShortcuts] = useState<KeyboardShortcut[]>([]);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
   // huihua.md 要求 1：页面初始加载后检查
   useEffect(() => {
@@ -25,69 +28,69 @@ const ChatApp: React.FC = () => {
     const enhancedShortcuts = [
       // 新建对话 (Ctrl+N)
       {
-        key: "n",
+        key: 'n',
         ctrlKey: true,
         action: () => {
           const { createNewSession } = useChatStore.getState();
           createNewSession();
         },
-        description: "新建对话",
-        category: "conversation" as const,
+        description: '新建对话',
+        category: 'conversation' as const,
       },
 
       // 聚焦搜索框 (/)
       {
-        key: "/",
+        key: '/',
         action: () => {
           // 聚焦到聊天输入框（作为搜索框的替代）
           const chatInput = document.querySelector(
-            "#message-input-textarea"
-          ) as HTMLTextAreaElement | null;
+            '#message-input-textarea',
+          ) as HTMLTextAreaElement;
           if (chatInput) {
             chatInput.focus();
           }
         },
-        description: "聚焦输入框",
-        category: "navigation" as const,
+        description: '聚焦输入框',
+        category: 'navigation' as const,
       },
 
       // 关闭模态 (Esc)
       {
-        key: "Escape",
+        key: 'Escape',
         action: () => {
           // 关闭所有可能的模态状态
           setAgentSelectorOpen(false);
           setHelpPanelOpen(false);
           // 还可以关闭其他模态框
         },
-        description: "关闭当前对话框",
-        category: "accessibility" as const,
+        description: '关闭当前对话框',
+        category: 'accessibility' as const,
       },
 
       // 发送消息 (Ctrl+Enter)
       {
-        key: "Enter",
+        key: 'Enter',
         ctrlKey: true,
         action: () => {
           const sendButton = document.querySelector(
-            "#send-message-button"
-          ) as HTMLButtonElement | null;
+            '#send-message-button',
+          ) as HTMLButtonElement;
           if (sendButton && !sendButton.disabled) {
             sendButton.click();
           }
         },
-        description: "发送消息",
-        category: "conversation" as const,
+        description: '发送消息',
+        category: 'conversation' as const,
       },
 
       // 上一个对话 (Ctrl+↑)
       {
-        key: "ArrowUp",
+        key: 'ArrowUp',
         ctrlKey: true,
         action: () => {
           const { agentSessions, currentAgent, currentSession } = useChatStore.getState();
           if (currentAgent && currentSession) {
-            const sessions = agentSessions[currentAgent.id] || [];
+            const sessions = agentSessions[currentAgent.id] ?? [];
             const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
             if (currentIndex > 0) {
               const { switchToSession } = useChatStore.getState();
@@ -95,18 +98,18 @@ const ChatApp: React.FC = () => {
             }
           }
         },
-        description: "上一个对话",
-        category: "navigation" as const,
+        description: '上一个对话',
+        category: 'navigation' as const,
       },
 
       // 下一个对话 (Ctrl+↓)
       {
-        key: "ArrowDown",
+        key: 'ArrowDown',
         ctrlKey: true,
         action: () => {
           const { agentSessions, currentAgent, currentSession } = useChatStore.getState();
           if (currentAgent && currentSession) {
-            const sessions = agentSessions[currentAgent.id] || [];
+            const sessions = agentSessions[currentAgent.id] ?? [];
             const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
             if (currentIndex < sessions.length - 1) {
               const { switchToSession } = useChatStore.getState();
@@ -114,13 +117,13 @@ const ChatApp: React.FC = () => {
             }
           }
         },
-        description: "下一个对话",
-        category: "navigation" as const,
+        description: '下一个对话',
+        category: 'navigation' as const,
       },
 
       // 编辑模式 (Ctrl+E) - 编辑最后一条用户消息
       {
-        key: "e",
+        key: 'e',
         ctrlKey: true,
         action: () => {
           const { messages } = useChatStore.getState();
@@ -137,12 +140,12 @@ const ChatApp: React.FC = () => {
           if (targetMessageIndex !== -1) {
             const targetMessage = messages[targetMessageIndex];
             const chatInput = document.querySelector(
-              "#message-input-textarea"
-            ) as HTMLTextAreaElement | null;
+              '#message-input-textarea',
+            ) as HTMLTextAreaElement;
 
             if (chatInput) {
               // 将消息内容填充到输入框
-              chatInput.value = targetMessage.HUMAN || "";
+              chatInput.value = targetMessage.HUMAN ?? '';
               chatInput.focus();
 
               // 触发 React 的 onChange 事件
@@ -150,54 +153,54 @@ const ChatApp: React.FC = () => {
               chatInput.dispatchEvent(event);
 
               // 显示提示
-              console.log("已加载最后一条消息到输入框进行编辑");
+              // eslint-disable-next-line no-console
+              console.log('已加载最后一条消息到输入框进行编辑');
             }
           } else {
-            console.log("没有找到可编辑的消息");
+            // eslint-disable-next-line no-console
+            console.log('没有找到可编辑的消息');
           }
         },
-        description: "编辑最后消息",
-        category: "editing" as const,
+        description: '编辑最后消息',
+        category: 'editing' as const,
       },
 
       // 删除当前对话 (Ctrl+Delete)
       {
-        key: "Delete",
+        key: 'Delete',
         ctrlKey: true,
         action: () => {
-          const { currentSession, deleteSession } = useChatStore.getState();
+          const { currentSession } = useChatStore.getState();
           if (currentSession) {
-            // 简单确认后删除
-            if (window.confirm("确定要删除当前对话吗？")) {
-              deleteSession(currentSession.id);
-            }
+            setSessionToDelete(currentSession.id);
+            setConfirmDialogOpen(true);
           }
         },
-        description: "删除当前对话",
-        category: "editing" as const,
+        description: '删除当前对话',
+        category: 'editing' as const,
       },
 
       // 显示快捷键帮助 (Alt+H)
       {
-        key: "h",
+        key: 'h',
         altKey: true,
         action: () => {
           setHelpPanelOpen(true);
         },
-        description: "显示快捷键帮助",
-        category: "accessibility" as const,
+        description: '显示快捷键帮助',
+        category: 'accessibility' as const,
       },
 
       // 切换侧边栏 (Alt+K)
       {
-        key: "k",
+        key: 'k',
         altKey: true,
         action: () => {
           const { sidebarOpen, setSidebarOpen } = useUIStore.getState();
           setSidebarOpen(!sidebarOpen);
         },
-        description: "切换侧边栏",
-        category: "accessibility" as const,
+        description: '切换侧边栏',
+        category: 'accessibility' as const,
       },
     ];
 
@@ -207,6 +210,20 @@ const ChatApp: React.FC = () => {
       unregister();
     };
   }, [registerShortcuts, setAgentSelectorOpen, setHelpPanelOpen]);
+
+  const handleConfirmDelete = () => {
+    if (sessionToDelete) {
+      const { deleteSession } = useChatStore.getState();
+      deleteSession(sessionToDelete);
+      setSessionToDelete(null);
+    }
+    setConfirmDialogOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setSessionToDelete(null);
+    setConfirmDialogOpen(false);
+  };
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -228,6 +245,17 @@ const ChatApp: React.FC = () => {
         isOpen={helpPanelOpen}
         onClose={() => setHelpPanelOpen(false)}
         shortcuts={registeredShortcuts}
+      />
+
+      {/* 确认删除对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialogOpen}
+        title="删除对话"
+        message="确定要删除当前对话吗？此操作无法撤销。"
+        confirmText="删除"
+        cancelText="取消"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </div>
   );

@@ -29,7 +29,7 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
   finished = false,
 }) => {
   const [viewMode, setViewMode] = useState(() =>
-    steps.length > COLLAPSE_THRESHOLD ? CORE_VIEW : FULL_VIEW
+    steps.length > COLLAPSE_THRESHOLD ? CORE_VIEW : FULL_VIEW,
   );
   const [copied, setCopied] = useState(false);
 
@@ -46,7 +46,7 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
   const collapsed = shouldCollapse && viewMode === CORE_VIEW;
   const annotatedSteps = useMemo(
     () => steps.map((step, index) => ({ step, originalIndex: index })),
-    [steps]
+    [steps],
   );
 
   const virtualized = useMemo(() => {
@@ -80,7 +80,9 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
   }, []);
 
   const handleCopy = useCallback(async () => {
-    if (typeof navigator === 'undefined' || !navigator?.clipboard) return;
+    if (!navigator?.clipboard) {
+      return;
+    }
 
     const serialized = steps
       .map((step, index) => {
@@ -92,7 +94,9 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
       .filter(Boolean)
       .join('\n\n');
 
-    if (!serialized) return;
+    if (!serialized) {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(serialized);

@@ -16,7 +16,7 @@ interface State {
 
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -29,7 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
     // 记录错误信息到状态
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // 在开发环境下显示详细错误信息
@@ -80,7 +80,7 @@ class ErrorBoundary extends Component<Props, State> {
 function ErrorBoundaryUI({
   error,
   onReload,
-  onReset
+  onReset,
 }: {
   error?: Error;
   onReload: () => void;
@@ -100,7 +100,7 @@ function ErrorBoundaryUI({
         </h1>
 
         <p className="text-muted-foreground mb-6">
-          {error?.message || t('发生了未知错误')}
+          {error?.message ?? t('发生了未知错误')}
         </p>
 
         {/* 开发环境下显示错误详情 */}

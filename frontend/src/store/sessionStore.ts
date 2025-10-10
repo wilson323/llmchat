@@ -1,6 +1,6 @@
 /**
  * 会话 Store - 专注于会话管理
- * 
+ *
  * 职责：
  * 1. 按智能体分组的会话字典管理
  * 2. 当前会话切换
@@ -19,26 +19,26 @@ interface SessionState {
   // 会话数据
   agentSessions: AgentSessionsMap;  // 按智能体分组的会话字典
   currentSession: ChatSession | null;
-  
+
   // Actions - 会话管理
   createNewSession: (agentId: string) => ChatSession;
   deleteSession: (agentId: string, sessionId: string) => void;
   switchToSession: (agentId: string, sessionId: string) => void;
   renameSession: (agentId: string, sessionId: string, title: string) => void;
   clearCurrentAgentSessions: (agentId: string) => void;
-  
+
   // Actions - 会话数据同步
   setAgentSessionsForAgent: (agentId: string, sessions: ChatSession[]) => void;
   bindSessionId: (agentId: string, oldId: string, newId: string) => void;
   setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => void;
   updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => void;
-  
+
   // Actions - 初始化
   initializeAgentSessions: () => void;
-  
+
   // Actions - 智能标题
   updateSessionTitleIntelligently: (agentId: string, sessionId: string) => void;
-  
+
   // 辅助方法
   getSessionById: (agentId: string, sessionId: string) => ChatSession | undefined;
   getAgentSessions: (agentId: string) => ChatSession[];
@@ -89,7 +89,7 @@ export const useSessionStore = create<SessionState>()(
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.filter((s) => s.id !== sessionId);
-            
+
             const updatedAgentSessions = {
               ...state.agentSessions,
               [agentId]: updatedSessions,
@@ -132,7 +132,7 @@ export const useSessionStore = create<SessionState>()(
             const updatedSessions = existingSessions.map((session) =>
               session.id === sessionId
                 ? { ...session, title, updatedAt: new Date() }
-                : session
+                : session,
             );
 
             const updatedAgentSessions = {
@@ -197,7 +197,7 @@ export const useSessionStore = create<SessionState>()(
             const updatedSessions = existingSessions.map((session) =>
               session.id === oldId
                 ? { ...session, id: newId, updatedAt: new Date() }
-                : session
+                : session,
             );
 
             const updatedAgentSessions = {
@@ -229,7 +229,7 @@ export const useSessionStore = create<SessionState>()(
             const updatedSessions = existingSessions.map((session) =>
               session.id === sessionId
                 ? { ...session, messages, updatedAt: new Date() }
-                : session
+                : session,
             );
 
             const updatedAgentSessions = {
@@ -257,7 +257,7 @@ export const useSessionStore = create<SessionState>()(
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session) =>
-              session.id === sessionId ? updater(session) : session
+              session.id === sessionId ? updater(session) : session,
             );
 
             const updatedAgentSessions = {
@@ -303,7 +303,7 @@ export const useSessionStore = create<SessionState>()(
           const result = updateSessionTitleIfNeeded(
             session.messages,
             session.title,
-            typeof session.createdAt === 'number' ? session.createdAt : session.createdAt.getTime()
+            typeof session.createdAt === 'number' ? session.createdAt : session.createdAt.getTime(),
           );
 
           if (result.shouldUpdate && result.newTitle !== session.title) {
@@ -336,9 +336,8 @@ export const useSessionStore = create<SessionState>()(
         agentSessions: state.agentSessions,
         currentSession: state.currentSession,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useSessionStore;
-

@@ -1,7 +1,7 @@
-"use client";
-import { useState, useEffect, useCallback } from "react";
-import { useResponsive } from "@/hooks/useResponsive";
-import { motion, AnimatePresence } from "framer-motion";
+'use client';
+import { useState, useEffect, useCallback } from 'react';
+import { useResponsive } from '@/hooks/useResponsive';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Filter,
@@ -22,11 +22,11 @@ import {
   Clock,
   CheckSquare,
   Square,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { useI18n } from "@/i18n";
-import { toast } from "@/components/ui/Toast";
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/i18n';
+import { toast } from '@/components/ui/Toast';
 import {
   getSessions,
   getSessionStats,
@@ -41,10 +41,10 @@ import {
   type SessionListParams,
   type SessionFilter,
   type SessionStats,
-} from "@/services/sessionApi";
-import { SessionDetailModal } from "./SessionDetailModal";
-import { BatchTagModal } from "./BatchTagModal";
-import { SessionStatsChart } from "./SessionStatsChart";
+} from '@/services/sessionApi';
+import { SessionDetailModal } from './SessionDetailModal';
+import { BatchTagModal } from './BatchTagModal';
+import { SessionStatsChart } from './SessionStatsChart';
 
 interface SessionManagementProps {
   className?: string;
@@ -64,7 +64,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
   const [pageSize, setPageSize] = useState(20);
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showTagModal, setShowTagModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -140,7 +140,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
   // 清空筛选
   const clearFilters = useCallback(() => {
     setFilters({});
-    setSearchQuery("");
+    setSearchQuery('');
     setPage(1);
   }, []);
 
@@ -206,7 +206,9 @@ export function SessionManagement({ className }: SessionManagementProps) {
 
   // 批量操作
   const handleBatchDelete = useCallback(async () => {
-    if (selectedSessions.size === 0) return;
+    if (selectedSessions.size === 0) {
+      return;
+    }
 
     if (!confirm(t('确认删除选中的 {count} 个会话吗？此操作不可撤销。', { count: selectedSessions.size }))) {
       return;
@@ -229,7 +231,9 @@ export function SessionManagement({ className }: SessionManagementProps) {
   }, [selectedSessions, t, loadSessions, loadStats]);
 
   const handleBatchArchive = useCallback(async () => {
-    if (selectedSessions.size === 0) return;
+    if (selectedSessions.size === 0) {
+      return;
+    }
 
     if (!confirm(t('确认归档选中的 {count} 个会话吗？', { count: selectedSessions.size }))) {
       return;
@@ -252,7 +256,9 @@ export function SessionManagement({ className }: SessionManagementProps) {
   }, [selectedSessions, t, loadSessions, loadStats]);
 
   const handleBatchTags = useCallback((operation: 'add' | 'remove') => {
-    if (selectedSessions.size === 0) return;
+    if (selectedSessions.size === 0) {
+      return;
+    }
     setTagOperation(operation);
     setShowTagModal(true);
   }, [selectedSessions]);
@@ -262,7 +268,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
     try {
       const content = await exportSession(session.id, format);
       const blob = new Blob([content], {
-        type: format === 'json' ? 'application/json' : 'text/plain'
+        type: format === 'json' ? 'application/json' : 'text/plain',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -278,7 +284,9 @@ export function SessionManagement({ className }: SessionManagementProps) {
   }, [t]);
 
   const handleExportSelected = useCallback(async (format: 'json' | 'csv' | 'xlsx' = 'json') => {
-    if (selectedSessions.size === 0) return;
+    if (selectedSessions.size === 0) {
+      return;
+    }
 
     try {
       const params: SessionListParams = {
@@ -292,7 +300,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
 
       const content = await exportSessions({ ...params, format });
       const blob = new Blob([content], {
-        type: format === 'json' ? 'application/json' : format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        type: format === 'json' ? 'application/json' : format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

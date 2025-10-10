@@ -12,7 +12,7 @@ import {
   TrendingUp,
   TrendingDown,
   RefreshCw,
-  Eye
+  Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -31,26 +31,26 @@ const statusConfig = {
     icon: CheckCircle,
     color: 'text-success bg-success/10 border-success/20',
     label: '在线',
-    pulse: false
+    pulse: false,
   },
   offline: {
     icon: XCircle,
     color: 'text-error bg-error/10 border-error/20',
     label: '离线',
-    pulse: false
+    pulse: false,
   },
   degraded: {
     icon: AlertCircle,
     color: 'text-warning bg-warning/10 border-warning/20',
     label: '降级',
-    pulse: true
+    pulse: true,
   },
   unknown: {
     icon: Clock,
     color: 'text-muted-foreground bg-muted/10 border-muted/20',
     label: '未知',
-    pulse: false
-  }
+    pulse: false,
+  },
 };
 
 export function AgentStatusGrid({
@@ -58,14 +58,20 @@ export function AgentStatusGrid({
   loading = false,
   onRefresh,
   onViewDetails,
-  onToggleAgent
+  onToggleAgent,
 }: AgentStatusGridProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const getPerformanceGrade = (responseTime: number, successRate: number) => {
-    if (responseTime < 500 && successRate >= 99) return { grade: 'A', color: 'text-success' };
-    if (responseTime < 1000 && successRate >= 95) return { grade: 'B', color: 'text-warning' };
-    if (responseTime < 2000 && successRate >= 90) return { grade: 'C', color: 'text-error' };
+    if (responseTime < 500 && successRate >= 99) {
+      return { grade: 'A', color: 'text-success' };
+    }
+    if (responseTime < 1000 && successRate >= 95) {
+      return { grade: 'B', color: 'text-warning' };
+    }
+    if (responseTime < 2000 && successRate >= 90) {
+      return { grade: 'C', color: 'text-error' };
+    }
     return { grade: 'D', color: 'text-error' };
   };
 
@@ -82,9 +88,9 @@ export function AgentStatusGrid({
         className={cn(
           'relative rounded-lg border bg-card/50 backdrop-blur-sm p-4 transition-all duration-200',
           'hover:shadow-md hover:border-border/80 focus-within:ring-2 focus-within:ring-[var(--focus-ring)]',
-          config.color
+          config.color,
         )}
-      >
+        >
         {/* 状态指示器 */}
         {config.pulse && (
           <div className="absolute top-2 right-2">
@@ -110,7 +116,7 @@ export function AgentStatusGrid({
                 </span>
                 <span className={cn(
                   'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium',
-                  config.color
+                  config.color,
                 )}>
                   <StatusIcon className="h-3 w-3" />
                   {config.label}
@@ -164,7 +170,7 @@ export function AgentStatusGrid({
               <span>
                 {formatDistanceToNow(new Date(agent.lastCheckTime), {
                   addSuffix: true,
-                  locale: zhCN
+                  locale: zhCN,
                 })}
               </span>
             </div>

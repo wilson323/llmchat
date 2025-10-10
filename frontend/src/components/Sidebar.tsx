@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,7 +11,7 @@ import {
   Search,
   Calendar,
   Clock,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -54,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   // 乐观会话切换
   const {
     switchToSession: optimisticSwitchSession,
-    isSessionCached
+    isSessionCached,
   } = useOptimisticSessionSwitch({
     onSessionStartLoading: (sessionId) => {
       console.log('开始加载会话:', sessionId);
@@ -63,18 +62,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
       console.log('会话加载完成:', sessionId, success);
     },
     enablePreloading: true,
-    maxPreloadedSessions: 5
+    maxPreloadedSessions: 5,
   });
 
   // huihua.md 要求：根据当前智能体id从localStorage获取会话列表并显示
   const sessionsToDisplay = useMemo(() => {
-    if (!currentAgent) return [];
-    const sessions = agentSessions[currentAgent.id] || [];
+    if (!currentAgent) {
+      return [];
+    }
+    const sessions = agentSessions[currentAgent.id] ?? [];
 
     // 按最后访问时间排序，最近访问的在前面
     return sessions.sort((a, b) => {
-      const aTime = a.lastAccessedAt || a.updatedAt;
-      const bTime = b.lastAccessedAt || b.updatedAt;
+      const aTime = a.lastAccessedAt ?? a.updatedAt;
+      const bTime = b.lastAccessedAt ?? b.updatedAt;
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
   }, [currentAgent, agentSessions]);
@@ -94,8 +95,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   // 使用防抖搜索
   const { searchQuery, debouncedQuery, setSearchQuery, isDebouncing } = useDebouncedSearch('', 300);
 
-
-
   const handleStartEdit = (session: ChatSession) => {
     setEditingId(session.id);
     setEditTitle(session.title);
@@ -105,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     createNewSession();
     // 更新URL，添加new=true参数
     if (currentAgent) {
-      navigate(`/chat/${currentAgent.id}?new=true`, { replace: true });
+      void navigate(`/chat/${currentAgent.id}?new=true`, { replace: true });
     }
   };
 
@@ -120,17 +119,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
       if (success) {
         setSwitchingSuccess(true);
-        
+
         // 更新URL以包含会话ID
         if (currentAgent) {
-          navigate(`/chat/${currentAgent.id}?session=${session.id}`, { replace: true });
+          void navigate(`/chat/${currentAgent.id}?session=${session.id}`, { replace: true });
         }
 
         // 异步加载详细历史（如果需要的话）
-        if (!currentAgent) return;
-        if (currentAgent.id === PRODUCT_PREVIEW_AGENT_ID || currentAgent.id === VOICE_CALL_AGENT_ID) return;
-        if (session.messages && session.messages.length > 0) return;
-        if (isSessionCached(session.id)) return;
+        if (!currentAgent) {
+          return;
+        }
+        if (currentAgent.id === PRODUCT_PREVIEW_AGENT_ID || currentAgent.id === VOICE_CALL_AGENT_ID) {
+          return;
+        }
+        if (session.messages && session.messages.length > 0) {
+          return;
+        }
+        if (isSessionCached(session.id)) {
+          return;
+        }
 
         // 异步加载，不阻塞UI
         chatService.getHistoryDetail(currentAgent.id, session.id)
@@ -195,12 +202,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   };
 
   const closeDeleteDialog = () => {
-    if (isDeleting) return;
+    if (isDeleting) {
+      return;
+    }
     setSessionPendingDelete(null);
   };
 
   const confirmDeleteSession = async () => {
-    if (!sessionPendingDelete || !currentAgent || isDeleting) return;
+    if (!sessionPendingDelete || !currentAgent || isDeleting) {
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -229,7 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartX || !touchStartY || !touchStartTime) return;
+    if (!touchStartX || !touchStartY || !touchStartTime) {
+      return;
+    }
 
     const touch = e.touches[0];
     const diffX = touchStartX - touch.clientX;
@@ -278,7 +291,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   const formatTime = (date: Date | number) => {
     return new Date(date).toLocaleTimeString(locale, {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -290,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
     const query = debouncedQuery.toLowerCase();
     return sessionsToDisplay.filter(session =>
-      session.title.toLowerCase().includes(query)
+      session.title.toLowerCase().includes(query),
     );
   }, [sessionsToDisplay, debouncedQuery]);
 
@@ -298,15 +311,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     today: filteredSessions.filter(s => isToday(s.updatedAt)),
     yesterday: filteredSessions.filter(s => isYesterday(s.updatedAt)),
     thisWeek: filteredSessions.filter(s => isThisWeek(s.updatedAt) && !isToday(s.updatedAt) && !isYesterday(s.updatedAt)),
-    older: filteredSessions.filter(s => !isThisWeek(s.updatedAt))
+    older: filteredSessions.filter(s => !isThisWeek(s.updatedAt)),
   }), [filteredSessions]);
 
   const SessionGroup: React.FC<{ title: string; sessions: ChatSession[]; icon?: React.ReactNode }> = ({
     title,
     sessions: groupSessions,
-    icon
+    icon,
   }) => {
-    if (groupSessions.length === 0) return null;
+    if (groupSessions.length === 0) {
+      return null;
+    }
 
     return (
       <div className="mb-4">
@@ -341,8 +356,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
                     className="flex-1 px-2 py-1 text-sm rounded bg-background text-foreground border border-input focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveEdit();
-                      if (e.key === 'Escape') handleCancelEdit();
+                      if (e.key === 'Enter') {
+handleSaveEdit();
+}
+                      if (e.key === 'Escape') {
+handleCancelEdit();
+}
                     }}
                   />
                   <Button
@@ -460,7 +479,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         onTouchEnd={handleTouchEnd}
         role="navigation"
         aria-label={t('会话列表')}
-      >
+        >
         {/* 头部 - 移动端优化 */}
         <div className={`${isMobile ? 'p-2' : 'p-4'} border-b border-border/50`}>
           <Button

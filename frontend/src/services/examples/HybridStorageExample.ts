@@ -8,7 +8,7 @@ import {
   useHybridChatStore,
   globalPerformanceMonitor,
   globalErrorHandler,
-  defaultHybridStorageConfig
+  defaultHybridStorageConfig,
 } from '@/services/HybridStorageService';
 import { CacheStrategy } from '@/types/hybrid-storage';
 import { useEffect, useState } from 'react';
@@ -28,13 +28,13 @@ export async function initializeHybridStorage() {
         memory: {
           ...defaultHybridStorageConfig.cache!.memory,
           maxSize: 100 * 1024 * 1024, // 100MB内存缓存
-          strategy: CacheStrategy.LRU
+          strategy: CacheStrategy.LRU,
         },
         indexedDB: {
           ...defaultHybridStorageConfig.cache!.indexedDB,
-        }
+        },
       },
-      sync: defaultHybridStorageConfig.sync
+      sync: defaultHybridStorageConfig.sync,
     });
 
     // 初始化存储管理器
@@ -129,7 +129,7 @@ export function useHybridStorage() {
     syncCurrentSession: () => store.syncCurrentSession(),
     syncAllSessions: () => store.syncAllSessions(),
     preloadSessions: (agentId: string) => store.preloadSessions(agentId),
-    cleanupCache: () => store.cleanupCache()
+    cleanupCache: () => store.cleanupCache(),
   };
 }
 
@@ -157,7 +157,7 @@ export class SessionManager {
         messageCount: initialMessage ? 1 : 0,
         isPinned: false,
         tags: [],
-        isArchived: false
+        isArchived: false,
       };
 
       // 保存到混合存储
@@ -183,7 +183,7 @@ export class SessionManager {
       const message = {
         [isAI ? 'AI' : 'HUMAN']: content,
         id: `msg_${Date.now()}`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       await this.storageManager.addMessageToSession(sessionId, message);
@@ -210,7 +210,7 @@ export class SessionManager {
         agentId,
         limit: 20,
         sortBy: 'updatedAt' as const,
-        sortOrder: 'desc' as const
+        sortOrder: 'desc' as const,
       };
 
       const results = await this.storageManager.searchSessions(searchQuery);
@@ -282,7 +282,7 @@ export function setupPerformanceMonitoring() {
       storage: report.storage,
       sync: report.sync,
       alerts: report.alerts.length,
-      suggestions: report.suggestions.length
+      suggestions: report.suggestions.length,
     });
 
     // 如果有重要告警，可以通知用户
@@ -308,7 +308,7 @@ export function setupErrorHandling() {
   globalErrorHandler.registerRecoveryStrategy('CUSTOM_ERROR', {
     type: 'retry',
     maxRetries: 3,
-    retryDelay: 2000
+    retryDelay: 2000,
   });
 
   // 监听错误事件
@@ -336,11 +336,11 @@ export function setupErrorHandling() {
     const result = await globalErrorHandler.wrapOperation(
       async () => {
         // 可能失败的操作
-        return await someRiskyOperation();
+        return someRiskyOperation();
       },
       'storage',
       'RISKY_OPERATION_FAILED',
-      { operation: 'data_sync' }
+      { operation: 'data_sync' },
     );
 
     if (result.success) {
@@ -374,13 +374,13 @@ export class CacheOptimizer {
 
       // 2. 按访问频率排序
       const sortedSessions = sessions.sort((a, b) =>
-        (b.lastAccessedAt || 0) - (a.lastAccessedAt || 0)
+        (b.lastAccessedAt || 0) - (a.lastAccessedAt || 0),
       );
 
       // 3. 预加载前10个最活跃的会话
       const topSessions = sortedSessions.slice(0, 10);
       const preloadPromises = topSessions.map(session =>
-        this.storageManager.getSession(session.id)
+        this.storageManager.getSession(session.id),
       );
 
       await Promise.all(preloadPromises);
@@ -408,7 +408,7 @@ export class CacheOptimizer {
       console.log('缓存清理完成:', {
         memoryUsage: stats.memoryUsage.percentage.toFixed(1) + '%',
         indexedDBUsage: stats.indexedDBUsage.percentage.toFixed(1) + '%',
-        hitRate: (stats.performance.hitRate * 100).toFixed(1) + '%'
+        hitRate: (stats.performance.hitRate * 100).toFixed(1) + '%',
       });
 
     } catch (error) {
@@ -493,7 +493,9 @@ export class HybridStorageIntegration {
   }
 
   private async performInitialOptimization() {
-    if (!this.cacheOptimizer) return;
+    if (!this.cacheOptimizer) {
+      return;
+    }
 
     try {
       // 执行缓存清理

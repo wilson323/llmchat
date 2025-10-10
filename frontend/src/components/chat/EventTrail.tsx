@@ -57,7 +57,7 @@ export const EventTrail: React.FC<EventTrailProps> = ({ events }) => {
   }, [events]);
 
   const [visibleCount, setVisibleCount] = useState(() =>
-    Math.min(filteredEvents.length, INITIAL_VISIBLE_EVENTS)
+    Math.min(filteredEvents.length, INITIAL_VISIBLE_EVENTS),
   );
 
   useEffect(() => {

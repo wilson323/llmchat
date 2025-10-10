@@ -61,7 +61,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       },
       (error) => {
         console.log('❌ Service Worker注册失败:', error);
-      }
+      },
     );
   });
 }
@@ -86,9 +86,9 @@ if (rootElement && !rootElement.hasAttribute('data-root-initialized')) {
       <DefaultI18nProvider>
         <App />
       </DefaultI18nProvider>
-    </React.StrictMode>
+    </React.StrictMode>,
   );
-  
+
   console.log('⚡ 首屏渲染完成');
   console.log('📝 注意: 可选功能（Sentry/i18n等）后台异步加载中...');
 }

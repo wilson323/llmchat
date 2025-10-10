@@ -11,7 +11,7 @@ export function useAgentAutoFetch() {
 
     try {
       const response = await fetchAgentInfoApi(params);
-      
+
       if (response.data) {
         return response.data;
       }
@@ -32,4 +32,3 @@ export function useAgentAutoFetch() {
     error,
   };
 }
-

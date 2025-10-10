@@ -78,7 +78,7 @@ export function checkWCAGCompliance(ratio: number): {
   return {
     level,
     normalText: normalTextAA,
-    largeText: largeTextAA
+    largeText: largeTextAA,
   };
 }
 
@@ -105,7 +105,7 @@ export function analyzeContrast(foreground: string, background: string): Contras
     wcagLevel: compliance.level,
     recommendation,
     passesNormalText: compliance.normalText,
-    passesLargeText: compliance.largeText
+    passesLargeText: compliance.largeText,
   };
 }
 
@@ -118,7 +118,7 @@ export function analyzeContrast(foreground: string, background: string): Contras
 export function optimizeColorForContrast(
   color: string,
   targetColor: string,
-  targetRatio: number = 4.5
+  targetRatio: number = 4.5,
 ): string {
   const currentRatio = calculateContrastRatio(color, targetColor);
 
@@ -232,7 +232,7 @@ export function validateProjectColorSystem(): void {
       success: '#059669',
       warning: '#d97706',
       error: '#dc2626',
-      info: '#0891b2'
+      info: '#0891b2',
     },
     // 暗色模式
     dark: {
@@ -244,8 +244,8 @@ export function validateProjectColorSystem(): void {
       success: '#10b981',
       warning: '#f59e0b',
       error: '#ef4444',
-      info: '#06b6d4'
-    }
+      info: '#06b6d4',
+    },
   };
 
   const testCases = [
@@ -256,7 +256,7 @@ export function validateProjectColorSystem(): void {
     { name: '成功文字', foreground: 'white', background: 'success' },
     { name: '警告文字', foreground: 'white', background: 'warning' },
     { name: '错误文字', foreground: 'white', background: 'error' },
-    { name: '信息文字', foreground: 'white', background: 'info' }
+    { name: '信息文字', foreground: 'white', background: 'info' },
   ];
 
   const results: Array<{ mode: string; test: string; result: ContrastResult }> = [];
@@ -271,7 +271,7 @@ export function validateProjectColorSystem(): void {
           results.push({
             mode: 'light',
             test: testCase.name,
-            result
+            result,
           });
         }
       }
@@ -288,7 +288,7 @@ export function validateProjectColorSystem(): void {
           results.push({
             mode: 'dark',
             test: testCase.name,
-            result
+            result,
           });
         }
       }
@@ -300,7 +300,7 @@ export function validateProjectColorSystem(): void {
   console.log('=' .repeat(60));
 
   let passCount = 0;
-  let totalCount = results.length;
+  const totalCount = results.length;
 
   results.forEach(({ mode, test, result }) => {
     const status = result.passesNormalText ? '✅' : '❌';

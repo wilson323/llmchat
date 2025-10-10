@@ -60,7 +60,9 @@ export const Toast: React.FC<ToastProps> = ({
     }, 300);
   };
 
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   const Icon = icons[type];
 
@@ -71,7 +73,7 @@ export const Toast: React.FC<ToastProps> = ({
         transform transition-all duration-300 ease-out
         ${isLeaving ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'}
       `}
-    >
+      >
       <div
         className={`
           flex items-start gap-3 p-4 rounded-lg border shadow-lg

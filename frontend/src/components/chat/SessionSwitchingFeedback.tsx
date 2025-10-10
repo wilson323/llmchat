@@ -19,7 +19,7 @@ export const SessionSwitchingFeedback: React.FC<SessionSwitchingFeedbackProps> =
   success,
   error,
   message,
-  duration = 2000
+  duration = 2000,
 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);

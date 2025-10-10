@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
-    if (message && message.AI !== undefined) {
+    if (message?.AI !== undefined) {
       return i;
     }
   }
@@ -17,12 +17,24 @@ const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
 };
 
 const mergeReasoningContent = (previous: string | undefined, incoming: string): string => {
-  if (!previous) return incoming;
-  if (!incoming) return previous;
-  if (incoming === previous) return previous;
-  if (incoming.startsWith(previous)) return incoming;
-  if (previous.endsWith(incoming)) return previous;
-  if (incoming.endsWith(previous)) return incoming;
+  if (!previous) {
+    return incoming;
+  }
+  if (!incoming) {
+    return previous;
+  }
+  if (incoming === previous) {
+    return previous;
+  }
+  if (incoming.startsWith(previous)) {
+    return incoming;
+  }
+  if (previous.endsWith(incoming)) {
+    return previous;
+  }
+  if (incoming.endsWith(previous)) {
+    return incoming;
+  }
   return `${previous}${previous.endsWith('\n') ? '' : '\n'}${incoming}`;
 };
 
@@ -32,7 +44,7 @@ const syncMessagesWithSession = (
     currentAgent: Agent | null;
     agentSessions: AgentSessionsMap;
   },
-  messages: ChatMessage[]
+  messages: ChatMessage[],
 ) => {
   if (state.currentSession && state.currentAgent) {
     const updatedAgentSessions = {
@@ -40,8 +52,8 @@ const syncMessagesWithSession = (
       [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map((session) =>
         session.id === state.currentSession!.id
           ? { ...session, messages, updatedAt: new Date() }
-          : session
-      )
+          : session,
+      ),
     };
 
     return {
@@ -51,7 +63,7 @@ const syncMessagesWithSession = (
         ...state.currentSession,
         messages,
         updatedAt: new Date(),
-      }
+      },
     };
   }
 
@@ -147,7 +159,7 @@ export const useChatStore = create<ChatState>()(
 
       // Actions
       setAgents: (agents) => set({ agents }),
-      
+
       // 智能体切换逻辑（按 huihua.md 要求）
       setCurrentAgent: (agent) => {
         if (!agent) {
@@ -161,9 +173,9 @@ export const useChatStore = create<ChatState>()(
           const agentSessions = hasSessionsEntry
             ? state.agentSessions
             : {
-                ...state.agentSessions,
-                [agent.id]: [],
-              };
+              ...state.agentSessions,
+              [agent.id]: [],
+            };
 
           const latestSession = existingSessions[0] || null;
 
@@ -175,7 +187,7 @@ export const useChatStore = create<ChatState>()(
           };
         });
       },
-      
+
       setAgentsLoading: (loading) => set({ agentsLoading: loading }),
       setAgentsError: (error) => set({ agentsError: error }),
 
@@ -185,10 +197,10 @@ export const useChatStore = create<ChatState>()(
           // 确保消息有时间戳
           const messageWithTimestamp = {
             ...message,
-            timestamp: message.timestamp || Date.now()
+            timestamp: message.timestamp || Date.now(),
           };
           const updatedMessages = [...state.messages, messageWithTimestamp];
-          
+
           // 同步更新当前会话的消息
           if (state.currentSession && state.currentAgent) {
             const updatedAgentSessions = {
@@ -196,10 +208,10 @@ export const useChatStore = create<ChatState>()(
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
                   ? { ...session, messages: updatedMessages, updatedAt: new Date() }
-                  : session
-              )
+                  : session,
+              ),
             };
-            
+
             // 智能更新会话标题（基于NLP关键词提取，替代简单字符串截断）
             if (message.HUMAN && !state.currentSession.messages.some((m) => m.HUMAN !== undefined)) {
               // 使用智能标题生成，传入当前会话的完整消息历史
@@ -209,21 +221,21 @@ export const useChatStore = create<ChatState>()(
               updatedAgentSessions[state.currentAgent.id] = updatedAgentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
                   ? { ...session, title: smartTitle }
-                  : session
+                  : session,
               );
             }
-            
+
             return {
               messages: updatedMessages,
               agentSessions: updatedAgentSessions,
               currentSession: {
                 ...state.currentSession,
                 messages: updatedMessages,
-                updatedAt: new Date()
-              }
+                updatedAt: new Date(),
+              },
             };
           }
-          
+
           return { messages: updatedMessages };
         }),
 
@@ -239,7 +251,9 @@ export const useChatStore = create<ChatState>()(
             }
           }
 
-          if (idx === -1) return state;
+          if (idx === -1) {
+            return state;
+          }
 
           const messages = state.messages.filter((_, i) => i !== idx);
           return syncMessagesWithSession(state, messages);
@@ -263,12 +277,12 @@ export const useChatStore = create<ChatState>()(
               const updatedMessage = {
                 ...msg,
                 AI: (msg.AI || '') + content,
-                _lastUpdate: Date.now() // 添加时间戳强制更新
+                _lastUpdate: Date.now(), // 添加时间戳强制更新
               } as ChatMessage;
               debugLog('📝 消息更新:', {
                 beforeLength: msg.AI?.length || 0,
                 afterLength: (updatedMessage.AI || '').length,
-                addedContent: content.length
+                addedContent: content.length,
               });
               return updatedMessage;
             }
@@ -383,8 +397,8 @@ export const useChatStore = create<ChatState>()(
             const existingEvents = msg.events ?? [];
 
             const mergePayload = (
-              prev: Record<string, unknown> | null | undefined, 
-              incoming: Record<string, unknown> | null | undefined
+              prev: Record<string, unknown> | null | undefined,
+              incoming: Record<string, unknown> | null | undefined,
             ): Record<string, unknown> | null | undefined => {
               if (prev && incoming && typeof prev === 'object' && typeof incoming === 'object') {
                 return { ...prev, ...incoming };
@@ -479,7 +493,7 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           // 更新当前消息列表
           const messages = state.messages.map((msg) =>
-            msg.id === messageId ? ({ ...msg, feedback } as ChatMessage) : msg
+            msg.id === messageId ? ({ ...msg, feedback } as ChatMessage) : msg,
           );
 
           // 同步更新当前会话
@@ -489,8 +503,8 @@ export const useChatStore = create<ChatState>()(
               [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(session =>
                 session.id === state.currentSession!.id
                   ? { ...session, messages, updatedAt: new Date() }
-                  : session
-              )
+                  : session,
+              ),
             };
 
             return {
@@ -499,8 +513,8 @@ export const useChatStore = create<ChatState>()(
               currentSession: {
                 ...state.currentSession,
                 messages,
-                updatedAt: new Date()
-              }
+                updatedAt: new Date(),
+              },
             };
           }
 
@@ -537,8 +551,10 @@ export const useChatStore = create<ChatState>()(
       // 新建对话（按 huihua.md 要求）
       createNewSession: () => {
         const currentAgent = get().currentAgent;
-        if (!currentAgent) return;
-        
+        if (!currentAgent) {
+          return;
+        }
+
         // huihua.md 要求：新建对话时添加空messages的会话到agentId数组中
         const newSession: ChatSession = {
           id: Date.now().toString(),        // 时间戳字符串作为会话id
@@ -548,16 +564,16 @@ export const useChatStore = create<ChatState>()(
           createdAt: new Date(),           // 创建时间
           updatedAt: new Date(),           // 更新时间
         };
-        
+
         set((state) => {
           const currentAgentSessions = state.agentSessions[currentAgent.id] || [];
           return {
             agentSessions: {
               ...state.agentSessions,
-              [currentAgent.id]: [newSession, ...currentAgentSessions]
+              [currentAgent.id]: [newSession, ...currentAgentSessions],
             },
             currentSession: newSession,
-            messages: []  // 当前消息列表为空
+            messages: [],  // 当前消息列表为空
           };
         });
       },
@@ -565,7 +581,9 @@ export const useChatStore = create<ChatState>()(
       // 删除会话
       deleteSession: (sessionId) =>
         set((state) => {
-          if (!state.currentAgent) return state;
+          if (!state.currentAgent) {
+            return state;
+          }
 
           const updatedSessions = state.agentSessions[state.currentAgent.id].filter(s => s.id !== sessionId);
           const newCurrentSession = state.currentSession?.id === sessionId ? null : state.currentSession;
@@ -573,24 +591,26 @@ export const useChatStore = create<ChatState>()(
           return {
             agentSessions: {
               ...state.agentSessions,
-              [state.currentAgent.id]: updatedSessions
+              [state.currentAgent.id]: updatedSessions,
             },
             currentSession: newCurrentSession,
-            messages: newCurrentSession ? newCurrentSession.messages : []
+            messages: newCurrentSession ? newCurrentSession.messages : [],
           };
         }),
 
       // 清空当前智能体的所有会话
       clearCurrentAgentSessions: () =>
         set((state) => {
-          if (!state.currentAgent) return state;
+          if (!state.currentAgent) {
+            return state;
+          }
           return {
             agentSessions: {
               ...state.agentSessions,
-              [state.currentAgent.id]: []
+              [state.currentAgent.id]: [],
             },
             currentSession: null,
-            messages: []
+            messages: [],
           };
         }),
 
@@ -599,7 +619,9 @@ export const useChatStore = create<ChatState>()(
         const state = get();
         const currentAgent = state.currentAgent;
 
-        if (!currentAgent) return;
+        if (!currentAgent) {
+          return;
+        }
 
         // 从agentSessions中获取当前智能体的会话列表
         const agentSessions = state.agentSessions[currentAgent.id] || [];
@@ -609,7 +631,7 @@ export const useChatStore = create<ChatState>()(
           // 立即更新状态（乐观更新）
           set({
             currentSession: targetSession,
-            messages: targetSession.messages || []  // 确保messages总是数组
+            messages: targetSession.messages || [],  // 确保messages总是数组
           });
 
           // 更新最后活动时间
@@ -618,8 +640,8 @@ export const useChatStore = create<ChatState>()(
             [currentAgent.id]: agentSessions.map(session =>
               session.id === sessionId
                 ? { ...session, lastAccessedAt: Date.now() }
-                : session
-            )
+                : session,
+            ),
           };
 
           // 更新store
@@ -650,18 +672,20 @@ export const useChatStore = create<ChatState>()(
       // 重命名会话
       renameSession: (sessionId, title) =>
         set((state) => {
-          if (!state.currentAgent) return state;
-          
+          if (!state.currentAgent) {
+            return state;
+          }
+
           return {
             agentSessions: {
               ...state.agentSessions,
-              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(s => 
-                s.id === sessionId ? { ...s, title, updatedAt: new Date() } : s
-              )
-            }
+              [state.currentAgent.id]: state.agentSessions[state.currentAgent.id].map(s =>
+                s.id === sessionId ? { ...s, title, updatedAt: new Date() } : s,
+              ),
+            },
           };
         }),
-        
+
       // 初始化检查（huihua.md 要求 1）
       initializeAgentSessions: () => {
         const state = get();
@@ -673,8 +697,8 @@ export const useChatStore = create<ChatState>()(
           set((state) => ({
             agentSessions: {
               ...state.agentSessions,
-              [currentAgent.id]: []  // agentId:[]
-            }
+              [currentAgent.id]: [],  // agentId:[]
+            },
           }));
         }
       },
@@ -702,11 +726,15 @@ export const useChatStore = create<ChatState>()(
 
       bindSessionId: (oldId, newId) =>
         set((state) => {
-          if (!state.currentAgent) return state;
+          if (!state.currentAgent) {
+            return state;
+          }
           const agentId = state.currentAgent.id;
           const sessions = state.agentSessions[agentId] || [];
           const targetIndex = sessions.findIndex((session) => session.id === oldId);
-          if (targetIndex === -1) return state;
+          if (targetIndex === -1) {
+            return state;
+          }
 
           const duplicate = sessions.find((session) => session.id === newId && session.id !== oldId);
           const mergedMessages = sessions[targetIndex].messages.length
@@ -717,7 +745,7 @@ export const useChatStore = create<ChatState>()(
           const updatedSessions = filtered.map((session) =>
             session.id === oldId
               ? { ...session, id: newId, messages: mergedMessages, updatedAt: new Date() }
-              : session
+              : session,
           );
 
           const updatedAgentSessions = {
@@ -728,11 +756,11 @@ export const useChatStore = create<ChatState>()(
           const isCurrent = state.currentSession && (state.currentSession.id === oldId || state.currentSession.id === newId);
           const newCurrentSession = isCurrent
             ? {
-                ...(state.currentSession as ChatSession),
-                id: newId,
-                messages: mergedMessages,
-                updatedAt: new Date(),
-              }
+              ...(state.currentSession as ChatSession),
+              id: newId,
+              messages: mergedMessages,
+              updatedAt: new Date(),
+            }
             : state.currentSession;
 
           return {
@@ -744,13 +772,15 @@ export const useChatStore = create<ChatState>()(
 
       setSessionMessages: (sessionId, messages) =>
         set((state) => {
-          if (!state.currentAgent) return state;
+          if (!state.currentAgent) {
+            return state;
+          }
           const agentId = state.currentAgent.id;
           const sessions = state.agentSessions[agentId] || [];
           const updatedSessions = sessions.map((session) =>
             session.id === sessionId
               ? { ...session, messages, updatedAt: new Date() }
-              : session
+              : session,
           );
 
           const isCurrent = state.currentSession?.id === sessionId;
@@ -801,7 +831,7 @@ export const useChatStore = create<ChatState>()(
       updateMessageById: (messageId, updater) =>
         set((state) => {
           const updatedMessages = state.messages.map((message) =>
-            message.id === messageId ? updater(message) : message
+            message.id === messageId ? updater(message) : message,
           );
 
           if (!state.currentAgent || !state.currentSession) {
@@ -812,7 +842,7 @@ export const useChatStore = create<ChatState>()(
           const updatedSessions = state.agentSessions[agentId].map((session) =>
             session.id === state.currentSession!.id
               ? { ...session, messages: updatedMessages, updatedAt: new Date() }
-              : session
+              : session,
           );
 
           return {
@@ -833,35 +863,39 @@ export const useChatStore = create<ChatState>()(
       updateSessionTitleIntelligently: (sessionId) =>
         set((state) => {
           const targetSessionId = sessionId || state.currentSession?.id;
-          if (!targetSessionId || !state.currentAgent) return state;
+          if (!targetSessionId || !state.currentAgent) {
+            return state;
+          }
 
           const agentSessions = state.agentSessions[state.currentAgent.id] || [];
           const targetSession = agentSessions.find(s => s.id === targetSessionId);
 
-          if (!targetSession || targetSession.messages.length === 0) return state;
+          if (!targetSession || targetSession.messages.length === 0) {
+            return state;
+          }
 
           // 使用智能标题更新检查
           const titleUpdateResult = updateSessionTitleIfNeeded(
             targetSession.messages,
             targetSession.title,
-            30
+            30,
           );
 
           if (titleUpdateResult.shouldUpdate) {
             const updatedSessions = agentSessions.map(session =>
               session.id === targetSessionId
                 ? { ...session, title: titleUpdateResult.newTitle, updatedAt: new Date() }
-                : session
+                : session,
             );
 
             return {
               agentSessions: {
                 ...state.agentSessions,
-                [state.currentAgent.id]: updatedSessions
+                [state.currentAgent.id]: updatedSessions,
               },
               currentSession: state.currentSession?.id === targetSessionId
                 ? { ...state.currentSession, title: titleUpdateResult.newTitle, updatedAt: new Date() }
-                : state.currentSession
+                : state.currentSession,
             };
           }
 
@@ -885,9 +919,9 @@ export const useChatStore = create<ChatState>()(
             state.initializeAgentSessions();
           }, 0);
         }
-      }
-    }
-  )
+      },
+    },
+  ),
 );
 
 /**

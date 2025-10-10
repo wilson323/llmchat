@@ -1,5 +1,5 @@
 const isDev =
-  typeof import.meta !== "undefined" &&
+  typeof import.meta !== 'undefined' &&
   Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
 
 export const debugLog = (...args: unknown[]): void => {

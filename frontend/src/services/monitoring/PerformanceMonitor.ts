@@ -10,7 +10,7 @@ import {
   SyncMetrics,
   PerformanceAlert,
   OptimizationSuggestion,
-  StorageTier
+  StorageTier,
 } from '@/types/hybrid-storage';
 
 interface PerformanceData {
@@ -54,7 +54,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
     errorRate: 0.05, // 5%
     cacheHitRate: 0.7, // 70%
     syncDuration: 30000, // 30s
-    storageUsage: 0.8 // 80%
+    storageUsage: 0.8, // 80%
   };
 
   constructor() {
@@ -64,7 +64,9 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   // ==================== 数据收集 ====================
 
   recordAccess(_key: string, tier: StorageTier, duration: number, hit: boolean, dataSize?: number): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
 
     try {
       const data: PerformanceData = {
@@ -73,7 +75,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         tier,
         success: true,
         dataSize,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.addToHistory(this.accessHistory, data);
@@ -85,7 +87,9 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   }
 
   recordSync(operation: string, duration: number, success: boolean, dataSize?: number): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
 
     try {
       const data: SyncData = {
@@ -93,7 +97,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         duration,
         success,
         dataSize,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.addToHistory(this.syncHistory, data);
@@ -105,14 +109,16 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   }
 
   recordCacheEviction(key: string, reason: string, tier: StorageTier): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
 
     try {
       const data: EvictionData = {
         key,
         reason,
         tier,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.addToHistory(this.evictionHistory, data);
@@ -143,7 +149,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         sync,
         cache,
         alerts,
-        suggestions
+        suggestions,
       };
 
     } catch (error) {
@@ -169,7 +175,9 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   // ==================== 实时监控 ====================
 
   startRealTimeMonitoring(): void {
-    if (this.isMonitoring) return;
+    if (this.isMonitoring) {
+      return;
+    }
 
     this.isMonitoring = true;
     console.log('性能监控已启动');
@@ -273,7 +281,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   private checkEvictionThresholds(_data: EvictionData): void {
     // 如果短时间内大量清理，可能是缓存配置问题
     const recentEvictions = this.evictionHistory.filter(
-      e => e.timestamp > Date.now() - 60000 // 最近1分钟
+      e => e.timestamp > Date.now() - 60000, // 最近1分钟
     );
 
     if (recentEvictions.length > 100) {
@@ -302,7 +310,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
     value: number,
     threshold: number,
     message: string,
-    suggestions: string[]
+    suggestions: string[],
   ): void {
     const alert: PerformanceAlert = {
       type,
@@ -311,7 +319,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       threshold,
       message,
       timestamp: Date.now(),
-      suggestions
+      suggestions,
     };
 
     this.alertCallbacks.forEach(callback => {
@@ -333,7 +341,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
     return {
       memory: this.calculateMemoryMetrics(memoryAccess),
       indexedDB: this.calculateIndexedDBMetrics(indexedDBAccess),
-      fastgpt: this.calculateFastgptMetrics(fastgptAccess)
+      fastgpt: this.calculateFastgptMetrics(fastgptAccess),
     };
   }
 
@@ -355,7 +363,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       hitRate: totalOps > 0 ? hitOps / totalOps : 0,
       averageResponseTime: averageTime,
       totalOperations: totalOps,
-      errorRate: totalOps > 0 ? (totalOps - successfulOps) / totalOps : 0
+      errorRate: totalOps > 0 ? (totalOps - successfulOps) / totalOps : 0,
     };
   }
 
@@ -383,7 +391,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       totalOperations: totalOps,
       errorRate: totalOps > 0 ? (totalOps - successfulOps) / totalOps : 0,
       size: totalSize,
-      entryCount: accessData.length
+      entryCount: accessData.length,
     };
   }
 
@@ -409,7 +417,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       totalRequests: totalOps,
       errorRate: totalOps > 0 ? (totalOps - successfulOps) / totalOps : 0,
       bandwidthUsed: totalSize,
-      cacheHitRate: totalOps > 0 ? hitOps / totalOps : 0
+      cacheHitRate: totalOps > 0 ? hitOps / totalOps : 0,
     };
   }
 
@@ -426,7 +434,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       conflictRate: 0, // 需要从同步管理器获取
       dataTransferred: recentSync.reduce((sum, data) => sum + (data.dataSize || 0), 0),
       lastSyncTime: recentSync.length > 0 ? Math.max(...recentSync.map(d => d.timestamp)) : 0,
-      pendingOperations: 0 // 需要从同步管理器获取
+      pendingOperations: 0, // 需要从同步管理器获取
     };
   }
 
@@ -438,25 +446,25 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         total: 50 * 1024 * 1024,
         used: 20 * 1024 * 1024,
         free: 30 * 1024 * 1024,
-        percentage: 40
+        percentage: 40,
       },
       indexedDBUsage: {
         total: 100 * 1024 * 1024,
         used: 30 * 1024 * 1024,
         free: 70 * 1024 * 1024,
-        percentage: 30
+        percentage: 30,
       },
       cacheEntries: {
         hot: 100,
         warm: 500,
         cold: 200,
-        total: 800
+        total: 800,
       },
       performance: {
         hitRate: 0.75,
         averageResponseTime: 15,
-        evictionRate: 0.02
-      }
+        evictionRate: 0.02,
+      },
     };
   }
 
@@ -466,7 +474,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
 
     // 检查最近的错误率
     const recentAccess = this.accessHistory.filter(
-      data => data.timestamp > Date.now() - 300000 // 最近5分钟
+      data => data.timestamp > Date.now() - 300000, // 最近5分钟
     );
 
     if (recentAccess.length > 0) {
@@ -479,7 +487,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
           threshold: this.thresholds.errorRate,
           message: `错误率过高: ${(errorRate * 100).toFixed(1)}%`,
           timestamp: Date.now(),
-          suggestions: ['检查存储提供者状态', '验证网络连接', '查看错误日志']
+          suggestions: ['检查存储提供者状态', '验证网络连接', '查看错误日志'],
         });
       }
     }
@@ -490,7 +498,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   private async generateOptimizationSuggestions(
     storage: StorageMetrics,
     sync: SyncMetrics,
-    cache: any
+    cache: any,
   ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 
@@ -502,7 +510,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         title: '优化内存缓存性能',
         description: '内存访问时间过慢，影响用户体验',
         expectedImpact: '减少50%的访问时间',
-        implementation: '增加内存缓存大小，优化数据结构，减少序列化开销'
+        implementation: '增加内存缓存大小，优化数据结构，减少序列化开销',
       });
     }
 
@@ -513,7 +521,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         title: '优化内存使用',
         description: '内存使用率过高，可能导致性能问题',
         expectedImpact: '降低30%内存使用',
-        implementation: '清理过期数据，压缩存储内容，调整缓存策略'
+        implementation: '清理过期数据，压缩存储内容，调整缓存策略',
       });
     }
 
@@ -525,7 +533,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         title: '优化同步性能',
         description: '同步操作耗时过长，影响数据一致性',
         expectedImpact: '减少60%同步时间',
-        implementation: '启用增量同步，压缩传输数据，优化网络请求'
+        implementation: '启用增量同步，压缩传输数据，优化网络请求',
       });
     }
 
@@ -536,7 +544,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         title: '提高同步成功率',
         description: '同步失败率过高，影响数据可用性',
         expectedImpact: '提升到99%成功率',
-        implementation: '增加重试机制，改进错误处理，优化网络策略'
+        implementation: '增加重试机制，改进错误处理，优化网络策略',
       });
     }
 
@@ -575,7 +583,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       storage: {
         memory: { hitRate: 0, averageResponseTime: 0, totalOperations: 0, errorRate: 0 },
         indexedDB: { hitRate: 0, averageResponseTime: 0, totalOperations: 0, errorRate: 0, size: 0, entryCount: 0 },
-        fastgpt: { averageResponseTime: 0, totalRequests: 0, errorRate: 0, bandwidthUsed: 0, cacheHitRate: 0 }
+        fastgpt: { averageResponseTime: 0, totalRequests: 0, errorRate: 0, bandwidthUsed: 0, cacheHitRate: 0 },
       },
       sync: {
         totalSyncs: 0,
@@ -584,16 +592,16 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         conflictRate: 0,
         dataTransferred: 0,
         lastSyncTime: 0,
-        pendingOperations: 0
+        pendingOperations: 0,
       },
       cache: {
         memoryUsage: { total: 0, used: 0, free: 0, percentage: 0 },
         indexedDBUsage: { total: 0, used: 0, free: 0, percentage: 0 },
         cacheEntries: { hot: 0, warm: 0, cold: 0, total: 0 },
-        performance: { hitRate: 0, averageResponseTime: 0, evictionRate: 0 }
+        performance: { hitRate: 0, averageResponseTime: 0, evictionRate: 0 },
       },
       alerts: [],
-      suggestions: []
+      suggestions: [],
     };
   }
 
@@ -630,7 +638,7 @@ export class PerformanceMonitor implements IPerformanceMonitor {
       accessHistory: [...this.accessHistory],
       syncHistory: [...this.syncHistory],
       evictionHistory: [...this.evictionHistory],
-      thresholds: this.getThresholds()
+      thresholds: this.getThresholds(),
     };
   }
 

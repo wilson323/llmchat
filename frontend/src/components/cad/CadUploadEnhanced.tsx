@@ -1,6 +1,6 @@
 /**
  * CAD 增强型文件上传组件
- * 
+ *
  * 功能增强：
  * - 拖拽预览
  * - 文件验证详情
@@ -10,15 +10,15 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { 
-  Upload, 
-  FileText, 
-  AlertCircle, 
+import {
+  Upload,
+  FileText,
+  AlertCircle,
   CheckCircle2,
   XCircle,
   File,
   FileWarning,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import axios from 'axios';
 import type { CadFileInfo } from '@llmchat/shared-types';
@@ -56,7 +56,7 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
     // 检查文件大小
     const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
-      return { valid: false, error: `文件大小超过限制（最大 50MB）` };
+      return { valid: false, error: '文件大小超过限制（最大 50MB）' };
     }
 
     // 检查文件是否为空
@@ -82,7 +82,9 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
         return;
       }
 
-      if (acceptedFiles.length === 0) return;
+      if (acceptedFiles.length === 0) {
+        return;
+      }
 
       const file = acceptedFiles[0];
 
@@ -117,7 +119,7 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
           },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 1)
+              (progressEvent.loaded * 100) / (progressEvent.total || 1),
             );
             setUploadState(prev => ({
               ...prev,
@@ -133,7 +135,7 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
             fileName: file.name,
             message: '上传成功！',
           });
-          
+
           setTimeout(() => {
             onUploadSuccess(response.data.data.fileInfo, response.data.data.summary);
           }, 500);
@@ -145,7 +147,7 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
         const errorMessage = axios.isAxiosError(error)
           ? error.response?.data?.message || error.message || '上传失败'
           : '未知错误';
-        
+
         setUploadState({
           status: 'error',
           progress: 0,
@@ -156,7 +158,7 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
         setTimeout(() => setUploadState({ status: 'idle', progress: 0 }), 3000);
       }
     },
-    [onUploadSuccess, onUploadError]
+    [onUploadSuccess, onUploadError],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -176,8 +178,12 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
   });
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    }
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 

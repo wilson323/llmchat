@@ -35,7 +35,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
       timeout: 30000,
       retryAttempts: 3,
       retryDelay: 1000,
-      ...config
+      ...config,
     };
   }
 
@@ -47,7 +47,9 @@ export class FastGPTStorageProvider implements IStorageProvider {
   }
 
   async init(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     try {
       // 验证API连接
@@ -79,19 +81,27 @@ export class FastGPTStorageProvider implements IStorageProvider {
   // ==================== 基础存储接口实现 ====================
 
   async get<T>(key: string): Promise<T | null> {
-    if (!this.isAvailable) return null;
+    if (!this.isAvailable) {
+      return null;
+    }
 
     try {
       // FastGPT使用chatId作为key
       const chatId = this.extractChatIdFromKey(key);
-      if (!chatId) return null;
+      if (!chatId) {
+        return null;
+      }
 
       // 检查缓存
       const cached = this.getCachedData(`chat:${chatId}`);
-      if (cached) return cached as T;
+      if (cached) {
+        return cached as T;
+      }
 
       const detail = await this.getChatHistory(chatId);
-      if (!detail) return null;
+      if (!detail) {
+        return null;
+      }
 
       this.setCachedData(`chat:${chatId}`, detail);
       return detail as T;
@@ -113,11 +123,15 @@ export class FastGPTStorageProvider implements IStorageProvider {
   }
 
   async exists(key: string): Promise<boolean> {
-    if (!this.isAvailable) return false;
+    if (!this.isAvailable) {
+      return false;
+    }
 
     try {
       const chatId = this.extractChatIdFromKey(key);
-      if (!chatId) return false;
+      if (!chatId) {
+        return false;
+      }
 
       const summary = await this.getChatSummary(chatId);
       return !!summary;
@@ -171,7 +185,9 @@ export class FastGPTStorageProvider implements IStorageProvider {
   }
 
   async list<T>(prefix = '', limit?: number): Promise<Array<{key: string, value: T}>> {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable) {
+      return [];
+    }
 
     try {
       // 获取会话列表
@@ -191,7 +207,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
         const key = this.generateKeyFromChatId(summary.chatId);
         const value = await this.get<T>(key);
         if (value) {
-          results.push({key, value});
+          results.push({ key, value });
         }
       }
 
@@ -203,7 +219,9 @@ export class FastGPTStorageProvider implements IStorageProvider {
   }
 
   async search<T>(query: SearchQuery): Promise<Array<{key: string, value: T, score: number}>> {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable) {
+      return [];
+    }
 
     try {
       // 获取所有会话摘要
@@ -242,7 +260,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
           const key = this.generateKeyFromChatId(summary.chatId);
           const value = await this.get<T>(key);
           if (value) {
-            results.push({key, value, score});
+            results.push({ key, value, score });
           }
         }
       }
@@ -270,7 +288,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
         hitRate: 0,
         averageAccessTime: 0,
         oldestEntry: 0,
-        newestEntry: 0
+        newestEntry: 0,
       };
     }
 
@@ -291,7 +309,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
         hitRate: 0,
         averageAccessTime: this.config.timeout || 30000, // 使用超时时间作为平均访问时间
         oldestEntry,
-        newestEntry
+        newestEntry,
       };
     } catch (error) {
       console.error('Failed to get FastGPT stats:', error);
@@ -303,7 +321,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
         hitRate: 0,
         averageAccessTime: 0,
         oldestEntry: 0,
-        newestEntry: 0
+        newestEntry: 0,
       };
     }
   }
@@ -314,12 +332,16 @@ export class FastGPTStorageProvider implements IStorageProvider {
    * 获取会话摘要列表
    */
   async getChatSummaries(chatIds?: string[]): Promise<FastGPTChatHistorySummary[]> {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable) {
+      return [];
+    }
 
     try {
       const cacheKey = `summaries:${chatIds?.join(',') || 'all'}`;
       const cached = this.getCachedData<FastGPTChatHistorySummary[]>(cacheKey);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
 
       let url = '/api/chat/list';
       if (chatIds && chatIds.length > 0) {
@@ -346,12 +368,16 @@ export class FastGPTStorageProvider implements IStorageProvider {
    * 获取会话详情
    */
   async getChatHistory(chatId: string): Promise<FastGPTChatHistoryDetail | null> {
-    if (!this.isAvailable) return null;
+    if (!this.isAvailable) {
+      return null;
+    }
 
     try {
       const cacheKey = `chat:${chatId}`;
       const cached = this.getCachedData<FastGPTChatHistoryDetail>(cacheKey);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
 
       const response = await this.makeRequest<FastGPTChatHistoryDetail>(`/api/chat/detail?chatId=${chatId}`);
       this.setCachedData(cacheKey, response.data);
@@ -374,12 +400,16 @@ export class FastGPTStorageProvider implements IStorageProvider {
    * 按智能体ID过滤会话
    */
   async getChatSummariesByAgent(agentId: string): Promise<FastGPTChatHistorySummary[]> {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable) {
+      return [];
+    }
 
     try {
       const cacheKey = `summaries:agent:${agentId}`;
       const cached = this.getCachedData<FastGPTChatHistorySummary[]>(cacheKey);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
 
       const response = await this.makeRequest<FastGPTChatHistorySummary[]>(`/api/chat/list?appId=${agentId}`);
       this.setCachedData(cacheKey, response.data, 2 * 60 * 1000);
@@ -394,7 +424,9 @@ export class FastGPTStorageProvider implements IStorageProvider {
    * 增量获取会话更新
    */
   async getIncrementalUpdates(agentId: string, since?: number): Promise<any[]> {
-    if (!this.isAvailable) return [];
+    if (!this.isAvailable) {
+      return [];
+    }
 
     try {
       let url = `/api/chat/updates?appId=${agentId}`;
@@ -415,7 +447,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
   private async makeRequest<T = any>(
     endpoint: string,
     method: 'GET' | 'POST' = 'GET',
-    data?: any
+    data?: any,
   ): Promise<FastGPTResponse<T>> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const maxRetries = this.config.retryAttempts || 3;
@@ -430,7 +462,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
             'Authorization': `Bearer ${this.config.apiKey}`,
           },
           body: data ? JSON.stringify(data) : undefined,
-          signal: AbortSignal.timeout(this.config.timeout || 30000)
+          signal: AbortSignal.timeout(this.config.timeout || 30000),
         });
 
         if (!response.ok) {
@@ -485,7 +517,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
   private setCachedData<T>(key: string, data: T, expiry?: number): void {
     this.requestCache.set(key, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // 如果设置了自定义过期时间，使用定时器清理

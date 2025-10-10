@@ -41,7 +41,7 @@ export interface AgentPayload {
 export async function listAgents(opts?: { includeInactive?: boolean }): Promise<AgentItem[]> {
   const { data } = await api.get<ApiSuccessPayload<AgentItem[]>>(
     '/agents',
-    { params: { includeInactive: opts?.includeInactive ? 'true' : undefined } }
+    { params: { includeInactive: opts?.includeInactive ? 'true' : undefined } },
   );
   return data.data;
 }
@@ -49,7 +49,7 @@ export async function listAgents(opts?: { includeInactive?: boolean }): Promise<
 export async function reloadAgents(): Promise<{ totalAgents: number; activeAgents: number }> {
   const { data } = await api.post<ApiSuccessPayload<{ totalAgents: number; activeAgents: number }>>(
     '/agents/reload',
-    {}
+    {},
   );
   return data.data;
 }
@@ -75,7 +75,7 @@ export async function importAgents(payload: { agents: AgentPayload[] }): Promise
 
 export async function validateAgent(id: string): Promise<{ agentId: string; isValid: boolean; exists: boolean; isActive: boolean }> {
   const { data } = await api.get<ApiSuccessPayload<{ agentId: string; isValid: boolean; exists: boolean; isActive: boolean }>>(
-    `/agents/${id}/validate`
+    `/agents/${id}/validate`,
   );
   return data.data;
 }
@@ -102,4 +102,3 @@ export async function fetchAgentInfo(params: FetchAgentInfoParams): Promise<ApiS
   const { data } = await api.post<ApiSuccessPayload<AgentInfo>>('/agents/fetch-info', params);
   return data;
 }
-

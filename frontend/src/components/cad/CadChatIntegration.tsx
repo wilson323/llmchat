@@ -1,6 +1,6 @@
 /**
  * CAD 聊天集成组件
- * 
+ *
  * 在聊天界面中嵌入 CAD 编辑器
  */
 
@@ -51,12 +51,12 @@ export const CadChatIntegration: React.FC<CadChatIntegrationProps> = ({
     <div
       className={`
         transition-all duration-300 ease-in-out
-        ${isFullscreen 
-          ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900' 
+        ${isFullscreen
+          ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900'
           : 'relative'
         }
       `}
-    >
+      >
       {/* 头部工具栏 */}
       {fileInfo && !isFullscreen && (
         <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white">

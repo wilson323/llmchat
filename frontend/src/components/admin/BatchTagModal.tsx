@@ -1,21 +1,21 @@
-"use client";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+'use client';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Tag,
   Plus,
   Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { useI18n } from "@/i18n";
-import { toast } from "@/components/ui/Toast";
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { useI18n } from '@/i18n';
+import { toast } from '@/components/ui/Toast';
 import {
   batchAddTags,
   batchRemoveTags,
   type BatchOperationResult,
-} from "@/services/sessionApi";
+} from '@/services/sessionApi';
 
 interface BatchTagModalProps {
   isOpen: boolean;
@@ -35,14 +35,14 @@ export function BatchTagModal({
   const { t } = useI18n();
 
   const [tags, setTags] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
 
   // 重置状态
   useEffect(() => {
     if (isOpen) {
       setTags([]);
-      setInputValue("");
+      setInputValue('');
     }
   }, [isOpen]);
 
@@ -51,7 +51,7 @@ export function BatchTagModal({
     const trimmed = inputValue.trim();
     if (trimmed && !tags.includes(trimmed)) {
       setTags([...tags, trimmed]);
-      setInputValue("");
+      setInputValue('');
     }
   };
 
@@ -116,7 +116,7 @@ export function BatchTagModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >

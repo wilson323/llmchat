@@ -1,6 +1,6 @@
 /**
  * CAD 聊天服务
- * 
+ *
  * 处理 CAD 智能体与聊天界面的集成
  */
 
@@ -39,7 +39,7 @@ export class CadChatService {
    */
   async executeOperation(
     operation: string,
-    params: any
+    params: any,
   ): Promise<CadOperationResult> {
     if (!this.context.fileId) {
       throw new Error('请先上传 CAD 文件');
@@ -48,7 +48,7 @@ export class CadChatService {
     try {
       const response = await axios.post(
         `/api/cad/${this.context.fileId}/execute`,
-        { operation, params }
+        { operation, params },
       );
 
       if (response.data.code === 'SUCCESS') {

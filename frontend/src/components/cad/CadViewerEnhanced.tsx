@@ -1,6 +1,6 @@
 /**
  * CAD 增强型可视化组件
- * 
+ *
  * 功能增强：
  * - 实体高亮和选择
  * - 测量工具
@@ -13,11 +13,11 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  Maximize2, 
-  Grid3x3, 
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Grid3x3,
   Home,
   Camera,
   Move,
@@ -63,7 +63,9 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
 
   // 初始化场景
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     // 创建场景
     const scene = new THREE.Scene();
@@ -76,10 +78,10 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     cameraRef.current = camera;
 
     // 创建渲染器
-    const renderer = new THREE.WebGLRenderer({ 
+    const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
-      preserveDrawingBuffer: true // 支持截图
+      preserveDrawingBuffer: true, // 支持截图
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -134,7 +136,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     // 渲染循环
     const animate = () => {
       requestAnimationFrame(animate);
-      
+
       controls.update();
       renderer.render(scene, camera);
 
@@ -159,7 +161,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
       const intersects = raycasterRef.current.intersectObjects(
         scene.children.filter(child => child.userData.isEntity),
-        true
+        true,
       );
 
       if (intersects.length > 0) {
@@ -183,7 +185,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
       const intersects = raycasterRef.current.intersectObjects(
         scene.children.filter(child => child.userData.isEntity),
-        true
+        true,
       );
 
       if (intersects.length > 0) {
@@ -209,7 +211,9 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
 
   // 渲染实体
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current) {
+      return;
+    }
 
     const scene = sceneRef.current;
 
@@ -220,7 +224,9 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     // 添加新实体
     entities.forEach(entity => {
       // 检查图层是否隐藏
-      if (hiddenLayers.includes(entity.layer)) return;
+      if (hiddenLayers.includes(entity.layer)) {
+        return;
+      }
 
       const mesh = createEntityMesh(entity, entity.handle === selectedEntityId);
       if (mesh) {
@@ -262,7 +268,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
           points.push(new THREE.Vector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
-            0
+            0,
           ));
         }
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -282,7 +288,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
           points.push(new THREE.Vector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
-            0
+            0,
           ));
         }
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -309,7 +315,7 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
         ]);
         return new THREE.Points(
           geometry,
-          new THREE.PointsMaterial({ color: color, size: 5 })
+          new THREE.PointsMaterial({ color: color, size: 5 }),
         );
       }
 
@@ -321,9 +327,11 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
   // 调整相机视图
   const fitCameraToEntities = useCallback((
     camera: THREE.PerspectiveCamera | null,
-    entities: DxfEntity[]
+    entities: DxfEntity[],
   ) => {
-    if (!camera || entities.length === 0 || !controlsRef.current) return;
+    if (!camera || entities.length === 0 || !controlsRef.current) {
+      return;
+    }
 
     const box = new THREE.Box3();
     entities.forEach(entity => {
@@ -401,7 +409,9 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
 
   const handleViewMode = (mode: '3d' | 'top' | 'front' | 'side') => {
     setViewMode(mode);
-    if (!cameraRef.current || !controlsRef.current) return;
+    if (!cameraRef.current || !controlsRef.current) {
+      return;
+    }
 
     const camera = cameraRef.current;
     const controls = controlsRef.current;

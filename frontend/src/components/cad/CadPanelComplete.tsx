@@ -1,6 +1,6 @@
 /**
  * CAD 完整增强面板
- * 
+ *
  * 集成所有功能：
  * - 文件上传和管理
  * - 3D 查看器
@@ -90,7 +90,9 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
   };
 
   const handleExport = () => {
-    if (!fileInfo) return;
+    if (!fileInfo) {
+      return;
+    }
     window.open(`/api/cad/${fileInfo.id}/export`, '_blank');
   };
 
@@ -107,7 +109,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
     setHiddenLayers(prev =>
       prev.includes(layer)
         ? prev.filter(l => l !== layer)
-        : [...prev, layer]
+        : [...prev, layer],
     );
   };
 

@@ -1,9 +1,8 @@
 import { ReasoningStepUpdate } from '@/types';
 import type {
   FastGPTReasoningData,
-  ParsedReasoningUpdate
+  ParsedReasoningUpdate,
 } from '@/types/dynamic';
-
 
 const isReasoningData = (value: unknown): value is FastGPTReasoningData => {
   return typeof value === 'object' &&
@@ -12,9 +11,15 @@ const isReasoningData = (value: unknown): value is FastGPTReasoningData => {
 };
 
 const toJsonValue = (value: unknown): unknown => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return value.map(toJsonValue);
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(toJsonValue);
+  }
   if (typeof value === 'object') {
     const result: Record<string, unknown> = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
@@ -33,7 +38,7 @@ export interface RawReasoningEvent {
 const STEP_TITLE_REGEX = /^(?:步骤\s*\d+|Step\s*\d+|思考\s*\d+|阶段\s*\d+|环节\s*\d+|Task\s*\d+|第[\d一二三四五六七八九十百零两]+步|\d+[\.、）])/i;
 
 export const normalizeReasoningDisplay = (
-  input: string
+  input: string,
 ): { body: string; title?: string } => {
   const sanitized = (input ?? '').replace(/\r\n/g, '\n').trim();
   if (!sanitized) {
@@ -91,9 +96,13 @@ export const normalizeReasoningDisplay = (
 };
 
 const tryParseJson = (value: unknown) => {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== 'string') {
+    return null;
+  }
   const trimmed = value.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   try {
     return JSON.parse(trimmed);
   } catch {
@@ -135,7 +144,9 @@ const mergeTotalSteps = (current: number | undefined, next: number | undefined, 
 };
 
 export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | null): ParsedReasoningUpdate | null => {
-  if (!payload || payload.data == null) return null;
+  if (payload?.data == null) {
+    return null;
+  }
 
   const queue: unknown[] = [payload.data];
   const steps: ReasoningStepUpdate[] = [];
@@ -144,7 +155,9 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
 
   const pushStep = (step: ReasoningStepUpdate) => {
     const normalized = normalizeText(step.content);
-    if (!normalized) return;
+    if (!normalized) {
+      return;
+    }
 
     const mergedStep: ReasoningStepUpdate = {
       ...step,
@@ -160,7 +173,9 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
 
   while (queue.length > 0) {
     const item = queue.shift();
-    if (item == null) continue;
+    if (item == null) {
+      continue;
+    }
 
     if (typeof item === 'string') {
       const parsed = tryParseJson(item);
@@ -180,16 +195,30 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
     if (typeof item === 'object' && item !== null) {
       // 使用类型守卫确保item是推理数据
       if (isReasoningData(item)) {
-        const reasoningData = item as FastGPTReasoningData;
+        const reasoningData = item;
 
         // 嵌套的常见字段
-        if (reasoningData.data && reasoningData.data !== item) queue.push(reasoningData.data);
-        if (reasoningData.payload && reasoningData.payload !== item) queue.push(reasoningData.payload);
-        if (reasoningData.output?.reasoning_content) queue.push(reasoningData.output.reasoning_content);
-        if (reasoningData.delta?.reasoning_content) queue.push(reasoningData.delta.reasoning_content);
-        if (reasoningData.reasoning_content) queue.push(reasoningData.reasoning_content);
-        if (reasoningData.reasoning) queue.push(reasoningData.reasoning);
-        if (reasoningData.steps) queue.push(reasoningData.steps);
+        if (reasoningData.data && reasoningData.data !== item) {
+          queue.push(reasoningData.data);
+        }
+        if (reasoningData.payload && reasoningData.payload !== item) {
+          queue.push(reasoningData.payload);
+        }
+        if (reasoningData.output?.reasoning_content) {
+          queue.push(reasoningData.output.reasoning_content);
+        }
+        if (reasoningData.delta?.reasoning_content) {
+          queue.push(reasoningData.delta.reasoning_content);
+        }
+        if (reasoningData.reasoning_content) {
+          queue.push(reasoningData.reasoning_content);
+        }
+        if (reasoningData.reasoning) {
+          queue.push(reasoningData.reasoning);
+        }
+        if (reasoningData.steps) {
+          queue.push(reasoningData.steps);
+        }
 
         // thought / analysis 信息
         const textFromTextField = normalizeText(reasoningData.text);
@@ -227,7 +256,7 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
           reasoningData.message ??
           reasoningData.analysis ??
           reasoningData.reasoning ??
-          reasoningData.details
+          reasoningData.details,
         );
 
         if (candidate) {
@@ -311,7 +340,7 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
           ]);
 
           const title = normalizeText(
-            typeof obj.title === 'string' ? obj.title : undefined
+            typeof obj.title === 'string' ? obj.title : undefined,
           ) ?? undefined;
 
           pushStep({

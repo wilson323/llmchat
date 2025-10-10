@@ -217,7 +217,7 @@ export const translations: Record<SupportedLocale, TranslationMap> = {
     '成功: {success}，失败: {failed}': '成功: {success}，失败: {failed}',
     '没有找到匹配的会话': '没有找到匹配的会话',
     '清空筛选': '清空筛选',
-    '应用筛选': '应用筛选'
+    '应用筛选': '应用筛选',
   },
   'en-US': {
     '请先登录': 'Please log in first',
@@ -476,5 +476,5 @@ export const translations: Record<SupportedLocale, TranslationMap> = {
     '粘贴 agent.json 内容': 'Paste agent.json content',
     '导入中...': 'Importing...',
     '导入': 'Import',
-      },
+  },
 };

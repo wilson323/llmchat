@@ -27,7 +27,9 @@ export class MemoryStorageProvider implements IStorageProvider {
   }
 
   async init(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     // 检查内存可用性
     if (typeof performance !== 'undefined' && 'memory' in performance) {
@@ -55,7 +57,9 @@ export class MemoryStorageProvider implements IStorageProvider {
   }
 
   async get<T>(key: string): Promise<T | null> {
-    if (!this.isInitialized) return null;
+    if (!this.isInitialized) {
+      return null;
+    }
 
     const entry = this.cache.get(key);
     if (!entry) {
@@ -81,7 +85,9 @@ export class MemoryStorageProvider implements IStorageProvider {
   }
 
   async set<T>(key: string, value: T, options: StorageOptions = {}): Promise<void> {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized) {
+      return;
+    }
 
     const serializedSize = this.calculateSize(value);
 
@@ -105,7 +111,7 @@ export class MemoryStorageProvider implements IStorageProvider {
       expiresAt: options.expiresAt,
       size: serializedSize,
       storageTier: this.tier,
-      syncStatus: SyncStatus.SYNCED
+      syncStatus: SyncStatus.SYNCED,
     };
 
     this.cache.set(key, entry);
@@ -113,7 +119,9 @@ export class MemoryStorageProvider implements IStorageProvider {
   }
 
   async delete(key: string): Promise<boolean> {
-    if (!this.isInitialized) return false;
+    if (!this.isInitialized) {
+      return false;
+    }
 
     const deleted = this.cache.delete(key);
     if (deleted) {
@@ -123,7 +131,9 @@ export class MemoryStorageProvider implements IStorageProvider {
   }
 
   async exists(key: string): Promise<boolean> {
-    if (!this.isInitialized) return false;
+    if (!this.isInitialized) {
+      return false;
+    }
     return this.cache.has(key);
   }
 
@@ -154,7 +164,9 @@ export class MemoryStorageProvider implements IStorageProvider {
     let allDeleted = true;
     for (const key of keys) {
       const deleted = await this.delete(key);
-      if (!deleted) allDeleted = false;
+      if (!deleted) {
+        allDeleted = false;
+      }
     }
     return allDeleted;
   }
@@ -163,10 +175,14 @@ export class MemoryStorageProvider implements IStorageProvider {
     const result: Array<{key: string, value: T}> = [];
 
     for (const [key, entry] of this.cache.entries()) {
-      if (prefix && !key.startsWith(prefix)) continue;
-      result.push({key, value: entry.data as T});
+      if (prefix && !key.startsWith(prefix)) {
+        continue;
+      }
+      result.push({ key, value: entry.data as T });
 
-      if (limit && result.length >= limit) break;
+      if (limit && result.length >= limit) {
+        break;
+      }
     }
 
     return result;
@@ -177,12 +193,12 @@ export class MemoryStorageProvider implements IStorageProvider {
 
     for (const [key, entry] of this.cache.entries()) {
       let score = 0;
-      const value = entry.data as any;
+      const value = entry.data;
 
       // 文本匹配
       if (query.text) {
         if (key.includes(query.text) ||
-            (value.title && value.title.includes(query.text))) {
+            (value.title?.includes(query.text))) {
           score += 10;
         }
       }
@@ -207,7 +223,7 @@ export class MemoryStorageProvider implements IStorageProvider {
       }
 
       if (score > 0) {
-        results.push({key, value: entry.data as T, score});
+        results.push({ key, value: entry.data as T, score });
       }
     }
 
@@ -234,7 +250,7 @@ export class MemoryStorageProvider implements IStorageProvider {
       hitRate: this.hitCount + this.missCount > 0 ? this.hitCount / (this.hitCount + this.missCount) : 0,
       averageAccessTime: 0, // 内存访问时间极短，可以忽略
       oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : 0,
-      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : 0
+      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : 0,
     };
   }
 
@@ -317,6 +333,6 @@ export class MemoryStorageProvider implements IStorageProvider {
       return scoreB - scoreA;
     });
 
-    return entries.slice(0, limit).map(([key, entry]) => ({key, entry}));
+    return entries.slice(0, limit).map(([key, entry]) => ({ key, entry }));
   }
 }

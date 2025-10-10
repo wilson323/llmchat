@@ -1,6 +1,6 @@
 /**
  * 用户偏好 Store - 专注于用户设置
- * 
+ *
  * 职责：
  * 1. 主题设置（亮/暗/自动）
  * 2. 语言设置
@@ -14,11 +14,11 @@ import { UserPreferences } from '@/types';
 
 interface PreferenceState {
   preferences: UserPreferences;
-  
+
   // Actions
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
   resetPreferences: () => void;
-  
+
   // 辅助方法
   getThemeMode: () => string;
   isStreamingEnabled: () => boolean;
@@ -89,9 +89,8 @@ export const usePreferenceStore = create<PreferenceState>()(
     }),
     {
       name: 'preference-store',
-    }
-  )
+    },
+  ),
 );
 
 export default usePreferenceStore;
-

@@ -1,6 +1,6 @@
 /**
  * 用户行为分析
- * 
+ *
  * 功能：
  * - 页面访问追踪
  * - 用户操作追踪
@@ -58,7 +58,9 @@ class Analytics {
    * 追踪页面访问
    */
   trackPageView(path: string, title?: string) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     const params: EventParams = {
       page_path: path,
@@ -67,11 +69,11 @@ class Analytics {
     };
 
     this._sendEvent('page_view', params);
-    
+
     addBreadcrumb(
       `页面访问: ${path}`,
       'navigation',
-      'info'
+      'info',
     );
   }
 
@@ -79,10 +81,12 @@ class Analytics {
    * 追踪自定义事件
    */
   trackEvent(eventName: string, params?: EventParams) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     this._sendEvent(eventName, params);
-    
+
     if (this.config.debug) {
       console.log('[Analytics] Event:', eventName, params);
     }
@@ -138,7 +142,9 @@ class Analytics {
    * 设置用户属性
    */
   setUserProperties(properties: UserProperties) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     if (window.gtag) {
       window.gtag('set', 'user_properties', properties);
@@ -153,7 +159,9 @@ class Analytics {
    * 设置用户ID
    */
   setUserId(userId: string) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     if (window.gtag) {
       window.gtag('config', 'GA_MEASUREMENT_ID', {
@@ -170,7 +178,9 @@ class Analytics {
    * 追踪时间事件（开始）
    */
   startTimedEvent(eventName: string) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     const startTime = performance.now();
     sessionStorage.setItem(`timing_${eventName}`, startTime.toString());
@@ -180,10 +190,14 @@ class Analytics {
    * 追踪时间事件（结束）
    */
   endTimedEvent(eventName: string, params?: EventParams) {
-    if (!this.config.enabled) return;
+    if (!this.config.enabled) {
+      return;
+    }
 
     const startTimeStr = sessionStorage.getItem(`timing_${eventName}`);
-    if (!startTimeStr) return;
+    if (!startTimeStr) {
+      return;
+    }
 
     const startTime = parseFloat(startTimeStr);
     const duration = Math.round(performance.now() - startTime);
@@ -229,7 +243,7 @@ class Analytics {
    */
   private _getSessionId(): string {
     let sessionId = sessionStorage.getItem('analytics_session_id');
-    
+
     if (!sessionId) {
       sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       sessionStorage.setItem('analytics_session_id', sessionId);
@@ -244,4 +258,3 @@ export const analytics = new Analytics();
 
 // 导出类型
 export type { EventParams, UserProperties, AnalyticsConfig };
-

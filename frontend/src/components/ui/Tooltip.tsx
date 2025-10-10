@@ -44,7 +44,7 @@ export function Tooltip({ content, children, position = 'top', delay = 300 }: To
       className="relative inline-block"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-    >
+      >
       {children}
       {visible && (
         <div
@@ -77,4 +77,3 @@ export function HelpIcon({ content, position = 'top' }: HelpIconProps) {
     </Tooltip>
   );
 }
-

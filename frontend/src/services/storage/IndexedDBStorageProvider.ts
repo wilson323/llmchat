@@ -46,10 +46,10 @@ export class IndexedDBStorageProvider implements IStorageProvider {
           { name: 'storageTier', keyPath: 'storageTier' },
           { name: 'agentId', keyPath: 'data.agentId' },
           { name: 'syncStatus', keyPath: 'syncStatus' },
-          { name: 'temperature', keyPath: 'temperature' }
-        ]
-      }
-    }
+          { name: 'temperature', keyPath: 'temperature' },
+        ],
+      },
+    },
   };
 
   constructor(maxStorage: number = 100 * 1024 * 1024, maxEntries: number = 10000) {
@@ -64,7 +64,9 @@ export class IndexedDBStorageProvider implements IStorageProvider {
   }
 
   async init(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     // 避免重复初始化
     if (this.initPromise) {
@@ -160,7 +162,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction();
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.get(key);
         request.onsuccess = () => {
           const entry: CacheEntry | undefined = request.result;
@@ -212,13 +214,13 @@ export class IndexedDBStorageProvider implements IStorageProvider {
         expiresAt: options.expiresAt,
         size: serializedSize,
         storageTier: this.tier,
-        syncStatus: SyncStatus.SYNCED
+        syncStatus: SyncStatus.SYNCED,
       };
 
       const tx = await this.getTransaction('readwrite');
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.put(entry);
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
@@ -234,7 +236,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction('readwrite');
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.delete(key);
         request.onsuccess = () => resolve(true);
         request.onerror = () => {
@@ -256,7 +258,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction();
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.count(key);
         request.onsuccess = () => resolve(request.result > 0);
         request.onerror = () => reject(request.error);
@@ -272,7 +274,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction('readwrite');
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.clear();
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
@@ -312,7 +314,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
         expiresAt: entry.options?.expiresAt,
         size: serializedSize,
         storageTier: this.tier,
-        syncStatus: SyncStatus.SYNCED
+        syncStatus: SyncStatus.SYNCED,
       };
 
       store.put(cacheEntry);
@@ -335,7 +337,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction();
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.openCursor();
         const results: Array<{key: string, value: T}> = [];
         let count = 0;
@@ -345,7 +347,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
           if (cursor) {
             const entry: CacheEntry = cursor.value;
             if (!prefix || entry.key.startsWith(prefix)) {
-              results.push({key: entry.key, value: entry.data as T});
+              results.push({ key: entry.key, value: entry.data as T });
               count++;
             }
 
@@ -373,7 +375,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction();
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.openCursor();
         const matches: Array<{key: string, value: T, score: number}> = [];
 
@@ -382,13 +384,13 @@ export class IndexedDBStorageProvider implements IStorageProvider {
           if (cursor) {
             const entry: CacheEntry = cursor.value;
             let score = 0;
-            const value = entry.data as any;
+            const value = entry.data;
 
             // 应用搜索逻辑
             score = this.calculateSearchScore(entry, value, query);
 
             if (score > 0) {
-              matches.push({key: entry.key, value: entry.data as T, score});
+              matches.push({ key: entry.key, value: entry.data as T, score });
             }
 
             cursor.continue();
@@ -415,7 +417,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const tx = await this.getTransaction();
       const store = tx.objectStore(this.storeName);
 
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const request = store.openCursor();
         let totalSize = 0;
         let totalEntries = 0;
@@ -440,7 +442,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
               hitRate: 0,
               averageAccessTime: 0,
               oldestEntry,
-              newestEntry
+              newestEntry,
             });
           }
         };
@@ -457,7 +459,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
         hitRate: 0,
         averageAccessTime: 0,
         oldestEntry: 0,
-        newestEntry: 0
+        newestEntry: 0,
       };
     }
   }
@@ -523,7 +525,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
     // 文本匹配
     if (query.text) {
       if (entry.key.includes(query.text) ||
-          (value.title && value.title.includes(query.text))) {
+          (value.title?.includes(query.text))) {
         score += 10;
       }
     }
@@ -555,7 +557,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
       const estimate = await navigator.storage.estimate();
       return {
         quota: estimate.quota || this.maxStorage,
-        usage: estimate.usage || 0
+        usage: estimate.usage || 0,
       };
     }
     return { quota: this.maxStorage, usage: 0 };

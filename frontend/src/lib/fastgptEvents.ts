@@ -4,11 +4,13 @@ const buildPatternMatcher = (patterns: Array<string | RegExp>) => {
   const normalizedPatterns = patterns.map((pattern) =>
     typeof pattern === 'string'
       ? new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-      : pattern
+      : pattern,
   );
 
   return (eventName: string): boolean => {
-    if (!eventName) return false;
+    if (!eventName) {
+      return false;
+    }
     const normalized = normalizeEventKey(eventName);
     return normalizedPatterns.some((pattern) => pattern.test(normalized));
   };

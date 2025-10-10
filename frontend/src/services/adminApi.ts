@@ -36,7 +36,6 @@ export async function getUsers(): Promise<AdminUser[]> {
   return data.data;
 }
 
-
 export async function createUser(payload: { username: string; password: string; role?: string; status?: string }) {
   const { data } = await api.post<{ data: AdminUser }>('/admin/users/create', payload);
   return data.data;
@@ -49,11 +48,10 @@ export async function updateUser(payload: { id: number; role?: string; status?: 
 
 export async function resetUserPassword(payload: { id: number; newPassword?: string }): Promise<{ ok: boolean; newPassword: string }> {
   const { data } = await api.post('/admin/users/reset-password', payload);
-  return data as any;
+  return data;
 }
 
 export async function exportLogsCsv(params?: GetLogsParams): Promise<string> {
   const { data } = await api.get('/admin/logs/export', { params, responseType: 'text' });
   return data as string;
 }
-

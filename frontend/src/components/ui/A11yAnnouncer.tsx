@@ -13,7 +13,7 @@ interface A11yAnnouncerProps {
 export const A11yAnnouncer: React.FC<A11yAnnouncerProps> = ({
   message = '',
   politeness = 'polite',
-  timeout = 0
+  timeout = 0,
 }) => {
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -47,7 +47,7 @@ export const A11yAnnouncer: React.FC<A11yAnnouncerProps> = ({
         aria-atomic="true"
         className="sr-only"
         role="status"
-      >
+        >
         {message}
       </div>
 
@@ -87,7 +87,7 @@ export const A11yAnnouncer: React.FC<A11yAnnouncerProps> = ({
 export const useA11yAnnouncer = () => {
   const announceMessage = (message: string, politeness: 'polite' | 'assertive' = 'polite') => {
     const announcer = document.getElementById(
-      politeness === 'assertive' ? 'error-announcer' : 'navigation-announcer'
+      politeness === 'assertive' ? 'error-announcer' : 'navigation-announcer',
     );
 
     if (announcer) {
@@ -106,8 +106,8 @@ export const useA11yAnnouncer = () => {
       const statusText = status === 'running'
         ? `正在执行${moduleName}`
         : status === 'completed'
-        ? `${moduleName}执行完成`
-        : `${moduleName}执行出错`;
+          ? `${moduleName}执行完成`
+          : `${moduleName}执行出错`;
 
       announcer.textContent = statusText;
     }
@@ -125,6 +125,6 @@ export const useA11yAnnouncer = () => {
     announceMessage,
     announceStreamingStatus,
     announceNavigation,
-    announceError
+    announceError,
   };
 };

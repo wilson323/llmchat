@@ -1,6 +1,6 @@
 /**
  * 性能对比演示组件
- * 
+ *
  * 演示新旧Store的性能差异
  * 可以通过切换开关来对比两种实现
  */
@@ -25,16 +25,16 @@ export const PerformanceComparisonDemo: React.FC = () => {
   const testStreamingPerformance = async (optimized: boolean) => {
     const chunks = 50; // 模拟50个chunk
     const chunkSize = 20; // 每个chunk 20个字符
-    
+
     perfMonitor.clearAll();
 
     if (optimized) {
       // 测试新Store（优化版）
       console.log('🚀 测试优化版 Store...');
-      
+
       // 清空消息
       useMessageStore.getState().clearMessages();
-      
+
       // 添加初始消息
       useMessageStore.getState().addMessage({
         HUMAN: '测试消息',
@@ -46,26 +46,26 @@ export const PerformanceComparisonDemo: React.FC = () => {
       });
 
       const start = performance.now();
-      
+
       // 模拟流式chunk
       for (let i = 0; i < chunks; i++) {
         const chunk = 'x'.repeat(chunkSize);
         useMessageStore.getState().appendToBuffer(chunk);
-        
+
         // 每10个chunk手动flush一次（模拟requestAnimationFrame）
         if (i % 10 === 0) {
           useMessageStore.getState().flushBuffer();
         }
-        
+
         // 模拟网络延迟
         await new Promise(resolve => setTimeout(resolve, 10));
       }
-      
+
       // 最后flush
       useMessageStore.getState().flushBuffer();
-      
+
       const duration = performance.now() - start;
-      
+
       const stats = {
         duration: `${duration.toFixed(2)}ms`,
         flushCount: perfMonitor.getStats('messageStore.flushBuffer')?.count || 0,
@@ -76,14 +76,14 @@ export const PerformanceComparisonDemo: React.FC = () => {
 
       console.log('✅ 优化版测试完成:', stats);
       setTestResults(prev => ({ ...prev, new: stats }));
-      
+
     } else {
       // 测试旧Store（原版）
       console.log('🐌 测试原版 Store...');
-      
+
       // 清空消息
       useChatStore.getState().clearMessages();
-      
+
       // 添加初始消息
       useChatStore.getState().addMessage({
         HUMAN: '测试消息',
@@ -95,18 +95,18 @@ export const PerformanceComparisonDemo: React.FC = () => {
       });
 
       const start = performance.now();
-      
+
       // 模拟流式chunk（每个都触发状态更新）
       for (let i = 0; i < chunks; i++) {
         const chunk = 'x'.repeat(chunkSize);
         useChatStore.getState().updateLastMessage(chunk);
-        
+
         // 模拟网络延迟
         await new Promise(resolve => setTimeout(resolve, 10));
       }
-      
+
       const duration = performance.now() - start;
-      
+
       const stats = {
         duration: `${duration.toFixed(2)}ms`,
         updateCount: chunks,
@@ -141,7 +141,7 @@ export const PerformanceComparisonDemo: React.FC = () => {
         >
           🐌 测试原版Store
         </Button>
-        
+
         <Button
           onClick={() => testStreamingPerformance(true)}
           variant="brand"
@@ -273,5 +273,3 @@ export const PerformanceComparisonDemo: React.FC = () => {
 };
 
 export default PerformanceComparisonDemo;
-
-

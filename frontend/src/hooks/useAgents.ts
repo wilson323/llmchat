@@ -10,20 +10,19 @@ import {
   VOICE_CALL_AGENT_ID,
 } from '@/constants/agents';
 
-
 export const useAgents = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const ongoingRequestRef = useRef<Promise<void> | null>(null);
   const { t } = useI18n();
-  
-  const { 
-    setAgents, 
-    setAgentsLoading, 
+
+  const {
+    setAgents,
+    setAgentsLoading,
     setAgentsError,
     setCurrentAgent,
-    currentAgent 
+    currentAgent,
   } = useChatStore();
 
   const fetchAgents = useCallback(async () => {

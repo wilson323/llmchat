@@ -1,6 +1,6 @@
 /**
  * CAD 聊天界面集成示例
- * 
+ *
  * 展示如何在实际聊天界面中集成 CAD 编辑器
  */
 
@@ -33,7 +33,7 @@ export const CadChatExample: React.FC = () => {
       info('请先上传 CAD 文件');
       return;
     }
-    
+
     try {
       setLoading(true);
       const result = await cadChatService.executeOperation('add_line', {
@@ -53,7 +53,7 @@ export const CadChatExample: React.FC = () => {
       info('请先上传 CAD 文件');
       return;
     }
-    
+
     try {
       setLoading(true);
       const result = await cadChatService.executeOperation('add_circle', {
@@ -113,7 +113,7 @@ export const CadChatExample: React.FC = () => {
                 通过自然语言修改 CAD 图纸
               </p>
             </div>
-            
+
             {hasContext && (
               <div className="flex items-center gap-2">
                 <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">

@@ -389,10 +389,8 @@ export async function getConfigDetails(
 
 import os from 'os';
 import { authService } from '@/services/authInstance';
-import { withClient, hashPassword } from '@/utils/db';
+import { withClient } from '@/utils/db';
 import { analyticsService } from '@/services/analyticsInstance';
-import { logAudit } from '@/middleware/auditMiddleware';
-import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 import {
   AuthenticationError,
   AuthorizationError,
@@ -403,7 +401,7 @@ import {
 
 async function ensureAuth(req: Request) {
   const auth = req.headers['authorization'];
-  const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
+  const token = (auth ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',
@@ -457,7 +455,7 @@ export class AdminController {
       const memFree = os.freemem();
       const memUsed = memTotal - memFree;
       const load = os.loadavg ? os.loadavg() : [0, 0, 0];
-      const cpuCount = os.cpus()?.length || 0;
+      const cpuCount = os.cpus()?.length ?? 0;
       const info = {
         platform: os.platform(),
         release: os.release(),
@@ -472,9 +470,9 @@ export class AdminController {
         },
         cpu: {
           count: cpuCount,
-          load1: load[0] || 0,
-          load5: load[1] || 0,
-          load15: load[2] || 0,
+          load1: load[0] ?? 0,
+          load5: load[1] ?? 0,
+          load15: load[2] ?? 0,
         },
       };
       return res.json({ data: info });
@@ -546,11 +544,11 @@ export class AdminController {
           `SELECT COUNT(*)::int AS count FROM logs ${where}`,
           params,
         );
-        const total = totalRows[0]?.count || 0;
-        const p = Math.max(1, parseInt(String(page), 10) || 1);
+        const total = totalRows[0]?.count ?? 0;
+        const p = Math.max(1, parseInt(String(page), 10) ?? 1);
         const ps = Math.min(
           200,
-          Math.max(1, parseInt(String(pageSize), 10) || 20),
+          Math.max(1, parseInt(String(pageSize), 10) ?? 20),
         );
         const offset = (p - 1) * ps;
         const { rows } = await client.query(

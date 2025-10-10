@@ -28,7 +28,6 @@ import {
 // 中间件
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
-import { requestId } from "./middleware/requestId";
 import { csrfProtection, getCsrfToken } from "./middleware/csrfProtection";
 
 // 路由
@@ -48,12 +47,6 @@ import { logger } from "./utils/logger";
 import { initCacheService } from "./services/CacheService";
 import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
-import { performanceOptimizer, createPerformanceMiddleware } from "./utils/PerformanceOptimizer";
-import { memoryLeakDetector, createMemoryLeakMiddleware } from "./utils/MemoryLeakDetector";
-import { memoryResourceManager } from "./utils/MemoryResourceManager";
-import { monitoringManager } from "./utils/MonitoringManager";
-import { databaseQueryOptimizer, createQueryOptimizationMiddleware } from "./utils/DatabaseQueryOptimizer";
-import { connectionPoolOptimizer, createConnectionPoolOptimizationMiddleware } from "./utils/ConnectionPoolOptimizer";
 
 const app: express.Express = express();
 const PORT = process.env.PORT || 3001;
@@ -148,20 +141,7 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
-// 请求ID
-app.use(requestId);
 
-// 性能监控中间件
-app.use(createPerformanceMiddleware());
-
-// 内存泄漏检测中间件
-app.use(createMemoryLeakMiddleware());
-
-// 数据库查询优化中间件
-app.use(createQueryOptimizationMiddleware());
-
-// 连接池优化中间件
-app.use(createConnectionPoolOptimizationMiddleware());
 
 // 请求日志
 app.use(requestLogger);
@@ -177,397 +157,6 @@ app.use(
   })
 );
 
-// 性能监控端点
-app.get("/api/performance/stats", (req, res) => {
-  try {
-    const stats = performanceOptimizer.getPerformanceStats();
-    res.json({
-      code: "SUCCESS",
-      message: "性能统计获取成功",
-      data: stats,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取性能统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取性能统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/performance/gc", (req, res) => {
-  try {
-    if (global.gc) {
-      global.gc();
-      res.json({
-        code: "SUCCESS",
-        message: "手动垃圾回收完成",
-        data: null,
-        timestamp: new Date().toISOString(),
-        ...(req.requestId ? { requestId: req.requestId } : {}),
-      });
-    } else {
-      res.status(400).json({
-        code: "NOT_SUPPORTED",
-        message: "垃圾回收不可用（需要使用 --expose-gc 标志启动）",
-        data: null,
-        timestamp: new Date().toISOString(),
-        ...(req.requestId ? { requestId: req.requestId } : {}),
-      });
-    }
-  } catch (error) {
-    logger.error("手动垃圾回收失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "垃圾回收失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-// 内存泄漏检测API端点
-app.get("/api/memory/leaks", (req, res) => {
-  try {
-    const report = memoryLeakDetector.getMemoryLeakReport();
-    res.json({
-      code: "SUCCESS",
-      message: "内存泄漏报告获取成功",
-      data: report,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取内存泄漏报告失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取内存泄漏报告失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/memory/check", async (req, res) => {
-  try {
-    const leaks = await memoryLeakDetector.checkForLeaks();
-    res.json({
-      code: "SUCCESS",
-      message: "内存泄漏检查完成",
-      data: {
-        leakCount: leaks.length,
-        leaks,
-      },
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("内存泄漏检查失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "内存泄漏检查失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.get("/api/memory/resources", (req, res) => {
-  try {
-    const metrics = memoryResourceManager.getMetrics();
-    const report = memoryResourceManager.generateReport();
-    res.json({
-      code: "SUCCESS",
-      message: "内存资源报告获取成功",
-      data: {
-        metrics,
-        report,
-      },
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取内存资源报告失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取内存资源报告失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/memory/cleanup", (req, res) => {
-  try {
-    memoryResourceManager.forceCleanup();
-    res.json({
-      code: "SUCCESS",
-      message: "强制内存清理完成",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("强制内存清理失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "强制内存清理失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-// 数据库查询优化API端点
-app.get("/api/database/query-stats", (req, res) => {
-  try {
-    const stats = databaseQueryOptimizer.getPerformanceStats();
-    res.json({
-      code: "SUCCESS",
-      message: "数据库查询统计获取成功",
-      data: stats,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取数据库查询统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取数据库查询统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.get("/api/database/slow-queries", (req, res) => {
-  try {
-    const stats = databaseQueryOptimizer.getPerformanceStats();
-    res.json({
-      code: "SUCCESS",
-      message: "慢查询统计获取成功",
-      data: {
-        slowQueries: stats.slowQueries,
-        topSlowQueries: stats.topSlowQueries,
-        recommendations: stats.recommendations,
-      },
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取慢查询统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取慢查询统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.get("/api/database/cache-stats", (req, res) => {
-  try {
-    const cacheStats = databaseQueryOptimizer.getCacheStats();
-    res.json({
-      code: "SUCCESS",
-      message: "查询缓存统计获取成功",
-      data: cacheStats,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取查询缓存统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取查询缓存统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/database/cache-clear", (req, res) => {
-  try {
-    databaseQueryOptimizer.clearCache();
-    res.json({
-      code: "SUCCESS",
-      message: "查询缓存已清除",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("清除查询缓存失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "清除查询缓存失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/database/metrics-clear", (req, res) => {
-  try {
-    databaseQueryOptimizer.clearMetrics();
-    res.json({
-      code: "SUCCESS",
-      message: "数据库查询指标已清除",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("清除数据库查询指标失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "清除数据库查询指标失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-// 连接池优化API端点
-app.get("/api/database/pool-stats", (req, res) => {
-  try {
-    const stats = connectionPoolOptimizer.getPoolStats();
-    res.json({
-      code: "SUCCESS",
-      message: "连接池统计获取成功",
-      data: stats,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取连接池统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取连接池统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.get("/api/database/pool-leaks", (req, res) => {
-  try {
-    const leakedConnections = connectionPoolOptimizer.getLeakedConnections();
-    res.json({
-      code: "SUCCESS",
-      message: "连接泄露统计获取成功",
-      data: {
-        leakedConnections,
-        count: leakedConnections.length,
-      },
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取连接泄露统计失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取连接泄露统计失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.get("/api/database/pool-report", (req, res) => {
-  try {
-    const report = connectionPoolOptimizer.getPerformanceReport();
-    res.json({
-      code: "SUCCESS",
-      message: "连接池性能报告获取成功",
-      data: report,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("获取连接池性能报告失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "获取连接池性能报告失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/database/pool-config", (req, res) => {
-  try {
-    const { minConnections, maxConnections, idleTimeoutMillis, connectionTimeoutMillis, maxUses, maxLifetimeSeconds } = req.body;
-
-    const config = {
-      minConnections: minConnections || 5,
-      maxConnections: maxConnections || 50,
-      idleTimeoutMillis: idleTimeoutMillis || 30000,
-      connectionTimeoutMillis: connectionTimeoutMillis || 10000,
-      maxUses: maxUses || 7500,
-      maxLifetimeSeconds: maxLifetimeSeconds || 3600,
-    };
-
-    connectionPoolOptimizer.setConfiguration(config);
-
-    res.json({
-      code: "SUCCESS",
-      message: "连接池配置更新成功",
-      data: { config: connectionPoolOptimizer.getConfiguration() },
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("更新连接池配置失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "更新连接池配置失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
-
-app.post("/api/database/pool-leaks-clear", (req, res) => {
-  try {
-    connectionPoolOptimizer.clearLeakedConnections();
-    res.json({
-      code: "SUCCESS",
-      message: "连接泄露记录已清除",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  } catch (error) {
-    logger.error("清除连接泄露记录失败", { error });
-    res.status(500).json({
-      code: "INTERNAL_ERROR",
-      message: "清除连接泄露记录失败",
-      data: null,
-      timestamp: new Date().toISOString(),
-      ...(req.requestId ? { requestId: req.requestId } : {}),
-    });
-  }
-});
 
 // 路由注册
 app.use("/health", healthRouter);
@@ -588,8 +177,7 @@ app.use((req, res) => {
     message: `路由 ${req.method} ${req.path} 不存在`,
     data: null,
     timestamp: new Date().toISOString(),
-    ...(req.requestId ? { requestId: req.requestId } : {}),
-  });
+      });
 });
 
 // Sentry错误处理器（必须在其他错误处理器之前）
@@ -652,41 +240,7 @@ async function startServer() {
     // 初始化缓存服务
     await initCacheService();
 
-    // 启动性能监控器
-    performanceOptimizer.start(5000); // 每5秒监控一次
-    logger.info("✅ 性能监控器已启动");
-
-    // 启动内存泄漏检测器
-    memoryLeakDetector.start();
-    logger.info("✅ 内存泄漏检测器已启动");
-
-    // 启动内存资源管理器
-    memoryResourceManager.start({
-      cleanupInterval: 60000, // 每分钟清理一次
-      enableMetrics: true,
-    });
-    logger.info("✅ 内存资源管理器已启动");
-
-    // 启动监控管理器
-    monitoringManager.start();
-    logger.info("✅ 监控管理器已启动");
-
-    // 启动数据库查询优化器
-    databaseQueryOptimizer.start({
-      metricsInterval: 30000, // 30秒间隔
-      enableCache: true,
-      enableSlowQueryDetection: true,
-    });
-    logger.info("✅ 数据库查询优化器已启动");
-
-    // 启动连接池优化器
-    connectionPoolOptimizer.start({
-      monitoringInterval: 10000, // 10秒间隔
-      enableLeakDetection: true,
-      enableAutoOptimization: true,
-    });
-    logger.info("✅ 连接池优化器已启动");
-
+  
     server = app.listen(PORT, () => {
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 端口: ${PORT}`);
@@ -707,7 +261,6 @@ async function startServer() {
         }`
       );
       logger.info(`💾 Redis: ${process.env.REDIS_HOST ? "已连接" : "未配置"}`);
-      logger.info(`📊 监控: 完整集成`);
     });
 
     // 启动定时任务
@@ -782,54 +335,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     logger.error("关闭 Redis 连接失败", { error });
   }
 
-  try {
-    // 6. 停止性能监控器
-    performanceOptimizer.stop();
-    logger.info("✓ 性能监控器已停止");
-  } catch (error) {
-    logger.error("停止性能监控器失败", { error });
-  }
-
-  try {
-    // 7. 停止内存泄漏检测器
-    memoryLeakDetector.stop();
-    logger.info("✓ 内存泄漏检测器已停止");
-  } catch (error) {
-    logger.error("停止内存泄漏检测器失败", { error });
-  }
-
-  try {
-    // 8. 停止内存资源管理器
-    memoryResourceManager.stop();
-    logger.info("✓ 内存资源管理器已停止");
-  } catch (error) {
-    logger.error("停止内存资源管理器失败", { error });
-  }
-
-  try {
-    // 9. 停止监控管理器
-    monitoringManager.stop();
-    logger.info("✓ 监控管理器已停止");
-  } catch (error) {
-    logger.error("停止监控管理器失败", { error });
-  }
-
-  try {
-    // 10. 停止数据库查询优化器
-    databaseQueryOptimizer.stop();
-    logger.info("✓ 数据库查询优化器已停止");
-  } catch (error) {
-    logger.error("停止数据库查询优化器失败", { error });
-  }
-
-  try {
-    // 11. 停止连接池优化器
-    connectionPoolOptimizer.stop();
-    logger.info("✓ 连接池优化器已停止");
-  } catch (error) {
-    logger.error("停止连接池优化器失败", { error });
-  }
-
+  
   logger.info("✓ 优雅关闭完成");
   process.exit(0);
 };

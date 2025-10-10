@@ -1,18 +1,18 @@
-"use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { loginApi } from "@/services/authApi";
-import { useAuthStore } from "@/store/authStore";
-import { toast } from "@/components/ui/Toast";
-import { useI18n } from "@/i18n";
+'use client';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { loginApi } from '@/services/authApi';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from '@/components/ui/Toast';
+import { useI18n } from '@/i18n';
 
 export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const login = useAuthStore((s) => s.login);
@@ -41,7 +41,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gradient-to-br from-[var(--brand)]/5 via-background to-[var(--brand)]/10 flex items-center justify-center p-4"
-    >
+      >
       <div className="absolute inset-0 opacity-5" />
       <motion.div
         initial={{ y: 50, opacity: 0, scale: 0.98 }}
@@ -85,7 +85,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   name="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('输入密码')}
@@ -115,4 +115,3 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
     </motion.div>
   );
 }
-

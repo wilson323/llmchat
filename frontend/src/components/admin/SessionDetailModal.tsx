@@ -1,6 +1,6 @@
-"use client";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+'use client';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Download,
@@ -14,17 +14,17 @@ import {
   FileText,
   MessageCircle,
   Clock,
-} from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useI18n } from "@/i18n";
-import { toast } from "@/components/ui/Toast";
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/i18n';
+import { toast } from '@/components/ui/Toast';
 import {
   getSession,
   getSessionMessages,
   updateSession,
   type Session,
   type SessionMessage,
-} from "@/services/sessionApi";
+} from '@/services/sessionApi';
 
 interface SessionDetailModalProps {
   isOpen: boolean;
@@ -48,12 +48,14 @@ export function SessionDetailModal({
   const [messagePageSize] = useState(50);
   const [totalMessages, setTotalMessages] = useState(0);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [tempTitle, setTempTitle] = useState("");
+  const [tempTitle, setTempTitle] = useState('');
   const [showExportOptions, setShowExportOptions] = useState(false);
 
   // 加载会话消息
   const loadMessages = async (page: number = 1) => {
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     setMessagesLoading(true);
     try {
@@ -83,7 +85,9 @@ export function SessionDetailModal({
 
   // 刷新会话信息
   const refreshSession = async () => {
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     setLoading(true);
     try {
@@ -99,7 +103,9 @@ export function SessionDetailModal({
 
   // 更新会话标题
   const updateSessionTitle = async () => {
-    if (!session || !tempTitle.trim()) return;
+    if (!session || !tempTitle.trim()) {
+      return;
+    }
 
     try {
       await updateSession(session.id, { title: tempTitle.trim() });
@@ -154,7 +160,9 @@ export function SessionDetailModal({
     }
   };
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
 
   return (
     <AnimatePresence>
@@ -170,7 +178,7 @@ export function SessionDetailModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
@@ -185,7 +193,9 @@ export function SessionDetailModal({
                         value={tempTitle}
                         onChange={(e) => setTempTitle(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') updateSessionTitle();
+                          if (e.key === 'Enter') {
+updateSessionTitle();
+}
                           if (e.key === 'Escape') {
                             setTempTitle(session.title);
                             setEditingTitle(false);

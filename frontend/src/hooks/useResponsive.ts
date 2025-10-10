@@ -61,11 +61,21 @@ export interface ResponsiveState {
  * 获取当前断点
  */
 function getCurrentBreakpoint(width: number): Breakpoint {
-  if (width >= breakpoints['2xl']) return '2xl';
-  if (width >= breakpoints.xl) return 'xl';
-  if (width >= breakpoints.lg) return 'lg';
-  if (width >= breakpoints.md) return 'md';
-  if (width >= breakpoints.sm) return 'sm';
+  if (width >= breakpoints['2xl']) {
+    return '2xl';
+  }
+  if (width >= breakpoints.xl) {
+    return 'xl';
+  }
+  if (width >= breakpoints.lg) {
+    return 'lg';
+  }
+  if (width >= breakpoints.md) {
+    return 'md';
+  }
+  if (width >= breakpoints.sm) {
+    return 'sm';
+  }
   return 'xs';
 }
 
@@ -73,8 +83,12 @@ function getCurrentBreakpoint(width: number): Breakpoint {
  * 获取设备类型
  */
 function getDeviceType(width: number): DeviceType {
-  if (width < breakpoints.md) return 'mobile';
-  if (width < breakpoints.lg) return 'tablet';
+  if (width < breakpoints.md) {
+    return 'mobile';
+  }
+  if (width < breakpoints.lg) {
+    return 'tablet';
+  }
   return 'desktop';
 }
 
@@ -82,7 +96,9 @@ function getDeviceType(width: number): DeviceType {
  * 检测是否为触摸设备
  */
 function checkIsTouchDevice(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') {
+    return false;
+  }
   return (
     'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
@@ -157,7 +173,9 @@ export function useResponsive(debounceTime: number = 150): ResponsiveState {
 
   useEffect(() => {
     // SSR 环境不执行
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     let timeoutId: NodeJS.Timeout;
 
@@ -224,12 +242,16 @@ export function useResponsive(debounceTime: number = 150): ResponsiveState {
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+      return false;
+    }
     return window.matchMedia(query).matches;
   });
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
 
     const mediaQuery = window.matchMedia(query);
     const handleChange = (e: MediaQueryListEvent) => setMatches(e.matches);
@@ -268,7 +290,7 @@ export function useMediaQuery(query: string): boolean {
  */
 export function useBreakpoint(
   minBreakpoint: Breakpoint,
-  maxBreakpoint?: Breakpoint
+  maxBreakpoint?: Breakpoint,
 ): boolean {
   const { breakpoint } = useResponsive();
 

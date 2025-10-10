@@ -66,4 +66,3 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return Boolean(token) && typeof expiresAt === 'number' && Date.now() <= expiresAt;
   },
 }));
-

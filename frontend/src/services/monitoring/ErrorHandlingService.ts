@@ -57,7 +57,9 @@ export class ErrorHandlingService {
   // ==================== 初始化 ====================
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     try {
       // 加载之前的错误记录（可选）
@@ -82,7 +84,7 @@ export class ErrorHandlingService {
     code: string,
     message: string,
     details?: any,
-    context?: ErrorInfo['context']
+    context?: ErrorInfo['context'],
   ): ErrorInfo {
     const error: ErrorInfo = {
       id: this.generateErrorId(),
@@ -94,7 +96,7 @@ export class ErrorHandlingService {
       timestamp: Date.now(),
       context,
       stack: new Error().stack,
-      resolved: false
+      resolved: false,
     };
 
     this.addError(error);
@@ -110,7 +112,7 @@ export class ErrorHandlingService {
     code: string,
     message: string,
     details?: any,
-    context?: ErrorInfo['context']
+    context?: ErrorInfo['context'],
   ): Promise<{ success: boolean, result?: any, error?: ErrorInfo }> {
     const error = this.recordError(type, severity, code, message, details, context);
 
@@ -148,7 +150,7 @@ export class ErrorHandlingService {
     operation: () => Promise<T>,
     errorType: ErrorInfo['type'],
     errorCode: string,
-    context?: ErrorInfo['context']
+    context?: ErrorInfo['context'],
   ): Promise<{ success: boolean, data?: T, error?: ErrorInfo }> {
     try {
       const data = await operation();
@@ -163,7 +165,7 @@ export class ErrorHandlingService {
         errorCode,
         errorMessage,
         errorDetails,
-        context
+        context,
       );
 
       return { success: false, error: result.error };
@@ -184,7 +186,9 @@ export class ErrorHandlingService {
    */
   resolveError(errorId: string, resolution: string, _result?: any): void {
     const error = this.errors.find(e => e.id === errorId);
-    if (!error) return;
+    if (!error) {
+      return;
+    }
 
     error.resolved = true;
     error.resolvedAt = Date.now();
@@ -261,9 +265,9 @@ export class ErrorHandlingService {
     // 计算平均解决时间
     const averageResolutionTime = resolvedErrors.length > 0
       ? resolvedErrors.reduce((sum, error) => {
-          const resolutionTime = (error.resolvedAt || 0) - error.timestamp;
-          return sum + resolutionTime;
-        }, 0) / resolvedErrors.length
+        const resolutionTime = (error.resolvedAt || 0) - error.timestamp;
+        return sum + resolutionTime;
+      }, 0) / resolvedErrors.length
       : 0;
 
     // 获取最频繁的错误
@@ -290,7 +294,7 @@ export class ErrorHandlingService {
       errorsBySeverity,
       topErrors,
       resolutionRate,
-      averageResolutionTime
+      averageResolutionTime,
     };
   }
 
@@ -322,20 +326,20 @@ export class ErrorHandlingService {
         console.log('存储配额已满，执行清理...');
         // 这里应该调用缓存清理
         return { cleaned: true };
-      }
+      },
     });
 
     this.registerRecoveryStrategy('STORAGE_ACCESS_DENIED', {
       type: 'retry',
       maxRetries: 3,
-      retryDelay: 1000
+      retryDelay: 1000,
     });
 
     // 网络错误恢复策略
     this.registerRecoveryStrategy('NETWORK_TIMEOUT', {
       type: 'retry',
       maxRetries: 2,
-      retryDelay: 2000
+      retryDelay: 2000,
     });
 
     this.registerRecoveryStrategy('NETWORK_OFFLINE', {
@@ -343,18 +347,18 @@ export class ErrorHandlingService {
       fallbackAction: async () => {
         console.log('网络离线，切换到离线模式');
         return { offlineMode: true };
-      }
+      },
     });
 
     // 同步错误恢复策略
     this.registerRecoveryStrategy('SYNC_CONFLICT', {
-      type: 'escalate' // 需要用户干预
+      type: 'escalate', // 需要用户干预
     });
 
     this.registerRecoveryStrategy('SYNC_AUTH_FAILED', {
       type: 'retry',
       maxRetries: 1,
-      retryDelay: 5000
+      retryDelay: 5000,
     });
 
     // 缓存错误恢复策略
@@ -363,7 +367,7 @@ export class ErrorHandlingService {
       fallbackAction: async () => {
         console.log('缓存损坏，重新初始化...');
         return { reinitialized: true };
-      }
+      },
     });
   }
 
@@ -380,8 +384,8 @@ export class ErrorHandlingService {
             filename: event.filename,
             lineno: event.lineno,
             colno: event.colno,
-            stack: event.error?.stack
-          }
+            stack: event.error?.stack,
+          },
         );
       });
 
@@ -394,8 +398,8 @@ export class ErrorHandlingService {
           event.reason?.message || 'Promise被拒绝',
           {
             reason: event.reason,
-            stack: event.reason?.stack
-          }
+            stack: event.reason?.stack,
+          },
         );
       });
     }
@@ -426,7 +430,7 @@ export class ErrorHandlingService {
 
   private async executeRecoveryStrategy(
     error: ErrorInfo,
-    strategy: ErrorRecoveryStrategy
+    strategy: ErrorRecoveryStrategy,
   ): Promise<{ success: boolean, result?: any }> {
     try {
       switch (strategy.type) {
@@ -450,7 +454,7 @@ export class ErrorHandlingService {
 
   private async executeRetryStrategy(
     error: ErrorInfo,
-    strategy: ErrorRecoveryStrategy
+    strategy: ErrorRecoveryStrategy,
   ): Promise<{ success: boolean, result?: any }> {
     const maxRetries = strategy.maxRetries || 3;
     const retryDelay = strategy.retryDelay || 1000;
@@ -473,7 +477,7 @@ export class ErrorHandlingService {
   }
 
   private async executeFallbackStrategy(
-    strategy: ErrorRecoveryStrategy
+    strategy: ErrorRecoveryStrategy,
   ): Promise<{ success: boolean, result?: any }> {
     if (strategy.fallbackAction) {
       const result = await strategy.fallbackAction();
@@ -546,7 +550,7 @@ export class ErrorHandlingService {
         if (persisted) {
           const errors = JSON.parse(persisted);
           this.errors = errors.filter((e: ErrorInfo) =>
-            Date.now() - e.timestamp < 7 * 24 * 60 * 60 * 1000 // 只保留7天内的错误
+            Date.now() - e.timestamp < 7 * 24 * 60 * 60 * 1000, // 只保留7天内的错误
           );
         }
       }
@@ -559,7 +563,7 @@ export class ErrorHandlingService {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const errorsToPersist = this.errors.filter(e =>
-          e.severity === 'high' || e.severity === 'critical'
+          e.severity === 'high' || e.severity === 'critical',
         );
         localStorage.setItem('error_handling_history', JSON.stringify(errorsToPersist));
       }
@@ -593,7 +597,7 @@ export class ErrorHandlingService {
     unresolved: number;
     byType: Record<string, number>;
     bySeverity: Record<string, number>;
-  } {
+    } {
     const total = this.errors.length;
     const unresolved = this.errors.filter(e => !e.resolved).length;
 
@@ -622,9 +626,9 @@ export class ErrorHandlingService {
     status: 'healthy' | 'warning' | 'critical';
     issues: string[];
     recommendations: string[];
-  } {
+    } {
     const recentErrors = this.errors.filter(e =>
-      Date.now() - e.timestamp < 60 * 60 * 1000 // 最近1小时
+      Date.now() - e.timestamp < 60 * 60 * 1000, // 最近1小时
     );
 
     const criticalErrors = recentErrors.filter(e => e.severity === 'critical');

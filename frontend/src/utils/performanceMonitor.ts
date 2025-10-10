@@ -1,6 +1,6 @@
 /**
  * 性能监控工具
- * 
+ *
  * 用于测量和分析关键操作的性能指标
  * 支持统计分析（min/max/avg/p50/p95/p99）
  */
@@ -140,7 +140,7 @@ class PerformanceMonitor {
    */
   getAllStats(): Map<string, PerformanceStats> {
     const allStats = new Map<string, PerformanceStats>();
-    
+
     this.metrics.forEach((_, name) => {
       const stats = this.getStats(name);
       if (stats) {
@@ -167,7 +167,7 @@ class PerformanceMonitor {
 
     // 按平均耗时排序
     const sortedEntries = Array.from(allStats.entries()).sort(
-      (a, b) => b[1].avg - a[1].avg
+      (a, b) => b[1].avg - a[1].avg,
     );
 
     lines.push('## Summary Table\n');
@@ -176,7 +176,7 @@ class PerformanceMonitor {
 
     sortedEntries.forEach(([name, stats]) => {
       lines.push(
-        `| ${name} | ${stats.count} | ${stats.avg.toFixed(2)} | ${stats.p50.toFixed(2)} | ${stats.p95.toFixed(2)} | ${stats.p99.toFixed(2)} | ${stats.min.toFixed(2)} | ${stats.max.toFixed(2)} |`
+        `| ${name} | ${stats.count} | ${stats.avg.toFixed(2)} | ${stats.p50.toFixed(2)} | ${stats.p95.toFixed(2)} | ${stats.p99.toFixed(2)} | ${stats.min.toFixed(2)} | ${stats.max.toFixed(2)} |`,
       );
     });
 
@@ -270,4 +270,3 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default perfMonitor;
-

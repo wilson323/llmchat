@@ -1,11 +1,11 @@
 /**
  * ChatContainer - 优化版本
- * 
+ *
  * 性能优化：
  * 1. 使用拆分后的Store，精确订阅需要的状态
  * 2. 减少不必要的重渲染
  * 3. 优化消息列表渲染
- * 
+ *
  * @version 2.0 - 优化版（2025-10-03）
  */
 
@@ -27,7 +27,7 @@ import { perfMonitor } from '@/utils/performanceMonitor';
 import {
   memoryMonitor,
   resourceManager,
-  usePerformanceMonitor
+  usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
 
 export const ChatContainer: React.FC = () => {
@@ -40,9 +40,9 @@ export const ChatContainer: React.FC = () => {
   const stopStreaming = useMessageStore((state) => state.stopStreaming);
   const addMessage = useMessageStore((state) => state.addMessage);
   const removeLastInteractiveMessage = useMessageStore((state) => state.removeLastInteractiveMessage);
-  
+
   const currentAgent = useAgentStore((state) => state.currentAgent);
-  
+
   const currentSession = useSessionStore((state) => state.currentSession);
   const bindSessionId = useSessionStore((state) => state.bindSessionId);
 
@@ -50,7 +50,7 @@ export const ChatContainer: React.FC = () => {
     sendMessage,
     continueInteractiveSelect,
     continueInteractiveForm,
-    retryMessage
+    retryMessage,
   } = useChat();
 
   const { t } = useI18n();
@@ -69,7 +69,9 @@ export const ChatContainer: React.FC = () => {
         const app = initData.app as Record<string, unknown> | undefined;
         const chatConfig = app?.chatConfig as Record<string, unknown> | undefined;
         const vars = (chatConfig?.variables as Array<Record<string, unknown>>) || [];
-        if (vars.length === 0) return;
+        if (vars.length === 0) {
+          return;
+        }
 
         const fields = vars.map((v: Record<string, unknown>) => {
           const base = {
@@ -118,31 +120,39 @@ export const ChatContainer: React.FC = () => {
   const handleInteractiveSelect = (payload: string | Record<string, unknown>) => {
     if (typeof payload === 'string') {
       // 普通交互（非 init）：先移除交互气泡，再继续运行
-      try { removeLastInteractiveMessage(); } catch {}
+      try {
+        removeLastInteractiveMessage();
+      } catch {}
       return continueInteractiveSelect(payload);
     }
     if (payload && typeof payload === 'object' && payload.origin === 'init') {
       // init 交互：仅收集变量，显示输入框，不请求后端
-      const payloadObj = payload as Record<string, unknown>;
+      const payloadObj = payload;
       const key = String(payloadObj.key || '');
       const value = payloadObj.value;
       setPendingInitVars((prev) => ({ ...(prev || {}), [key]: value }));
       setHideComposer(false);
-      try { removeLastInteractiveMessage(); } catch {}
+      try {
+        removeLastInteractiveMessage();
+      } catch {}
     }
   };
 
   const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined) => {
     // 非 init 表单：直接继续运行
     if (!payload || payload.origin !== 'init') {
-      try { removeLastInteractiveMessage(); } catch {}
+      try {
+        removeLastInteractiveMessage();
+      } catch {}
       return continueInteractiveForm(payload as Record<string, string>);
     }
     // init 表单：仅收集变量，显示输入框
     const values = payload.values || {};
     setPendingInitVars((prev) => ({ ...(prev || {}), ...values }));
     setHideComposer(false);
-    try { removeLastInteractiveMessage(); } catch {}
+    try {
+      removeLastInteractiveMessage();
+    } catch {}
   };
 
   // 发送消息：若存在 init 变量，则在首次发送时一并携带
@@ -155,17 +165,23 @@ export const ChatContainer: React.FC = () => {
         detail: true,
       };
       await sendMessage(content, mergedOptions);
-      if (vars) setPendingInitVars(null);
+      if (vars) {
+        setPendingInitVars(null);
+      }
     });
   };
 
   useEffect(() => {
     return perfMonitor.measure('ChatContainer.welcomeMessage', () => {
       // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面
-      if (!currentAgent || !currentSession) return;
+      if (!currentAgent || !currentSession) {
+        return;
+      }
 
       const welcomeKey = `${currentAgent.id}-${currentSession.id}`;
-      if (welcomeTriggeredKeyRef.current === welcomeKey) return;
+      if (welcomeTriggeredKeyRef.current === welcomeKey) {
+        return;
+      }
 
       if (messages.length === 0 && currentAgent.provider === 'fastgpt') {
         perfMonitor.measureAsync('ChatContainer.fetchWelcome', async () => {
@@ -174,7 +190,9 @@ export const ChatContainer: React.FC = () => {
             const chatId = response.chatId;
 
             if (chatId && currentSession.id !== chatId) {
-              if (!currentAgent?.id) return;
+              if (!currentAgent?.id) {
+                return;
+              }
               bindSessionId(currentAgent.id, currentSession.id, chatId);
             }
 
@@ -218,7 +236,7 @@ export const ChatContainer: React.FC = () => {
 
   // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
   // 此组件现在只负责渲染标准聊天界面
-  
+
   // 常规智能体聊天界面
   return (
     <div className="flex flex-col h-full bg-background" data-testid="chat-container">
@@ -288,4 +306,3 @@ export const ChatContainer: React.FC = () => {
 };
 
 export default ChatContainer;
-

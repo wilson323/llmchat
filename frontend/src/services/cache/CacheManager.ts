@@ -9,7 +9,7 @@ import {
   DataTemperature,
   CacheOptions,
   CacheUsageStats,
-  IStorageProvider
+  IStorageProvider,
 } from '@/types/hybrid-storage';
 
 import { ChatSession } from '@/types';
@@ -44,7 +44,7 @@ export class CacheManager implements ICacheManager {
 
   constructor(
     memoryProvider: IStorageProvider,
-    indexedDBProvider: IStorageProvider
+    indexedDBProvider: IStorageProvider,
   ) {
     this.memoryProvider = memoryProvider;
     this.indexedDBProvider = indexedDBProvider;
@@ -57,7 +57,7 @@ export class CacheManager implements ICacheManager {
       demotions: 0,
       preloads: 0,
       totalRequests: 0,
-      averageResponseTime: 0
+      averageResponseTime: 0,
     };
 
     this.initializeCleanup();
@@ -115,7 +115,7 @@ export class CacheManager implements ICacheManager {
         // 热数据存储到内存和IndexedDB
         await Promise.all([
           this.memoryProvider.set(key, value, options),
-          this.indexedDBProvider.set(key, value, options)
+          this.indexedDBProvider.set(key, value, options),
         ]);
       } else if (temperature === DataTemperature.WARM) {
         // 温数据存储到IndexedDB
@@ -144,7 +144,7 @@ export class CacheManager implements ICacheManager {
     try {
       const [memoryDeleted, indexedDBDeleted] = await Promise.all([
         this.memoryProvider.delete(key),
-        this.indexedDBProvider.delete(key)
+        this.indexedDBProvider.delete(key),
       ]);
 
       return memoryDeleted || indexedDBDeleted;
@@ -158,7 +158,7 @@ export class CacheManager implements ICacheManager {
     try {
       await Promise.all([
         this.memoryProvider.clear(),
-        this.indexedDBProvider.clear()
+        this.indexedDBProvider.clear(),
       ]);
     } catch (error) {
       console.error('缓存清空失败:', error);
@@ -209,7 +209,7 @@ export class CacheManager implements ICacheManager {
     // 并行设置不同温度的数据
     await Promise.all([
       this.setBatchInMemory(hotEntries.concat(warmEntries)),
-      this.setBatchInIndexedDB(hotEntries.concat(warmEntries).concat(coldEntries))
+      this.setBatchInIndexedDB(hotEntries.concat(warmEntries).concat(coldEntries)),
     ]);
   }
 
@@ -374,7 +374,7 @@ export class CacheManager implements ICacheManager {
         total: 50 * 1024 * 1024, // 50MB估算
         used: memoryStats.totalSize,
         free: 50 * 1024 * 1024 - memoryStats.totalSize,
-        percentage: (memoryStats.totalSize / (50 * 1024 * 1024)) * 100
+        percentage: (memoryStats.totalSize / (50 * 1024 * 1024)) * 100,
       };
 
       // 获取IndexedDB使用情况
@@ -393,14 +393,14 @@ export class CacheManager implements ICacheManager {
         averageResponseTime: this.metrics.averageResponseTime,
         evictionRate: this.metrics.totalRequests > 0
           ? this.metrics.evictions / this.metrics.totalRequests
-          : 0
+          : 0,
       };
 
       return {
         memoryUsage,
         indexedDBUsage,
         cacheEntries,
-        performance
+        performance,
       };
 
     } catch (error) {
@@ -528,7 +528,7 @@ export class CacheManager implements ICacheManager {
     this.preloadQueue.push({
       key,
       priority,
-      dependencies: []
+      dependencies: [],
     });
 
     // 按优先级排序
@@ -536,7 +536,9 @@ export class CacheManager implements ICacheManager {
   }
 
   private async processPreloadQueue(): Promise<void> {
-    if (this.preloadQueue.length === 0) return;
+    if (this.preloadQueue.length === 0) {
+      return;
+    }
 
     const tasks = this.preloadQueue.splice(0, 5); // 处理前5个任务
     const keys = tasks.map(task => task.key);
@@ -548,8 +550,12 @@ export class CacheManager implements ICacheManager {
     // 基于访问模式和时间排序
     return keys.sort((a, b) => {
       // 当前会话优先
-      if (a.includes('current')) return -1;
-      if (b.includes('current')) return 1;
+      if (a.includes('current')) {
+        return -1;
+      }
+      if (b.includes('current')) {
+        return 1;
+      }
 
       // 最近访问的优先
       const aTime = this.extractTimestampFromKey(a);
@@ -579,14 +585,14 @@ export class CacheManager implements ICacheManager {
 
   private async setBatchInMemory<T>(entries: Array<{key: string, value: T, options?: CacheOptions}>): Promise<void> {
     const promises = entries.map(entry =>
-      this.memoryProvider.set(entry.key, entry.value, entry.options)
+      this.memoryProvider.set(entry.key, entry.value, entry.options),
     );
     await Promise.all(promises);
   }
 
   private async setBatchInIndexedDB<T>(entries: Array<{key: string, value: T, options?: CacheOptions}>): Promise<void> {
     const promises = entries.map(entry =>
-      this.indexedDBProvider.set(entry.key, entry.value, entry.options)
+      this.indexedDBProvider.set(entry.key, entry.value, entry.options),
     );
     await Promise.all(promises);
   }
@@ -602,7 +608,7 @@ export class CacheManager implements ICacheManager {
           total,
           used,
           free: total - used,
-          percentage: (used / total) * 100
+          percentage: (used / total) * 100,
         };
       }
     } catch (error) {
@@ -614,7 +620,7 @@ export class CacheManager implements ICacheManager {
       total: 100 * 1024 * 1024,
       used: 0,
       free: 100 * 1024 * 1024,
-      percentage: 0
+      percentage: 0,
     };
   }
 
@@ -627,7 +633,7 @@ export class CacheManager implements ICacheManager {
         hot: memoryEntries.totalEntries,
         warm: indexedDBEntries.totalEntries,
         cold: 0, // 索引外的数据难以统计
-        total: memoryEntries.totalEntries + indexedDBEntries.totalEntries
+        total: memoryEntries.totalEntries + indexedDBEntries.totalEntries,
       };
     } catch (error) {
       return { hot: 0, warm: 0, cold: 0, total: 0 };
@@ -663,7 +669,7 @@ export class CacheManager implements ICacheManager {
         const hotData = await this.getHotDataFromMemory();
         const toDemote = hotData.slice(-20); // 降级最后20个条目
 
-        for (const {key} of toDemote) {
+        for (const { key } of toDemote) {
           await this.demoteToCold(key);
         }
       }
@@ -681,7 +687,7 @@ export class CacheManager implements ICacheManager {
 
       // 否则返回所有数据
       const entries = await this.memoryProvider.list();
-      return entries.map(entry => ({key: entry.key, entry: entry.value}));
+      return entries.map(entry => ({ key: entry.key, entry: entry.value }));
     } catch (error) {
       console.error('获取内存热数据失败:', error);
       return [];
@@ -700,25 +706,25 @@ export class CacheManager implements ICacheManager {
         total: 50 * 1024 * 1024,
         used: 0,
         free: 50 * 1024 * 1024,
-        percentage: 0
+        percentage: 0,
       },
       indexedDBUsage: {
         total: 100 * 1024 * 1024,
         used: 0,
         free: 100 * 1024 * 1024,
-        percentage: 0
+        percentage: 0,
       },
       cacheEntries: {
         hot: 0,
         warm: 0,
         cold: 0,
-        total: 0
+        total: 0,
       },
       performance: {
         hitRate: 0,
         averageResponseTime: 0,
-        evictionRate: 0
-      }
+        evictionRate: 0,
+      },
     };
   }
 
@@ -737,7 +743,7 @@ export class CacheManager implements ICacheManager {
       demotions: 0,
       preloads: 0,
       totalRequests: 0,
-      averageResponseTime: 0
+      averageResponseTime: 0,
     };
   }
 

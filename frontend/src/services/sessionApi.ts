@@ -105,7 +105,7 @@ export async function getSessionMessages(sessionId: string, page?: number, pageS
     page: number;
     pageSize: number;
   }>(`/admin/sessions/${sessionId}/messages`, {
-    params: { page, pageSize }
+    params: { page, pageSize },
   });
   return data;
 }
@@ -166,7 +166,7 @@ export async function batchRemoveTags(sessionIds: string[], tags: string[]): Pro
 export async function exportSession(sessionId: string, format: 'json' | 'csv' | 'txt' = 'json'): Promise<string> {
   const { data } = await api.get(`/admin/sessions/${sessionId}/export`, {
     params: { format },
-    responseType: 'text'
+    responseType: 'text',
   });
   return data;
 }
@@ -174,14 +174,14 @@ export async function exportSession(sessionId: string, format: 'json' | 'csv' | 
 export async function exportSessions(params: SessionListParams & { format: 'json' | 'csv' | 'xlsx' }): Promise<string> {
   const { data } = await api.get('/admin/sessions/export', {
     params,
-    responseType: 'text'
+    responseType: 'text',
   });
   return data;
 }
 
 export async function searchSessions(query: string, limit?: number): Promise<Session[]> {
   const { data } = await api.get<Session[]>('/admin/sessions/search', {
-    params: { query, limit }
+    params: { query, limit },
   });
   return data;
 }

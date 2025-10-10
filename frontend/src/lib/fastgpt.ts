@@ -7,15 +7,21 @@ import {
 } from '@/types';
 
 const coerceDate = (value: string | number | Date | undefined): Date => {
-  if (!value) return new Date();
-  if (value instanceof Date) return value;
-  if (typeof value === 'number') return new Date(value);
+  if (!value) {
+    return new Date();
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return new Date(value);
+  }
   return new Date(value);
 };
 
 export const mapHistorySummaryToSession = (
   agentId: string,
-  summary: FastGPTChatHistorySummary
+  summary: FastGPTChatHistorySummary,
 ): ChatSession => ({
   id: summary.chatId,
   title: summary.title || '未命名对话',
@@ -48,7 +54,7 @@ const mapHistoryMessageToChatMessage = (message: FastGPTChatHistoryMessage): Cha
 };
 
 export const mapHistoryDetailToMessages = (
-  detail: FastGPTChatHistoryDetail
+  detail: FastGPTChatHistoryDetail,
 ): ChatMessage[] => {
   if (!detail?.messages || !Array.isArray(detail.messages)) {
     return [];
@@ -58,7 +64,7 @@ export const mapHistoryDetailToMessages = (
 
 export const mergeHistoryDetailIntoSession = (
   session: ChatSession,
-  detail: FastGPTChatHistoryDetail
+  detail: FastGPTChatHistoryDetail,
 ): ChatSession => ({
   ...session,
   id: detail.chatId || session.id,

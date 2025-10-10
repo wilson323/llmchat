@@ -9,7 +9,7 @@ import {
   TrendingDown,
   Zap,
   Shield,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 
 interface MetricsCardProps {
@@ -34,14 +34,14 @@ const statusColors = {
   success: 'text-success bg-success/10 border-success/20',
   warning: 'text-warning bg-warning/10 border-warning/20',
   error: 'text-error bg-error/10 border-error/20',
-  info: 'text-info bg-info/10 border-info/20'
+  info: 'text-info bg-info/10 border-info/20',
 };
 
 const statusIcons = {
   success: CheckCircle,
   warning: AlertTriangle,
   error: AlertTriangle,
-  info: Activity
+  info: Activity,
 };
 
 export function MetricsCard({
@@ -55,7 +55,7 @@ export function MetricsCard({
   loading = false,
   className,
   trend,
-  onClick
+  onClick,
 }: MetricsCardProps) {
   const StatusIcon = statusIcons[status];
 
@@ -75,7 +75,7 @@ export function MetricsCard({
         'hover:border-border/80 focus-within:ring-2 focus-within:ring-[var(--focus-ring)] focus-within:ring-offset-2',
         status && statusColors[status],
         onClick && 'cursor-pointer',
-        className
+        className,
       )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -87,7 +87,7 @@ export function MetricsCard({
         }
       } : undefined}
       aria-label={onClick ? `${title}: ${formatValue(value)}${unit || ''}` : undefined}
-    >
+      >
       {/* 状态指示器 */}
       {status && (
         <div className="absolute top-4 right-4">
@@ -135,7 +135,7 @@ export function MetricsCard({
           <div className="flex items-center gap-2">
             <div className={cn(
               'flex items-center gap-1 text-xs font-medium',
-              change.type === 'increase' ? 'text-success' : 'text-error'
+              change.type === 'increase' ? 'text-success' : 'text-error',
             )}>
               {change.type === 'increase' ? (
                 <TrendingUp className="h-3 w-3" />
@@ -161,11 +161,11 @@ export function MetricsCard({
                 transition={{ delay: index * 0.05, duration: 0.3 }}
                 className={cn(
                   'flex-1 rounded-t-sm min-h-[2px]',
-                  value > 0 ? 'bg-success/60' : 'bg-error/60'
+                  value > 0 ? 'bg-success/60' : 'bg-error/60',
                 )}
                 style={{
                   height: `${Math.abs(value) * 100}%`,
-                  transformOrigin: 'bottom'
+                  transformOrigin: 'bottom',
                 }}
               />
             ))}
@@ -246,7 +246,7 @@ export function RequestCountCard({ requestCount, loading }: {
       change={{
         value: 12.5,
         type: 'increase',
-        period: '昨日'
+        period: '昨日',
       }}
     />
   );

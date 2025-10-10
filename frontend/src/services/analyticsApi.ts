@@ -71,7 +71,7 @@ export interface AgentComparisonParams {
 }
 
 export async function getProvinceHeatmap(
-  params: ProvinceHeatmapParams
+  params: ProvinceHeatmapParams,
 ): Promise<ProvinceHeatmapDataset> {
   const query = {
     start: params.start,
@@ -80,13 +80,13 @@ export async function getProvinceHeatmap(
   };
   const { data } = await api.get<{ data: ProvinceHeatmapDataset }>(
     '/admin/analytics/province-heatmap',
-    { params: query }
+    { params: query },
   );
   return data.data;
 }
 
 export async function getConversationSeries(
-  params: ConversationSeriesParams
+  params: ConversationSeriesParams,
 ): Promise<ConversationSeriesDataset> {
   const query = {
     start: params.start,
@@ -95,17 +95,17 @@ export async function getConversationSeries(
   };
   const { data } = await api.get<{ data: ConversationSeriesDataset }>(
     '/admin/analytics/conversations/series',
-    { params: query }
+    { params: query },
   );
   return data.data;
 }
 
 export async function getAgentComparison(
-  params: AgentComparisonParams
+  params: AgentComparisonParams,
 ): Promise<AgentComparisonDataset> {
   const { data } = await api.get<{ data: AgentComparisonDataset }>(
     '/admin/analytics/conversations/agents',
-    { params }
+    { params },
   );
   return data.data;
 }

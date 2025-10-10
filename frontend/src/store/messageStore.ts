@@ -1,6 +1,6 @@
 /**
  * 消息 Store - 专注于消息管理和流式响应
- * 
+ *
  * 性能优化：
  * 1. 独立Store，减少订阅粒度
  * 2. 消息缓冲机制（requestAnimationFrame批量更新）
@@ -17,7 +17,7 @@ import { perfMonitor } from '@/utils/performanceMonitor';
 const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
-    if (message && message.AI !== undefined) {
+    if (message?.AI !== undefined) {
       return i;
     }
   }
@@ -26,51 +26,63 @@ const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {
 
 // 辅助函数：合并推理内容
 const mergeReasoningContent = (previous: string | undefined, incoming: string): string => {
-  if (!previous) return incoming;
-  if (!incoming) return previous;
-  if (incoming === previous) return previous;
-  if (incoming.startsWith(previous)) return incoming;
-  if (previous.endsWith(incoming)) return previous;
-  if (incoming.endsWith(previous)) return incoming;
+  if (!previous) {
+    return incoming;
+  }
+  if (!incoming) {
+    return previous;
+  }
+  if (incoming === previous) {
+    return previous;
+  }
+  if (incoming.startsWith(previous)) {
+    return incoming;
+  }
+  if (previous.endsWith(incoming)) {
+    return previous;
+  }
+  if (incoming.endsWith(previous)) {
+    return incoming;
+  }
   return `${previous}${previous.endsWith('\n') ? '' : '\n'}${incoming}`;
 };
 
 interface MessageState {
   // 消息数据
   messages: ChatMessage[];
-  
+
   // 流式状态
   isStreaming: boolean;
   streamingStatus: StreamStatus | null;
   streamAbortController: AbortController | null;
-  
+
   // 性能优化：消息缓冲区
   streamBuffer: string;
   flushScheduled: boolean;
-  
+
   // Actions - 消息操作
   addMessage: (message: ChatMessage) => void;
   clearMessages: () => void;
   updateMessageById: (messageId: string, updater: (message: ChatMessage) => ChatMessage) => void;
   setMessageFeedback: (messageId: string, feedback: 'good' | 'bad' | null) => void;
   removeLastInteractiveMessage: () => void;
-  
+
   // Actions - 流式响应（优化后）
   appendToBuffer: (content: string) => void;
   flushBuffer: () => void;
   updateLastMessage: (content: string) => void;  // 保留兼容性
-  
+
   // Actions - 推理和事件
   appendReasoningStep: (step: ReasoningStepUpdate) => void;
   finalizeReasoning: (totalSteps?: number) => void;
   appendAssistantEvent: (event: FastGPTEvent) => void;
-  
+
   // Actions - 流式控制
   setIsStreaming: (streaming: boolean) => void;
   setStreamingStatus: (status: StreamStatus | null) => void;
   setStreamAbortController: (controller: AbortController | null) => void;
   stopStreaming: () => void;
-  
+
   // 内部方法
   _scheduleFlush: () => void;
 }
@@ -91,11 +103,11 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         // 确保消息有时间戳
         const messageWithTimestamp = {
           ...message,
-          timestamp: message.timestamp || Date.now()
+          timestamp: message.timestamp || Date.now(),
         };
-        
+
         debugLog('📝 添加新消息:', messageWithTimestamp.id || 'no-id');
-        
+
         return {
           messages: [...state.messages, messageWithTimestamp],
         };
@@ -117,7 +129,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     perfMonitor.measure('messageStore.updateMessageById', () => {
       set((state) => ({
         messages: state.messages.map((msg) =>
-          msg.id === messageId ? updater(msg) : msg
+          msg.id === messageId ? updater(msg) : msg,
         ),
       }));
     });
@@ -127,7 +139,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   setMessageFeedback: (messageId, feedback) => {
     set((state) => ({
       messages: state.messages.map((msg) =>
-        msg.id === messageId ? { ...msg, feedback } : msg
+        msg.id === messageId ? { ...msg, feedback } : msg,
       ),
     }));
   },
@@ -144,7 +156,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
         }
       }
 
-      if (idx === -1) return state;
+      if (idx === -1) {
+        return state;
+      }
 
       return {
         messages: state.messages.filter((_, i) => i !== idx),
@@ -158,7 +172,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       set((state) => ({
         streamBuffer: state.streamBuffer + content,
       }));
-      
+
       // 自动调度flush
       get()._scheduleFlush();
     });
@@ -185,12 +199,12 @@ export const useMessageStore = create<MessageState>((set, get) => ({
               AI: (msg.AI || '') + state.streamBuffer,
               _lastUpdate: Date.now(), // 强制更新
             } as ChatMessage;
-            
+
             debugLog('📝 flush缓冲区:', {
               bufferedLength: state.streamBuffer.length,
               totalLength: updatedMessage.AI?.length,
             });
-            
+
             return updatedMessage;
           }
           return msg;
@@ -237,7 +251,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   appendReasoningStep: (step) => {
     set((state) => {
       const targetIndex = findLastAssistantMessageIndex(state.messages);
-      if (targetIndex === -1) return state;
+      if (targetIndex === -1) {
+        return state;
+      }
 
       const messages = state.messages.map((msg, index) => {
         if (index === targetIndex && msg.AI !== undefined) {
@@ -246,8 +262,12 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
           if (existingStep) {
             existingStep.text = mergeReasoningContent(existingStep.text, step.text || step.content);
-            if (step.title) existingStep.title = step.title;
-            if (step.status) existingStep.status = step.status;
+            if (step.title) {
+              existingStep.title = step.title;
+            }
+            if (step.status) {
+              existingStep.status = step.status;
+            }
           } else {
             const newStep: ReasoningStep = {
               id: `step-${Date.now()}-${reasoning.steps.length}`,
@@ -276,7 +296,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   finalizeReasoning: (totalSteps) => {
     set((state) => {
       const targetIndex = findLastAssistantMessageIndex(state.messages);
-      if (targetIndex === -1) return state;
+      if (targetIndex === -1) {
+        return state;
+      }
 
       const messages = state.messages.map((msg, index) => {
         if (index === targetIndex && msg.AI !== undefined && msg.reasoning) {
@@ -301,7 +323,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   appendAssistantEvent: (event) => {
     set((state) => {
       const targetIndex = findLastAssistantMessageIndex(state.messages);
-      if (targetIndex === -1) return state;
+      if (targetIndex === -1) {
+        return state;
+      }
 
       const messages = state.messages.map((msg, index) => {
         if (index === targetIndex && msg.AI !== undefined) {
@@ -340,7 +364,7 @@ export const useMessageStore = create<MessageState>((set, get) => ({
   // 内部方法：调度flush（使用requestAnimationFrame）
   _scheduleFlush: () => {
     const state = get();
-    
+
     if (state.flushScheduled) {
       return; // 已经调度过了
     }
@@ -370,4 +394,3 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default useMessageStore;
-

@@ -112,7 +112,7 @@ export function PerformanceChart({
   error,
   unit,
   threshold,
-  className
+  className,
 }: PerformanceChartProps) {
   const chartOption = useMemo((): ChartOption | null => {
     if (!data || data.length === 0) {
@@ -129,15 +129,15 @@ export function PerformanceChart({
         textStyle: {
           fontSize: 14,
           fontWeight: 'normal',
-          color: 'var(--foreground)'
-        }
+          color: 'var(--foreground)',
+        },
       },
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'var(--background)',
         borderColor: 'var(--border)',
         textStyle: {
-          color: 'var(--foreground)'
+          color: 'var(--foreground)',
         },
         formatter: (params: any) => {
           const param = Array.isArray(params) ? params[0] : params;
@@ -149,13 +149,13 @@ export function PerformanceChart({
               <div>${param.seriesName}: ${value}${unit || ''}</div>
             </div>
           `;
-        }
+        },
       },
       grid: {
         left: '3%',
         right: '4%',
         bottom: '3%',
-        containLabel: true
+        containLabel: true,
       },
       xAxis: {
         type: 'category',
@@ -163,8 +163,8 @@ export function PerformanceChart({
         data: timestamps,
         axisLine: {
           lineStyle: {
-            color: 'var(--border)'
-          }
+            color: 'var(--border)',
+          },
         },
         axisLabel: {
           color: 'var(--muted-foreground)',
@@ -173,31 +173,31 @@ export function PerformanceChart({
             const date = new Date(value);
             return date.toLocaleTimeString('zh-CN', {
               hour: '2-digit',
-              minute: '2-digit'
+              minute: '2-digit',
             });
-          }
-        }
+          },
+        },
       },
       yAxis: {
         type: 'value',
         axisLine: {
           lineStyle: {
-            color: 'var(--border)'
-          }
+            color: 'var(--border)',
+          },
         },
         axisLabel: {
           color: 'var(--muted-foreground)',
           fontSize: 11,
-          formatter: (value: number) => `${value}${unit || ''}`
+          formatter: (value: number) => `${value}${unit || ''}`,
         },
         splitLine: {
           lineStyle: {
             color: 'var(--border)',
-            opacity: 0.3
-          }
-        }
+            opacity: 0.3,
+          },
+        },
       },
-      series: []
+      series: [],
     };
 
     // 主数据系列
@@ -210,10 +210,10 @@ export function PerformanceChart({
       symbolSize: 4,
       lineStyle: {
         width: 2,
-        color: 'var(--brand)'
+        color: 'var(--brand)',
       },
       itemStyle: {
-        color: 'var(--brand)'
+        color: 'var(--brand)',
       },
       areaStyle: type === 'area' ? {
         color: {
@@ -225,16 +225,16 @@ export function PerformanceChart({
           colorStops: [
             {
               offset: 0,
-              color: 'var(--brand)'
+              color: 'var(--brand)',
             },
             {
               offset: 1,
               color: 'var(--brand)',
-              opacity: 0.1
-            }
-          ]
-        }
-      } : undefined
+              opacity: 0.1,
+            },
+          ],
+        },
+      } : undefined,
     };
 
     baseOption.series = [series];
@@ -248,15 +248,15 @@ export function PerformanceChart({
         lineStyle: {
           color: threshold.color,
           type: 'dashed',
-          width: 2
+          width: 2,
         },
         itemStyle: {
-          color: threshold.color
+          color: threshold.color,
         },
         symbol: 'none',
         emphasis: {
-          disabled: true
-        }
+          disabled: true,
+        },
       };
       baseOption.series.push(thresholdSeries);
     }
@@ -268,7 +268,7 @@ export function PerformanceChart({
     return (
       <div className={cn(
         'flex items-center justify-center rounded-lg border border-error/20 bg-error/5 p-6',
-        className
+        className,
       )}>
         <div className="text-center">
           <div className="text-error text-sm font-medium">加载失败</div>
@@ -282,7 +282,7 @@ export function PerformanceChart({
     return (
       <div className={cn(
         'flex items-center justify-center rounded-lg border border-border/20 bg-card/50 p-6',
-        className
+        className,
       )} style={{ height }}>
         <div className="flex items-center gap-2 text-muted-foreground">
           <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
@@ -296,7 +296,7 @@ export function PerformanceChart({
     return (
       <div className={cn(
         'flex items-center justify-center rounded-lg border border-border/20 bg-card/50 p-6',
-        className
+        className,
       )} style={{ height }}>
         <div className="text-center">
           <div className="text-muted-foreground text-sm">暂无数据</div>
@@ -313,7 +313,7 @@ export function PerformanceChart({
         notMerge={true}
         lazyUpdate={true}
         opts={{
-          renderer: 'canvas'
+          renderer: 'canvas',
         }}
       />
     </div>
@@ -336,7 +336,7 @@ export function ResponseTimeChart({ data, loading }: {
       threshold={{
         value: 1000,
         label: '阈值 (1000ms)',
-        color: '#ef4444'
+        color: '#ef4444',
       }}
     />
   );
@@ -357,7 +357,7 @@ export function ErrorRateChart({ data, loading }: {
       threshold={{
         value: 5,
         label: '阈值 (5%)',
-        color: '#f59e0b'
+        color: '#f59e0b',
       }}
     />
   );
@@ -394,7 +394,7 @@ export function CPUUsageChart({ data, loading }: {
       threshold={{
         value: 80,
         label: '阈值 (80%)',
-        color: '#f59e0b'
+        color: '#f59e0b',
       }}
     />
   );
@@ -415,7 +415,7 @@ export function MemoryUsageChart({ data, loading }: {
       threshold={{
         value: 85,
         label: '阈值 (85%)',
-        color: '#ef4444'
+        color: '#ef4444',
       }}
     />
   );

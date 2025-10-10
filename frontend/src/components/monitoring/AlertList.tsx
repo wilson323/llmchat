@@ -10,7 +10,7 @@ import {
   Bell,
   Clock,
   User,
-  ChevronDown
+  ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -30,21 +30,21 @@ const severityColors = {
   info: 'border-info/20 bg-info/5 text-info',
   warning: 'border-warning/20 bg-warning/5 text-warning',
   error: 'border-error/20 bg-error/5 text-error',
-  critical: 'border-error/30 bg-error/10 text-error animate-pulse'
+  critical: 'border-error/30 bg-error/10 text-error animate-pulse',
 };
 
 const severityIcons = {
   info: Info,
   warning: AlertTriangle,
   error: XCircle,
-  critical: XCircle
+  critical: XCircle,
 };
 
 const typeColors = {
   system: 'bg-blue-500/10 text-blue-600 border-blue-200',
   agent: 'bg-green-500/10 text-green-600 border-green-200',
   performance: 'bg-orange-500/10 text-orange-600 border-orange-200',
-  security: 'bg-red-500/10 text-red-600 border-red-200'
+  security: 'bg-red-500/10 text-red-600 border-red-200',
 };
 
 export function AlertList({
@@ -53,7 +53,7 @@ export function AlertList({
   onResolve,
   loading = false,
   showFilters = true,
-  maxHeight = '400px'
+  maxHeight = '400px',
 }: AlertListProps) {
   const [filter, setFilter] = useState<{
     severity?: string;
@@ -64,9 +64,15 @@ export function AlertList({
 
   // 过滤告警
   const filteredAlerts = alerts.filter(alert => {
-    if (filter.severity && alert.severity !== filter.severity) return false;
-    if (filter.type && alert.type !== filter.type) return false;
-    if (filter.acknowledged !== undefined && alert.acknowledged !== filter.acknowledged) return false;
+    if (filter.severity && alert.severity !== filter.severity) {
+      return false;
+    }
+    if (filter.type && alert.type !== filter.type) {
+      return false;
+    }
+    if (filter.acknowledged !== undefined && alert.acknowledged !== filter.acknowledged) {
+      return false;
+    }
     return true;
   });
 
@@ -76,13 +82,13 @@ export function AlertList({
       toast({
         type: 'success',
         title: '告警已确认',
-        description: '告警已标记为已确认'
+        description: '告警已标记为已确认',
       });
     } catch (error) {
       toast({
         type: 'error',
         title: '操作失败',
-        description: '无法确认告警，请稍后重试'
+        description: '无法确认告警，请稍后重试',
       });
     }
   };
@@ -93,13 +99,13 @@ export function AlertList({
       toast({
         type: 'success',
         title: '告警已解决',
-        description: '告警已标记为已解决'
+        description: '告警已标记为已解决',
       });
     } catch (error) {
       toast({
         type: 'error',
         title: '操作失败',
-        description: '无法解决告警，请稍后重试'
+        description: '无法解决告警，请稍后重试',
       });
     }
   };
@@ -127,7 +133,7 @@ export function AlertList({
               value={filter.severity || ''}
               onChange={(e) => setFilter(prev => ({
                 ...prev,
-                severity: e.target.value || undefined
+                severity: e.target.value || undefined,
               }))}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
@@ -145,7 +151,7 @@ export function AlertList({
               value={filter.type || ''}
               onChange={(e) => setFilter(prev => ({
                 ...prev,
-                type: e.target.value || undefined
+                type: e.target.value || undefined,
               }))}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
@@ -163,7 +169,7 @@ export function AlertList({
               value={filter.acknowledged === undefined ? '' : filter.acknowledged.toString()}
               onChange={(e) => setFilter(prev => ({
                 ...prev,
-                acknowledged: e.target.value === '' ? undefined : e.target.value === 'true'
+                acknowledged: e.target.value === '' ? undefined : e.target.value === 'true',
               }))}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
@@ -213,7 +219,7 @@ export function AlertList({
                     'rounded-lg border p-4 transition-all duration-200',
                     'hover:shadow-md focus-within:ring-2 focus-within:ring-[var(--focus-ring)]',
                     severityColors[alert.severity],
-                    alert.resolved && 'opacity-60'
+                    alert.resolved && 'opacity-60',
                   )}
                   role="article"
                   aria-labelledby={`alert-title-${alert.id}`}
@@ -235,7 +241,7 @@ export function AlertList({
                             {alert.title}
                             <span className={cn(
                               'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                              typeColors[alert.type]
+                              typeColors[alert.type],
                             )}>
                               {alert.type === 'system' && '系统'}
                               {alert.type === 'agent' && '智能体'}
@@ -266,7 +272,7 @@ export function AlertList({
                               <Clock className="h-3 w-3" />
                               {formatDistanceToNow(new Date(alert.timestamp), {
                                 addSuffix: true,
-                                locale: zhCN
+                                locale: zhCN,
                               })}
                             </div>
 
@@ -294,7 +300,7 @@ export function AlertList({
                             >
                               <ChevronDown className={cn(
                                 'h-3 w-3 transition-transform',
-                                isExpanded && 'rotate-180'
+                                isExpanded && 'rotate-180',
                               )} />
                               {isExpanded ? '收起' : '展开'}详细信息
                             </button>

@@ -17,7 +17,7 @@ export const useFocusTrap = ({
   initialFocus,
   restoreFocus,
   onEscape,
-  enabled = true
+  enabled = true,
 }: UseFocusTrapOptions) => {
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const focusableElementsRef = useRef<HTMLElement[]>([]);
@@ -32,12 +32,12 @@ export const useFocusTrap = ({
       'a[href]',
       'area[href]',
       '[tabindex]:not([tabindex="-1"])',
-      '[contenteditable="true"]'
+      '[contenteditable="true"]',
     ];
 
     return Array.from(
-      element.querySelectorAll(focusableSelectors.join(', '))
-    ) as HTMLElement[];
+      element.querySelectorAll(focusableSelectors.join(', ')),
+    );
   };
 
   // 获取第一个可聚焦元素
@@ -53,15 +53,21 @@ export const useFocusTrap = ({
 
   // 处理Tab键循环
   const handleTabKey = (event: KeyboardEvent) => {
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const focusableElements = focusableElementsRef.current;
-    if (focusableElements.length === 0) return;
+    if (focusableElements.length === 0) {
+      return;
+    }
 
     const firstElement = getFirstFocusableElement();
     const lastElement = getLastFocusableElement();
 
-    if (!firstElement || !lastElement) return;
+    if (!firstElement || !lastElement) {
+      return;
+    }
 
     // Shift+Tab：向前循环
     if (event.shiftKey) {
@@ -89,7 +95,9 @@ export const useFocusTrap = ({
 
   // 处理键盘事件
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     switch (event.key) {
       case 'Tab':
@@ -103,7 +111,9 @@ export const useFocusTrap = ({
 
   // 捕获焦点
   const trapFocus = () => {
-    if (!container || !enabled) return;
+    if (!container || !enabled) {
+      return;
+    }
 
     // 保存当前焦点元素
     previousActiveElement.current = document.activeElement as HTMLElement;
@@ -144,7 +154,9 @@ export const useFocusTrap = ({
 
   // 监听容器变化，更新可聚焦元素列表
   useEffect(() => {
-    if (!container || !enabled) return;
+    if (!container || !enabled) {
+      return;
+    }
 
     // 创建MutationObserver监听DOM变化
     const observer = new MutationObserver(() => {
@@ -155,7 +167,7 @@ export const useFocusTrap = ({
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['disabled', 'tabindex', 'aria-hidden']
+      attributeFilter: ['disabled', 'tabindex', 'aria-hidden'],
     });
 
     return () => {
@@ -181,6 +193,6 @@ export const useFocusTrap = ({
     releaseFocus,
     getFirstFocusableElement,
     getLastFocusableElement,
-    focusableElements: focusableElementsRef.current
+    focusableElements: focusableElementsRef.current,
   };
 };

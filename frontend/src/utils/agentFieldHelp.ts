@@ -239,20 +239,21 @@ export function getFieldHelp(fieldName: keyof typeof fieldHelp) {
  */
 export function getFieldTooltip(fieldName: keyof typeof fieldHelp): string {
   const help = fieldHelp[fieldName];
-  if (!help) return '';
-  
+  if (!help) {
+    return '';
+  }
+
   const parts: string[] = [help.description];
-  
+
   if ('tips' in help && help.tips && help.tips.length > 0) {
     parts.push('\n提示：');
     parts.push(...help.tips.map(tip => `• ${tip}`));
   }
-  
+
   if ('examples' in help && help.examples && help.examples.length > 0) {
     parts.push('\n示例：');
     parts.push(...help.examples.map(ex => `• ${ex}`));
   }
-  
+
   return parts.join('\n');
 }
-

@@ -17,7 +17,7 @@ import { EventTrail } from './EventTrail';
 import { useA11yAnnouncer } from '@/hooks/useA11yAnnouncer';
 import { useI18n } from '@/i18n';
 import {
-  usePerformanceMonitor
+  usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
 
 // 回调函数类型定义
@@ -32,7 +32,6 @@ interface CodeProps {
   children?: React.ReactNode;
   [key: string]: any;
 }
-
 
 import avatarImg from '@/img/4.png';
 
@@ -55,7 +54,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   currentAgent,
   streamingStatus,
   onInteractiveSelect,
-  onInteractiveFormSubmit
+  onInteractiveFormSubmit,
 }) => {
   // 🚀 性能监控
   usePerformanceMonitor('MessageItem');
@@ -64,7 +63,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   const [copied, setCopied] = useState(false);
   const {
     announceStreamingStatus,
-    announceNewMessage
+    announceNewMessage,
   } = useA11yAnnouncer();
   // 🚀 性能优化：使用useCallback缓存事件处理函数
   const isInteractiveSelect = useCallback((params: InteractiveSelectParams | InteractiveInputParams): params is InteractiveSelectParams => {
@@ -76,7 +75,9 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   }, []);
 
   const handleCopy = useCallback(async () => {
-    if (copied) return;
+    if (copied) {
+      return;
+    }
 
     const content = message.AI || message.HUMAN || '';
     try {
@@ -87,7 +88,6 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
       console.error('Failed to copy:', err);
     }
   }, [message.AI, message.HUMAN, copied, setCopied]);
-
 
   // 交互节点专用渲染（优先于普通 HUMAN/AI 文本）
   if (message.interactive) {
@@ -100,11 +100,10 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     const [selectedValue, setSelectedValue] = useState<string>(() => {
       if (isInteractiveSelect(data.params)) {
         const opts = data.params.userSelectOptions || [];
-        return (opts[0]?.key ?? opts[0]?.value ?? '') as string;
+        return (opts[0]?.key ?? opts[0]?.value ?? '');
       }
       return '';
     });
-
 
     const renderUserSelect = () => (
       <div className="flex justify-start">
@@ -140,16 +139,6 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                 radius="md"
                 className="px-3 py-1.5"
               >
-
-
-
-
-
-
-
-
-
-
 
                 {data.origin === 'init' ? t('开始对话') : t('确定')}
               </Button>
@@ -230,8 +219,12 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
       </div>
     );
 
-    if (data.type === 'userSelect') return renderUserSelect();
-    if (data.type === 'userInput') return renderUserInput();
+    if (data.type === 'userSelect') {
+      return renderUserSelect();
+    }
+    if (data.type === 'userInput') {
+      return renderUserInput();
+    }
   }
 
   const [likeLoading, setLikeLoading] = useState<boolean>(false);
@@ -258,7 +251,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     if (streamingStatus?.type === 'flowNodeStatus' && streamingStatus.moduleName) {
       announceStreamingStatus(
         streamingStatus.moduleName,
-        streamingStatus.status || 'running'
+        streamingStatus.status || 'running',
       );
     }
   }, [streamingStatus, announceStreamingStatus]);
@@ -267,7 +260,9 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   const liked: boolean | null = message.feedback === 'good' ? true : message.feedback === 'bad' ? false : null;
 
   const submitFeedback = async (type: 'good' | 'bad', cancel = false) => {
-    if (!canFeedback || !agent || !currentSession) return;
+    if (!canFeedback || !agent || !currentSession) {
+      return;
+    }
     setLikeLoading(true);
     try {
       await chatService.updateUserFeedback(agent.id, currentSession.id, message.id!, type, cancel);
@@ -277,7 +272,9 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   };
 
   const handleLikeClick = async () => {
-    if (!canFeedback || likeLoading) return;
+    if (!canFeedback || likeLoading) {
+      return;
+    }
     try {
       if (liked === true) {
         await submitFeedback('good', true);
@@ -295,7 +292,9 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   };
 
   const handleDislikeClick = async () => {
-    if (!canFeedback || likeLoading) return;
+    if (!canFeedback || likeLoading) {
+      return;
+    }
     try {
       if (liked === false) {
         await submitFeedback('bad', true);
@@ -312,12 +311,11 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     }
   };
 
-  
   const formatTime = (timestamp?: number) => {
     const time = timestamp ? new Date(timestamp) : new Date();
     return time.toLocaleTimeString(locale, {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -412,18 +410,18 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                 <div className="flex items-center space-x-2 px-4 py-2 rounded-lg shadow-sm border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                   {/* 简单的“流程节点”图标 */}
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                    <circle cx="6" cy="12" r="2"></circle>
-                    <circle cx="12" cy="6" r="2"></circle>
-                    <circle cx="18" cy="12" r="2"></circle>
-                    <path d="M8 12h4M14 10l2-2M14 12h2"></path>
+                    <circle cx="6" cy="12" r="2" />
+                    <circle cx="12" cy="6" r="2" />
+                    <circle cx="18" cy="12" r="2" />
+                    <path d="M8 12h4M14 10l2-2M14 12h2" />
                   </svg>
                   {/* 三点动画 */}
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
-                  <span className="text-sm"></span>
+                  <span className="text-sm" />
                   {streamingStatus?.type === 'flowNodeStatus' && (
                     <>
                       <span className="text-sm font-medium">{streamingStatus.moduleName || t('未知模块')}</span>

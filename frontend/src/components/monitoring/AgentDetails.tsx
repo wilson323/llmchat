@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -11,23 +11,23 @@ import {
   RefreshCw,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
 import {
   MetricsCard,
-  ResponseTimeCard
+  ResponseTimeCard,
 } from './MetricsCard';
 import {
   ResponseTimeChart,
   ErrorRateChart,
-  RequestVolumeChart
+  RequestVolumeChart,
 } from './PerformanceChart';
 import {
   type AgentHealthStatus,
-  type TimeSeriesData
+  type TimeSeriesData,
 } from '@/services/slaApi';
 import { toast } from '@/components/ui/Toast';
 
@@ -68,19 +68,19 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
         ...timestamps.map((ts, i) => ({
           timestamp: ts,
           value: 420 + Math.sin(i * 0.3) * 100 + Math.random() * 50,
-          labels: { type: 'responseTime' }
+          labels: { type: 'responseTime' },
         })),
         ...timestamps.map((ts, i) => ({
           timestamp: ts,
           value: 0.8 + Math.sin(i * 0.5) * 0.5 + Math.random() * 0.3,
-          labels: { type: 'errorRate' }
+          labels: { type: 'errorRate' },
         })),
         ...timestamps.map((ts, i) => ({
           timestamp: ts,
           value: 15 + Math.sin(i * 0.4) * 5 + Math.random() * 3,
-          labels: { type: 'throughput' }
-        }))
-      ]
+          labels: { type: 'throughput' },
+        })),
+      ],
     };
   }, [agentId]);
 
@@ -95,7 +95,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
       toast({
         type: 'error',
         title: '加载失败',
-        description: '无法加载智能体指标数据'
+        description: '无法加载智能体指标数据',
       });
     } finally {
       setLoading(false);
@@ -103,12 +103,16 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
   }, [generateMockAgentData]);
 
   useEffect(() => {
-    if (!agentId) return;
+    if (!agentId) {
+      return;
+    }
     loadAgentMetrics();
   }, [agentId, loadAgentMetrics]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh) {
+      return;
+    }
 
     const interval = setInterval(() => {
       loadAgentMetrics();
@@ -144,7 +148,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
     online: { icon: CheckCircle, color: 'text-success bg-success/10 border-success/20', label: '在线' },
     offline: { icon: XCircle, color: 'text-error bg-error/10 border-error/20', label: '离线' },
     degraded: { icon: AlertTriangle, color: 'text-warning bg-warning/10 border-warning/20', label: '降级' },
-    unknown: { icon: Clock, color: 'text-muted-foreground bg-muted/10 border-muted/20', label: '未知' }
+    unknown: { icon: Clock, color: 'text-muted-foreground bg-muted/10 border-muted/20', label: '未知' },
   };
 
   const config = statusConfig[agentMetrics?.status || 'unknown'];
@@ -171,7 +175,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
                 {agentMetrics.name}
                 <span className={cn(
                   'inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium',
-                  config?.color
+                  config?.color,
                 )}>
                   <StatusIcon className="h-4 w-4" />
                   {config?.label}
@@ -279,7 +283,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
             change={{
               value: 8.5,
               type: 'increase',
-              period: '昨日'
+              period: '昨日',
             }}
           />
         </div>

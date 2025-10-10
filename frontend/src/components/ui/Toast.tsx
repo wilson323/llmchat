@@ -57,7 +57,7 @@ export function Toaster() {
         aria-atomic="true"
         className="sr-only"
         role="status"
-      >
+        >
         {toasts.map(t => (
           <div key={`a11y-${t.id}`}>
             {t.type === 'error' ? '错误：' : t.type === 'warning' ? '警告：' : t.type === 'success' ? '成功：' : '信息：'}
@@ -73,7 +73,7 @@ export function Toaster() {
         aria-atomic="true"
         className="sr-only"
         role="alert"
-      >
+        >
         {toasts.filter(t => t.type === 'error').map(t => (
           <div key={`error-${t.id}`}>
             错误：{t.title}
@@ -140,4 +140,3 @@ export function Toaster() {
     </>
   );
 }
-

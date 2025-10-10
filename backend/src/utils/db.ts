@@ -82,11 +82,24 @@ function parseOptionalBoolean(value: unknown, fieldName: string): boolean | unde
 }
 
 export function normalizePostgresConfig(pg: PostgresConfig): NormalizedPostgresConfig {
-  return {
-    ...pg,
-    port: parseOptionalNumber(pg.port, 'port'),
-    ssl: parseOptionalBoolean(pg.ssl, 'ssl'),
+  const config: NormalizedPostgresConfig = {
+    host: pg.host,
+    user: pg.user,
+    password: pg.password,
+    database: pg.database,
   };
+
+  const port = parseOptionalNumber(pg.port, 'port');
+  if (port !== undefined) {
+    config.port = port;
+  }
+
+  const ssl = parseOptionalBoolean(pg.ssl, 'ssl');
+  if (ssl !== undefined) {
+    config.ssl = ssl;
+  }
+
+  return config;
 }
 
 let pool: Pool | null = null;
@@ -106,14 +119,14 @@ export async function initDB(): Promise<void> {
 
   // 替换配置中的环境变量占位符
   const cfg = deepReplaceEnvVariables(rawCfg);
-const rawPg = cfg.database?.postgres;
+  const rawPg = cfg.database?.postgres;
 
   if (!rawPg) {
     logger.error('[initDB] 数据库配置缺失');
     throw new Error('DATABASE_CONFIG_MISSING');
   }
 
-const pg = normalizePostgresConfig(rawPg);
+  const pg = normalizePostgresConfig(rawPg);
   logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
 
   // 先连接到 postgres 默认数据库，检查并创建目标数据库

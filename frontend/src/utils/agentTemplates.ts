@@ -1,6 +1,6 @@
 /**
  * 智能体配置模板
- * 
+ *
  * 提供常见的智能体配置模板，方便快速创建
  */
 
@@ -180,4 +180,3 @@ export function getAllCategories(): Array<{ value: AgentTemplate['category']; la
     { value: 'custom', label: '自定义' },
   ];
 }
-

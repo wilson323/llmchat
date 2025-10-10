@@ -36,10 +36,10 @@ if (typeof window !== 'undefined') {
  * 日志级别
  */
 export enum LogLevel {
-  DEBUG = "debug",
-  INFO = "info",
-  WARN = "warn",
-  ERROR = "error",
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error',
 }
 
 /**
@@ -78,7 +78,7 @@ class Logger {
       level: this.isDevelopment ? LogLevel.DEBUG : LogLevel.INFO,
       enabled: true,
       sentryEnabled:
-        import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === "true",
+        import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === 'true',
       consoleEnabled: this.isDevelopment,
     };
   }
@@ -87,7 +87,9 @@ class Logger {
    * 检查日志级别是否应该输出
    */
   private shouldLog(level: LogLevel): boolean {
-    if (!this.config.enabled) return false;
+    if (!this.config.enabled) {
+      return false;
+    }
 
     const levels = [
       LogLevel.DEBUG,
@@ -105,23 +107,25 @@ class Logger {
    * 过滤敏感信息
    */
   private sanitizeMetadata(metadata?: LogMetadata): LogMetadata | undefined {
-    if (!metadata) return undefined;
+    if (!metadata) {
+      return undefined;
+    }
 
     const sanitized = { ...metadata };
     const sensitiveKeys = [
-      "password",
-      "token",
-      "apikey",
-      "api_key",
-      "secret",
-      "authorization",
-      "auth",
+      'password',
+      'token',
+      'apikey',
+      'api_key',
+      'secret',
+      'authorization',
+      'auth',
     ];
 
     Object.keys(sanitized).forEach((key) => {
       const lowerKey = key.toLowerCase();
       if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
-        sanitized[key] = "[REDACTED]";
+        sanitized[key] = '[REDACTED]';
       }
     });
 
@@ -134,10 +138,10 @@ class Logger {
   private formatMessage(
     level: LogLevel,
     message: string,
-    metadata?: LogMetadata
+    metadata?: LogMetadata,
   ): string {
     const timestamp = new Date().toISOString();
-    const metaStr = metadata ? ` ${JSON.stringify(metadata)}` : "";
+    const metaStr = metadata ? ` ${JSON.stringify(metadata)}` : '';
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;
   }
 
@@ -147,9 +151,11 @@ class Logger {
   private logToConsole(
     level: LogLevel,
     message: string,
-    metadata?: LogMetadata
+    metadata?: LogMetadata,
   ): void {
-    if (!this.config.consoleEnabled) return;
+    if (!this.config.consoleEnabled) {
+      return;
+    }
 
     const sanitized = this.sanitizeMetadata(metadata);
     const formattedMessage = this.formatMessage(level, message, sanitized);
@@ -181,9 +187,11 @@ class Logger {
     level: LogLevel,
     message: string,
     metadata?: LogMetadata,
-    error?: Error
+    error?: Error,
   ): void {
-    if (!this.config.sentryEnabled || !Sentry) return;
+    if (!this.config.sentryEnabled || !Sentry) {
+      return;
+    }
 
     const sanitized = this.sanitizeMetadata(metadata);
 
@@ -191,11 +199,11 @@ class Logger {
     if (level === LogLevel.ERROR && error) {
       Sentry.captureException(error, {
         extra: sanitized,
-        level: "error",
+        level: 'error',
       });
     } else if (level === LogLevel.WARN || level === LogLevel.ERROR) {
       Sentry.captureMessage(message, {
-        level: level === LogLevel.ERROR ? "error" : "warning",
+        level: level === LogLevel.ERROR ? 'error' : 'warning',
         extra: sanitized,
       });
     }
@@ -205,7 +213,9 @@ class Logger {
    * 调试日志
    */
   debug(message: string, metadata?: LogMetadata): void {
-    if (!this.shouldLog(LogLevel.DEBUG)) return;
+    if (!this.shouldLog(LogLevel.DEBUG)) {
+      return;
+    }
     this.logToConsole(LogLevel.DEBUG, message, metadata);
   }
 
@@ -213,7 +223,9 @@ class Logger {
    * 信息日志
    */
   info(message: string, metadata?: LogMetadata): void {
-    if (!this.shouldLog(LogLevel.INFO)) return;
+    if (!this.shouldLog(LogLevel.INFO)) {
+      return;
+    }
     this.logToConsole(LogLevel.INFO, message, metadata);
   }
 
@@ -221,7 +233,9 @@ class Logger {
    * 警告日志
    */
   warn(message: string, metadata?: LogMetadata): void {
-    if (!this.shouldLog(LogLevel.WARN)) return;
+    if (!this.shouldLog(LogLevel.WARN)) {
+      return;
+    }
     this.logToConsole(LogLevel.WARN, message, metadata);
     this.logToSentry(LogLevel.WARN, message, metadata);
   }
@@ -230,7 +244,9 @@ class Logger {
    * 错误日志
    */
   error(message: string, error?: Error, metadata?: LogMetadata): void {
-    if (!this.shouldLog(LogLevel.ERROR)) return;
+    if (!this.shouldLog(LogLevel.ERROR)) {
+      return;
+    }
 
     const enrichedMetadata: LogMetadata = {
       ...metadata,
@@ -248,13 +264,13 @@ class Logger {
   performance(
     operation: string,
     duration: number,
-    metadata?: LogMetadata
+    metadata?: LogMetadata,
   ): void {
     this.info(`Performance: ${operation}`, {
       ...metadata,
       duration,
-      unit: "ms",
-      type: "performance",
+      unit: 'ms',
+      type: 'performance',
     });
   }
 
@@ -266,14 +282,14 @@ class Logger {
     url: string,
     statusCode: number,
     duration: number,
-    metadata?: LogMetadata
+    metadata?: LogMetadata,
   ): void {
     const level =
       statusCode >= 500
         ? LogLevel.ERROR
         : statusCode >= 400
-        ? LogLevel.WARN
-        : LogLevel.INFO;
+          ? LogLevel.WARN
+          : LogLevel.INFO;
     const message = `API ${method} ${url} - ${statusCode}`;
 
     const enrichedMetadata: LogMetadata = {
@@ -282,7 +298,7 @@ class Logger {
       url,
       statusCode,
       duration,
-      type: "api",
+      type: 'api',
     };
 
     if (level === LogLevel.ERROR) {
@@ -300,7 +316,7 @@ class Logger {
   userAction(action: string, metadata?: LogMetadata): void {
     this.info(`User Action: ${action}`, {
       ...metadata,
-      type: "user_action",
+      type: 'user_action',
     });
   }
 

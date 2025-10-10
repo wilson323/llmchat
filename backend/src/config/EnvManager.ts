@@ -139,7 +139,7 @@ export class EnvManager {
    */
   public get(key: string, fallback: string = ''): string {
     const value = this.config.get(key);
-    return value !== undefined ? value : fallback;
+    return value ?? fallback;
   }
 
   /**

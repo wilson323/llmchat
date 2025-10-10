@@ -5,7 +5,7 @@
 export const useA11yAnnouncer = () => {
   const announceMessage = (message: string, politeness: 'polite' | 'assertive' = 'polite') => {
     const announcer = document.getElementById(
-      politeness === 'assertive' ? 'error-announcer' : 'navigation-announcer'
+      politeness === 'assertive' ? 'error-announcer' : 'navigation-announcer',
     );
 
     if (announcer) {
@@ -24,10 +24,10 @@ export const useA11yAnnouncer = () => {
       const statusText = status === 'running'
         ? `正在执行${moduleName}`
         : status === 'completed'
-        ? `${moduleName}执行完成`
-        : status === 'error'
-        ? `${moduleName}执行出错`
-        : `${moduleName}状态：${status}`;
+          ? `${moduleName}执行完成`
+          : status === 'error'
+            ? `${moduleName}执行出错`
+            : `${moduleName}状态：${status}`;
 
       announcer.textContent = statusText;
     }
@@ -65,6 +65,6 @@ export const useA11yAnnouncer = () => {
     announceSuccess,
     announceNewMessage,
     announceSessionChange,
-    announceAgentChange
+    announceAgentChange,
   };
 };

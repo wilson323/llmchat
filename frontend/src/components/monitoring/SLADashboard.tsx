@@ -1,11 +1,11 @@
-"use client";
+'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Clock,
   RefreshCw,
   Shield,
   Maximize2,
-  Minimize2
+  Minimize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -14,14 +14,14 @@ import {
   UptimeCard,
   ResponseTimeCard,
   ErrorRateCard,
-  ActiveAgentsCard
+  ActiveAgentsCard,
 } from './MetricsCard';
 import { AlertList } from './AlertList';
 import {
   ResponseTimeChart,
   ErrorRateChart,
   CPUUsageChart,
-  MemoryUsageChart
+  MemoryUsageChart,
 } from './PerformanceChart';
 import { AgentStatusGrid } from './AgentStatusGrid';
 import {
@@ -31,7 +31,7 @@ import {
   type PerformanceMetrics,
   type Alert,
   type AgentHealthStatus,
-  type SLADashboardParams
+  type SLADashboardParams,
 } from '@/services/slaApi';
 
 const timeRanges = [
@@ -39,7 +39,7 @@ const timeRanges = [
   { label: '6小时', value: '6h' },
   { label: '24小时', value: '24h' },
   { label: '7天', value: '7d' },
-  { label: '30天', value: '30d' }
+  { label: '30天', value: '30d' },
 ] as const;
 
 interface LayoutState {
@@ -56,7 +56,7 @@ export function SLADashboard() {
     alertsExpanded: false,
     metricsExpanded: false,
     chartsExpanded: false,
-    agentsExpanded: false
+    agentsExpanded: false,
   });
 
   // 数据状态
@@ -89,31 +89,31 @@ export function SLADashboard() {
         circuitBreakers: [
           { id: 'cb1', name: 'FastGPT API', state: 'CLOSED' as const, failureCount: 2, successCount: 98, lastFailureTime: null, lastSuccessTime: now.toISOString(), threshold: 5, timeout: 30000 },
           { id: 'cb2', name: 'OpenAI API', state: 'CLOSED' as const, failureCount: 1, successCount: 156, lastFailureTime: null, lastSuccessTime: now.toISOString(), threshold: 5, timeout: 30000 },
-          { id: 'cb3', name: 'Anthropic API', state: 'HALF_OPEN' as const, failureCount: 4, successCount: 12, lastFailureTime: new Date(now.getTime() - 5 * 60 * 1000).toISOString(), lastSuccessTime: new Date(now.getTime() - 2 * 60 * 1000).toISOString(), threshold: 5, timeout: 30000 }
+          { id: 'cb3', name: 'Anthropic API', state: 'HALF_OPEN' as const, failureCount: 4, successCount: 12, lastFailureTime: new Date(now.getTime() - 5 * 60 * 1000).toISOString(), lastSuccessTime: new Date(now.getTime() - 2 * 60 * 1000).toISOString(), threshold: 5, timeout: 30000 },
         ],
         agents: [
           { id: 'agent1', name: 'GPT-4', provider: 'OpenAI', status: 'online' as const, responseTime: 420, successRate: 99.2, lastCheckTime: now.toISOString(), errorCount: 8, requestCount: 1024, enabled: true },
           { id: 'agent2', name: 'Claude-3', provider: 'Anthropic', status: 'degraded' as const, responseTime: 890, successRate: 94.5, lastCheckTime: now.toISOString(), errorCount: 56, requestCount: 1024, enabled: true },
-          { id: 'agent3', name: 'FastGPT', provider: 'FastGPT', status: 'online' as const, responseTime: 280, successRate: 98.8, lastCheckTime: now.toISOString(), errorCount: 12, requestCount: 1024, enabled: true }
-        ] as AgentHealthStatus[]
+          { id: 'agent3', name: 'FastGPT', provider: 'FastGPT', status: 'online' as const, responseTime: 280, successRate: 98.8, lastCheckTime: now.toISOString(), errorCount: 12, requestCount: 1024, enabled: true },
+        ] as AgentHealthStatus[],
       },
       performance: {
         cpu: timestamps.map((ts, i) => ({
           timestamp: ts,
-          value: 45 + Math.sin(i * 0.5) * 15 + Math.random() * 10
+          value: 45 + Math.sin(i * 0.5) * 15 + Math.random() * 10,
         })),
         memory: timestamps.map((ts, i) => ({
           timestamp: ts,
-          value: 65 + Math.sin(i * 0.3) * 10 + Math.random() * 8
+          value: 65 + Math.sin(i * 0.3) * 10 + Math.random() * 8,
         })),
         disk: timestamps.map((ts) => ({
           timestamp: ts,
-          value: 35 + Math.random() * 5
+          value: 35 + Math.random() * 5,
         })),
         network: timestamps.map((ts, i) => ({
           timestamp: ts,
-          value: 120 + Math.sin(i * 0.7) * 30 + Math.random() * 20
-        }))
+          value: 120 + Math.sin(i * 0.7) * 30 + Math.random() * 20,
+        })),
       },
       alerts: [
         {
@@ -126,7 +126,7 @@ export function SLADashboard() {
           timestamp: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
           acknowledged: false,
           resolved: false,
-          metadata: { current: '580ms', threshold: '500ms' }
+          metadata: { current: '580ms', threshold: '500ms' },
         },
         {
           id: 'alert2',
@@ -140,9 +140,9 @@ export function SLADashboard() {
           acknowledgedAt: new Date(now.getTime() - 20 * 60 * 1000).toISOString(),
           acknowledgedBy: 'admin',
           resolved: false,
-          metadata: { agentId: 'agent2', responseTime: '890ms', successRate: '94.5%' }
-        }
-      ]
+          metadata: { agentId: 'agent2', responseTime: '890ms', successRate: '94.5%' },
+        },
+      ],
     };
   }, []);
 
@@ -158,7 +158,7 @@ export function SLADashboard() {
       setRealTimeData({
         systemHealth: mockData.systemHealth,
         activeAlerts: mockData.alerts.filter(a => !a.resolved),
-        recentViolations: []
+        recentViolations: [],
       });
     } catch (error) {
       console.error('Failed to load SLA dashboard data:', error);
@@ -174,7 +174,9 @@ export function SLADashboard() {
 
   // 自动刷新
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh) {
+      return;
+    }
 
     const interval = setInterval(() => {
       loadData();
@@ -188,7 +190,7 @@ export function SLADashboard() {
     try {
       await acknowledgeAlert(alertId);
       setAlerts(prev => prev.map(alert =>
-        alert.id === alertId ? { ...alert, acknowledged: true } : alert
+        alert.id === alertId ? { ...alert, acknowledged: true } : alert,
       ));
     } catch (error) {
       console.error('Failed to acknowledge alert:', error);
@@ -199,7 +201,7 @@ export function SLADashboard() {
     try {
       await resolveAlert(alertId);
       setAlerts(prev => prev.map(alert =>
-        alert.id === alertId ? { ...alert, resolved: true } : alert
+        alert.id === alertId ? { ...alert, resolved: true } : alert,
       ));
     } catch (error) {
       console.error('Failed to resolve alert:', error);

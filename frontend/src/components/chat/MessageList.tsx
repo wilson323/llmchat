@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, memo, useMemo } from "react";
-import { ChatMessage } from "@/types";
-import { MessageItem } from "./MessageItem";
-import { VirtualizedMessageList } from "./VirtualizedMessageList";
+import React, { useEffect, useRef, memo, useMemo } from 'react';
+import { ChatMessage } from '@/types';
+import { MessageItem } from './MessageItem';
+import { VirtualizedMessageList } from './VirtualizedMessageList';
 // 已移除 FastGPTStatusIndicator 导入，方案A最小化：仅去掉该UI块
 // import { FastGPTStatusIndicator } from './FastGPTStatusIndicator';
-import { useChatStore } from "@/store/chatStore";
-import { useI18n } from "@/i18n";
+import { useChatStore } from '@/store/chatStore';
+import { useI18n } from '@/i18n';
 import {
-  usePerformanceMonitor
+  usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
 
 interface MessageListProps {
@@ -54,7 +54,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
     // 自动滚动到底部
     useEffect(() => {
       if (lastMessageRef.current) {
-        lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     }, [messages, isStreaming]);
 
@@ -63,10 +63,10 @@ export const MessageList: React.FC<MessageListProps> = memo(
         ref={scrollRef}
         className="h-full overflow-y-auto bg-background"
         role="main"
-        aria-label={t("聊天消息区域")}
+        aria-label={t('聊天消息区域')}
         aria-live="polite"
         aria-atomic="false"
-      >
+        >
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="space-y-6">
             {messages.map((message, index) => {
@@ -78,7 +78,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
                 <div
                   key={index}
                   role="article"
-                  aria-label={isAssistantMessage ? t("AI回复") : t("用户消息")}
+                  aria-label={isAssistantMessage ? t('AI回复') : t('用户消息')}
                 >
                   <MessageItem
                     message={message}
@@ -110,33 +110,33 @@ export const MessageList: React.FC<MessageListProps> = memo(
             {/* FastGPT 特有状态显示 - 已迁移到气泡内部，移除此处渲染 */}
             {/* 标准流式传输指示器（非 FastGPT） */}
             {isStreaming &&
-              (!currentAgent || currentAgent.provider !== "fastgpt") && (
+              (!currentAgent || currentAgent.provider !== 'fastgpt') && (
                 <div className="flex justify-start">
                   <div className="flex items-center space-x-2 px-4 py-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-2xl">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                       <div
                         className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
+                        style={{ animationDelay: '0.2s' }}
+                       />
                       <div
                         className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
+                        style={{ animationDelay: '0.4s' }}
+                       />
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {t("正在生成回答...")}
+                      {t('正在生成回答...')}
                     </span>
                     {/* 在三点动画后展示 flowNodeStatus 数据（若存在） */}
 
-                    {streamingStatus?.type === "flowNodeStatus" && (
+                    {streamingStatus?.type === 'flowNodeStatus' && (
                       <span className="text-xs text-muted-foreground ml-3">
-                        {streamingStatus.moduleName || t("未知模块")} -{" "}
-                        {streamingStatus.status === "completed"
-                          ? t("已完成")
-                          : streamingStatus.status === "error"
-                          ? t("错误")
-                          : t("运行中")}
+                        {streamingStatus.moduleName || t('未知模块')} -{' '}
+                        {streamingStatus.status === 'completed'
+                          ? t('已完成')
+                          : streamingStatus.status === 'error'
+                          ? t('错误')
+                          : t('运行中')}
                       </span>
                     )}
                   </div>
@@ -149,5 +149,5 @@ export const MessageList: React.FC<MessageListProps> = memo(
         </div>
       </div>
     );
-  }
+  },
 );

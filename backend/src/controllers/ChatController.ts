@@ -95,12 +95,12 @@ class ErrorExtractor {
 }
 
 import { AgentConfigService } from '@/services/AgentConfigService';
-import { OptimizedChatProxyService } from '@/services/OptimizedChatProxyService';
+import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { ChatHistoryService, ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { authService } from '@/services/authInstance';
-import { AuthUser } from '@/services/AuthService';
+import { AuthUser, AuthService } from '@/services/AuthService';
 import { analyticsService } from '@/services/analyticsInstance';
 import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
 import {
@@ -136,11 +136,30 @@ import { DynamicDataConverter, JsonObject, FastGPTReasoningData } from '@/types/
 import { generateId, formatFileSize } from '@/utils/helpers';
 
 /**
+ * 认证用户检查函数
+ */
+async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
+  const authorization = req.headers['authorization'];
+  const token = (authorization || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token) {
+    throw new Error('UNAUTHORIZED');
+  }
+  try {
+    return await authService.profile(token);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
+      throw new Error('TOKEN_EXPIRED');
+    }
+    throw new Error('UNAUTHORIZED');
+  }
+}
+
+/**
  * 聊天控制器
  */
 export class ChatController {
   private agentService: AgentConfigService;
-  private chatService: OptimizedChatProxyService;
+  private chatService: ChatProxyService;
   private initService: ChatInitService;
   private historyService: ChatHistoryService;
   private fastgptSessionService: FastGPTSessionService;
@@ -150,7 +169,7 @@ export class ChatController {
 
   constructor() {
     this.agentService = new AgentConfigService();
-    this.chatService = new OptimizedChatProxyService();
+    this.chatService = new ChatProxyService(this.agentService);
     this.initService = new ChatInitService(this.agentService);
     this.historyService = new ChatHistoryService();
     this.fastgptSessionService = new FastGPTSessionService(this.agentService);
@@ -270,7 +289,7 @@ export class ChatController {
     role: Joi.alternatives()
       .try(
         Joi.string(),
-        Joi.array().items(Joi.string())
+        Joi.array().items(Joi.string()),
       )
       .optional(),
   });
@@ -668,7 +687,7 @@ export class ChatController {
       const response = await this.chatService.sendMessage(
         agentId,
         messages,
-        options
+        options,
       );
       const assistantContent =
         response?.choices?.[0]?.message?.content || '';
@@ -811,7 +830,7 @@ export class ChatController {
 
           logger.debug('📎 透传 FastGPT 事件', { eventName });
           this.sendSSEEvent(res, eventName, DynamicDataConverter.toSafeJsonValue(data));
-        }
+        },
       );
 
       if (assistantContent) {
@@ -1351,7 +1370,7 @@ export class ChatController {
 
       // 添加权限检查 - 确保用户只能访问自己的会话记录
       if (
-        detail.sessionInfo.userId &&
+        detail.sessionInfo?.userId &&
         detail.sessionInfo.userId !== authUser.id &&
         authUser.role !== 'admin'
       ) {

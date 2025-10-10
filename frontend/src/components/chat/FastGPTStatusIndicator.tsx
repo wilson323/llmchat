@@ -19,7 +19,7 @@ export const FastGPTStatusIndicator: React.FC<FastGPTStatusIndicatorProps> = ({
   isStreaming,
   currentStatus,
   agent,
-  moduleHistory
+  moduleHistory,
 }) => {
   const [knowledgeStatus, setKnowledgeStatus] = useState<'ready' | 'loading' | 'error'>('loading');
   const [contextStatus, setContextStatus] = useState<'active' | 'inactive'>('inactive');
@@ -41,7 +41,7 @@ export const FastGPTStatusIndicator: React.FC<FastGPTStatusIndicatorProps> = ({
       // 如果需要实际状态检查，可以调用后端接口
       setContextStatus('active');
       setKnowledgeStatus('ready');
-      
+
       // 可选：检查智能体配置状态
       const response = await fetch(`/api/agents/${agent.id}`);
       if (response.ok) {
@@ -64,12 +64,12 @@ export const FastGPTStatusIndicator: React.FC<FastGPTStatusIndicatorProps> = ({
   if (agent.provider !== 'fastgpt') {
     return null;
   }
-  
+
   debugLog('FastGPT 状态指示器渲染:', {
     isStreaming,
     currentStatus,
     moduleHistory: moduleHistory.length,
-    agentProvider: agent.provider
+    agentProvider: agent.provider,
   });
 
   const getStatusIcon = (status: string) => {

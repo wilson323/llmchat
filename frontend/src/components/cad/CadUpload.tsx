@@ -22,7 +22,9 @@ export const CadUpload: React.FC<CadUploadProps> = ({
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      if (acceptedFiles.length === 0) return;
+      if (acceptedFiles.length === 0) {
+        return;
+      }
 
       const file = acceptedFiles[0];
       const formData = new FormData();
@@ -38,7 +40,7 @@ export const CadUpload: React.FC<CadUploadProps> = ({
           },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 1)
+              (progressEvent.loaded * 100) / (progressEvent.total || 1),
             );
             setProgress(percentCompleted);
           },
@@ -54,14 +56,14 @@ export const CadUpload: React.FC<CadUploadProps> = ({
         onUploadError(
           axios.isAxiosError(error)
             ? error.response?.data?.message || '上传失败'
-            : '未知错误'
+            : '未知错误',
         );
       } finally {
         setUploading(false);
         setProgress(0);
       }
     },
-    [onUploadSuccess, onUploadError]
+    [onUploadSuccess, onUploadError],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

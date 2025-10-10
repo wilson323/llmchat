@@ -11,8 +11,6 @@ import {
   ResourceType,
 } from '@/types/audit';
 import { SystemError } from '@/types/errors';
-import { databaseQueryOptimizer, createOptimizedQuery } from '@/utils/DatabaseQueryOptimizer';
-import { connectionPoolOptimizer, createOptimizedConnection } from '@/utils/ConnectionPoolOptimizer';
 
 /**
  * 审计日志服务
@@ -53,10 +51,9 @@ export class AuditService {
       errorMessage,
     } = params;
 
-    const optimizedQuery = createOptimizedQuery();
-
     try {
-      const result = await optimizedQuery(
+      const pool = getPool();
+      const result = await pool.query(
         `INSERT INTO audit_logs (
           user_id, username, action, resource_type, resource_id,
           details, ip_address, user_agent, status, error_message
@@ -74,10 +71,6 @@ export class AuditService {
           status,
           errorMessage,
         ],
-        {
-          enableCache: false, // INSERT操作不需要缓存
-          queryType: 'insert',
-        }
       );
 
       const auditLog = this.mapRowToAuditLog((result as any).rows[0]);
@@ -122,7 +115,7 @@ export class AuditService {
       orderDirection = 'DESC',
     } = query;
 
-    const optimizedQuery = createOptimizedQuery();
+    const pool = getPool();
 
     try {
       // 构建查询条件
@@ -173,26 +166,18 @@ export class AuditService {
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
       // 查询总数（使用缓存）
-      const countResult = await optimizedQuery(
+      const countResult = await pool.query(
         `SELECT COUNT(*) as count FROM audit_logs ${whereClause}`,
         values,
-        {
-          enableCache: true,
-          queryType: 'select',
-        }
       );
       const total = parseInt((countResult as any).rows[0]?.count || '0', 10);
 
       // 查询数据（使用缓存）
-      const dataResult = await optimizedQuery(
+      const dataResult = await pool.query(
         `SELECT * FROM audit_logs ${whereClause}
          ORDER BY ${orderBy} ${orderDirection}
          LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
         [...values, limit, offset],
-        {
-          enableCache: true,
-          queryType: 'select',
-        }
       );
 
       const logs = (dataResult as any).rows.map((row: any) => this.mapRowToAuditLog(row));

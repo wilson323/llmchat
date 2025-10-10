@@ -17,9 +17,9 @@ export const KeyboardShortcutsHelp: React.FC = () => {
         altKey: true,
         action: () => setIsOpen(true),
         description: '显示快捷键帮助',
-        category: 'accessibility'
-      }
-    ]
+        category: 'accessibility',
+      },
+    ],
   });
 
   return (
@@ -30,7 +30,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
         className="fixed bottom-4 right-4 p-2 bg-muted/80 backdrop-blur-sm rounded-full border border-border/50 hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-2"
         aria-label="显示键盘快捷键帮助"
         title="键盘快捷键 (Alt+H)"
-      >
+        >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
@@ -44,7 +44,7 @@ export const KeyboardShortcutsHelp: React.FC = () => {
         onConfirm={() => setIsOpen(false)}
         confirmText="关闭"
         initialFocus="close"
-      >
+        >
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {getHelpContent().map((section, sectionIndex) => (
             <div key={sectionIndex}>

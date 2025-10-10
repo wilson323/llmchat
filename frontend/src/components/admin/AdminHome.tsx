@@ -1,7 +1,7 @@
-"use client";
-import { useState, useEffect, useMemo, useCallback, FormEvent } from "react";
-import { useTheme } from "@/components/theme/ThemeProvider";
-import { motion, AnimatePresence } from "framer-motion";
+'use client';
+import { useState, useEffect, useMemo, useCallback, FormEvent } from 'react';
+import { useTheme } from '@/components/theme/ThemeProvider';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
   X,
@@ -24,17 +24,17 @@ import {
   Search,
   Monitor,
   MessageSquare,
-} from "lucide-react";
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 
-import { useAuthStore } from "@/store/authStore";
-import { logoutApi, changePasswordApi } from "@/services/authApi";
-import { getSystemInfo, getLogsPage, getUsers, exportLogsCsv, createUser, updateUser, resetUserPassword, type SystemInfo, type LogItem, type AdminUser } from "@/services/adminApi";
+import { useAuthStore } from '@/store/authStore';
+import { logoutApi, changePasswordApi } from '@/services/authApi';
+import { getSystemInfo, getLogsPage, getUsers, exportLogsCsv, createUser, updateUser, resetUserPassword, type SystemInfo, type LogItem, type AdminUser } from '@/services/adminApi';
 import {
   listAgents,
   reloadAgents,
@@ -45,10 +45,10 @@ import {
   importAgents,
   type AgentItem,
   type AgentPayload,
-} from "@/services/agentsApi";
-import { toast } from "@/components/ui/Toast";
-import { useI18n } from "@/i18n";
-import { useAgentAutoFetch } from "@/hooks/useAgentAutoFetch";
+} from '@/services/agentsApi';
+import { toast } from '@/components/ui/Toast';
+import { useI18n } from '@/i18n';
+import { useAgentAutoFetch } from '@/hooks/useAgentAutoFetch';
 import {
   validateEndpoint,
   validateApiKey,
@@ -56,9 +56,9 @@ import {
   validateModel,
   validateTemperature,
   validateMaxTokens,
-} from "@/utils/agentValidation";
-import { HelpIcon } from "@/components/ui/Tooltip";
-import { getFieldTooltip } from "@/utils/agentFieldHelp";
+} from '@/utils/agentValidation';
+import { HelpIcon } from '@/components/ui/Tooltip';
+import { getFieldTooltip } from '@/utils/agentFieldHelp';
 import {
   getProvinceHeatmap,
   getConversationSeries,
@@ -66,32 +66,34 @@ import {
   type ProvinceHeatmapDataset,
   type ConversationSeriesDataset,
   type AgentComparisonDataset,
-} from "@/services/analyticsApi";
-import { SLADashboard } from "@/components/monitoring";
-import { SessionManagement } from "./SessionManagement";
+} from '@/services/analyticsApi';
+import { SLADashboard } from '@/components/monitoring';
+import { SessionManagement } from './SessionManagement';
 
 // 动态加载中国地图 GeoJSON 数据（带降级策略）
 let hasRegisteredChinaMap = false;
 let mapLoadFailed = false;
 
 const ensureChinaMap = async () => {
-  if (hasRegisteredChinaMap || mapLoadFailed || typeof window === 'undefined') return;
+  if (hasRegisteredChinaMap || mapLoadFailed || typeof window === 'undefined') {
+    return;
+  }
 
   try {
     const mapUrl = new URL('maps/china.json', window.location.origin).toString();
-    const response = await fetch(mapUrl, { 
+    const response = await fetch(mapUrl, {
       cache: 'force-cache',
-      signal: AbortSignal.timeout(5000) // 5秒超时
+      signal: AbortSignal.timeout(5000), // 5秒超时
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: 地图资源加载失败`);
     }
 
     const chinaMap = await response.json();
-    
+
     // 验证地图数据完整性
-    if (!chinaMap || !chinaMap.features || !Array.isArray(chinaMap.features)) {
+    if (!chinaMap?.features || !Array.isArray(chinaMap.features)) {
       throw new Error('地图数据格式无效');
     }
 
@@ -102,7 +104,7 @@ const ensureChinaMap = async () => {
     mapLoadFailed = true;
     const errorMsg = error instanceof Error ? error.message : '未知错误';
     console.warn(`[AdminHome] ⚠️ 地图加载失败: ${errorMsg}，将使用降级方案（柱状图）`);
-    
+
     // 提示用户（可选，避免过度打扰）
     if (process.env.NODE_ENV === 'development') {
       console.info('[AdminHome] 💡 降级方案已启用：地理分布将显示为柱状图');
@@ -125,7 +127,7 @@ export default function AdminHome() {
   useEffect(() => {
     const m = location.pathname.match(/^\/home\/?([^\/]+)?/);
     const tab = (m && m[1]) || 'dashboard';
-    const allowed = new Set(['dashboard','users','analytics','documents','settings','logs','agents','monitoring','sessions']);
+    const allowed = new Set(['dashboard', 'users', 'analytics', 'documents', 'settings', 'logs', 'agents', 'monitoring', 'sessions']);
     setActiveItem(allowed.has(tab) ? (tab as any) : 'dashboard');
   }, [location.pathname]);
 
@@ -135,7 +137,6 @@ export default function AdminHome() {
     navigate('/login', { replace: true });
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Sidebar
@@ -143,7 +144,7 @@ export default function AdminHome() {
         onClose={() => setIsSidebarOpen(false)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        username={user?.username || "\u0000"}
+        username={user?.username || '\u0000'}
         activeItem={activeItem}
         onChangeActive={(id) => navigate(`/home/${id}`)}
         onLogout={onLogout}
@@ -155,7 +156,7 @@ export default function AdminHome() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           sidebarCollapsed={sidebarCollapsed}
-          username={user?.username || "\u0000"}
+          username={user?.username || '\u0000'}
           onLogout={onLogout}
           onChangePassword={() => setShowChangePwd(true)}
           title={{
@@ -181,7 +182,7 @@ export default function AdminHome() {
               agents: t('智能体管理'),
               monitoring: t('SLA监控'),
               sessions: t('会话管理'),
-            }[activeItem] || t('仪表板') }
+            }[activeItem] || t('仪表板') },
           ]}
         />
         {activeItem === 'dashboard' && <DashboardContent sidebarCollapsed={sidebarCollapsed} />}
@@ -194,7 +195,9 @@ export default function AdminHome() {
         {activeItem === 'agents' && <AgentsPanel />}
         {activeItem === 'monitoring' && <SLADashboard />}
       </div>
-      {showChangePwd && <ChangePasswordDialog onClose={() => setShowChangePwd(false)} onSuccess={() => { setShowChangePwd(false); onLogout(); }} />}
+      {showChangePwd && <ChangePasswordDialog onClose={() => setShowChangePwd(false)} onSuccess={() => {
+ setShowChangePwd(false); onLogout();
+}} />}
     </div>
   );
 }
@@ -203,15 +206,15 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
   const { t } = useI18n();
 
   const navigationItems = [
-    { id: "dashboard", name: t("仪表板"), icon: Home, badge: null },
-    { id: "users", name: t("用户管理"), icon: Users, badge: null },
-    { id: "agents", name: t("智能体管理"), icon: Users, badge: null },
-    { id: "sessions", name: t("会话管理"), icon: MessageSquare, badge: null },
-    { id: "monitoring", name: t("SLA监控"), icon: Monitor, badge: null },
-    { id: "analytics", name: t("数据分析"), icon: BarChart3, badge: null },
-    { id: "logs", name: t("日志管理"), icon: FileText, badge: null },
-    { id: "documents", name: t("文档管理"), icon: FileText, badge: null },
-    { id: "settings", name: t("系统设置"), icon: Settings, badge: null },
+    { id: 'dashboard', name: t('仪表板'), icon: Home, badge: null },
+    { id: 'users', name: t('用户管理'), icon: Users, badge: null },
+    { id: 'agents', name: t('智能体管理'), icon: Users, badge: null },
+    { id: 'sessions', name: t('会话管理'), icon: MessageSquare, badge: null },
+    { id: 'monitoring', name: t('SLA监控'), icon: Monitor, badge: null },
+    { id: 'analytics', name: t('数据分析'), icon: BarChart3, badge: null },
+    { id: 'logs', name: t('日志管理'), icon: FileText, badge: null },
+    { id: 'documents', name: t('文档管理'), icon: FileText, badge: null },
+    { id: 'settings', name: t('系统设置'), icon: Settings, badge: null },
   ];
 
   const sidebarContent = (
@@ -219,9 +222,9 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
       initial={{ x: -300 }}
       animate={{ x: 0 }}
       exit={{ x: -300 }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className={`h-full bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl flex flex-col ${collapsed ? "w-20" : "w-64"} transition-all duration-300`}
-    >
+      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      className={`h-full bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl flex flex-col ${collapsed ? 'w-20' : 'w-64'} transition-all duration-300`}
+      >
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           {!collapsed && (
@@ -256,9 +259,13 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
           const Icon = item.icon;
           const isActive = activeItem === item.id;
           return (
-            <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }} onClick={() => { onChangeActive(item.id as any); const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches; if (!isDesktop) onClose(); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive ? "bg-gradient-to-r from-[var(--brand)]/20 to-[var(--brand)]/10 text-[var(--brand)] border border-[var(--brand)]/20" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}`}>
-              <Icon className={`w-5 h-5 ${isActive ? "text-[var(--brand)]" : ""}`} />
+            <motion.button key={item.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }} onClick={() => {
+ onChangeActive(item.id as any); const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches; if (!isDesktop) {
+onClose();
+}
+}}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive ? 'bg-gradient-to-r from-[var(--brand)]/20 to-[var(--brand)]/10 text-[var(--brand)] border border-[var(--brand)]/20' : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}>
+              <Icon className={`w-5 h-5 ${isActive ? 'text-[var(--brand)]' : ''}`} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left text-sm font-medium">{item.name}</span>
@@ -271,7 +278,7 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
       </div>
 
       <div className="p-4 border-t border-border/50">
-        <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+        <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand)]/80 flex items-center justify-center">
             <User className="w-5 h-5 text-white" />
           </div>
@@ -312,7 +319,7 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activ
 function TopHeader({ onToggleSidebar, onToggleCollapse: _onToggleCollapse, sidebarCollapsed, username: _username, onLogout: _onLogout, onChangePassword: _onChangePassword, title, breadcrumb }: { onToggleSidebar: () => void; onToggleCollapse: () => void; sidebarCollapsed: boolean; username: string; onLogout: () => void; onChangePassword: () => void; title: string; breadcrumb: Array<{ label: string; to?: string }>; }) {
   const { theme, toggleTheme } = useTheme();
   return (
-    <motion.header data-testid="admin-header" className={`admin-header sticky top-0 z-30 h-16 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`} initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+    <motion.header data-testid="admin-header" className={`admin-header sticky top-0 z-30 h-16 bg-background/90 backdrop-blur-xl border-b border-border/50 shadow-sm transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`} initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="lg:hidden rounded-lg">
@@ -323,7 +330,7 @@ function TopHeader({ onToggleSidebar, onToggleCollapse: _onToggleCollapse, sideb
             <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-2">
               {breadcrumb.map((b, i) => (
                 <span key={i} className="flex items-center gap-2">
-                  {i>0 && <span className="opacity-50">/</span>}
+                  {i > 0 && <span className="opacity-50">/</span>}
                   <span>{b.label}</span>
                 </span>
               ))}
@@ -344,7 +351,7 @@ function DashboardContent({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
   const { t } = useI18n();
   const analytics = useDashboardConversationAnalytics();
   return (
-    <main className={`transition-all duration-300 ${sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`}>
+    <main className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
       <div className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
           <div className="lg:col-span-4">
@@ -382,7 +389,6 @@ function DashboardContent({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
     </main>
   );
 }
-
 
 type ConversationAnalyticsFilters = {
   startDate: string;
@@ -478,10 +484,14 @@ function useDashboardConversationAnalytics(): DashboardConversationAnalytics {
     (async () => {
       try {
         const list = await listAgents({ includeInactive: true });
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setAgents(list);
       } catch (err: any) {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const message = err?.message || t('获取智能体列表失败');
         toast({ type: 'error', title: message });
       } finally {
@@ -504,7 +514,9 @@ function useDashboardConversationAnalytics(): DashboardConversationAnalytics {
   }, [fetchComparison]);
 
   const setDateFilter = useCallback((key: 'startDate' | 'endDate', value: string) => {
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     setFilters((prev) => {
       const next: ConversationAnalyticsFilters = { ...prev, [key]: value } as ConversationAnalyticsFilters;
       const startMs = dateInputToMs(next.startDate);
@@ -672,7 +684,9 @@ function ConversationsTrendCard({ analytics }: { analytics: DashboardConversatio
           <Button
             variant="outline"
             size="sm"
-            onClick={() => { void refresh(); }}
+            onClick={() => {
+ void refresh();
+}}
             disabled={seriesLoading || comparisonLoading}
             className="flex items-center gap-2"
           >
@@ -725,7 +739,9 @@ function AgentComparisonCard({ analytics }: { analytics: DashboardConversationAn
     const data = comparison.totals.map((item) => item.count);
 
     const brandHex = (() => {
-      if (typeof window === 'undefined') return '#6cb33f';
+      if (typeof window === 'undefined') {
+        return '#6cb33f';
+      }
       const value = getComputedStyle(document.documentElement).getPropertyValue('--brand');
       return value?.trim() || '#6cb33f';
     })();
@@ -835,7 +851,9 @@ function ConversationSummaryCard({ analytics }: { analytics: DashboardConversati
   const { series, seriesLoading, filters, comparison, comparisonLoading } = analytics;
 
   const sparkValues = useMemo(() => {
-    if (!series) return [] as number[];
+    if (!series) {
+      return [] as number[];
+    }
     return series.buckets.map((bucket) => {
       if (filters.agentId === 'all') {
         return bucket.total;
@@ -969,7 +987,7 @@ function DashboardHeatmapCard() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.12 }}
       className="p-6 rounded-2xl bg-background border border-border/50 shadow-sm"
-    >
+      >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -1005,17 +1023,19 @@ function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: Pro
 
   const heatmapData = useMemo(
     () => (dataset?.points ?? []).map((item) => ({ name: item.province, value: item.count })),
-    [dataset]
+    [dataset],
   );
 
   const maxValue = useMemo(() => {
-    if (heatmapData.length === 0) return 0;
+    if (heatmapData.length === 0) {
+      return 0;
+    }
     return heatmapData.reduce((max, item) => Math.max(max, Number(item.value) || 0), 0);
   }, [heatmapData]);
 
   const hasData = useMemo(
     () => heatmapData.some((item) => Number(item.value) > 0),
-    [heatmapData]
+    [heatmapData],
   );
 
   const option = useMemo(() => {
@@ -1063,14 +1083,14 @@ function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: Pro
       },
       visualMap: hasData
         ? {
-            min: 0,
-            max: Math.max(maxValue, 1),
-            left: 'left',
-            bottom: 0,
-            text: [t('高'), t('低')],
-            calculable: true,
-            inRange: { color: visualPalette },
-          }
+          min: 0,
+          max: Math.max(maxValue, 1),
+          left: 'left',
+          bottom: 0,
+          text: [t('高'), t('低')],
+          calculable: true,
+          inRange: { color: visualPalette },
+        }
         : { show: false },
       series: [
         {
@@ -1093,7 +1113,7 @@ function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: Pro
       <div
         className="flex items-center justify-center rounded-xl bg-muted/10 text-sm text-muted-foreground"
         style={{ height }}
-      >
+        >
         {t('加载中...')}
       </div>
     );
@@ -1103,7 +1123,7 @@ function HeatmapVisualization({ dataset, loading, height = 360 }: { dataset: Pro
     <div
       className="relative overflow-hidden rounded-xl border border-border/40 bg-gradient-to-br from-background via-background/95 to-muted/20 shadow-inner"
       style={{ height }}
-    >
+      >
       <ReactECharts option={option} style={{ height }} notMerge lazyUpdate className="h-full w-full" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/75 via-background/25 to-transparent" />
       {!hasData && (
@@ -1174,7 +1194,6 @@ function HeatmapSummary({ dataset, variant = 'default' }: { dataset: ProvinceHea
     </div>
   );
 }
-
 
 function formatDateInputValue(date: Date): string {
   const year = date.getFullYear();
@@ -1287,14 +1306,14 @@ function ServerParamsCard() {
             <span className="font-medium">N/A</span>
           </div>
           <div className="h-2 w-full bg-muted/30 rounded">
-            <div className="h-2 bg-[var(--brand)]/40 rounded" style={{ width: `0%` }} />
+            <div className="h-2 bg-[var(--brand)]/40 rounded" style={{ width: '0%' }} />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">{t('磁盘使用')}</span>
             <span className="font-medium">N/A</span>
           </div>
           <div className="h-2 w-full bg-muted/30 rounded">
-            <div className="h-2 bg-[var(--brand)]/40 rounded" style={{ width: `0%` }} />
+            <div className="h-2 bg-[var(--brand)]/40 rounded" style={{ width: '0%' }} />
           </div>
           <div className="text-xs text-muted-foreground">{t('提示：GPU/磁盘暂未从后端提供，需扩展 /admin/system-info 接口')}</div>
         </>
@@ -1308,10 +1327,10 @@ export function ConversationsLineChart() {
   const dates = Array.from({ length: 30 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (29 - i));
-    return `${d.getMonth()+1}/${d.getDate()}`;
+    return `${d.getMonth() + 1}/${d.getDate()}`;
   });
   // 模拟 3 个智能体数据
-  const agents = ["FastGPT", "OpenAI", "Anthropic"];
+  const agents = ['FastGPT', 'OpenAI', 'Anthropic'];
   const series = agents.map((name, idx) => ({
     name,
     type: 'line',
@@ -1319,7 +1338,7 @@ export function ConversationsLineChart() {
     symbol: 'circle',
     symbolSize: 6,
     lineStyle: { width: 2 },
-    data: dates.map((_, di) => 10 + ((di * (idx+1)) % 8) + (idx*3)),
+    data: dates.map((_, di) => 10 + ((di * (idx + 1)) % 8) + (idx * 3)),
   }));
   const option = {
     tooltip: { trigger: 'axis' },
@@ -1343,10 +1362,6 @@ export function ConversationsLineChart() {
   } as const;
   return <ReactECharts option={option} style={{ height: 320 }} notMerge={true} lazyUpdate={true} />;
 }
-
-
-
-
 
 function LogsPanel() {
   const { t } = useI18n();
@@ -1375,7 +1390,9 @@ function LogsPanel() {
     }
   };
 
-  useEffect(() => { fetchData(1); setPage(1); }, [level, start, end]);
+  useEffect(() => {
+    fetchData(1); setPage(1);
+  }, [level, start, end]);
 
   const onExport = async () => {
     try {
@@ -1437,8 +1454,12 @@ function LogsPanel() {
           <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground">
             <div>{t('共 {total} 条 | 第 {page} / {pages} 页', { total, page, pages: totalPages })}</div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={()=>{ const p=Math.max(1,page-1); setPage(p); fetchData(p); }} disabled={page<=1}>{t('上一页')}</Button>
-              <Button variant="ghost" onClick={()=>{ const max=Math.max(1, Math.ceil(total / pageSize)); const p=Math.min(max, page+1); setPage(p); fetchData(p); }} disabled={page>=Math.max(1, Math.ceil(total / pageSize))}>{t('下一页')}</Button>
+              <Button variant="ghost" onClick={()=>{
+ const p = Math.max(1, page - 1); setPage(p); fetchData(p);
+}} disabled={page <= 1}>{t('上一页')}</Button>
+              <Button variant="ghost" onClick={()=>{
+ const max = Math.max(1, Math.ceil(total / pageSize)); const p = Math.min(max, page + 1); setPage(p); fetchData(p);
+}} disabled={page >= Math.max(1, Math.ceil(total / pageSize))}>{t('下一页')}</Button>
             </div>
           </div>
 
@@ -1459,7 +1480,7 @@ function LogsPanel() {
                   {logs.map(l => (
                     <tr key={l.id}>
                       <td className="py-2">{new Date(l.timestamp).toLocaleString()}</td>
-                      <td className="py-2"><span className={`px-2 py-0.5 rounded-full text-xs ${l.level==='ERROR'?'bg-red-100 text-red-700': l.level==='WARN'?'bg-yellow-100 text-yellow-800':'bg-sky-100 text-sky-700'}`}>{l.level}</span></td>
+                      <td className="py-2"><span className={`px-2 py-0.5 rounded-full text-xs ${l.level === 'ERROR' ? 'bg-red-100 text-red-700' : l.level === 'WARN' ? 'bg-yellow-100 text-yellow-800' : 'bg-sky-100 text-sky-700'}`}>{l.level}</span></td>
                       <td className="py-2">{l.message}</td>
                     </tr>
                   ))}
@@ -1478,24 +1499,35 @@ function UsersManagement() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { (async () => {
-    try { setLoading(true); const d = await getUsers(); setUsers(d); setErr(null); }
-    catch { setErr('加载用户失败'); } finally { setLoading(false); }
-  })(); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true); const d = await getUsers(); setUsers(d); setErr(null);
+      } catch {
+        setErr('加载用户失败');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
   return (
     <main className="transition-all duration-300 lg:ml-64">
       <div className="p-6">
         <div className="p-6 rounded-2xl bg-background border border-border/50 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-foreground">{t('用户管理')}</h3>
-            <Button onClick={async()=>{
+            <Button onClick={async ()=>{
               const username = window.prompt(t('请输入新用户名'));
-              if (!username) return;
+              if (!username) {
+return;
+}
               const password = window.prompt(t('请输入初始密码（至少6位）')) || '';
               try {
                 const u = await createUser({ username, password });
                 setUsers((prev)=>[u, ...prev]);
-              } catch (e:any) { toast({ type:'error', title: e?.response?.data?.message || t('创建失败') }); }
+              } catch (e:any) {
+ toast({ type: 'error', title: e?.response?.data?.message || t('创建失败') });
+}
             }}>{t('新增用户')}</Button>
           </div>
           {loading && <div className="text-sm text-muted-foreground">{t('加载中...')}</div>}
@@ -1522,16 +1554,15 @@ function UsersManagement() {
                       <td className="py-2">{u.status || '-'}</td>
                       <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
 
-
                       <td className="py-2">
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" onClick={async()=>{
+                          <Button variant="ghost" onClick={async ()=>{
                             const next = u.status === 'active' ? 'disabled' : 'active';
-                            const nu = await updateUser({ id: u.id!, status: next });
-                            setUsers(prev=> prev.map(x=> x.id===u.id? nu: x));
+                            const nu = await updateUser({ id: u.id, status: next });
+                            setUsers(prev=> prev.map(x=> x.id === u.id ? nu : x));
                           }}>{u.status === 'active' ? t('禁用') : t('启用')}</Button>
-                          <Button variant="ghost" onClick={async()=>{
-                            const ret = await resetUserPassword({ id: u.id! });
+                          <Button variant="ghost" onClick={async ()=>{
+                            const ret = await resetUserPassword({ id: u.id });
                             window.alert(`${t('新密码')}: ${ret.newPassword}`);
                           }}>
                             {t('重置密码')}
@@ -1749,8 +1780,12 @@ function ChangePasswordDialog({ onClose, onSuccess }: { onClose: () => void; onS
   const [confirmPwd, setConfirmPwd] = useState('');
   const [loading, setLoading] = useState(false);
   const onSubmit = async () => {
-    if (!oldPwd || !newPwd) { toast({ type: 'warning', title: t('请输入完整信息') }); return; }
-    if (newPwd !== confirmPwd) { toast({ type: 'error', title: t('两次输入的新密码不一致') }); return; }
+    if (!oldPwd || !newPwd) {
+      toast({ type: 'warning', title: t('请输入完整信息') }); return;
+    }
+    if (newPwd !== confirmPwd) {
+      toast({ type: 'error', title: t('两次输入的新密码不一致') }); return;
+    }
     try {
       setLoading(true);
       await changePasswordApi(oldPwd, newPwd);
@@ -1765,7 +1800,6 @@ function ChangePasswordDialog({ onClose, onSuccess }: { onClose: () => void; onS
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-
 
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md p-6 rounded-2xl bg-background border border-border/50 shadow-2xl">
@@ -1784,16 +1818,15 @@ function ChangePasswordDialog({ onClose, onSuccess }: { onClose: () => void; onS
   );
 }
 
-
 function AgentsPanel() {
   const { t } = useI18n();
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [formState, setFormState] = useState<{ open: boolean; mode: "create" | "edit"; agent: AgentItem | null }>({
+  const [search, setSearch] = useState('');
+  const [formState, setFormState] = useState<{ open: boolean; mode: 'create' | 'edit'; agent: AgentItem | null }>({
     open: false,
-    mode: "create",
+    mode: 'create',
     agent: null,
   });
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -1835,8 +1868,8 @@ function AgentsPanel() {
     }
     return sorted.filter((agent) => {
       const bucket = [agent.id, agent.name, agent.model, agent.provider, agent.description]
-        .map((value) => (value || "").toLowerCase())
-        .join(" ");
+        .map((value) => (value || '').toLowerCase())
+        .join(' ');
       return bucket.includes(keyword);
     });
   }, [agents, search]);
@@ -1846,10 +1879,10 @@ function AgentsPanel() {
       setReloading(true);
       await reloadAgents();
       await fetchAgents();
-      toast({ type: "success", title: t('已重新加载智能体配置') });
+      toast({ type: 'success', title: t('已重新加载智能体配置') });
     } catch (err) {
       console.error(err);
-      toast({ type: "error", title: t('重新加载失败'), description: t('请稍后重试') });
+      toast({ type: 'error', title: t('重新加载失败'), description: t('请稍后重试') });
     } finally {
       setReloading(false);
     }
@@ -1860,7 +1893,7 @@ function AgentsPanel() {
       setValidatingId(agent.id);
       const result = await validateAgent(agent.id);
       toast({
-        type: result.isValid ? "success" : "error",
+        type: result.isValid ? 'success' : 'error',
         title: result.isValid ? t('配置校验通过') : t('配置校验失败'),
         description: result.isValid
           ? t('{name} 可正常使用', { name: agent.name || agent.id })
@@ -1868,7 +1901,7 @@ function AgentsPanel() {
       });
     } catch (err) {
       console.error(err);
-      toast({ type: "error", title: t('校验失败'), description: t('网络异常或服务不可用') });
+      toast({ type: 'error', title: t('校验失败'), description: t('网络异常或服务不可用') });
     } finally {
       setValidatingId(null);
     }
@@ -1877,16 +1910,16 @@ function AgentsPanel() {
   const handleToggleActive = async (agent: AgentItem) => {
     try {
       setToggleId(agent.id);
-      const updated = await updateAgentApi(agent.id, { isActive: agent.status !== "active" });
+      const updated = await updateAgentApi(agent.id, { isActive: agent.status !== 'active' });
       setAgents((prev) => prev.map((item) => (item.id === agent.id ? updated : item)));
       toast({
-        type: "success",
-        title: updated.status === "active" ? t('已启用智能体') : t('已停用智能体'),
+        type: 'success',
+        title: updated.status === 'active' ? t('已启用智能体') : t('已停用智能体'),
         description: updated.name,
       });
     } catch (err) {
       console.error(err);
-      toast({ type: "error", title: t('更新状态失败'), description: t('请稍后重试') });
+      toast({ type: 'error', title: t('更新状态失败'), description: t('请稍后重试') });
     } finally {
       setToggleId(null);
     }
@@ -1895,13 +1928,13 @@ function AgentsPanel() {
   const handleFormSubmit = async (payload: AgentPayload) => {
     try {
       setFormSubmitting(true);
-      if (formState.mode === "create") {
+      if (formState.mode === 'create') {
         const created = await createAgent(payload);
         setAgents((prev) => {
           const next = [created, ...prev.filter((item) => item.id !== created.id)];
           return next;
         });
-        toast({ type: "success", title: t('已创建智能体'), description: created.name });
+        toast({ type: 'success', title: t('已创建智能体'), description: created.name });
       } else if (formState.agent) {
         const { id: ignored, ...rest } = payload;
         const updates: Partial<AgentPayload> = { ...rest };
@@ -1910,14 +1943,14 @@ function AgentsPanel() {
         }
         const updated = await updateAgentApi(formState.agent.id, updates);
         setAgents((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-        toast({ type: "success", title: t('已更新智能体'), description: updated.name });
+        toast({ type: 'success', title: t('已更新智能体'), description: updated.name });
       }
-      setFormState({ open: false, mode: "create", agent: null });
+      setFormState({ open: false, mode: 'create', agent: null });
     } catch (err: any) {
       console.error(err);
       toast({
-        type: "error",
-        title: formState.mode === "create" ? t('创建智能体失败') : t('更新智能体失败'),
+        type: 'error',
+        title: formState.mode === 'create' ? t('创建智能体失败') : t('更新智能体失败'),
         description: err?.response?.data?.message || t('请检查填写内容或稍后再试'),
       });
     } finally {
@@ -1935,12 +1968,12 @@ function AgentsPanel() {
         imported.forEach((item) => map.set(item.id, item));
         return Array.from(map.values());
       });
-      toast({ type: "success", title: t('导入成功'), description: t('已同步 {count} 个智能体', { count: imported.length }) });
+      toast({ type: 'success', title: t('导入成功'), description: t('已同步 {count} 个智能体', { count: imported.length }) });
       setImportOpen(false);
     } catch (err: any) {
       console.error(err);
       toast({
-        type: "error",
+        type: 'error',
         title: t('导入失败'),
         description: err?.response?.data?.message || t('请确认 JSON 格式是否正确'),
       });
@@ -1950,16 +1983,18 @@ function AgentsPanel() {
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget) {
+      return;
+    }
     try {
       setDeleteLoading(true);
       await deleteAgent(deleteTarget.id);
       setAgents((prev) => prev.filter((item) => item.id !== deleteTarget.id));
-      toast({ type: "success", title: t('已删除智能体'), description: deleteTarget.name || deleteTarget.id });
+      toast({ type: 'success', title: t('已删除智能体'), description: deleteTarget.name || deleteTarget.id });
       setDeleteTarget(null);
     } catch (err) {
       console.error(err);
-      toast({ type: "error", title: t('删除失败'), description: t('请稍后重试') });
+      toast({ type: 'error', title: t('删除失败'), description: t('请稍后重试') });
     } finally {
       setDeleteLoading(false);
     }
@@ -1990,11 +2025,11 @@ function AgentsPanel() {
                   onClick={handleReload}
                   disabled={loading || reloading}
                 >
-                  <RefreshCw className={`mr-2 h-4 w-4 ${reloading ? "animate-spin" : ""}`} />{t('重新加载')}
+                  <RefreshCw className={`mr-2 h-4 w-4 ${reloading ? 'animate-spin' : ''}`} />{t('重新加载')}
                 </Button>
                 <Button
                   radius="md"
-                  onClick={() => setFormState({ open: true, mode: "create", agent: null })}
+                  onClick={() => setFormState({ open: true, mode: 'create', agent: null })}
                 >
                   <Plus className="mr-2 h-4 w-4" />{t('新建智能体')}
                 </Button>
@@ -2047,7 +2082,7 @@ function AgentsPanel() {
                             <div className="text-xs text-muted-foreground">{agent.description || agent.id}</div>
                           </td>
                           <td className="px-4 py-4">
-                            <div className="text-sm text-foreground">{agent.model || "-"}</div>
+                            <div className="text-sm text-foreground">{agent.model || '-'}</div>
                             {agent.capabilities && agent.capabilities.length > 0 && (
                               <div className="mt-1 flex flex-wrap gap-1">
                                 {agent.capabilities.map((cap) => (
@@ -2058,27 +2093,27 @@ function AgentsPanel() {
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-4 text-sm text-muted-foreground">{agent.provider || "-"}</td>
+                          <td className="px-4 py-4 text-sm text-muted-foreground">{agent.provider || '-'}</td>
                           <td className="px-4 py-4">
                             <span
                               className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                                agent.status === "active"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-amber-100 text-amber-700"
+                                agent.status === 'active'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-amber-100 text-amber-700'
                               }`}
                             >
-                              {agent.status === "active" ? t('已启用') : t('已停用')}
+                              {agent.status === 'active' ? t('已启用') : t('已停用')}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-xs text-muted-foreground">
-                            {agent.updatedAt ? new Date(agent.updatedAt).toLocaleString() : "-"}
+                            {agent.updatedAt ? new Date(agent.updatedAt).toLocaleString() : '-'}
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setFormState({ open: true, mode: "edit", agent })}
+                                onClick={() => setFormState({ open: true, mode: 'edit', agent })}
                               >
                                 <Edit className="mr-1 h-4 w-4" />{t('编辑')}
                               </Button>
@@ -2101,8 +2136,8 @@ function AgentsPanel() {
                                 onClick={() => handleToggleActive(agent)}
                                 disabled={toggleId === agent.id}
                               >
-                                <RefreshCw className={`mr-1 h-4 w-4 ${toggleId === agent.id ? "animate-spin" : ""}`} />
-                                {agent.status === "active" ? t('停用') : t('启用')}
+                                <RefreshCw className={`mr-1 h-4 w-4 ${toggleId === agent.id ? 'animate-spin' : ''}`} />
+                                {agent.status === 'active' ? t('停用') : t('启用')}
                               </Button>
                               <Button
                                 variant="ghost"
@@ -2130,10 +2165,10 @@ function AgentsPanel() {
                         </div>
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                            agent.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                            agent.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                           }`}
                         >
-                          {agent.status === "active" ? t('已启用') : t('已停用')}
+                          {agent.status === 'active' ? t('已启用') : t('已停用')}
                         </span>
                       </div>
                       <div className="mt-3 space-y-1 text-xs text-muted-foreground">
@@ -2154,7 +2189,7 @@ function AgentsPanel() {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => setFormState({ open: true, mode: "edit", agent })}
+                          onClick={() => setFormState({ open: true, mode: 'edit', agent })}
                         >
                           <Edit className="mr-1 h-4 w-4" />{t('编辑')}
                         </Button>
@@ -2164,8 +2199,8 @@ function AgentsPanel() {
                           onClick={() => handleToggleActive(agent)}
                           disabled={toggleId === agent.id}
                         >
-                          <RefreshCw className={`mr-1 h-4 w-4 ${toggleId === agent.id ? "animate-spin" : ""}`} />
-                          {agent.status === "active" ? t('停用') : t('启用')}
+                          <RefreshCw className={`mr-1 h-4 w-4 ${toggleId === agent.id ? 'animate-spin' : ''}`} />
+                          {agent.status === 'active' ? t('停用') : t('启用')}
                         </Button>
                         <Button
                           variant="secondary"
@@ -2197,7 +2232,7 @@ function AgentsPanel() {
         mode={formState.mode}
         agent={formState.agent}
         submitting={formSubmitting}
-        onClose={() => setFormState({ open: false, mode: "create", agent: null })}
+        onClose={() => setFormState({ open: false, mode: 'create', agent: null })}
         onSubmit={handleFormSubmit}
       />
       <ImportAgentsDialog
@@ -2215,7 +2250,9 @@ function AgentsPanel() {
         cancelText={t('取消')}
         onConfirm={deleteLoading ? undefined : handleDelete}
         onClose={() => {
-          if (deleteLoading) return;
+          if (deleteLoading) {
+return;
+}
           setDeleteTarget(null);
         }}
       />
@@ -2245,7 +2282,9 @@ function ConfirmDialog({
   onClose,
 }: ConfirmDialogProps) {
   const { t } = useI18n();
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
   const resolvedTitle = title ?? t('确认操作');
   const resolvedConfirm = confirmText ?? t('确认');
   const resolvedCancel = cancelText ?? t('取消');
@@ -2289,7 +2328,7 @@ function ConfirmDialog({
 
 interface AgentFormDialogProps {
   open: boolean;
-  mode: "create" | "edit";
+  mode: 'create' | 'edit';
   agent: AgentItem | null;
   submitting: boolean;
   onClose: () => void;
@@ -2300,46 +2339,48 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   const { t } = useI18n();
   const [localError, setLocalError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    id: "",
-    name: "",
-    description: "",
-    provider: "",
-    endpoint: "",
-    apiKey: "",
-    appId: "",
-    model: "",
-    maxTokens: "",
-    temperature: "",
-    systemPrompt: "",
-    rateLimitRequests: "",
-    rateLimitTokens: "",
+    id: '',
+    name: '',
+    description: '',
+    provider: '',
+    endpoint: '',
+    apiKey: '',
+    appId: '',
+    model: '',
+    maxTokens: '',
+    temperature: '',
+    systemPrompt: '',
+    rateLimitRequests: '',
+    rateLimitTokens: '',
   });
-  const [capabilitiesInput, setCapabilitiesInput] = useState("");
-  const [featuresInput, setFeaturesInput] = useState("");
+  const [capabilitiesInput, setCapabilitiesInput] = useState('');
+  const [featuresInput, setFeaturesInput] = useState('');
   const [isActive, setIsActive] = useState(true);
-  
+
   // 字段验证状态
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [validating, setValidating] = useState<Record<string, boolean>>({});
-  
+
   // 自动获取智能体信息功能
   const { fetchAgentInfo, loading: fetching, error: fetchError } = useAgentAutoFetch();
-  
+
   // 检测是否可以自动获取（FastGPT或Dify且有必填信息）
-  const canAutoFetch = 
+  const canAutoFetch =
     (form.provider === 'fastgpt' || form.provider === 'dify') &&
     form.endpoint.trim() &&
     form.apiKey.trim() &&
     (form.provider === 'dify' || form.appId.trim());
-  
+
   // 实时验证endpoint
   const handleEndpointBlur = async () => {
-    if (!form.endpoint.trim()) return;
-    
+    if (!form.endpoint.trim()) {
+      return;
+    }
+
     setValidating(prev => ({ ...prev, endpoint: true }));
     const result = await validateEndpoint(form.endpoint);
     setValidating(prev => ({ ...prev, endpoint: false }));
-    
+
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, endpoint: result.message || '接口地址无效' }));
     } else {
@@ -2354,12 +2395,16 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       }
     }
   };
-  
+
   // 实时验证API Key
   const handleApiKeyBlur = () => {
-    if (!form.apiKey.trim() && mode === 'edit') return; // 编辑模式可选
-    if (!form.apiKey.trim()) return;
-    
+    if (!form.apiKey.trim() && mode === 'edit') {
+      return;
+    } // 编辑模式可选
+    if (!form.apiKey.trim()) {
+      return;
+    }
+
     const result = validateApiKey(form.apiKey, form.provider);
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, apiKey: result.message || 'API密钥格式不正确' }));
@@ -2371,15 +2416,17 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       });
     }
   };
-  
+
   // 实时验证App ID
   const handleAppIdBlur = () => {
-    if (form.provider !== 'fastgpt') return;
+    if (form.provider !== 'fastgpt') {
+      return;
+    }
     if (!form.appId.trim()) {
       setFieldErrors(prev => ({ ...prev, appId: 'FastGPT必须提供App ID' }));
       return;
     }
-    
+
     const result = validateAppId(form.appId);
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, appId: result.message || 'App ID格式不正确' }));
@@ -2391,11 +2438,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       });
     }
   };
-  
+
   // 实时验证Model
   const handleModelBlur = () => {
-    if (!form.model.trim()) return;
-    
+    if (!form.model.trim()) {
+      return;
+    }
+
     const result = validateModel(form.model);
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, model: result.message || '模型名称无效' }));
@@ -2407,11 +2456,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       });
     }
   };
-  
+
   // 实时验证Temperature
   const handleTemperatureBlur = () => {
-    if (!form.temperature.trim()) return;
-    
+    if (!form.temperature.trim()) {
+      return;
+    }
+
     const result = validateTemperature(form.temperature);
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, temperature: result.message || '温度值无效' }));
@@ -2423,11 +2474,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       });
     }
   };
-  
+
   // 实时验证MaxTokens
   const handleMaxTokensBlur = () => {
-    if (!form.maxTokens.trim()) return;
-    
+    if (!form.maxTokens.trim()) {
+      return;
+    }
+
     const result = validateMaxTokens(form.maxTokens);
     if (!result.valid) {
       setFieldErrors(prev => ({ ...prev, maxTokens: result.message || '最大Token无效' }));
@@ -2441,8 +2494,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   };
 
   const handleAutoFetch = async () => {
-    if (!canAutoFetch) return;
-    
+    if (!canAutoFetch) {
+      return;
+    }
+
     try {
       const info = await fetchAgentInfo({
         provider: form.provider as 'fastgpt' | 'dify',
@@ -2450,7 +2505,7 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
         apiKey: form.apiKey.trim(),
         appId: form.appId.trim() || undefined,
       });
-      
+
       if (info) {
         setForm(prev => ({
           ...prev,
@@ -2471,27 +2526,29 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
   };
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     setLocalError(null);
     setFieldErrors({}); // 清空字段错误
     setForm({
-      id: agent?.id || "",
-      name: agent?.name || "",
-      description: agent?.description || "",
-      provider: agent?.provider || "",
-      endpoint: agent?.endpoint || "",
-      apiKey: "",
-      appId: agent?.appId || "",
-      model: agent?.model || "",
-      maxTokens: agent?.maxTokens != null ? String(agent.maxTokens) : "",
-      temperature: agent?.temperature != null ? String(agent.temperature) : "",
-      systemPrompt: agent?.systemPrompt || "",
-      rateLimitRequests: agent?.rateLimit?.requestsPerMinute != null ? String(agent.rateLimit.requestsPerMinute) : "",
-      rateLimitTokens: agent?.rateLimit?.tokensPerMinute != null ? String(agent.rateLimit.tokensPerMinute) : "",
+      id: agent?.id || '',
+      name: agent?.name || '',
+      description: agent?.description || '',
+      provider: agent?.provider || '',
+      endpoint: agent?.endpoint || '',
+      apiKey: '',
+      appId: agent?.appId || '',
+      model: agent?.model || '',
+      maxTokens: agent?.maxTokens != null ? String(agent.maxTokens) : '',
+      temperature: agent?.temperature != null ? String(agent.temperature) : '',
+      systemPrompt: agent?.systemPrompt || '',
+      rateLimitRequests: agent?.rateLimit?.requestsPerMinute != null ? String(agent.rateLimit.requestsPerMinute) : '',
+      rateLimitTokens: agent?.rateLimit?.tokensPerMinute != null ? String(agent.rateLimit.tokensPerMinute) : '',
     });
-    setCapabilitiesInput(agent?.capabilities?.join(", ") || "");
-    setFeaturesInput(agent?.features ? JSON.stringify(agent.features, null, 2) : "");
-    setIsActive(agent?.status ? agent.status === "active" : true);
+    setCapabilitiesInput(agent?.capabilities?.join(', ') || '');
+    setFeaturesInput(agent?.features ? JSON.stringify(agent.features, null, 2) : '');
+    setIsActive(agent?.status ? agent.status === 'active' : true);
   }, [agent, open]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -2500,13 +2557,13 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       setLocalError('请填写名称、提供方、接口地址和模型等必填信息');
       return;
     }
-    if (mode === "create" && !form.apiKey.trim()) {
+    if (mode === 'create' && !form.apiKey.trim()) {
       setLocalError('创建智能体时需要填写访问密钥');
       return;
     }
 
     const capabilities = capabilitiesInput
-      .split(",")
+      .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -2514,10 +2571,10 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
     if (featuresInput.trim()) {
       try {
         const parsed = JSON.parse(featuresInput);
-        if (typeof parsed === "object" && parsed !== null) {
+        if (typeof parsed === 'object' && parsed !== null) {
           features = parsed as Record<string, any>;
         } else {
-          throw new Error("features must be object");
+          throw new Error('features must be object');
         }
       } catch (err) {
         setLocalError('功能配置（features）不是有效的 JSON 对象');
@@ -2541,9 +2598,9 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       rateLimit:
         form.rateLimitRequests.trim() || form.rateLimitTokens.trim()
           ? {
-              requestsPerMinute: form.rateLimitRequests.trim() ? Number(form.rateLimitRequests) : undefined,
-              tokensPerMinute: form.rateLimitTokens.trim() ? Number(form.rateLimitTokens) : undefined,
-            }
+            requestsPerMinute: form.rateLimitRequests.trim() ? Number(form.rateLimitRequests) : undefined,
+            tokensPerMinute: form.rateLimitTokens.trim() ? Number(form.rateLimitTokens) : undefined,
+          }
           : undefined,
       isActive,
       features,
@@ -2556,7 +2613,9 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
     }
   };
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center">
@@ -2564,7 +2623,7 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
       <div className="relative z-[71] mx-4 w-full max-w-2xl rounded-2xl border border-border/60 bg-card shadow-2xl">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6">
           <div>
-            <h4 className="text-lg font-semibold text-foreground">{mode === "create" ? t('新建智能体') : t('编辑智能体')}</h4>
+            <h4 className="text-lg font-semibold text-foreground">{mode === 'create' ? t('新建智能体') : t('编辑智能体')}</h4>
             <p className="mt-1 text-xs text-muted-foreground">
               {t('提供基础配置、访问凭证和能力标签，保存后将同步至所有前端终端。')}
             </p>
@@ -2656,7 +2715,7 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
                 value={form.apiKey}
                 onChange={(event) => setForm((prev) => ({ ...prev, apiKey: event.target.value }))}
                 onBlur={handleApiKeyBlur}
-                placeholder={mode === "create" ? t('sk-...') : t('不修改则留空')}
+                placeholder={mode === 'create' ? t('sk-...') : t('不修改则留空')}
                 className={fieldErrors.apiKey ? 'border-red-500' : ''}
               />
               {fieldErrors.apiKey && (
@@ -2808,7 +2867,7 @@ function AgentFormDialog({ open, mode, agent, submitting, onClose, onSubmit }: A
               {t('取消')}
             </Button>
             <Button type="submit" className="sm:min-w-[140px]" disabled={submitting}>
-              {submitting ? t('保存中...') : mode === "create" ? t('创建') : t('保存')}
+              {submitting ? t('保存中...') : mode === 'create' ? t('创建') : t('保存')}
             </Button>
           </div>
         </form>
@@ -2826,24 +2885,26 @@ interface ImportAgentsDialogProps {
 
 function ImportAgentsDialog({ open, submitting, onClose, onSubmit }: ImportAgentsDialogProps) {
   const { t } = useI18n();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    setInput("");
+    if (!open) {
+      return;
+    }
+    setInput('');
     setError(null);
   }, [open]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      const parsed = JSON.parse(input || "{}");
+      const parsed = JSON.parse(input || '{}');
       const agents: AgentPayload[] = Array.isArray(parsed)
         ? parsed
         : Array.isArray(parsed.agents)
-        ? parsed.agents
-        : [];
+          ? parsed.agents
+          : [];
       if (!agents.length) {
         setError('请输入包含智能体数组的 JSON 内容');
         return;
@@ -2855,7 +2916,9 @@ function ImportAgentsDialog({ open, submitting, onClose, onSubmit }: ImportAgent
     }
   };
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[65] flex items-center justify-center">

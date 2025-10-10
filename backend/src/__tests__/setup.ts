@@ -4,8 +4,8 @@
  * 配置全局测试环境和Mock
  */
 
-// 设置测试超时
-jest.setTimeout(30000);
+// 设置测试超时 (30 seconds)
+jest.setTimeout(30 * 1000);
 
 // Mock console方法减少测试噪音
 global.console = {
@@ -26,7 +26,7 @@ beforeAll(async () => {
   // 测试开始前的全局设置
 });
 
-afterAll(async () => {
+afterAll(() => {
   // 测试结束后的清理
   // 确保所有定时器被清理
   jest.clearAllTimers();

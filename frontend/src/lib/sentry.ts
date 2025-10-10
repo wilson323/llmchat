@@ -91,15 +91,15 @@ export async function initSentry(): Promise<void> {
   }
 
   // 仅在生产环境或明确启用时初始化
-  if (import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === "true") {
+  if (import.meta.env.PROD || import.meta.env.VITE_SENTRY_ENABLED === 'true') {
     const dsn = import.meta.env.VITE_SENTRY_DSN;
 
     if (!dsn) {
-      console.warn("⚠️  Sentry DSN未配置，错误追踪已禁用");
+      console.warn('⚠️  Sentry DSN未配置，错误追踪已禁用');
       return;
     }
 
-    const integrations: Parameters<typeof Sentry.init>[0]['integrations'] = [];
+    const integrations: any[] = [];
 
     if (
       BrowserTracing &&
@@ -110,9 +110,9 @@ export async function initSentry(): Promise<void> {
           routingInstrumentation: Sentry.reactRouterV6Instrumentation(
             // React Router v6需要手动传入
             window.history,
-            window.location
+            window.location,
           ),
-        })
+        }),
       );
     }
 
@@ -122,14 +122,14 @@ export async function initSentry(): Promise<void> {
           // Session回放配置
           maskAllText: true,
           blockAllMedia: true,
-        })
+        }),
       );
     }
 
     Sentry.init({
       dsn,
       environment: import.meta.env.MODE,
-      release: import.meta.env.VITE_APP_VERSION || "unknown",
+      release: import.meta.env.VITE_APP_VERSION || 'unknown',
 
       // 集成
       integrations,
@@ -144,20 +144,20 @@ export async function initSentry(): Promise<void> {
       // 忽略的错误
       ignoreErrors: [
         // 浏览器扩展错误
-        "top.GLOBALS",
-        "originalCreateNotification",
-        "canvas.contentDocument",
-        "MyApp_RemoveAllHighlights",
-        "atomicFindClose",
+        'top.GLOBALS',
+        'originalCreateNotification',
+        'canvas.contentDocument',
+        'MyApp_RemoveAllHighlights',
+        'atomicFindClose',
 
         // 网络错误（通常不是代码问题）
-        "Network request failed",
-        "NetworkError",
-        "Failed to fetch",
+        'Network request failed',
+        'NetworkError',
+        'Failed to fetch',
 
         // 用户取消的请求
-        "AbortError",
-        "The user aborted a request",
+        'AbortError',
+        'The user aborted a request',
       ],
 
       // 数据清理
@@ -169,8 +169,8 @@ export async function initSentry(): Promise<void> {
           // 清理URL中的敏感参数
           if (event.request.url) {
             const url = new URL(event.request.url);
-            url.searchParams.delete("apiKey");
-            url.searchParams.delete("token");
+            url.searchParams.delete('apiKey');
+            url.searchParams.delete('token');
             event.request.url = url.toString();
           }
         }
@@ -178,18 +178,24 @@ export async function initSentry(): Promise<void> {
         // 清理表单数据中的密码等
         if (event.request?.data) {
           const data = event.request.data as Record<string, unknown>;
-          if (data.password) data.password = "[Filtered]";
-          if (data.apiKey) data.apiKey = "[Filtered]";
-          if (data.token) data.token = "[Filtered]";
+          if (data.password) {
+            data.password = '[Filtered]';
+          }
+          if (data.apiKey) {
+            data.apiKey = '[Filtered]';
+          }
+          if (data.token) {
+            data.token = '[Filtered]';
+          }
         }
 
         return event;
       },
     });
 
-    console.log("Sentry错误追踪已启用");
+    console.log('Sentry错误追踪已启用');
   } else {
-    console.log("Sentry错误追踪已禁用（开发环境）");
+    console.log('Sentry错误追踪已禁用（开发环境）');
   }
 }
 
@@ -201,7 +207,7 @@ export function setSentryUser(user: {
   email?: string;
   username?: string;
 }) {
-  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== "function") {
+  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== 'function') {
     return;
   }
 
@@ -212,7 +218,7 @@ export function setSentryUser(user: {
       username: user.username,
     });
   } catch (error) {
-    console.warn("设置Sentry用户上下文失败:", error);
+    console.warn('设置Sentry用户上下文失败:', error);
   }
 }
 
@@ -220,14 +226,14 @@ export function setSentryUser(user: {
  * 清除用户上下文（登出时）
  */
 export function clearSentryUser() {
-  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== "function") {
+  if (!sentryAvailable || !Sentry || typeof Sentry.setUser !== 'function') {
     return;
   }
 
   try {
     Sentry.setUser(null);
   } catch (error) {
-    console.warn("清除Sentry用户上下文失败:", error);
+    console.warn('清除Sentry用户上下文失败:', error);
   }
 }
 
@@ -238,9 +244,9 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
   if (
     !sentryAvailable ||
     !Sentry ||
-    typeof Sentry.captureException !== "function"
+    typeof Sentry.captureException !== 'function'
   ) {
-    console.error("错误追踪未可用:", error);
+    console.error('错误追踪未可用:', error);
     return;
   }
 
@@ -249,7 +255,7 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
       extra: context,
     });
   } catch (e) {
-    console.error("Sentry捕获错误失败:", e);
+    console.error('Sentry捕获错误失败:', e);
   }
 }
 
@@ -259,13 +265,13 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
 export function addBreadcrumb(
   message: string,
   category: string,
-  level: "info" | "warning" | "error" | "debug" = "info"
+  level: 'info' | 'warning' | 'error' | 'debug' = 'info',
 ) {
   // 安全检查：确保Sentry已初始化
   if (
     !sentryAvailable ||
     !Sentry ||
-    typeof Sentry.addBreadcrumb !== "function"
+    typeof Sentry.addBreadcrumb !== 'function'
   ) {
     return;
   }
@@ -278,7 +284,7 @@ export function addBreadcrumb(
       timestamp: Date.now() / 1000,
     });
   } catch (error) {
-    console.warn("添加Sentry面包屑失败:", error);
+    console.warn('添加Sentry面包屑失败:', error);
   }
 }
 
@@ -289,7 +295,7 @@ export function startTransaction(name: string, op: string) {
   if (
     !sentryAvailable ||
     !Sentry ||
-    typeof Sentry.startTransaction !== "function"
+    typeof Sentry.startTransaction !== 'function'
   ) {
     return null;
   }
@@ -297,7 +303,7 @@ export function startTransaction(name: string, op: string) {
   try {
     return Sentry.startTransaction({ name, op });
   } catch (error) {
-    console.warn("启动Sentry事务失败:", error);
+    console.warn('启动Sentry事务失败:', error);
     return null;
   }
 }

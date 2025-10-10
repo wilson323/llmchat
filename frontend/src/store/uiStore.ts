@@ -1,6 +1,6 @@
 /**
  * UI Store - 专注于界面状态
- * 
+ *
  * 职责：
  * 1. 侧边栏开关
  * 2. 智能体选择器开关
@@ -13,7 +13,7 @@ interface UIState {
   // UI状态
   agentSelectorOpen: boolean;
   sidebarOpen: boolean;
-  
+
   // Actions
   setAgentSelectorOpen: (open: boolean) => void;
   setSidebarOpen: (open: boolean) => void;
@@ -48,4 +48,3 @@ export const useUIStore = create<UIState>((set) => ({
 }));
 
 export default useUIStore;
-

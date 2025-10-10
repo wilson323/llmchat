@@ -1,6 +1,6 @@
 /**
  * CAD 操作历史管理 Hook
- * 
+ *
  * 支持撤销/重做功能
  */
 
@@ -22,7 +22,7 @@ interface UseCadHistoryOptions {
 
 export const useCadHistory = (
   initialEntities: DxfEntity[],
-  options: UseCadHistoryOptions = {}
+  options: UseCadHistoryOptions = {},
 ) => {
   const { maxHistorySize = 50, onHistoryChange } = options;
 
@@ -34,7 +34,7 @@ export const useCadHistory = (
   const pushHistory = useCallback((
     action: CadHistoryEntry['action'],
     description: string,
-    newEntities: DxfEntity[]
+    newEntities: DxfEntity[],
   ) => {
     const entry: CadHistoryEntry = {
       id: `${Date.now()}-${Math.random()}`,
@@ -65,11 +65,13 @@ export const useCadHistory = (
 
   // 撤销
   const undo = useCallback(() => {
-    if (currentIndex <= 0) return false;
+    if (currentIndex <= 0) {
+      return false;
+    }
 
     const newIndex = currentIndex - 1;
     const entry = historyRef.current[newIndex];
-    
+
     setCurrentIndex(newIndex);
     setEntities(JSON.parse(JSON.stringify(entry.entities)));
 
@@ -79,11 +81,13 @@ export const useCadHistory = (
 
   // 重做
   const redo = useCallback(() => {
-    if (currentIndex >= historyRef.current.length - 1) return false;
+    if (currentIndex >= historyRef.current.length - 1) {
+      return false;
+    }
 
     const newIndex = currentIndex + 1;
     const entry = historyRef.current[newIndex];
-    
+
     setCurrentIndex(newIndex);
     setEntities(JSON.parse(JSON.stringify(entry.entities)));
 
@@ -101,7 +105,9 @@ export const useCadHistory = (
 
   // 跳转到特定历史
   const goToHistory = useCallback((index: number) => {
-    if (index < 0 || index >= historyRef.current.length) return false;
+    if (index < 0 || index >= historyRef.current.length) {
+      return false;
+    }
 
     const entry = historyRef.current[index];
     setCurrentIndex(index);
@@ -109,7 +115,7 @@ export const useCadHistory = (
 
     onHistoryChange?.(
       index > 0,
-      index < historyRef.current.length - 1
+      index < historyRef.current.length - 1,
     );
     return true;
   }, [onHistoryChange]);

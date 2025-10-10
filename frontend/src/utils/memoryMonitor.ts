@@ -11,9 +11,9 @@ export class MemoryMonitor {
    * 获取当前内存使用情况
    */
   getCurrentMemory(): number | null {
-    if ("memory" in performance) {
+    if ('memory' in performance) {
       const memoryInfo = (performance as any).memory;
-      if (memoryInfo && memoryInfo.usedJSHeapSize) {
+      if (memoryInfo?.usedJSHeapSize) {
         // 返回已使用的内存（MB）
         return Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024);
       }
@@ -52,8 +52,8 @@ export class MemoryMonitor {
         const diff = currentMemory - this.baselineMemory;
         console.log(
           `[MemoryMonitor] ${label} 相对于基准的差异: ${
-            diff > 0 ? "+" : ""
-          }${diff} MB`
+            diff > 0 ? '+' : ''
+          }${diff} MB`,
         );
       }
     }
@@ -68,7 +68,7 @@ export class MemoryMonitor {
     peak: number | null;
     growth: number | null;
     measurements: Array<{ timestamp: number; memory: number }>;
-  } {
+    } {
     const currentMemory = this.getCurrentMemory();
     const peakMemory =
       this.measurements.length > 0
@@ -103,6 +103,6 @@ export const memoryMonitor = new MemoryMonitor();
 if (import.meta.env?.DEV) {
   setTimeout(() => {
     memoryMonitor.setBaseline();
-    console.log("[MemoryMonitor] 基准内存已设置");
+    console.log('[MemoryMonitor] 基准内存已设置');
   }, 1000);
 }

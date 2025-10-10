@@ -73,7 +73,7 @@ export const CadQuickActions: React.FC<CadQuickActionsProps> = ({
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </span>
-          
+
           {/* 悬停提示 */}
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             {label}

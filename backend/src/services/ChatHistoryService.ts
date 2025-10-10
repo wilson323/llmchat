@@ -105,6 +105,7 @@ export class ChatHistoryService {
       const sessionResult = await client.query<{
         id: string;
         agent_id: string;
+        user_id: string | null;
         title: string | null;
         created_at: Date;
         updated_at: Date;
@@ -147,6 +148,7 @@ export class ChatHistoryService {
           id: session.id,
           agentId: session.agent_id,
           title: session.title,
+          userId: session.user_id,
           createdAt: new Date(session.created_at).toISOString(),
           updatedAt: new Date(session.updated_at).toISOString(),
         }

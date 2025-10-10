@@ -1,6 +1,6 @@
 /**
  * CAD 可视化组件
- * 
+ *
  * 使用 dxf-viewer 或 Three.js 渲染 DXF 文件
  */
 
@@ -31,7 +31,9 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   const [showGrid, setShowGrid] = useState(true);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     // 初始化场景
     const scene = new THREE.Scene();
@@ -43,7 +45,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       75,
       width / height,
       0.1,
-      10000
+      10000,
     );
     camera.position.set(0, 0, 100);
     cameraRef.current = camera;
@@ -96,13 +98,15 @@ export const CadViewer: React.FC<CadViewerProps> = ({
 
   // 渲染 DXF 实体
   useEffect(() => {
-    if (!sceneRef.current) return;
+    if (!sceneRef.current) {
+      return;
+    }
 
     const scene = sceneRef.current;
 
     // 清除旧的实体
     const oldEntities = scene.children.filter(
-      (child) => child.userData.isEntity
+      (child) => child.userData.isEntity,
     );
     oldEntities.forEach((child) => scene.remove(child));
 
@@ -145,7 +149,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
           points.push(new THREE.Vector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
-            0
+            0,
           ));
         }
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -165,7 +169,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
           points.push(new THREE.Vector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
-            0
+            0,
           ));
         }
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -177,7 +181,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       case 'POLYLINE':
       case 'LWPOLYLINE': {
         const points = entity.vertices.map(
-          (v) => new THREE.Vector3(v.x, v.y, v.z)
+          (v) => new THREE.Vector3(v.x, v.y, v.z),
         );
         if (entity.closed && points.length > 0) {
           points.push(points[0]);
@@ -194,7 +198,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
         ]);
         return new THREE.Points(
           geometry,
-          new THREE.PointsMaterial({ color: 0xff0000, size: 5 })
+          new THREE.PointsMaterial({ color: 0xff0000, size: 5 }),
         );
       }
 
@@ -206,9 +210,11 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   // 调整相机视角以适应所有实体
   const fitCameraToEntities = (
     camera: THREE.PerspectiveCamera | null,
-    entities: DxfEntity[]
+    entities: DxfEntity[],
   ) => {
-    if (!camera || entities.length === 0) return;
+    if (!camera || entities.length === 0) {
+      return;
+    }
 
     const box = new THREE.Box3();
     entities.forEach((entity) => {

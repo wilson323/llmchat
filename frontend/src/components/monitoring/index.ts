@@ -11,7 +11,7 @@ export {
   ResponseTimeCard,
   ErrorRateCard,
   RequestCountCard,
-  ActiveAgentsCard
+  ActiveAgentsCard,
 } from './MetricsCard';
 
 // 图表组件
@@ -21,7 +21,7 @@ export {
   ErrorRateChart,
   RequestVolumeChart,
   CPUUsageChart,
-  MemoryUsageChart
+  MemoryUsageChart,
 } from './PerformanceChart';
 
 // 告警组件

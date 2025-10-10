@@ -1,6 +1,6 @@
 /**
  * 智能体批量导入组件
- * 
+ *
  * 功能：
  * - JSON文件导入
  * - 批量验证
@@ -23,7 +23,9 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     setImporting(true);
     setResult(null);
@@ -31,7 +33,7 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      
+
       // 验证数据格式
       const agents = Array.isArray(data) ? data : [data];
       const validationResult: ImportResult = {
@@ -70,11 +72,19 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
   };
 
   const validateAgent = (agent: any) => {
-    if (!agent.name) throw new Error('缺少name字段');
-    if (!agent.provider) throw new Error('缺少provider字段');
-    if (!agent.endpoint) throw new Error('缺少endpoint字段');
-    if (!agent.model) throw new Error('缺少model字段');
-    
+    if (!agent.name) {
+      throw new Error('缺少name字段');
+    }
+    if (!agent.provider) {
+      throw new Error('缺少provider字段');
+    }
+    if (!agent.endpoint) {
+      throw new Error('缺少endpoint字段');
+    }
+    if (!agent.model) {
+      throw new Error('缺少model字段');
+    }
+
     // 验证provider
     const validProviders = ['fastgpt', 'dify', 'openai', 'anthropic', 'custom'];
     if (!validProviders.includes(agent.provider)) {
@@ -184,4 +194,3 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
     </div>
   );
 }
-

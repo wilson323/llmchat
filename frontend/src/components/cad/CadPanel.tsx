@@ -1,6 +1,6 @@
 /**
  * CAD 面板组件
- * 
+ *
  * 集成文件上传、3D 查看器和操作界面
  */
 
@@ -49,7 +49,9 @@ export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
   };
 
   const handleExport = () => {
-    if (!fileInfo) return;
+    if (!fileInfo) {
+      return;
+    }
 
     window.open(`/api/cad/${fileInfo.id}/export`, '_blank');
   };
@@ -197,7 +199,7 @@ export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
                   <div className="space-y-2">
                     {fileInfo.layers.map((layer) => {
                       const layerEntityCount = entities.filter(
-                        (e) => e.layer === layer
+                        (e) => e.layer === layer,
                       ).length;
                       return (
                         <div

@@ -1,6 +1,6 @@
 /**
  * 智能体 Store - 专注于智能体管理
- * 
+ *
  * 职责：
  * 1. 智能体列表管理
  * 2. 当前智能体切换
@@ -16,17 +16,17 @@ interface AgentState {
   // 智能体数据
   agents: Agent[];
   currentAgent: Agent | null;
-  
+
   // 加载状态
   agentsLoading: boolean;
   agentsError: string | null;
-  
+
   // Actions
   setAgents: (agents: Agent[]) => void;
   setCurrentAgent: (agent: Agent | null) => void;
   setAgentsLoading: (loading: boolean) => void;
   setAgentsError: (error: string | null) => void;
-  
+
   // 辅助方法
   getAgentById: (id: string) => Agent | undefined;
   getActiveAgents: () => Agent[];
@@ -82,9 +82,8 @@ export const useAgentStore = create<AgentState>()(
       partialize: (state) => ({
         currentAgent: state.currentAgent, // 持久化当前智能体
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useAgentStore;
-

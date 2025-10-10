@@ -3,7 +3,7 @@ import type { JsonValue } from '@llmchat/shared-types';
 /**
  * 工作区类型
  */
-export type WorkspaceType = 
+export type WorkspaceType =
   | 'chat'              // 标准聊天界面
   | 'product-preview'   // 产品现场预览
   | 'voice-call'        // 语音对话
@@ -373,24 +373,24 @@ export interface AppState {
   currentAgent: Agent | null;
   agentsLoading: boolean;
   agentsError: string | null;
-  
+
   // 聊天相关（按 huihua.md 重构）
   agentSessions: AgentSessionsMap;     // 按智能体分组的会话字典
   currentSession: ChatSession | null;  // 当前会话
   messages: ChatMessage[];             // 当前会话的消息列表
   isStreaming: boolean;
   streamingStatus: StreamStatus | null;
-  
+
   // 主题相关
   theme: ThemeConfig;
-  
+
   // 用户偏好
   preferences: UserPreferences;
-  
+
   // UI状态
   sidebarOpen: boolean;
   agentSelectorOpen: boolean;
-  
+
   // 错误状态
   globalError: string | null;
 }
@@ -472,7 +472,7 @@ export interface ChatInputProps extends BaseComponentProps {
 export const convertToHuihuaFormat = (messages: OriginalChatMessage[]): ChatMessage[] => {
   const result: ChatMessage[] = [];
   let currentPair: ChatMessage = {};
-  
+
   messages.forEach(msg => {
     if (msg.role === 'user') {
       if (Object.keys(currentPair).length > 0) {
@@ -484,11 +484,11 @@ export const convertToHuihuaFormat = (messages: OriginalChatMessage[]): ChatMess
       currentPair.AI = msg.content;
     }
   });
-  
+
   if (Object.keys(currentPair).length > 0) {
     result.push(currentPair);
   }
-  
+
   return result;
 };
 
@@ -497,14 +497,14 @@ export const convertToHuihuaFormat = (messages: OriginalChatMessage[]): ChatMess
  */
 export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): OriginalChatMessage[] => {
   const result: OriginalChatMessage[] = [];
-  
+
   huihuaMessages.forEach((msg, index) => {
     if (msg.HUMAN) {
       result.push({
         id: `${Date.now()}-${index}-user`,
         role: 'user',
         content: msg.HUMAN,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
     if (msg.AI) {
@@ -512,10 +512,10 @@ export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): Original
         id: `${Date.now()}-${index}-assistant`,
         role: 'assistant',
         content: msg.AI,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   });
-  
+
   return result;
 };

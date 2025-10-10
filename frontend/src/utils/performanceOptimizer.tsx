@@ -13,7 +13,9 @@ class MemoryMonitor {
   private isMonitoring = false;
 
   startMonitoring(): void {
-    if (this.isMonitoring) return;
+    if (this.isMonitoring) {
+      return;
+    }
 
     this.isMonitoring = true;
     this.collectMemoryData();
@@ -30,7 +32,9 @@ class MemoryMonitor {
   }
 
   private collectMemoryData(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {
+      return;
+    }
 
     // 延迟收集以避免阻塞主线程
     setTimeout(() => {
@@ -60,22 +64,30 @@ class MemoryMonitor {
   }
 
   private calculateTrend(): string {
-    if (this.memoryHistory.length < 3) return 'stable';
+    if (this.memoryHistory.length < 3) {
+      return 'stable';
+    }
 
     const recent = this.memoryHistory.slice(-3);
     const differences = recent.map((item, index) =>
-      index > 0 ? item.memory - recent[index - 1].memory : 0
+      index > 0 ? item.memory - recent[index - 1].memory : 0,
     );
 
     const avgDiff = differences.reduce((sum, diff) => sum + diff, 0) / differences.length;
 
-    if (avgDiff > 10 * 1024 * 1024) return 'increasing';
-    if (avgDiff < -10 * 1024 * 1024) return 'decreasing';
+    if (avgDiff > 10 * 1024 * 1024) {
+      return 'increasing';
+    }
+    if (avgDiff < -10 * 1024 * 1024) {
+      return 'decreasing';
+    }
     return 'stable';
   }
 
   getMemoryStats() {
-    if (this.memoryHistory.length === 0) return null;
+    if (this.memoryHistory.length === 0) {
+      return null;
+    }
 
     const latest = this.memoryHistory[this.memoryHistory.length - 1];
 
@@ -123,7 +135,9 @@ class ComponentPerformanceMonitor {
     const renders = this.componentRenders.get(componentName) || 0;
     const times = this.renderTimes.get(componentName) || [];
 
-    if (times.length === 0) return null;
+    if (times.length === 0) {
+      return null;
+    }
 
     return {
       renders,
@@ -179,7 +193,9 @@ class RequestPerformanceMonitor {
   }
 
   getRequestStats() {
-    if (this.completedRequests.length === 0) return null;
+    if (this.completedRequests.length === 0) {
+      return null;
+    }
 
     const durations = this.completedRequests.map(req => req.duration);
     const sortedDurations = [...durations].sort((a, b) => a - b);
@@ -228,7 +244,7 @@ class ResourceManager {
   addEventListener<T extends keyof HTMLElementEventMap>(
     element: HTMLElement,
     event: T,
-    handler: (event: HTMLElementEventMap[T]) => any
+    handler: (event: HTMLElementEventMap[T]) => any,
   ): () => void {
     element.addEventListener(event, handler as EventListener);
     const remove = () => element.removeEventListener(event, handler as EventListener);
@@ -283,7 +299,7 @@ export const usePerformanceMonitor = (componentName: string) => {
 
 // 性能优化装饰器
 export const withPerformanceMonitoring = <T extends Record<string, any>>(
-  Component: React.ComponentType<T>
+  Component: React.ComponentType<T>,
 ) => {
   const WrappedComponent = React.memo((props: T) => {
     const startTime = Date.now();

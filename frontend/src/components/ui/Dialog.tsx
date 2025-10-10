@@ -25,7 +25,7 @@ export const Dialog: React.FC<DialogProps> = ({
   destructive = false,
   onConfirm,
   onClose,
-  initialFocus = 'confirm'
+  initialFocus = 'confirm',
 }) => {
   const { t } = useI18n();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -56,12 +56,14 @@ export const Dialog: React.FC<DialogProps> = ({
     container: dialogRef.current,
     initialFocus: getInitialFocusElement(),
     onEscape: onClose,
-    enabled: open
+    enabled: open,
   });
 
   // 处理键盘事件
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Enter键确认
@@ -90,7 +92,9 @@ export const Dialog: React.FC<DialogProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [open, onConfirm]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -110,7 +114,7 @@ export const Dialog: React.FC<DialogProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
-        aria-describedby={description ? "dialog-description" : undefined}
+        aria-describedby={description ? 'dialog-description' : undefined}
         tabIndex={-1}
       >
         {/* 关闭按钮 */}
@@ -182,4 +186,3 @@ export const Dialog: React.FC<DialogProps> = ({
 };
 
 export default Dialog;
-

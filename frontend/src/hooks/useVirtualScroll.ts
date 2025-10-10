@@ -24,7 +24,7 @@ export function useVirtualScroll({
   itemHeight,
   containerHeight,
   itemCount,
-  overscan = 5
+  overscan = 5,
 }: VirtualScrollOptions): VirtualScrollResult {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTopRef = useRef(0);
@@ -95,7 +95,7 @@ export function useVirtualScroll({
           index: i,
           start: itemPos.start,
           size: itemPos.size,
-          key: `virtual-item-${i}`
+          key: `virtual-item-${i}`,
         });
       }
     }
@@ -105,7 +105,9 @@ export function useVirtualScroll({
 
   // 滚动到指定索引
   const scrollToIndex = (index: number) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     const itemPos = positionMap.get(index);
     if (itemPos) {
@@ -115,14 +117,18 @@ export function useVirtualScroll({
 
   // 滚动到顶部
   const scrollToTop = () => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
     containerRef.current.scrollTop = 0;
   };
 
   // 监听滚动事件
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const handleScroll = () => {
       scrollTopRef.current = container.scrollTop;
@@ -137,6 +143,6 @@ export function useVirtualScroll({
     totalHeight,
     containerRef,
     scrollToIndex,
-    scrollToTop
+    scrollToTop,
   };
 }

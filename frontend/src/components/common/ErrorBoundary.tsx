@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 抱歉，应用程序遇到了一个错误。请尝试刷新页面。
               </p>
-              
+
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4 p-3 bg-gray-100 dark:bg-gray-900 rounded text-xs">
                   <summary className="cursor-pointer font-semibold mb-2">

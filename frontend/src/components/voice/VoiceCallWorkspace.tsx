@@ -42,7 +42,9 @@ interface BrowserSpeechRecognition extends EventTarget {
 type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
 
 const getSpeechRecognition = (): SpeechRecognitionConstructor | null => {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   return (
     (window as any).SpeechRecognition ||
     (window as any).webkitSpeechRecognition ||
@@ -146,9 +148,9 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   const conversationMessages = useMemo(
     () =>
       messages.filter(
-        (message) => typeof message.HUMAN === 'string' || typeof message.AI === 'string'
+        (message) => typeof message.HUMAN === 'string' || typeof message.AI === 'string',
       ),
-    [messages]
+    [messages],
   );
 
   const agentAvatar = agent.avatar && agent.avatar.trim().length > 0 ? agent.avatar : avatarImg;
@@ -183,13 +185,17 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   }, [callStatus]);
 
   useEffect(() => {
-    if (!conversationRef.current) return;
+    if (!conversationRef.current) {
+      return;
+    }
     conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
   }, [conversationMessages.length, interimTranscript]);
 
   const registerFinalUtterance = useCallback((utterance: string) => {
     const text = utterance.trim();
-    if (!text) return false;
+    if (!text) {
+      return false;
+    }
     if (finalUtterancesRef.current.includes(text)) {
       return false;
     }
@@ -199,7 +205,9 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   }, []);
 
   const speakAssistantMessage = useCallback((text: string) => {
-    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (!text || !window?.speechSynthesis) {
+      return;
+    }
     try {
       if (window.speechSynthesis.speaking) {
         window.speechSynthesis.cancel();
@@ -215,21 +223,33 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   }, []);
 
   useEffect(() => {
-    if (callStatus !== 'in-call') return;
-    if (conversationMessages.length === 0) return;
+    if (callStatus !== 'in-call') {
+      return;
+    }
+    if (conversationMessages.length === 0) {
+      return;
+    }
 
     const assistantMessages = conversationMessages
       .map((message, index) => ({ message, index }))
       .filter(({ message }) => typeof message.AI === 'string' && message.AI.trim().length > 0);
 
-    if (assistantMessages.length === 0) return;
+    if (assistantMessages.length === 0) {
+      return;
+    }
 
     const latest = assistantMessages[assistantMessages.length - 1];
     const key = latest.message.id || `assistant-${latest.index}`;
 
-    if (spokenMessageRef.current.has(key)) return;
-    if (isStreaming) return;
-    if (streamingStatus?.type && streamingStatus.type !== 'complete') return;
+    if (spokenMessageRef.current.has(key)) {
+      return;
+    }
+    if (isStreaming) {
+      return;
+    }
+    if (streamingStatus?.type && streamingStatus.type !== 'complete') {
+      return;
+    }
 
     spokenMessageRef.current.add(key);
     speakAssistantMessage(latest.message.AI as string);
@@ -279,7 +299,9 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   const handleSendRecognizedText = useCallback(
     async (rawText: string) => {
       const content = rawText.trim();
-      if (!content) return;
+      if (!content) {
+        return;
+      }
 
       try {
         await sendMessage(content, { detail: true });
@@ -310,13 +332,15 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
         setError('发送语音消息失败，请稍后重试。');
       }
     },
-    [agent.id, renameSession, sendMessage, updateSession]
+    [agent.id, renameSession, sendMessage, updateSession],
   );
 
   const handleStartCall = useCallback(async () => {
-    if (callStatus === 'connecting' || callStatus === 'in-call') return;
+    if (callStatus === 'connecting' || callStatus === 'in-call') {
+      return;
+    }
 
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    if (!navigator?.mediaDevices?.getUserMedia) {
       setError('当前浏览器不支持音频采集，请更换更现代的浏览器。');
       return;
     }
@@ -351,7 +375,9 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
         const dataArray = new Uint8Array(bufferLength);
 
         const updateVolume = () => {
-          if (!analyserRef.current) return;
+          if (!analyserRef.current) {
+            return;
+          }
           analyserRef.current.getByteTimeDomainData(dataArray);
           let sumSquares = 0;
           for (let i = 0; i < dataArray.length; i += 1) {
@@ -389,16 +415,22 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
           }
         };
         recognition.onerror = (event: any) => {
-          if (event?.error === 'aborted' || event?.error === 'no-speech') return;
+          if (event?.error === 'aborted' || event?.error === 'no-speech') {
+            return;
+          }
           setError(`语音识别出错：${event?.error ?? '未知错误'}`);
         };
         recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
           let interim = '';
           for (let i = event.resultIndex; i < event.results.length; i += 1) {
             const result = event.results[i];
-            if (!result) continue;
+            if (!result) {
+              continue;
+            }
             const transcript = result[0]?.transcript?.trim();
-            if (!transcript) continue;
+            if (!transcript) {
+              continue;
+            }
 
             if (result.isFinal) {
               if (registerFinalUtterance(transcript)) {
@@ -423,7 +455,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
       if (createdSession && createdSession.agentId === agent.id) {
         renameSession(
           createdSession.id,
-          `语音通话 ${startedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+          `语音通话 ${startedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`,
         );
         updateSession(agent.id, createdSession.id, (session) => ({
           ...session,
@@ -458,7 +490,9 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
   ]);
 
   const handleStopCall = useCallback(() => {
-    if (callStatus === 'idle') return;
+    if (callStatus === 'idle') {
+      return;
+    }
     setCallStatus('ended');
     callStatusRef.current = 'ended';
     const endedAt = new Date();
@@ -536,7 +570,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                 'h-24 w-24 overflow-hidden rounded-full border-4 transition-all duration-300',
                 callStatus === 'in-call'
                   ? 'border-brand shadow-xl shadow-brand/50 voice-breathe'
-                  : 'border-white/20'
+                  : 'border-white/20',
               )}>
                 <img
                   src={agentAvatar}
@@ -559,7 +593,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                   ? 'bg-green-500 voice-breathe'
                   : callStatus === 'connecting'
                     ? 'bg-yellow-500 animate-pulse'
-                    : 'bg-gray-400'
+                    : 'bg-gray-400',
               )}
               />
             </div>
@@ -577,7 +611,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
               <div
                 className={cn(
                   'flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium shadow-inner transition-colors',
-                  statusMeta.tone
+                  statusMeta.tone,
                 )}
               >
                 <StatusIcon className={cn('h-4 w-4', statusMeta.iconTone)} />
@@ -586,7 +620,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
               <p
                 className={cn(
                   'max-w-[240px] text-xs leading-snug',
-                  statusMeta.helperTone
+                  statusMeta.helperTone,
                 )}
               >
                 {statusMeta.helper}
@@ -622,7 +656,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                 radius="lg"
                 className={cn(
                   'gap-2 border-destructive/40 text-destructive hover:bg-destructive/10',
-                  callStatus === 'idle' || callStatus === 'ended' ? 'opacity-50' : ''
+                  callStatus === 'idle' || callStatus === 'ended' ? 'opacity-50' : '',
                 )}
               >
                 <PhoneOff className="h-4 w-4" />
@@ -636,22 +670,22 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
           {/* 麦克风状态卡片 */}
           <div className="flex items-center gap-3 transition-all duration-300 hover:bg-white/5 rounded-xl p-2">
             <div className={cn(
-              "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300",
-              listening ? "bg-brand/40 shadow-lg shadow-brand/30" : "bg-brand/20"
+              'relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300',
+              listening ? 'bg-brand/40 shadow-lg shadow-brand/30' : 'bg-brand/20',
             )}>
               {listening && (
                 <div className="voice-pulse absolute inset-0 rounded-2xl border-2 border-brand opacity-75" />
               )}
               <Mic className={cn(
-                "h-6 w-6 transition-all duration-300",
-                listening ? "text-white scale-110" : "text-brand"
+                'h-6 w-6 transition-all duration-300',
+                listening ? 'text-white scale-110' : 'text-brand',
               )} />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground">麦克风状态</p>
               <p className={cn(
-                "text-xs transition-colors duration-300",
-                listening ? "text-brand font-medium" : "text-muted-foreground"
+                'text-xs transition-colors duration-300',
+                listening ? 'text-brand font-medium' : 'text-muted-foreground',
               )}>
                 {listening ? '🎤 正在倾听，请开始讲话…' : '待命中，点击开始通话后开始识别'}
               </p>
@@ -661,16 +695,16 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
           {/* 音量监测卡片 */}
           <div className="flex items-center gap-3 transition-all duration-300 hover:bg-white/5 rounded-xl p-2">
             <div className={cn(
-              "relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300",
-              volume > 0.3 ? "bg-brand/40 shadow-lg shadow-brand/30" : "bg-brand/20"
+              'relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-300',
+              volume > 0.3 ? 'bg-brand/40 shadow-lg shadow-brand/30' : 'bg-brand/20',
             )}>
               {volume > 0.5 && (
                 <div className="voice-pulse voice-delay-500 absolute inset-0 rounded-2xl border-2 border-brand opacity-75" />
               )}
               <Volume2 className={cn(
-                "h-6 w-6 transition-all duration-150",
-                volume > 0.3 ? "text-white" : "text-brand",
-                volume > 0.5 ? "scale-125" : volume > 0.3 ? "scale-110" : "scale-100"
+                'h-6 w-6 transition-all duration-150',
+                volume > 0.3 ? 'text-white' : 'text-brand',
+                volume > 0.5 ? 'scale-125' : volume > 0.3 ? 'scale-110' : 'scale-100',
               )} />
             </div>
             <div className="flex-1">
@@ -678,10 +712,10 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
               <div className="mt-2 h-3 rounded-full bg-white/10 overflow-hidden relative">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all duration-150",
-                    volumePercent > 70 ? "bg-gradient-to-r from-green-500 via-yellow-500 to-red-500" :
-                    volumePercent > 40 ? "bg-gradient-to-r from-brand via-brand/80 to-brand/60" :
-                    "bg-gradient-to-r from-brand/60 to-brand/40"
+                    'h-full rounded-full transition-all duration-150',
+                    volumePercent > 70 ? 'bg-gradient-to-r from-green-500 via-yellow-500 to-red-500' :
+                    volumePercent > 40 ? 'bg-gradient-to-r from-brand via-brand/80 to-brand/60' :
+                    'bg-gradient-to-r from-brand/60 to-brand/40',
                   )}
                   style={{ width: `${volumePercent}%` }}
                 />
@@ -694,13 +728,13 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                 )}
               </div>
               <p className={cn(
-                "mt-1 text-xs transition-colors duration-300 font-mono",
-                volumePercent > 70 ? "text-red-400 font-semibold" :
-                volumePercent > 40 ? "text-brand" :
-                "text-muted-foreground"
+                'mt-1 text-xs transition-colors duration-300 font-mono',
+                volumePercent > 70 ? 'text-red-400 font-semibold' :
+                volumePercent > 40 ? 'text-brand' :
+                'text-muted-foreground',
               )}>
                 当前输入电平：{volumePercent}%
-                {volumePercent > 70 && " ⚠️"}
+                {volumePercent > 70 && ' ⚠️'}
               </p>
             </div>
           </div>
@@ -759,20 +793,22 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                 const isUser = typeof message.HUMAN === 'string';
                 const key = message.id || `${isUser ? 'user' : 'assistant'}-${index}`;
                 const content = isUser ? message.HUMAN : message.AI;
-                if (!content) return null;
+                if (!content) {
+return null;
+}
 
                 return (
                   <div
                     key={key}
                     className={cn(
                       'flex gap-3',
-                      isUser ? 'flex-row-reverse text-right' : 'flex-row text-left'
+                      isUser ? 'flex-row-reverse text-right' : 'flex-row text-left',
                     )}
                   >
                     <div
                       className={cn(
                         'flex h-9 w-9 items-center justify-center rounded-full shadow-inner',
-                        isUser ? 'bg-brand text-white' : 'bg-white/10 text-brand'
+                        isUser ? 'bg-brand text-white' : 'bg-white/10 text-brand',
                       )}
                     >
                       {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
@@ -782,7 +818,7 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                         'max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-lg',
                         isUser
                           ? 'bg-brand text-brand-foreground rounded-tr-sm'
-                          : 'bg-white/5 text-foreground rounded-tl-sm'
+                          : 'bg-white/5 text-foreground rounded-tl-sm',
                       )}
                     >
                       {content}

@@ -1,6 +1,6 @@
 /**
  * 统一的 API 响应类型定义
- * 
+ *
  * 所有后端 API 都返回统一的响应格式：
  * {
  *   code: string;      // 业务状态码，如 'SUCCESS', 'ERROR'
@@ -61,7 +61,7 @@ export interface BatchOperationResult {
 
 /**
  * 从 Axios 响应中提取业务数据的辅助函数
- * 
+ *
  * @example
  * ```typescript
  * const response = await api.get<ApiResponse<User>>('/user/profile');
@@ -76,7 +76,7 @@ export function extractData<T>(response: { data: ApiResponse<T> }): T {
  * 从 Axios 响应中提取分页数据的辅助函数
  */
 export function extractPaginatedData<T>(
-  response: { data: ApiResponse<PaginatedData<T>> }
+  response: { data: ApiResponse<PaginatedData<T>> },
 ): PaginatedData<T> {
   return response.data.data;
 }

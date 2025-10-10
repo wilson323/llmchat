@@ -117,7 +117,7 @@ export interface SLADashboardData {
 // API函数
 export async function getSystemHealth(): Promise<SystemHealthMetrics> {
   const { data } = await api.get<{ data: SystemHealthMetrics }>(
-    '/admin/sla/health'
+    '/admin/sla/health',
   );
   return data.data;
 }
@@ -125,7 +125,7 @@ export async function getSystemHealth(): Promise<SystemHealthMetrics> {
 export async function getSLAMetrics(params: { timeRange: string }): Promise<SLAMetrics> {
   const { data } = await api.get<{ data: SLAMetrics }>(
     '/admin/sla/metrics',
-    { params }
+    { params },
   );
   return data.data;
 }
@@ -136,7 +136,7 @@ export async function getPerformanceMetrics(params: {
 }): Promise<PerformanceMetrics> {
   const { data } = await api.get<{ data: PerformanceMetrics }>(
     '/admin/sla/performance',
-    { params }
+    { params },
   );
   return data.data;
 }
@@ -150,7 +150,7 @@ export async function getAlerts(params: {
 }): Promise<{ alerts: Alert[]; total: number }> {
   const { data } = await api.get<{ data: { alerts: Alert[]; total: number } }>(
     '/admin/sla/alerts',
-    { params }
+    { params },
   );
   return data.data;
 }
@@ -166,12 +166,12 @@ export async function resolveAlert(alertId: string): Promise<void> {
 export async function getSLADashboard(params: SLADashboardParams): Promise<SLADashboardData> {
   const queryParams = {
     timeRange: params.timeRange,
-    ...(params.refreshInterval && { refreshInterval: params.refreshInterval })
+    ...(params.refreshInterval && { refreshInterval: params.refreshInterval }),
   };
 
   const { data } = await api.get<{ data: SLADashboardData }>(
     '/admin/sla/dashboard',
-    { params: queryParams }
+    { params: queryParams },
   );
   return data.data;
 }
@@ -179,7 +179,7 @@ export async function getSLADashboard(params: SLADashboardParams): Promise<SLADa
 export async function getAgentMetrics(agentId: string, timeRange: string): Promise<AgentHealthStatus & { metrics: TimeSeriesData[] }> {
   const { data } = await api.get<{ data: AgentHealthStatus & { metrics: TimeSeriesData[] } }>(
     `/admin/sla/agents/${agentId}/metrics`,
-    { params: { timeRange } }
+    { params: { timeRange } },
   );
   return data.data;
 }
@@ -196,7 +196,7 @@ export async function getRealTimeMetrics(): Promise<{
       recentViolations: SLAViolation[];
     }
   }>(
-    '/admin/sla/realtime'
+    '/admin/sla/realtime',
   );
   return data.data;
 }

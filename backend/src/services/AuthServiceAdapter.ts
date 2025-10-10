@@ -7,13 +7,10 @@
  * - 渐进式迁移，保持向后兼容
  */
 
-
-import { AuthService, AuthUser, LoginResult } from "@/services/AuthService";
-import { AuthServiceV2, getAuthService } from "@/services/AuthServiceV2";
-import logger from "@/utils/logger";
-import { authService, isAuthV2 } from "@/services/authInstance";
-
-
+import { AuthService, AuthUser, LoginResult } from '@/services/AuthService';
+import { AuthServiceV2, getAuthService } from '@/services/AuthServiceV2';
+import logger from '@/utils/logger';
+import { authService, isAuthV2 } from '@/services/authInstance';
 
 // 统一的接口定义
 export interface IAuthServiceAdapter {

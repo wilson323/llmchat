@@ -14,7 +14,7 @@ import {
   SyncPolicy,
   SyncProgress,
   SyncError,
-  IStorageProvider
+  IStorageProvider,
 } from '@/types/hybrid-storage';
 
 import { FastGPTChatHistorySummary, FastGPTChatHistoryDetail, ChatSession, ChatMessage } from '@/types';
@@ -35,7 +35,7 @@ export class SyncManager implements ISyncManager {
     memoryProvider: IStorageProvider,
     indexedDBProvider: IStorageProvider,
     fastgptProvider: IStorageProvider,
-    syncPolicy?: Partial<SyncPolicy>
+    syncPolicy?: Partial<SyncPolicy>,
   ) {
     this.memoryProvider = memoryProvider;
     this.indexedDBProvider = indexedDBProvider;
@@ -49,7 +49,7 @@ export class SyncManager implements ISyncManager {
       conflictResolution: 'prompt',
       compressData: true,
       deltaSync: true,
-      ...syncPolicy
+      ...syncPolicy,
     };
 
     this.initializeAutoSync();
@@ -60,7 +60,9 @@ export class SyncManager implements ISyncManager {
   async getSyncStatus(sessionId: string): Promise<SyncStatus> {
     // 检查本地状态
     const localStatus = await this.getLocalSyncStatus(sessionId);
-    if (localStatus) return localStatus;
+    if (localStatus) {
+      return localStatus;
+    }
 
     // 检查是否在待同步队列
     if (this.pendingOperations.has(sessionId)) {
@@ -85,7 +87,7 @@ export class SyncManager implements ISyncManager {
     await this.indexedDBProvider.set(key, {
       sessionId,
       status,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -102,7 +104,7 @@ export class SyncManager implements ISyncManager {
         success: false,
         error: '同步已在进行中',
         changes: { created: 0, updated: 0, deleted: 0, conflicts: 0 },
-        duration: 0
+        duration: 0,
       };
     }
 
@@ -116,7 +118,7 @@ export class SyncManager implements ISyncManager {
         progress: 0,
         current: 0,
         total: 100,
-        message: '开始同步会话...'
+        message: '开始同步会话...',
       });
 
       // 获取本地数据
@@ -127,7 +129,7 @@ export class SyncManager implements ISyncManager {
         progress: 20,
         current: 1,
         total: 5,
-        message: '获取本地数据...'
+        message: '获取本地数据...',
       });
 
       // 获取远程数据
@@ -138,7 +140,7 @@ export class SyncManager implements ISyncManager {
         progress: 40,
         current: 2,
         total: 5,
-        message: '获取远程数据...'
+        message: '获取远程数据...',
       });
 
       // 检测冲突
@@ -149,7 +151,7 @@ export class SyncManager implements ISyncManager {
         progress: 60,
         current: 3,
         total: 5,
-        message: '处理数据冲突...'
+        message: '处理数据冲突...',
       });
 
       if (conflicts.length > 0) {
@@ -167,7 +169,7 @@ export class SyncManager implements ISyncManager {
         progress: 90,
         current: 4,
         total: 5,
-        message: '完成同步...'
+        message: '完成同步...',
       });
 
       // 清理待同步状态
@@ -180,14 +182,14 @@ export class SyncManager implements ISyncManager {
         progress: 100,
         current: 5,
         total: 5,
-        message: '同步完成'
+        message: '同步完成',
       });
 
       return {
         sessionId,
         success: true,
         changes,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
 
     } catch (error) {
@@ -196,7 +198,7 @@ export class SyncManager implements ISyncManager {
         error: error instanceof Error ? error.message : String(error),
         code: 'SYNC_FAILED',
         timestamp: Date.now(),
-        retryable: true
+        retryable: true,
       };
 
       this.reportError(syncError);
@@ -207,7 +209,7 @@ export class SyncManager implements ISyncManager {
         success: false,
         error: syncError.error,
         changes: { created: 0, updated: 0, deleted: 0, conflicts: 0 },
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
 
     } finally {
@@ -227,7 +229,7 @@ export class SyncManager implements ISyncManager {
       // 合并本地和远程会话ID
       const allSessionIds = new Set([
         ...localSessions.map(s => s.id),
-        ...remoteSummaries.map(s => s.chatId)
+        ...remoteSummaries.map(s => s.chatId),
       ]);
 
       // 批量同步
@@ -246,7 +248,7 @@ export class SyncManager implements ISyncManager {
           progress: Math.floor((i + batch.length) / sessionIds.length * 100),
           current: i + batch.length,
           total: sessionIds.length,
-          message: `同步智能体 ${agentId} 的会话...`
+          message: `同步智能体 ${agentId} 的会话...`,
         });
       }
 
@@ -260,7 +262,7 @@ export class SyncManager implements ISyncManager {
         failureCount,
         conflictCount,
         results,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
 
     } catch (error) {
@@ -269,7 +271,7 @@ export class SyncManager implements ISyncManager {
         error: error instanceof Error ? error.message : String(error),
         code: 'BATCH_SYNC_FAILED',
         timestamp: Date.now(),
-        retryable: true
+        retryable: true,
       };
 
       this.reportError(syncError);
@@ -284,9 +286,9 @@ export class SyncManager implements ISyncManager {
           success: false,
           error: syncError.error,
           changes: { created: 0, updated: 0, deleted: 0, conflicts: 0 },
-          duration: Date.now() - startTime
+          duration: Date.now() - startTime,
         }],
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -315,7 +317,7 @@ export class SyncManager implements ISyncManager {
       failureCount,
       conflictCount,
       results: allSyncResults,
-      duration: totalDuration
+      duration: totalDuration,
     };
   }
 
@@ -341,7 +343,7 @@ export class SyncManager implements ISyncManager {
           localData: null,
           remoteData,
           conflictType: 'merge',
-          resolved: false
+          resolved: false,
         });
       } else if (localData && !remoteData) {
         // 本地存在，远程不存在 - 删除冲突
@@ -352,7 +354,7 @@ export class SyncManager implements ISyncManager {
           localData,
           remoteData: null,
           conflictType: 'delete',
-          resolved: false
+          resolved: false,
         });
       } else if (localData && remoteData) {
         // 版本比较
@@ -368,7 +370,7 @@ export class SyncManager implements ISyncManager {
             localData,
             remoteData,
             conflictType: 'update',
-            resolved: false
+            resolved: false,
           });
         }
       }
@@ -421,7 +423,7 @@ export class SyncManager implements ISyncManager {
         data: update.data,
         version: update.version,
         timestamp: update.timestamp,
-        checksum: this.calculateChecksum(update.data)
+        checksum: this.calculateChecksum(update.data),
       }));
 
       return updates;
@@ -498,7 +500,9 @@ export class SyncManager implements ISyncManager {
   // ==================== 私有方法 ====================
 
   private initializeAutoSync(): void {
-    if (!this.syncPolicy.autoSync) return;
+    if (!this.syncPolicy.autoSync) {
+      return;
+    }
 
     // 定时自动同步
     setInterval(async () => {
@@ -518,11 +522,15 @@ export class SyncManager implements ISyncManager {
   private async getLocalSession(sessionId: string): Promise<ChatSession | null> {
     // 首先从内存获取
     const memoryData = await this.memoryProvider.get<ChatSession>(sessionId);
-    if (memoryData) return memoryData;
+    if (memoryData) {
+      return memoryData;
+    }
 
     // 然后从IndexedDB获取
     const indexedData = await this.indexedDBProvider.get<ChatSession>(sessionId);
-    if (indexedData) return indexedData;
+    if (indexedData) {
+      return indexedData;
+    }
 
     return null;
   }
@@ -564,7 +572,7 @@ export class SyncManager implements ISyncManager {
   private async performSync(
     sessionId: string,
     localData: ChatSession | null,
-    remoteData: FastGPTChatHistoryDetail | null
+    remoteData: FastGPTChatHistoryDetail | null,
   ): Promise<{created: number, updated: number, deleted: number, conflicts: number}> {
     let created = 0, updated = 0, deleted = 0, conflicts = 0;
 
@@ -610,8 +618,8 @@ export class SyncManager implements ISyncManager {
       metadata: {
         version: 1,
         fastgptChatId: remote.chatId,
-        remoteMetadata: remote.metadata
-      }
+        remoteMetadata: remote.metadata,
+      },
     };
   }
 
@@ -621,7 +629,7 @@ export class SyncManager implements ISyncManager {
       id: msg.id || msg.dataId,
       feedback: msg.feedback,
       timestamp: Date.now(),
-      raw: msg.raw
+      raw: msg.raw,
     }));
   }
 
@@ -638,8 +646,8 @@ export class SyncManager implements ISyncManager {
         version: currentVersion + 1,
         fastgptChatId: remote.chatId,
         remoteMetadata: remote.metadata,
-        lastSyncAt: Date.now()
-      }
+        lastSyncAt: Date.now(),
+      },
     };
   }
 
@@ -673,14 +681,14 @@ export class SyncManager implements ISyncManager {
         await this.resolveConflict(conflict.sessionId, {
           sessionId: conflict.sessionId,
           strategy: 'local_wins',
-          resolvedAt: Date.now()
+          resolvedAt: Date.now(),
         });
         break;
       case 'remote_wins':
         await this.resolveConflict(conflict.sessionId, {
           sessionId: conflict.sessionId,
           strategy: 'remote_wins',
-          resolvedAt: Date.now()
+          resolvedAt: Date.now(),
         });
         break;
       case 'prompt':
@@ -718,7 +726,7 @@ export class SyncManager implements ISyncManager {
     await this.indexedDBProvider.set(key, {
       sessionId,
       resolved: true,
-      resolvedAt: Date.now()
+      resolvedAt: Date.now(),
     });
   }
 
@@ -799,7 +807,7 @@ export class SyncManager implements ISyncManager {
     let pendingSessions = 0;
     let conflictedSessions = 0;
 
-    for (const {key: sessionId} of localSessions) {
+    for (const { key: sessionId } of localSessions) {
       const status = await this.getSyncStatus(sessionId);
       switch (status) {
         case 'synced':
@@ -819,7 +827,7 @@ export class SyncManager implements ISyncManager {
       syncedSessions,
       pendingSessions,
       conflictedSessions,
-      lastSyncTime: Date.now() // 简化实现
+      lastSyncTime: Date.now(), // 简化实现
     };
   }
 }

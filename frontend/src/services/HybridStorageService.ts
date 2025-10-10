@@ -59,7 +59,7 @@ export type {
   StorageStats,
   CacheUsageStats,
   SyncMetrics,
-  PerformanceAlert
+  PerformanceAlert,
 } from '@/types/hybrid-storage';
 
 // React Hook导出
@@ -78,14 +78,14 @@ export const defaultHybridStorageConfig: Partial<HybridStorageConfig> = {
       maxSize: 50 * 1024 * 1024, // 50MB
       maxEntries: 1000,
       strategy: CacheStrategy.LRU,
-      ttl: 30 * 60 * 1000 // 30分钟
+      ttl: 30 * 60 * 1000, // 30分钟
     },
     indexedDB: {
       maxSize: 100 * 1024 * 1024, // 100MB
       maxEntries: 10000,
       strategy: CacheStrategy.LFU,
-      ttl: 7 * 24 * 60 * 60 * 1000 // 7天
-    }
+      ttl: 7 * 24 * 60 * 60 * 1000, // 7天
+    },
   },
   sync: {
     autoSync: true,
@@ -94,20 +94,20 @@ export const defaultHybridStorageConfig: Partial<HybridStorageConfig> = {
     maxRetries: 3,
     conflictResolution: 'prompt' as const,
     compressData: true,
-    deltaSync: true
+    deltaSync: true,
   },
   performance: {
     enableMonitoring: true,
     monitoringInterval: 30 * 1000, // 30秒
     enableOptimizations: true,
-    compressionThreshold: 10 * 1024 // 10KB
+    compressionThreshold: 10 * 1024, // 10KB
   },
   storage: {
     enableEncryption: false,
     enableCompression: true,
     backupEnabled: false,
-    cleanupInterval: 60 * 60 * 1000 // 1小时
-  }
+    cleanupInterval: 60 * 60 * 1000, // 1小时
+  },
 };
 
 // 版本信息

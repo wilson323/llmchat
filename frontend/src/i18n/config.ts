@@ -1,6 +1,6 @@
 /**
  * i18n国际化配置
- * 
+ *
  * 支持语言：
  * - zh-CN: 简体中文
  * - en-US: 英语
@@ -30,11 +30,11 @@ i18n
     resources,
     fallbackLng: 'zh-CN',
     debug: import.meta.env.DEV,
-    
+
     interpolation: {
       escapeValue: false, // React已经处理XSS
     },
-    
+
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
@@ -42,4 +42,3 @@ i18n
   });
 
 export default i18n;
-

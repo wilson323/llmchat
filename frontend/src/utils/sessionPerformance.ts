@@ -36,7 +36,7 @@ class SessionPerformanceMonitor {
   }
 
   private setupPerformanceObserver() {
-    if (typeof window === 'undefined' || !window.PerformanceObserver) {
+    if (!window?.PerformanceObserver) {
       return;
     }
 
@@ -74,7 +74,7 @@ class SessionPerformanceMonitor {
       switchStartTime: startTime,
       renderStartTime,
       messageCount,
-      cacheHit
+      cacheHit,
     };
 
     this.metrics.set(sessionId, metric);
@@ -89,7 +89,7 @@ class SessionPerformanceMonitor {
     return {
       sessionId,
       startTime,
-      renderStartTime
+      renderStartTime,
     };
   }
 
@@ -113,7 +113,7 @@ class SessionPerformanceMonitor {
       performance.measure(
         `session-switch-${sessionId}`,
         `session-switch-start-${sessionId}`,
-        `session-switch-end-${sessionId}`
+        `session-switch-end-${sessionId}`,
       );
     } catch (markError) {
       console.warn('Performance measurement not supported:', markError);
@@ -127,10 +127,10 @@ class SessionPerformanceMonitor {
    */
   private updateTotalDuration(sessionId: string) {
     const metric = this.metrics.get(sessionId);
-    if (metric && metric.switchEndTime && metric.renderEndTime) {
+    if (metric?.switchEndTime && metric.renderEndTime) {
       metric.totalDuration = Math.max(
         metric.switchEndTime - metric.switchStartTime,
-        metric.renderEndTime - metric.renderStartTime
+        metric.renderEndTime - metric.renderStartTime,
       );
     }
   }
@@ -151,7 +151,7 @@ class SessionPerformanceMonitor {
         cacheHitRate: 0,
         errorRate: 0,
         fastestSwitch: null,
-        slowestSwitch: null
+        slowestSwitch: null,
       };
     }
 
@@ -176,7 +176,7 @@ class SessionPerformanceMonitor {
       cacheHitRate: cacheHits / successfulMetrics.length,
       errorRate: (totalSwitches - successfulMetrics.length) / totalSwitches,
       fastestSwitch: null,
-      slowestSwitch: null
+      slowestSwitch: null,
     };
 
     // 找出最快和最慢的切换
@@ -260,7 +260,7 @@ class SessionPerformanceMonitor {
   analyzePerformanceBottlenecks(): {
     issues: string[];
     recommendations: string[];
-  } {
+    } {
     const stats = this.getPerformanceStats();
     const issues: string[] = [];
     const recommendations: string[] = [];
@@ -290,7 +290,7 @@ class SessionPerformanceMonitor {
     }
 
     // 分析最慢的会话
-    if (stats.slowestSwitch && stats.slowestSwitch.switchDuration && stats.slowestSwitch.switchDuration > 500) {
+    if (stats.slowestSwitch?.switchDuration && stats.slowestSwitch.switchDuration > 500) {
       issues.push(`存在非常慢的会话切换: ${stats.slowestSwitch.sessionId}`);
       recommendations.push('检查大消息会话的优化处理');
     }

@@ -38,5 +38,14 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/**/Optimized*",
+    "src/docs/swagger.ts",
+    "src/middleware/auditMiddleware.ts",
+    "src/middleware/requestId.ts"
+  ]
 }

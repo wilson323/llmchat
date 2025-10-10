@@ -7,14 +7,13 @@ import { useAgents } from '@/hooks/useAgents';
 import { useI18n } from '@/i18n';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
 
-
 export const AgentSelector: React.FC = () => {
   const {
     agents,
     currentAgent,
     agentSelectorOpen,
     setCurrentAgent,
-    setAgentSelectorOpen
+    setAgentSelectorOpen,
   } = useChatStore();
 
   const { fetchAgents, loading } = useAgents();
@@ -175,7 +174,7 @@ export const AgentSelector: React.FC = () => {
                           <Bot className="h-4 w-4 text-white" />
                         )}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-foreground truncate">
@@ -185,19 +184,19 @@ export const AgentSelector: React.FC = () => {
                             <div className="w-2 h-2 bg-brand rounded-full flex-shrink-0" />
                           )}
                         </div>
-                        
+
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                           {agent.description}
                         </p>
-                        
+
                         {/* 移除 provider/model/wifi 显示，保留描述与能力标签 */}
-                        
+
                         {/* 能力标签 */}
                         {agent.capabilities && agent.capabilities.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {agent.capabilities.slice(0, 3).map((capability) => (
-                              <span key={capability} 
-                                className="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 
+                              <span key={capability}
+                                className="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700
                                   text-gray-600 dark:text-gray-400 rounded">
                                 {capability}
                               </span>

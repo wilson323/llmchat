@@ -90,7 +90,9 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
 
   const handleSceneImageChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     const preview = await toBase64(file);
     setSceneImagePreview(preview);
     resetBoundingBox();
@@ -98,14 +100,18 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
 
   const handleProductImageChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     const preview = await toBase64(file);
     setProductImagePreview(preview);
   }, []);
 
   const capturePoint = useCallback((clientX: number, clientY: number) => {
     const container = sceneCanvasRef.current;
-    if (!container) return { x: 0, y: 0 };
+    if (!container) {
+      return { x: 0, y: 0 };
+    }
     const rect = container.getBoundingClientRect();
     const x = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
     const y = Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1);
@@ -147,12 +153,14 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
         height,
       };
     },
-    []
+    [],
   );
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!sceneImagePreview || event.button !== 0) return;
+      if (!sceneImagePreview || event.button !== 0) {
+        return;
+      }
 
       const container = event.currentTarget;
       const point = capturePoint(event.clientX, event.clientY);
@@ -189,12 +197,14 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
       container.setPointerCapture(event.pointerId);
       event.preventDefault();
     },
-    [boundingBox, capturePoint, sceneImagePreview]
+    [boundingBox, capturePoint, sceneImagePreview],
   );
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (interaction.type === 'idle') return;
+      if (interaction.type === 'idle') {
+        return;
+      }
 
       const point = capturePoint(event.clientX, event.clientY);
 
@@ -226,22 +236,26 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
         setBoundingBox(next);
       }
     },
-    [capturePoint, interaction, updateBoundingBoxForResize]
+    [capturePoint, interaction, updateBoundingBoxForResize],
   );
 
   const releaseInteraction = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (interaction.type === 'idle') return;
+      if (interaction.type === 'idle') {
+        return;
+      }
       if ((event.currentTarget as HTMLDivElement).hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       setInteraction({ type: 'idle' });
     },
-    [interaction.type]
+    [interaction.type],
   );
 
   const boundingBoxStyle = useMemo(() => {
-    if (!boundingBox) return undefined;
+    if (!boundingBox) {
+      return undefined;
+    }
     return {
       left: `${boundingBox.x * 100}%`,
       top: `${boundingBox.y * 100}%`,
@@ -458,7 +472,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                         <div
                           className={cn(
                             'absolute border-[3px] border-red-500 bg-red-500/20 rounded-md shadow-lg transition-all duration-75',
-                            isCreating ? 'animate-pulse' : 'cursor-move'
+                            isCreating ? 'animate-pulse' : 'cursor-move',
                           )}
                           style={boundingBoxStyle}
                           data-bounding-box="true"

@@ -1,12 +1,12 @@
-"use client";
-import { useMemo } from "react";
-import { motion } from "framer-motion";
-import { useResponsive } from "@/hooks/useResponsive";
+'use client';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useResponsive } from '@/hooks/useResponsive';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
-import { useTheme } from "@/components/theme/ThemeProvider";
-import { useI18n } from "@/i18n";
-import type { SessionStats } from "@/services/sessionApi";
+import { useTheme } from '@/components/theme/ThemeProvider';
+import { useI18n } from '@/i18n';
+import type { SessionStats } from '@/services/sessionApi';
 
 interface SessionStatsChartProps {
   stats: SessionStats;
@@ -304,12 +304,12 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
           isTablet ? 'grid-cols-1 lg:grid-cols-2' :
           'grid-cols-1 lg:grid-cols-3'
         }`}
-      >
+        >
         {[1, 2, 3].map((index) => (
           <div key={index} className="bg-card border border-border rounded-lg p-6">
             <div className="animate-pulse space-y-4">
-              <div className="h-6 bg-muted rounded w-1/3"></div>
-              <div className="h-64 bg-muted rounded"></div>
+              <div className="h-6 bg-muted rounded w-1/3" />
+              <div className="h-64 bg-muted rounded" />
             </div>
           </div>
         ))}
@@ -327,7 +327,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         isTablet ? 'grid-cols-1 lg:grid-cols-2' :
         'grid-cols-1 lg:grid-cols-3'
       }`}
-    >
+      >
       {/* 按日期统计图表 */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}

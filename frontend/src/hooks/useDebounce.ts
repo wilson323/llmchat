@@ -29,9 +29,9 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay 延迟时间（毫秒）
  * @returns 防抖后的回调函数
  */
-export function useDebouncedCallback<T extends (...args: any[]) => void>(
+export function useDebouncedCallback<T extends(...args: any[]) => void>(
   callback: T,
-  delay: number
+  delay: number,
 ): T {
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
@@ -68,7 +68,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => void>(
  */
 export function useDebouncedSearch(
   initialQuery: string = '',
-  delay: number = 300
+  delay: number = 300,
 ) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const debouncedQuery = useDebounce(searchQuery, delay);
@@ -86,7 +86,7 @@ export function useDebouncedSearch(
     searchQuery,
     debouncedQuery,
     setSearchQuery,
-    isDebouncing
+    isDebouncing,
   };
 }
 
@@ -98,7 +98,7 @@ export function useDebouncedSearch(
  */
 export function useCachedSearch<T, R>(
   searchFn: (query: T) => Promise<R[]>,
-  cacheSize: number = 10
+  cacheSize: number = 10,
 ) {
   const cache = useRef<Map<string, { results: R[]; timestamp: number }>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -119,7 +119,7 @@ export function useCachedSearch<T, R>(
       // 缓存结果
       cache.current.set(cacheKey, {
         results,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // 清理过期缓存
@@ -143,6 +143,6 @@ export function useCachedSearch<T, R>(
   return {
     search,
     loading,
-    clearCache
+    clearCache,
   };
 }

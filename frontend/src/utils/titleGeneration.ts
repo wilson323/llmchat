@@ -15,7 +15,7 @@ const STOP_WORDS = [
   '然后', '还有', '另外', '同时', '或者', '以及', '包括', '比如', '例如',
   '就是', '只是', '只是', '不过', '但是', '然而', '虽然', '尽管',
   '因此', '所以', '于是', '接着', '之后', '最后', '首先', '其次', '再次',
-  '好的', '嗯', '啊', '哦', '唉', '哈', '嘿', '哟', '哇'
+  '好的', '嗯', '啊', '哦', '唉', '哈', '嘿', '哟', '哇',
 ];
 
 // 行业领域关键词
@@ -26,7 +26,7 @@ const DOMAIN_KEYWORDS = {
   education: ['学习', '教学', '课程', '知识', '学生', '老师', '课程', '作业'],
   health: ['健康', '医疗', '药物', '疾病', '治疗', '预防', '护理', '康复'],
   finance: ['金融', '投资', '理财', '股票', '基金', '银行', '保险', '信贷'],
-  entertainment: ['游戏', '电影', '音乐', '视频', '娱乐', '休闲', '活动', '比赛']
+  entertainment: ['游戏', '电影', '音乐', '视频', '娱乐', '休闲', '活动', '比赛'],
 };
 
 // 中文分词（简单实现）
@@ -47,7 +47,7 @@ const calculateTFIDF = (tokens: string[], documentFrequency: Map<string, number>
 
   // 计算词频 (TF)
   tokens.forEach(token => {
-    termFrequency.set(token, (termFrequency.get(token) || 0) + 1);
+    termFrequency.set(token, (termFrequency.get(token) ?? 0) + 1);
   });
 
   // 计算TF-IDF
@@ -55,7 +55,7 @@ const calculateTFIDF = (tokens: string[], documentFrequency: Map<string, number>
   const totalTokens = tokens.length;
 
   termFrequency.forEach((termFreq, term) => {
-    const df = documentFrequency.get(term) || 1;
+    const df = documentFrequency.get(term) ?? 1;
     const tf = termFreq / totalTokens;
     const idf = Math.log(1 + (1 / df));
     tfidfScores.set(term, tf * idf);
@@ -77,7 +77,7 @@ const extractNamedEntities = (text: string): string[] => {
     // 地名
     /([^，。！？\s]+)(?:北京|上海|广州|深圳|杭州|成都|武汉)/g,
     // 专业术语
-    /([^，。！？\s]+)(?:人工智能|机器学习|区块链|云计算|大数据)/g
+    /([^，。！？\s]+)(?:人工智能|机器学习|区块链|云计算|大数据)/g,
   ];
 
   patterns.forEach(pattern => {
@@ -95,7 +95,7 @@ const extractQuestionKeywords = (text: string): string[] => {
   const questionPatterns = [
     /(?:什么是|怎么|如何|为什么|哪里|哪个|谁)([^，。！？\n]+)/g,
     /(?:帮我|请问|请|想|需要)([^，。！？\n]+)/g,
-    /(?:关于|对于|针对)([^，。！？\n]+)/g
+    /(?:关于|对于|针对)([^，。！？\n]+)/g,
   ];
 
   const keywords: string[] = [];
@@ -129,13 +129,13 @@ const extractTopics = (text: string): string[] => {
 // 生成标题候选
 const generateTitleCandidates = (
   messages: ChatMessage[],
-  maxLength: number = 30
+  maxLength: number = 30,
 ): Array<{ title: string; score: number; strategy: string }> => {
   const candidates: Array<{ title: string; score: number; strategy: string }> = [];
 
   // 提取首条用户消息
   const firstUserMessage = messages.find(m => m.HUMAN);
-  if (!firstUserMessage || !firstUserMessage.HUMAN) {
+  if (!firstUserMessage?.HUMAN) {
     return [{ title: '新对话', score: 0.1, strategy: 'default' }];
   }
 
@@ -157,7 +157,7 @@ const generateTitleCandidates = (
       candidates.push({
         title: keywordTitle,
         score: 0.9,
-        strategy: 'keywords'
+        strategy: 'keywords',
       });
     }
   }
@@ -170,7 +170,7 @@ const generateTitleCandidates = (
       candidates.push({
         title: entityTitle,
         score: 0.8,
-        strategy: 'entities'
+        strategy: 'entities',
       });
     }
   }
@@ -183,7 +183,7 @@ const generateTitleCandidates = (
       candidates.push({
         title: questionTitle,
         score: 0.7,
-        strategy: 'questions'
+        strategy: 'questions',
       });
     }
   }
@@ -196,7 +196,7 @@ const generateTitleCandidates = (
       candidates.push({
         title: `关于${topicTitle}`,
         score: 0.6,
-        strategy: 'topics'
+        strategy: 'topics',
       });
     }
   }
@@ -206,13 +206,13 @@ const generateTitleCandidates = (
     candidates.push({
       title: text,
       score: 0.5,
-      strategy: 'short'
+      strategy: 'short',
     });
   } else if (text.length <= maxLength) {
     candidates.push({
       title: text,
       score: 0.4,
-      strategy: 'direct'
+      strategy: 'direct',
     });
   } else {
     // 长文本截断
@@ -220,7 +220,7 @@ const generateTitleCandidates = (
     candidates.push({
       title: truncated,
       score: 0.3,
-      strategy: 'truncated'
+      strategy: 'truncated',
     });
   }
 
@@ -260,7 +260,7 @@ const optimizeTitleLength = (title: string, maxLength: number = 30): string => {
 // 智能标题生成主函数
 export const generateSmartTitle = (
   messages: ChatMessage[],
-  maxLength: number = 30
+  maxLength: number = 30,
 ): string => {
   if (!messages || messages.length === 0) {
     return '新对话';
@@ -285,7 +285,7 @@ export const generateSmartTitle = (
 
     // 回退到简单截断
     const firstUserMessage = messages.find(m => m.HUMAN);
-    if (firstUserMessage && firstUserMessage.HUMAN) {
+    if (firstUserMessage?.HUMAN) {
       return optimizeTitleLength(firstUserMessage.HUMAN, maxLength);
     }
 
@@ -296,7 +296,7 @@ export const generateSmartTitle = (
 // 批量生成标题（用于多个会话）
 export const generateTitlesBatch = (
   sessionsList: Array<{ messages: ChatMessage[]; id: string }>,
-  maxLength: number = 30
+  maxLength: number = 30,
 ): Map<string, string> => {
   const titles = new Map<string, string>();
 
@@ -312,7 +312,7 @@ export const generateTitlesBatch = (
 export const updateSessionTitleIfNeeded = (
   messages: ChatMessage[],
   currentTitle: string,
-  maxLength: number = 30
+  maxLength: number = 30,
 ): { shouldUpdate: boolean; newTitle: string } => {
   const newTitle = generateSmartTitle(messages, maxLength);
 
@@ -346,7 +346,7 @@ const calculateTitleScore = (title: string): number => {
 
   // 包含关键词加分
   const hasKeywords = Object.values(DOMAIN_KEYWORDS).some(keywords =>
-    keywords.some(keyword => title.includes(keyword))
+    keywords.some(keyword => title.includes(keyword)),
   );
   if (hasKeywords) {
     score += 0.2;
@@ -375,5 +375,5 @@ export const titleGenerationUtils = {
   extractTopics,
   generateTitleCandidates,
   selectBestTitle,
-  calculateTitleScore
+  calculateTitleScore,
 };

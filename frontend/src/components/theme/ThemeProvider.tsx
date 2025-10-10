@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { ThemeMode } from "@/types";
-import { useChatStore } from "@/store/chatStore";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ThemeMode } from '@/types';
+import { useChatStore } from '@/store/chatStore';
 
 interface ThemeContextType {
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
   userPreference: ThemeMode;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
@@ -16,7 +16,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 }
@@ -28,15 +28,15 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
-  defaultTheme = "auto",
+  defaultTheme = 'auto',
 }) => {
   const { preferences, updatePreferences } = useChatStore();
-  const [theme, setCurrentTheme] = useState<"light" | "dark">("light");
+  const [theme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [autoUpdateInterval, setAutoUpdateInterval] =
     useState<NodeJS.Timeout | null>(null);
 
   const userPreference = preferences.theme.userPreference;
-  const isAutoMode = userPreference === "auto";
+  const isAutoMode = userPreference === 'auto';
 
   // 初始化主题
   useEffect(() => {
@@ -66,17 +66,17 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       clearInterval(autoUpdateInterval);
     }
 
-    if (userPreference === "auto") {
+    if (userPreference === 'auto') {
       // 每分钟检查一次时间，用于自动切换主题
       const interval = setInterval(() => {
-        updateTheme("auto");
+        updateTheme('auto');
       }, 60000);
       setAutoUpdateInterval(interval);
     }
   };
 
   const updateTheme = (preference: ThemeMode) => {
-    if (preference === "auto") {
+    if (preference === 'auto') {
       const now = new Date();
       const hour = now.getHours();
       const minutes = now.getMinutes();
@@ -84,24 +84,24 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
       // 使用用户设置的时间或默认时间
       const lightStart = parseTime(
-        preferences.autoThemeSchedule.lightModeStart
+        preferences.autoThemeSchedule.lightModeStart,
       ); // 默认 6:00
       const darkStart = parseTime(preferences.autoThemeSchedule.darkModeStart); // 默认 18:00
 
       const isDarkTime = currentTime >= darkStart || currentTime < lightStart;
-      setCurrentTheme(isDarkTime ? "dark" : "light");
+      setCurrentTheme(isDarkTime ? 'dark' : 'light');
     } else {
       setCurrentTheme(preference);
     }
   };
 
   const parseTime = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
+    const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
   };
 
   const toggleTheme = () => {
-    const themes: ThemeMode[] = ["light", "dark", "auto"];
+    const themes: ThemeMode[] = ['light', 'dark', 'auto'];
     const currentIndex = themes.indexOf(userPreference);
     const nextTheme = themes[(currentIndex + 1) % themes.length];
 
@@ -109,8 +109,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       theme: {
         ...preferences.theme,
         userPreference: nextTheme,
-        isAutoMode: nextTheme === "auto",
-        mode: nextTheme === "auto" ? preferences.theme.mode : nextTheme,
+        isAutoMode: nextTheme === 'auto',
+        mode: nextTheme === 'auto' ? preferences.theme.mode : nextTheme,
       },
     });
   };
@@ -120,8 +120,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       theme: {
         ...preferences.theme,
         userPreference: newTheme,
-        isAutoMode: newTheme === "auto",
-        mode: newTheme === "auto" ? preferences.theme.mode : newTheme,
+        isAutoMode: newTheme === 'auto',
+        mode: newTheme === 'auto' ? preferences.theme.mode : newTheme,
       },
     });
   };
@@ -129,14 +129,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   // 应用主题到文档
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove("light", "dark");
+    root.classList.remove('light', 'dark');
     root.classList.add(theme);
   }, [theme]);
 
   return (
     <ThemeContext.Provider
       value={{ theme, userPreference, toggleTheme, setTheme, isAutoMode }}
-    >
+      >
       {children}
     </ThemeContext.Provider>
   );

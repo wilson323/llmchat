@@ -28,7 +28,9 @@ export const useCadKeyboardShortcuts = ({
   enabled = true,
 }: CadKeyboardShortcutsProps) => {
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl/Cmd + Z - 撤销

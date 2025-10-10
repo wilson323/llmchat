@@ -1,6 +1,6 @@
 /**
  * FastGPT 交互数据转换工具
- * 
+ *
  * 将 SSE 事件中的 FastGPTInteractiveData 转换为前端 InteractiveData 格式
  */
 
@@ -9,12 +9,12 @@ import type { FastGPTInteractiveData } from '@/types/sse';
 
 /**
  * 将 FastGPT 交互数据转换为前端 InteractiveData 格式
- * 
+ *
  * @param fastgptData - 来自 SSE 事件的 FastGPT 交互数据
  * @returns 前端 InteractiveData 格式，如果无法转换则返回 null
  */
 export function convertFastGPTInteractiveData(
-  fastgptData: FastGPTInteractiveData
+  fastgptData: FastGPTInteractiveData,
 ): InteractiveData | null {
   // 根据 FastGPT 的交互类型映射到前端类型
   const { prompt, description, options, defaultValue } = fastgptData;
@@ -61,7 +61,9 @@ export function convertFastGPTInteractiveData(
  * 类型守卫：检查是否为 FastGPT 交互数据
  */
 export function isFastGPTInteractiveData(data: unknown): data is FastGPTInteractiveData {
-  if (!data || typeof data !== 'object') return false;
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
   const obj = data as Record<string, unknown>;
   return (
     typeof obj.type === 'string' &&

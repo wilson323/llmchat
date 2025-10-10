@@ -9,7 +9,6 @@ import { ChatAttachmentMetadata, VoiceNoteMetadata } from '@/types';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
 
-
 export const MessageInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   disabled = false,
@@ -96,13 +95,17 @@ export const MessageInput: React.FC<ChatInputProps> = ({
 
   const handleFileUpload = () => {
 
-    if (disabled || uploading || isStreaming) return;
+    if (disabled || uploading || isStreaming) {
+      return;
+    }
     fileInputRef.current?.click();
   };
 
   const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      return;
+    }
     setUploading(true);
     try {
       const uploads = Array.from(files).slice(0, 5);

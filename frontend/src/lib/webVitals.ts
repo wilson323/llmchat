@@ -1,6 +1,6 @@
 /**
  * Web Vitals 性能监控
- * 
+ *
  * 监控核心Web性能指标：
  * - LCP (Largest Contentful Paint): 最大内容绘制
  * - FID (First Input Delay): 首次输入延迟
@@ -38,10 +38,16 @@ const THRESHOLDS = {
  */
 function getRating(name: string, value: number): 'good' | 'needs-improvement' | 'poor' {
   const threshold = THRESHOLDS[name as keyof typeof THRESHOLDS];
-  if (!threshold) return 'good';
-  
-  if (value <= threshold.good) return 'good';
-  if (value <= threshold.needsImprovement) return 'needs-improvement';
+  if (!threshold) {
+    return 'good';
+  }
+
+  if (value <= threshold.good) {
+    return 'good';
+  }
+  if (value <= threshold.needsImprovement) {
+    return 'needs-improvement';
+  }
   return 'poor';
 }
 
@@ -50,12 +56,12 @@ function getRating(name: string, value: number): 'good' | 'needs-improvement' | 
  */
 function defaultReportHandler(metric: WebVitalMetric) {
   const rating = getRating(metric.name, metric.value);
-  
+
   // 添加面包屑
   addBreadcrumb(
     `${metric.name}: ${Math.round(metric.value)}${metric.name === 'CLS' ? '' : 'ms'} (${rating})`,
     'performance',
-    rating === 'poor' ? 'warning' : 'info'
+    rating === 'poor' ? 'warning' : 'info',
   );
 
   // 发送到分析平台（示例：Google Analytics）
@@ -85,7 +91,9 @@ function defaultReportHandler(metric: WebVitalMetric) {
  */
 export function initWebVitals(onReport: ReportCallback = defaultReportHandler) {
   // 只在浏览器环境运行
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
 
   try {
     onCLS(onReport);
@@ -93,7 +101,7 @@ export function initWebVitals(onReport: ReportCallback = defaultReportHandler) {
     onFCP(onReport);
     onLCP(onReport);
     onTTFB(onReport);
-    
+
     if (import.meta.env.DEV) {
       console.log('Web Vitals监控已启用');
     }
@@ -106,9 +114,11 @@ export function initWebVitals(onReport: ReportCallback = defaultReportHandler) {
  * 获取性能摘要
  */
 export function getPerformanceSummary() {
-  if (typeof window === 'undefined' || !window.performance) return null;
+  if (!window?.performance) {
+    return null;
+  }
 
-  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+  const navigation = performance.getEntriesByType('navigation')[0];
   const paint = performance.getEntriesByType('paint');
 
   return {
@@ -119,10 +129,10 @@ export function getPerformanceSummary() {
     response: navigation ? Math.round(navigation.responseEnd - navigation.responseStart) : 0,
     dom: navigation ? Math.round(navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart) : 0,
     load: navigation ? Math.round(navigation.loadEventEnd - navigation.loadEventStart) : 0,
-    
+
     // 绘制时间
     fcp: paint.find(p => p.name === 'first-contentful-paint')?.startTime || 0,
-    
+
     // 总时间
     total: navigation ? Math.round(navigation.loadEventEnd - navigation.fetchStart) : 0,
   };
@@ -132,18 +142,20 @@ export function getPerformanceSummary() {
  * 监控资源加载性能
  */
 export function monitorResourcePerformance() {
-  if (typeof window === 'undefined' || !window.performance) return;
+  if (!window?.performance) {
+    return;
+  }
 
   const observer = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
       const resource = entry as PerformanceResourceTiming;
-      
+
       // 报告慢速资源（>3秒）
       if (resource.duration > 3000) {
         addBreadcrumb(
           `慢速资源: ${resource.name} (${Math.round(resource.duration)}ms)`,
           'performance',
-          'warning'
+          'warning',
         );
       }
 
@@ -152,7 +164,7 @@ export function monitorResourcePerformance() {
         addBreadcrumb(
           `大文件: ${resource.name} (${(resource.transferSize / 1024 / 1024).toFixed(2)}MB)`,
           'performance',
-          'info'
+          'info',
         );
       }
     }
@@ -165,7 +177,9 @@ export function monitorResourcePerformance() {
  * 监控长任务（>50ms）
  */
 export function monitorLongTasks() {
-  if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+  if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
+    return;
+  }
 
   try {
     const observer = new PerformanceObserver((list) => {
@@ -173,7 +187,7 @@ export function monitorLongTasks() {
         addBreadcrumb(
           `长任务: ${Math.round(entry.duration)}ms`,
           'performance',
-          entry.duration > 100 ? 'warning' : 'info'
+          entry.duration > 100 ? 'warning' : 'info',
         );
       }
     });
@@ -191,4 +205,3 @@ declare global {
     gtag?: (...args: any[]) => void;
   }
 }
-

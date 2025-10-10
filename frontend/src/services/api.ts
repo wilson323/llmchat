@@ -18,12 +18,12 @@ import {
   ProductPreviewResponse,
 
 } from '@/types';
-import type { 
-  SSECallbacks, 
+import type {
+  SSECallbacks,
   SSEParsedEvent,
   FastGPTStatusData,
   FastGPTInteractiveData,
-  FastGPTReasoningData
+  FastGPTReasoningData,
 } from '@/types/sse';
 import {
   getNormalizedEventKey,
@@ -113,7 +113,7 @@ api.interceptors.response.use(
     logger.error(translate('API请求错误'), error, {
       url: error?.config?.url,
       method: error?.config?.method,
-      status: error?.response?.status
+      status: error?.response?.status,
     });
     const status = error?.response?.status;
     if (status === 401) {
@@ -130,7 +130,7 @@ api.interceptors.response.use(
       error.message = translate('网络连接失败，请检查后端服务是否启动');
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 const findNextEventBoundary = (buffer: string): { index: number; length: number } | null => {
@@ -162,7 +162,9 @@ const parseSSEEventBlock = (rawBlock: string): SSEParsedEvent | null => {
   let retry: number | undefined;
 
   for (const line of lines) {
-    if (!line || line.startsWith(':')) continue;
+    if (!line || line.startsWith(':')) {
+      continue;
+    }
 
     const separatorIndex = line.indexOf(':');
     const field = separatorIndex === -1 ? line : line.slice(0, separatorIndex);
@@ -202,11 +204,13 @@ const parseSSEEventBlock = (rawBlock: string): SSEParsedEvent | null => {
 };
 
 const extractReasoningPayload = (payload: Record<string, unknown> | string | null): string | null => {
-  if (!payload || typeof payload === 'string') return null;
-  
+  if (!payload || typeof payload === 'string') {
+    return null;
+  }
+
   const choices = payload.choices as Array<{ delta?: { reasoning_content?: string } }> | undefined;
   const delta = payload.delta as { reasoning_content?: string } | undefined;
-  
+
   return (
     choices?.[0]?.delta?.reasoning_content ||
     delta?.reasoning_content ||
@@ -217,7 +221,9 @@ const extractReasoningPayload = (payload: Record<string, unknown> | string | nul
 };
 
 const resolveEventName = (eventName: string, payload: Record<string, unknown> | string | null): string => {
-  if (!payload || typeof payload === 'string') return eventName.trim();
+  if (!payload || typeof payload === 'string') {
+    return eventName.trim();
+  }
   const payloadEvent = payload.event;
   return (eventName || (typeof payloadEvent === 'string' ? payloadEvent : '') || '').trim();
 };
@@ -228,15 +234,17 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
   const emitReasoning = (data: FastGPTReasoningData | string | Record<string, unknown>, eventNameOverride?: string) => {
-    if (!onReasoning || data == null) return;
+    if (!onReasoning || data == null) {
+      return;
+    }
     try {
       // 将字符串或对象转换为 FastGPTReasoningData 格式
       const reasoningData: FastGPTReasoningData = typeof data === 'string'
         ? { content: data }
         : typeof data === 'object' && 'content' in data
-        ? data as FastGPTReasoningData
-        : { content: JSON.stringify(data) };
-      
+          ? data as FastGPTReasoningData
+          : { content: JSON.stringify(data) };
+
       onReasoning({ event: eventNameOverride || resolvedEvent || 'reasoning', data: reasoningData });
     } catch (reasoningError) {
       logger.warn('reasoning 回调执行失败', { error: reasoningError });
@@ -244,11 +252,11 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   };
 
   if (isChatIdEvent(resolvedEvent)) {
-    const chatIdValue = typeof payload === 'string' ? payload : 
-      (payload && typeof payload === 'object' ? 
-        (payload as Record<string, unknown>).chatId || 
-        (payload as Record<string, unknown>).id || 
-        ((payload as Record<string, unknown>).data as Record<string, unknown> | undefined)?.chatId : 
+    const chatIdValue = typeof payload === 'string' ? payload :
+      (payload && typeof payload === 'object' ?
+        (payload).chatId ||
+        (payload).id ||
+        ((payload).data as Record<string, unknown> | undefined)?.chatId :
         null);
     if (typeof chatIdValue === 'string') {
       onChatId?.(chatIdValue);
@@ -264,7 +272,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   }
 
   if (isStatusEvent(resolvedEvent) && payload && typeof payload === 'object') {
-    const payloadObj = payload as Record<string, unknown>;
+    const payloadObj = payload;
     const rawStatus = payloadObj.status as string | undefined;
     // 将'loading'和'error'映射为StreamStatus支持的状态
     let mappedStatus: 'running' | 'completed' | 'error' = 'running';
@@ -275,7 +283,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     } else if (rawStatus === 'loading' || rawStatus === 'running') {
       mappedStatus = 'running';
     }
-    
+
     const statusData: FastGPTStatusData = {
       type: 'flowNodeStatus',
       status: mappedStatus,
@@ -302,7 +310,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
 
   if (eventKey === getNormalizedEventKey('answer')) {
     if (payload && typeof payload === 'object') {
-      const payloadObj = payload as Record<string, unknown>;
+      const payloadObj = payload;
       const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
       const answerContent = choices?.[0]?.delta?.content || (payloadObj.content as string) || '';
       if (answerContent) {
@@ -353,11 +361,11 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     if (typeof payload === 'string') {
       chunkContent = payload;
     } else if (payload && typeof payload === 'object') {
-      const payloadObj = payload as Record<string, unknown>;
+      const payloadObj = payload;
       const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
       chunkContent = (payloadObj.content as string) || choices?.[0]?.delta?.content || '';
     }
-    
+
     if (chunkContent) {
       onChunk(chunkContent);
     }
@@ -382,7 +390,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   }
 
   if (payload && typeof payload === 'object') {
-    const payloadObj = payload as Record<string, unknown>;
+    const payloadObj = payload;
     const choices = payloadObj.choices as Array<{ delta?: { content?: string } }> | undefined;
     const fallbackContent = (payloadObj.content as string) || choices?.[0]?.delta?.content;
     if (fallbackContent) {
@@ -496,7 +504,7 @@ export const chatService = {
   async sendMessage(
     agentId: string,
     messages: OriginalChatMessage[],
-    options?: ChatOptions
+    options?: ChatOptions,
   ): Promise<ChatResponse> {
     const { attachments, voiceNote, ...restOptions } = options || {};
     const response = await api.post<ApiResponse<ChatResponse>>('/chat/completions', {
@@ -509,7 +517,7 @@ export const chatService = {
       ...(typeof restOptions.maxTokens === 'number' ? { maxTokens: restOptions.maxTokens } : {}),
       ...(restOptions.variables ? { variables: restOptions.variables } : {}),
       ...(restOptions.responseChatItemId ? { responseChatItemId: restOptions.responseChatItemId } : {}),
-      ...(attachments && attachments.length ? { attachments } : {}),
+      ...(attachments?.length ? { attachments } : {}),
       ...(voiceNote ? { voiceNote } : {}),
     });
     return response.data.data;
@@ -519,7 +527,7 @@ export const chatService = {
     agentId: string,
     messages: OriginalChatMessage[],
     callbacks: SSECallbacks & { signal?: AbortSignal },
-    options?: ChatOptions
+    options?: ChatOptions,
   ): Promise<void> {
     const { onChunk, onStatus, onInteractive, onChatId, onReasoning, onEvent, signal } = callbacks;
     const { attachments, voiceNote, ...restOptions } = options || {};
@@ -534,7 +542,7 @@ export const chatService = {
       ...(typeof restOptions.maxTokens === 'number' ? { maxTokens: restOptions.maxTokens } : {}),
       ...(restOptions.variables ? { variables: restOptions.variables } : {}),
       ...(restOptions.responseChatItemId ? { responseChatItemId: restOptions.responseChatItemId } : {}),
-      ...(attachments && attachments.length ? { attachments } : {}),
+      ...(attachments?.length ? { attachments } : {}),
       ...(voiceNote ? { voiceNote } : {}),
     };
 
@@ -563,7 +571,7 @@ export const chatService = {
       logger.error('Stream request failed', new Error(errorText), {
         status: response.status,
         agentId,
-        messagesCount: messages.length
+        messagesCount: messages.length,
       });
       throw new Error(`Stream request failed: ${response.status} ${errorText}`);
     }
@@ -594,10 +602,12 @@ export const chatService = {
     chatId: string | undefined,
     onChunk: (chunk: string) => void,
     onComplete?: (data: Record<string, unknown>) => void,
-    opts?: { signal?: AbortSignal }
+    opts?: { signal?: AbortSignal },
   ): Promise<void> {
     const search = new URLSearchParams({ appId: agentId, stream: 'true' });
-    if (chatId) search.set('chatId', chatId);
+    if (chatId) {
+      search.set('chatId', chatId);
+    }
 
     const authToken = useAuthStore.getState().token;
     const response = await fetch(`/api/chat/init?${search.toString()}`, {
@@ -622,7 +632,7 @@ export const chatService = {
       logger.error('Init stream request failed', new Error(errorText), {
         status: response.status,
         agentId,
-        chatId
+        chatId,
       });
       throw new Error(`Init stream request failed: ${response.status} ${errorText}`);
     }
@@ -648,7 +658,7 @@ export const chatService = {
     chatId: string,
     dataId: string,
     type: 'good' | 'bad',
-    cancel: boolean = false
+    cancel: boolean = false,
   ): Promise<void> {
     try {
       const payload: Record<string, any> = {
@@ -662,7 +672,7 @@ export const chatService = {
     } catch (error) {
       logger.error(translate('提交点赞/点踩反馈失败'), error as Error, {
         dataId,
-        feedbackType: type
+        feedbackType: type,
       });
       throw error;
     }
@@ -690,7 +700,7 @@ export const chatService = {
     agentId: string,
     chatId: string,
     dataId: string,
-    options?: { detail?: boolean }
+    options?: { detail?: boolean },
   ): Promise<ChatResponse> {
     const payload: Record<string, any> = {
       agentId,
@@ -711,7 +721,7 @@ export const chatService = {
     chatId: string,
     dataId: string,
     callbacks: SSECallbacks,
-    options?: { detail?: boolean }
+    options?: { detail?: boolean },
   ): Promise<void> {
     const { onChunk, onStatus, onInteractive, onChatId, onReasoning, onEvent } = callbacks;
     const authToken = useAuthStore.getState().token;
@@ -741,7 +751,7 @@ export const chatService = {
         status: response.status,
         agentId,
         chatId,
-        dataId
+        dataId,
       });
       throw new Error(`Retry stream request failed: ${response.status} ${errorText}`);
     }
@@ -777,10 +787,10 @@ export const productPreviewService = {
  */
 export async function uploadAttachment(
   file: File | Blob,
-  opts?: { source?: 'upload' | 'voice'; filename?: string }
+  opts?: { source?: 'upload' | 'voice'; filename?: string },
 ): Promise<ChatAttachmentMetadata> {
   const base64 = await blobToBase64(file);
-  const name = opts?.filename || ('name' in file ? (file as File).name : 'attachment');
+  const name = opts?.filename || ('name' in file ? (file).name : 'attachment');
   const mimeType = 'type' in file && file.type ? file.type : 'application/octet-stream';
   const size = 'size' in file && typeof file.size === 'number' ? file.size : base64.length * 0.75;
 
@@ -792,7 +802,7 @@ export async function uploadAttachment(
       size,
       data: base64,
       source: opts?.source ?? 'upload',
-    }
+    },
   );
 
   return data.data;

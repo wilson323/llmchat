@@ -1,7 +1,6 @@
-import React from "react";
-import { useKeyboardHelp } from "@/hooks/useKeyboardManager";
-import { useI18n } from "@/i18n";
-import { KeyboardShortcut } from "@/hooks/useKeyboardManager";
+import React from 'react';
+import { useKeyboardHelp, KeyboardShortcut } from '@/hooks/useKeyboardManager';
+import { useI18n } from '@/i18n';
 
 interface KeyboardHelpPanelProps {
   isOpen: boolean;
@@ -19,17 +18,19 @@ export const KeyboardHelpPanel: React.FC<KeyboardHelpPanelProps> = ({
 
   const helpContent = getHelpContent();
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-background border border-border rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold">{t("键盘快捷键")}</h2>
+          <h2 className="text-lg font-semibold">{t('键盘快捷键')}</h2>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label={t("关闭")}
+            aria-label={t('关闭')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -73,7 +74,7 @@ export const KeyboardHelpPanel: React.FC<KeyboardHelpPanelProps> = ({
 
             {shortcuts.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                {t("暂无快捷键")}
+                {t('暂无快捷键')}
               </div>
             )}
           </div>
@@ -81,7 +82,7 @@ export const KeyboardHelpPanel: React.FC<KeyboardHelpPanelProps> = ({
 
         <div className="p-4 border-t border-border text-center">
           <p className="text-xs text-muted-foreground">
-            {t("按下 Esc 键或点击遮罩层关闭此面板")}
+            {t('按下 Esc 键或点击遮罩层关闭此面板')}
           </p>
         </div>
       </div>

@@ -22,11 +22,13 @@ const store = create<LocaleState>((set) => ({
 function renderTranslation(
   locale: SupportedLocale,
   key: string,
-  values?: Record<string, string | number | undefined>
+  values?: Record<string, string | number | undefined>,
 ) {
   const dictionary = translations[locale] || {};
   const template = dictionary[key] ?? key;
-  if (!values) return template;
+  if (!values) {
+    return template;
+  }
   return template.replace(/\{(\w+)\}/g, (_, token: string) => {
     const value = values[token];
     return value === undefined || value === null ? '' : String(value);
@@ -36,13 +38,15 @@ function renderTranslation(
 export function translate(
   key: string,
   values?: Record<string, string | number | undefined>,
-  options?: { fallback?: string }
+  options?: { fallback?: string },
 ) {
   const { locale } = store.getState();
   const fallback = options?.fallback ?? key;
   const dictionary = translations[locale] || {};
   const template = dictionary[key] ?? fallback;
-  if (!values) return template;
+  if (!values) {
+    return template;
+  }
   return template.replace(/\{(\w+)\}/g, (_, token: string) => {
     const value = values[token];
     return value === undefined || value === null ? '' : String(value);
@@ -56,9 +60,9 @@ export function useI18n() {
     (
       key: string,
       values?: Record<string, string | number | undefined>,
-      options?: { fallback?: string }
+      options?: { fallback?: string },
     ) => renderTranslation(locale, key, values) || options?.fallback || key,
-    [locale]
+    [locale],
   );
 
   return {
@@ -78,7 +82,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const locale = store((state) => state.locale);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || hydratedRef.current) return;
+    if (typeof window === 'undefined' || hydratedRef.current) {
+      return;
+    }
     hydratedRef.current = true;
     const stored = window.localStorage.getItem(STORAGE_KEY) as SupportedLocale | null;
     if (stored && stored !== locale) {

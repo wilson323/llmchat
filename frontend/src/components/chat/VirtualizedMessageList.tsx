@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useMemo } from "react";
-import { ChatMessage } from "@/types";
-import { MessageItem } from "./MessageItem";
-import { useChatStore } from "@/store/chatStore";
-import { useI18n } from "@/i18n";
-import { useVirtualScroll } from "@/hooks/useVirtualScroll";
+import React, { useEffect, useRef, useMemo } from 'react';
+import { ChatMessage } from '@/types';
+import { MessageItem } from './MessageItem';
+import { useChatStore } from '@/store/chatStore';
+import { useI18n } from '@/i18n';
+import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import {
-  usePerformanceMonitor
+  usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
 
 interface VirtualizedMessageListProps {
@@ -32,7 +32,7 @@ const estimateMessageHeight = (message: ChatMessage): number => {
   let height = 80;
 
   // 根据内容长度估算
-  const content = message.AI || message.HUMAN || "";
+  const content = message.AI || message.HUMAN || '';
   const contentLength = content.length;
 
   // 每行大约50个字符
@@ -94,7 +94,7 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
 
   // 🚀 性能优化：使用useMemo缓存计算结果
   const virtualScrollConfig = useMemo(() => {
-    const height = typeof window !== "undefined" ? window.innerHeight - 200 : 600;
+    const height = typeof window !== 'undefined' ? window.innerHeight - 200 : 600;
 
     return {
       itemHeight: (index: number) => estimateMessageHeight(messages[index]),
@@ -109,7 +109,9 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
 
   // 自动滚动到底部
   useEffect(() => {
-    if (isStreaming || messages.length === 0) return;
+    if (isStreaming || messages.length === 0) {
+      return;
+    }
 
     // 如果是最后一条消息，滚动到底部
     if (messages.length > 0) {
@@ -128,12 +130,12 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
     <div
       className="h-full overflow-y-auto bg-background"
       role="main"
-      aria-label={t("聊天消息区域")}
+      aria-label={t('聊天消息区域')}
       aria-live="polite"
       aria-atomic="false"
-    >
+      >
       <div className="max-w-4xl mx-auto px-4 py-6" ref={containerRef}>
-        <div style={{ height: totalHeight, position: "relative" }}>
+        <div style={{ height: totalHeight, position: 'relative' }}>
           {virtualItems.map((virtualItem) => {
             const message = messages[virtualItem.index];
             const isLastMessage = virtualItem.index === messages.length - 1;
@@ -143,14 +145,14 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
               <div
                 key={virtualItem.key}
                 style={{
-                  position: "absolute",
+                  position: 'absolute',
                   top: virtualItem.start,
                   left: 0,
                   right: 0,
                   height: virtualItem.size,
                 }}
                 role="article"
-                aria-label={isAssistantMessage ? t("AI回复") : t("用户消息")}
+                aria-label={isAssistantMessage ? t('AI回复') : t('用户消息')}
               >
                 <MessageItem
                   message={message}
@@ -181,32 +183,32 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
 
         {/* 流式状态指示器 */}
         {isStreaming &&
-          (!currentAgent || currentAgent.provider !== "fastgpt") && (
+          (!currentAgent || currentAgent.provider !== 'fastgpt') && (
             <div className="flex justify-start sticky bottom-0">
               <div className="flex items-center space-x-2 px-4 py-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-2xl">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                   <div
                     className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-                    style={{ animationDelay: "0.2s" }}
-                  ></div>
+                    style={{ animationDelay: '0.2s' }}
+                   />
                   <div
                     className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
-                    style={{ animationDelay: "0.4s" }}
-                  ></div>
+                    style={{ animationDelay: '0.4s' }}
+                   />
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {t("正在生成回答...")}
+                  {t('正在生成回答...')}
                 </span>
 
-                {streamingStatus?.type === "flowNodeStatus" && (
+                {streamingStatus?.type === 'flowNodeStatus' && (
                   <span className="text-xs text-muted-foreground ml-3">
-                    {streamingStatus.moduleName || t("未知模块")} -{" "}
-                    {streamingStatus.status === "completed"
-                      ? t("已完成")
-                      : streamingStatus.status === "error"
-                      ? t("错误")
-                      : t("运行中")}
+                    {streamingStatus.moduleName || t('未知模块')} -{' '}
+                    {streamingStatus.status === 'completed'
+                      ? t('已完成')
+                      : streamingStatus.status === 'error'
+                      ? t('错误')
+                      : t('运行中')}
                   </span>
                 )}
               </div>

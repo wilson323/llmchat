@@ -1,6 +1,6 @@
 /**
  * i18n Stub（存根实现）
- * 
+ *
  * 用途:
  * - 当react-i18next未安装时的降级实现
  * - 仅返回中文，保持核心功能可用
@@ -32,4 +32,3 @@ export default {
   language: 'zh-CN',
   changeLanguage: () => {},
 };
-

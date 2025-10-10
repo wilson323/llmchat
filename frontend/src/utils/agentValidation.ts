@@ -35,7 +35,7 @@ export async function validateEndpoint(endpoint: string): Promise<{ valid: boole
     });
 
     clearTimeout(timeoutId);
-    
+
     // no-cors模式下无法获取状态码，但能检测网络可达性
     return { valid: true };
   } catch (error) {
@@ -273,4 +273,3 @@ export async function validateAgentForm(form: {
     errors,
   };
 }
-

@@ -12,7 +12,7 @@ import {
   SearchQuery,
   HybridStorageConfig,
   DataTemperature,
-  CacheStrategy
+  CacheStrategy,
 } from '@/types/hybrid-storage';
 
 import { ChatSession, ChatMessage } from '@/types';
@@ -40,14 +40,14 @@ export class HybridStorageManager {
           maxSize: 50 * 1024 * 1024, // 50MB
           maxEntries: 1000,
           strategy: CacheStrategy.LRU,
-          ttl: 30 * 60 * 1000 // 30分钟
+          ttl: 30 * 60 * 1000, // 30分钟
         },
         indexedDB: {
           maxSize: 100 * 1024 * 1024, // 100MB
           maxEntries: 10000,
           strategy: CacheStrategy.LFU,
-          ttl: 7 * 24 * 60 * 60 * 1000 // 7天
-        }
+          ttl: 7 * 24 * 60 * 60 * 1000, // 7天
+        },
       },
       sync: {
         autoSync: true,
@@ -56,39 +56,39 @@ export class HybridStorageManager {
         maxRetries: 3,
         conflictResolution: 'prompt',
         compressData: true,
-        deltaSync: true
+        deltaSync: true,
       },
       performance: {
         enableMonitoring: true,
         monitoringInterval: 30 * 1000, // 30秒
         enableOptimizations: true,
-        compressionThreshold: 10 * 1024 // 10KB
+        compressionThreshold: 10 * 1024, // 10KB
       },
       storage: {
         enableEncryption: false,
         enableCompression: true,
         backupEnabled: false,
-        cleanupInterval: 60 * 60 * 1000 // 1小时
+        cleanupInterval: 60 * 60 * 1000, // 1小时
       },
-      ...config
+      ...config,
     };
 
     // 初始化存储提供者
     this.memoryProvider = new MemoryStorageProvider(
       this.config.cache.memory.maxSize,
-      this.config.cache.memory.maxEntries
+      this.config.cache.memory.maxEntries,
     );
 
     this.indexedDBProvider = new IndexedDBStorageProvider(
       this.config.cache.indexedDB.maxSize,
-      this.config.cache.indexedDB.maxEntries
+      this.config.cache.indexedDB.maxEntries,
     );
 
     // FastGPT提供者需要外部配置
     this.fastgptProvider = new FastGPTStorageProvider({
       baseUrl: process.env.REACT_APP_FASTGPT_BASE_URL || '',
       apiKey: process.env.REACT_APP_FASTGPT_API_KEY || '',
-      timeout: 30000
+      timeout: 30000,
     });
 
     // 初始化缓存和同步管理器
@@ -97,7 +97,7 @@ export class HybridStorageManager {
       this.memoryProvider,
       this.indexedDBProvider,
       this.fastgptProvider,
-      this.config.sync
+      this.config.sync,
     );
 
     this.setupEventListeners();
@@ -106,7 +106,9 @@ export class HybridStorageManager {
   // ==================== 初始化 ====================
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      return;
+    }
 
     try {
       console.log('初始化混合存储管理器...');
@@ -115,7 +117,7 @@ export class HybridStorageManager {
       await Promise.all([
         this.memoryProvider.init(),
         this.indexedDBProvider.init(),
-        this.fastgptProvider.init()
+        this.fastgptProvider.init(),
       ]);
 
       // 设置缓存策略
@@ -144,7 +146,9 @@ export class HybridStorageManager {
    * 获取会话
    */
   async getSession(sessionId: string): Promise<ChatSession | null> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       // 1. 尝试从缓存获取
@@ -153,7 +157,7 @@ export class HybridStorageManager {
         // 更新访问时间
         session.lastAccessedAt = Date.now();
         await this.cacheManager.set(`session:${sessionId}`, session, {
-          temperature: DataTemperature.HOT
+          temperature: DataTemperature.HOT,
         });
         return session;
       }
@@ -163,7 +167,7 @@ export class HybridStorageManager {
       if (session) {
         // 提升到缓存
         await this.cacheManager.set(`session:${sessionId}`, session, {
-          temperature: DataTemperature.WARM
+          temperature: DataTemperature.WARM,
         });
         return session;
       }
@@ -193,7 +197,9 @@ export class HybridStorageManager {
    * 保存会话
    */
   async saveSession(session: ChatSession): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const key = `session:${session.id}`;
@@ -209,7 +215,7 @@ export class HybridStorageManager {
       // 保存到缓存
       await this.cacheManager.set(key, session, {
         temperature,
-        compress: session.messages.length > 50 // 大会话压缩存储
+        compress: session.messages.length > 50, // 大会话压缩存储
       });
 
       // 如果是热数据，也保存到内存
@@ -230,7 +236,9 @@ export class HybridStorageManager {
    * 删除会话
    */
   async deleteSession(sessionId: string): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const key = `session:${sessionId}`;
@@ -239,7 +247,7 @@ export class HybridStorageManager {
       await Promise.all([
         this.cacheManager.delete(key),
         this.memoryProvider.delete(key),
-        this.indexedDBProvider.delete(key)
+        this.indexedDBProvider.delete(key),
       ]);
 
     } catch (error) {
@@ -252,7 +260,9 @@ export class HybridStorageManager {
    * 获取智能体的所有会话
    */
   async getAgentSessions(agentId: string, limit = 50): Promise<ChatSession[]> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const sessions: ChatSession[] = [];
@@ -260,7 +270,7 @@ export class HybridStorageManager {
       // 1. 从本地缓存获取
       const localSessions = await this.indexedDBProvider.list<ChatSession>(
         `session:${agentId}:`,
-        limit
+        limit,
       );
       sessions.push(...localSessions.map(s => s.value));
 
@@ -279,7 +289,7 @@ export class HybridStorageManager {
 
                 // 缓存新获取的会话
                 await this.cacheManager.set(`session:${localSession.id}`, localSession, {
-                  temperature: DataTemperature.WARM
+                  temperature: DataTemperature.WARM,
                 });
               }
             }
@@ -304,15 +314,17 @@ export class HybridStorageManager {
    * 搜索会话
    */
   async searchSessions(query: SearchQuery): Promise<Array<{session: ChatSession, score: number}>> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const results: Array<{session: ChatSession, score: number}> = [];
 
       // 搜索本地缓存
       const localResults = await this.indexedDBProvider.search<ChatSession>(query);
-      for (const {value: session, score} of localResults) {
-        results.push({session, score});
+      for (const { value: session, score } of localResults) {
+        results.push({ session, score });
       }
 
       // 搜索FastGPT（如果需要更多结果）
@@ -320,14 +332,14 @@ export class HybridStorageManager {
         try {
           const remoteResults = await this.fastgptProvider.search<any>(query);
 
-          for (const {value: remoteSession, score: remoteScore} of remoteResults) {
+          for (const { value: remoteSession, score: remoteScore } of remoteResults) {
             // 转换为本地格式
             const localSession = this.convertRemoteSessionToLocal(remoteSession);
 
             // 检查是否已存在
             const existingIndex = results.findIndex(r => r.session.id === localSession.id);
             if (existingIndex === -1) {
-              results.push({session: localSession, score: remoteScore});
+              results.push({ session: localSession, score: remoteScore });
             } else {
               // 更新分数（取较高值）
               results[existingIndex].score = Math.max(results[existingIndex].score, remoteScore);
@@ -358,7 +370,9 @@ export class HybridStorageManager {
    * 添加消息到会话
    */
   async addMessageToSession(sessionId: string, message: ChatMessage): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const session = await this.getSession(sessionId);
@@ -389,9 +403,11 @@ export class HybridStorageManager {
   async updateMessageInSession(
     sessionId: string,
     messageId: string,
-    updater: (message: ChatMessage) => ChatMessage
+    updater: (message: ChatMessage) => ChatMessage,
   ): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const session = await this.getSession(sessionId);
@@ -423,7 +439,9 @@ export class HybridStorageManager {
    * 同步会话
    */
   async syncSession(sessionId: string): Promise<boolean> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const result = await this.syncManager.syncSession(sessionId);
@@ -438,7 +456,9 @@ export class HybridStorageManager {
    * 同步智能体的所有会话
    */
   async syncAgentSessions(agentId: string): Promise<boolean> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const result = await this.syncManager.syncAgentSessions(agentId);
@@ -453,7 +473,9 @@ export class HybridStorageManager {
    * 强制同步所有数据
    */
   async forceSyncAll(): Promise<boolean> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     try {
       const result = await this.syncManager.syncAllSessions();
@@ -470,7 +492,9 @@ export class HybridStorageManager {
    * 预加载智能体会话
    */
   async preloadAgentSessions(agentId: string, limit = 10): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     await this.cacheManager.preloadAgentSessions(agentId, limit);
   }
@@ -479,7 +503,9 @@ export class HybridStorageManager {
    * 清理缓存
    */
   async cleanupCache(): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     await this.cacheManager.cleanup();
   }
@@ -488,7 +514,9 @@ export class HybridStorageManager {
    * 优化缓存
    */
   async optimizeCache(): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     await this.cacheManager.optimize();
   }
@@ -497,7 +525,9 @@ export class HybridStorageManager {
    * 获取缓存统计
    */
   async getCacheStats() {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     return this.cacheManager.getUsageStats();
   }
@@ -508,7 +538,9 @@ export class HybridStorageManager {
    * 启用离线模式
    */
   async enableOfflineMode(): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     await this.syncManager.enableOfflineMode();
   }
@@ -517,7 +549,9 @@ export class HybridStorageManager {
    * 禁用离线模式
    */
   async disableOfflineMode(): Promise<void> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     await this.syncManager.disableOfflineMode();
   }
@@ -526,7 +560,9 @@ export class HybridStorageManager {
    * 检查是否为离线模式
    */
   async isOfflineMode(): Promise<boolean> {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     return this.syncManager.isOfflineMode();
   }
@@ -537,19 +573,21 @@ export class HybridStorageManager {
    * 获取存储统计
    */
   async getStorageStats() {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     const [memoryStats, indexedDBStats, fastgptStats] = await Promise.all([
       this.memoryProvider.getStats(),
       this.indexedDBProvider.getStats(),
-      this.fastgptProvider.getStats()
+      this.fastgptProvider.getStats(),
     ]);
 
     return {
       memory: memoryStats,
       indexedDB: indexedDBStats,
       fastgpt: fastgptStats,
-      cache: await this.cacheManager.getUsageStats()
+      cache: await this.cacheManager.getUsageStats(),
     };
   }
 
@@ -557,7 +595,9 @@ export class HybridStorageManager {
    * 获取同步统计
    */
   async getSyncStats() {
-    if (!this.isInitialized) await this.initialize();
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
 
     return this.syncManager.getSyncStats();
   }
@@ -650,8 +690,8 @@ export class HybridStorageManager {
       metadata: {
         fastgptChatId: remoteSession.chatId,
         remoteMetadata: remoteSession.metadata,
-        syncedAt: Date.now()
-      }
+        syncedAt: Date.now(),
+      },
     };
   }
 
@@ -661,7 +701,7 @@ export class HybridStorageManager {
       id: msg.id || msg.dataId,
       feedback: msg.feedback,
       timestamp: msg.timestamp || Date.now(),
-      raw: msg.raw
+      raw: msg.raw,
     }));
   }
 
@@ -680,14 +720,14 @@ export class HybridStorageManager {
       const [memoryOk, indexedDBOk, fastgptOk] = await Promise.all([
         this.checkProviderHealth(this.memoryProvider),
         this.checkProviderHealth(this.indexedDBProvider),
-        this.checkProviderHealth(this.fastgptProvider)
+        this.checkProviderHealth(this.fastgptProvider),
       ]);
 
       return {
         memory: memoryOk,
         indexedDB: indexedDBOk,
         fastgpt: fastgptOk,
-        overall: memoryOk && indexedDBOk && fastgptOk
+        overall: memoryOk && indexedDBOk && fastgptOk,
       };
 
     } catch (error) {
@@ -696,7 +736,7 @@ export class HybridStorageManager {
         memory: false,
         indexedDB: false,
         fastgpt: false,
-        overall: false
+        overall: false,
       };
     }
   }
@@ -726,7 +766,7 @@ export class HybridStorageManager {
       await Promise.all([
         this.memoryProvider.destroy(),
         this.indexedDBProvider.destroy(),
-        this.fastgptProvider.destroy()
+        this.fastgptProvider.destroy(),
       ]);
 
       // 销毁管理器
@@ -748,7 +788,7 @@ export class HybridStorageManager {
     if (newConfig.sync) {
       this.syncManager.setSyncPolicy({
         ...this.config.sync,
-        ...newConfig.sync
+        ...newConfig.sync,
       });
     }
 
@@ -760,13 +800,13 @@ export class HybridStorageManager {
 
   private mergeConfig(
     base: HybridStorageConfig,
-    update: Partial<HybridStorageConfig>
+    update: Partial<HybridStorageConfig>,
   ): HybridStorageConfig {
     return {
       cache: { ...base.cache, ...update.cache },
       sync: { ...base.sync, ...update.sync },
       performance: { ...base.performance, ...update.performance },
-      storage: { ...base.storage, ...update.storage }
+      storage: { ...base.storage, ...update.storage },
     } as HybridStorageConfig;
   }
 }

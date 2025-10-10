@@ -2,7 +2,7 @@ import { FastGPTEvent } from '@/types';
 import { getNormalizedEventKey, isReasoningEvent, isChunkLikeEvent } from './fastgptEvents';
 import type {
   JsonObject,
-  JsonValue
+  JsonValue,
 } from '@/types/dynamic';
 
 // 简化的类型守卫函数
@@ -33,9 +33,15 @@ const safeGetArray = (obj: JsonValue | undefined, key: string): JsonValue[] | un
 };
 
 const toJsonValue = (value: unknown): JsonValue => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return value.map(toJsonValue);
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(toJsonValue);
+  }
   if (typeof value === 'object') {
     const result: { [key: string]: JsonValue } = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
@@ -47,16 +53,24 @@ const toJsonValue = (value: unknown): JsonValue => {
 };
 
 const truncateText = (value: string, max = 80): string => {
-  if (typeof value !== 'string' || max <= 0) return '';
-  if (value.length <= max) return value;
+  if (typeof value !== 'string' || max <= 0) {
+    return '';
+  }
+  if (value.length <= max) {
+    return value;
+  }
   return `${value.slice(0, Math.max(0, max - 1))}…`;
 };
 
 const safeJsonParse = <T extends JsonValue = JsonValue>(input: unknown): T | null => {
-  if (typeof input !== 'string') return null;
+  if (typeof input !== 'string') {
+    return null;
+  }
   const attempts = [input];
   const trimmed = input.trim();
-  if (trimmed !== input) attempts.push(trimmed);
+  if (trimmed !== input) {
+    attempts.push(trimmed);
+  }
 
   if (trimmed.endsWith(',')) {
     attempts.push(trimmed.slice(0, -1));
@@ -141,17 +155,17 @@ const collectToolParamsInfo = (state: ToolEventState): ToolParamsInfo => {
 
   const parsed = safeJsonParse<JsonValue>(raw);
 
-const convertToJsonObject = (obj: JsonValue | null): JsonObject | null => {
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-    return null;
-  }
+  const convertToJsonObject = (obj: JsonValue | null): JsonObject | null => {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+      return null;
+    }
 
-  const result: { [key: string]: JsonValue } = {};
-  Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
-    result[key] = toJsonValue(value);
-  });
-  return result as JsonObject;
-};
+    const result: { [key: string]: JsonValue } = {};
+    Object.entries(obj as Record<string, unknown>).forEach(([key, value]) => {
+      result[key] = toJsonValue(value);
+    });
+    return result as JsonObject;
+  };
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return {
       raw,
@@ -181,8 +195,8 @@ const convertToJsonObject = (obj: JsonValue | null): JsonObject | null => {
 
   const detail = otherEntries.length > 0
     ? otherEntries
-        .map(([key, value]) => `${key}：${typeof value === 'string' ? truncateText(value, 40) : truncateText(JSON.stringify(value), 40)}`)
-        .join('\n')
+      .map(([key, value]) => `${key}：${typeof value === 'string' ? truncateText(value, 40) : truncateText(JSON.stringify(value), 40)}`)
+      .join('\n')
     : undefined;
 
   return {
@@ -196,7 +210,9 @@ const convertToJsonObject = (obj: JsonValue | null): JsonObject | null => {
 const extractDatasetFromTextBlocks = (texts: string[]) => {
   for (const text of texts) {
     const parsed = safeJsonParse<JsonValue>(text);
-    if (!parsed || typeof parsed !== 'object') continue;
+    if (!parsed || typeof parsed !== 'object') {
+      continue;
+    }
 
     const list = Array.isArray(safeGetProperty(parsed, 'data'))
       ? safeGetProperty(parsed, 'data')
@@ -263,13 +279,13 @@ const buildToolResponseInfo = (response: unknown): ToolResponseInfo => {
 
   const textBlocks = Array.isArray(responseObj.content)
     ? responseObj.content
-        .filter((block: unknown): block is { type: string; text: string } =>
-          block !== null &&
+      .filter((block: unknown): block is { type: string; text: string } =>
+        block !== null &&
           typeof block === 'object' &&
           (block as { type?: unknown }).type === 'text' &&
-          typeof (block as { text?: unknown }).text === 'string'
-        )
-        .map((block: { type: string; text: string }) => block.text)
+          typeof (block as { text?: unknown }).text === 'string',
+      )
+      .map((block: { type: string; text: string }) => block.text)
     : [];
 
   const dataset = extractDatasetFromTextBlocks(textBlocks);
@@ -282,12 +298,18 @@ const buildToolResponseInfo = (response: unknown): ToolResponseInfo => {
     const source = safeGetProperty(first, 'sourceName') || safeGetProperty(first, 'source') || safeGetProperty(first, 'datasetName');
 
     const summaryParts: string[] = [`命中 ${count} 条知识库内容`];
-    if (title) summaryParts.push(`示例：${truncateText(String(title), 24)}`);
-    if (source) summaryParts.push(`来源：${truncateText(String(source), 24)}`);
+    if (title) {
+      summaryParts.push(`示例：${truncateText(String(title), 24)}`);
+    }
+    if (source) {
+      summaryParts.push(`来源：${truncateText(String(source), 24)}`);
+    }
 
     const detail = items.slice(0, 3)
       .map((item: JsonValue, index: number) => {
-        if (!item || typeof item !== 'object') return `${index + 1}. 记录`;
+        if (!item || typeof item !== 'object') {
+          return `${index + 1}. 记录`;
+        }
         const itemTitle = safeGetProperty(item, 'title') || safeGetProperty(item, 'name') || safeGetProperty(item, 'q') || safeGetProperty(item, 'question') || safeGetProperty(item, 'productName') || '记录';
         const itemSource = safeGetProperty(item, 'sourceName') || safeGetProperty(item, 'source') || safeGetProperty(item, 'datasetName');
         return `${index + 1}. ${truncateText(String(itemTitle), 40)}${itemSource ? `（${truncateText(String(itemSource), 20)}）` : ''}`;
@@ -426,7 +448,9 @@ const datasetSummary = (payload: JsonValue): string | undefined => {
 
   const titles = items
     .map((item) => {
-      if (!item || typeof item !== 'object') return undefined;
+      if (!item || typeof item !== 'object') {
+        return undefined;
+      }
       return safeGetProperty(item, 'title') || safeGetProperty(item, 'name') || safeGetProperty(item, 'source') || safeGetProperty(item, 'datasetName');
     })
     .filter((title): title is string => typeof title === 'string' && title.trim().length > 0)
@@ -469,7 +493,9 @@ const toolSummary = (payload: JsonValue): string | undefined => {
     return `${head}：${description.slice(0, 80)}`;
   }
 
-  if (head) return head;
+  if (head) {
+    return head;
+  }
   if (typeof description === 'string') {
     return description.slice(0, 80);
   }
@@ -479,16 +505,24 @@ const toolSummary = (payload: JsonValue): string | undefined => {
 
 const usageSummary = (payload: JsonValue): string | undefined => {
   const usage = safeGetObject(payload, 'usage') ?? payload;
-  if (!usage || typeof usage !== 'object') return undefined;
+  if (!usage || typeof usage !== 'object') {
+    return undefined;
+  }
 
   const prompt = safeGetProperty(usage, 'prompt_tokens') ?? safeGetProperty(usage, 'promptTokens');
   const completion = safeGetProperty(usage, 'completion_tokens') ?? safeGetProperty(usage, 'completionTokens');
   const total = safeGetProperty(usage, 'total_tokens') ?? safeGetProperty(usage, 'totalTokens');
 
   const parts: string[] = [];
-  if (typeof prompt === 'number') parts.push(`提示 ${prompt}`);
-  if (typeof completion === 'number') parts.push(`生成 ${completion}`);
-  if (typeof total === 'number') parts.push(`总计 ${total}`);
+  if (typeof prompt === 'number') {
+    parts.push(`提示 ${prompt}`);
+  }
+  if (typeof completion === 'number') {
+    parts.push(`生成 ${completion}`);
+  }
+  if (typeof total === 'number') {
+    parts.push(`总计 ${total}`);
+  }
 
   if (parts.length > 0) {
     return `Token 用量：${parts.join(' / ')}`;
@@ -596,13 +630,15 @@ const IGNORED_EVENTS = new Set(
     'usage',
   ]
     .map((name) => getNormalizedEventKey(name))
-    .concat(getNormalizedEventKey('reasoning'))
+    .concat(getNormalizedEventKey('reasoning')),
 );
 
 const generateEventId = (key: string) => `${key}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
 export const normalizeFastGPTEvent = (eventName: string, payload: JsonValue): FastGPTEvent | null => {
-  if (!eventName) return null;
+  if (!eventName) {
+    return null;
+  }
   const key = getNormalizedEventKey(eventName);
 
   const toolEvent = normalizeToolEvent(eventName, key, payload);

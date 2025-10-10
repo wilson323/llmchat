@@ -9,7 +9,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import {
   memoryMonitor,
   componentMonitor,
-  requestMonitor
+  requestMonitor,
 } from '@/utils/performanceOptimizer';
 
 interface PerformanceStats {
@@ -39,7 +39,7 @@ export const PerformanceDashboard: React.FC = () => {
   const [stats, setStats] = useState<PerformanceStats>({
     memory: null,
     requests: null,
-    components: null
+    components: null,
   });
   const intervalRef = useRef<NodeJS.Timeout>();
 
@@ -57,7 +57,7 @@ export const PerformanceDashboard: React.FC = () => {
         setStats({
           memory: memoryStats,
           requests: requestStats,
-          components: componentStats
+          components: componentStats,
         });
       }, 1000);
     } else {

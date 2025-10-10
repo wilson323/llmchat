@@ -27,14 +27,14 @@ export const useOptimisticSessionSwitch = ({
   onSessionStartLoading,
   onSessionLoadComplete,
   enablePreloading = true,
-  maxPreloadedSessions = 5
+  maxPreloadedSessions = 5,
 }: OptimisticSessionSwitchOptions = {}) => {
   const {
     currentAgent,
     currentSession,
     switchToSession,
     setSessionMessages,
-    agentSessions
+    agentSessions,
   } = useChatStore();
 
   const sessionCacheRef = useRef<SessionCache>({});
@@ -60,7 +60,7 @@ export const useOptimisticSessionSwitch = ({
     sessionCacheRef.current[sessionId] = {
       messages: [...messages],
       lastAccessed: Date.now(),
-      loading: false
+      loading: false,
     };
 
     // 清理过期缓存
@@ -72,7 +72,9 @@ export const useOptimisticSessionSwitch = ({
     const cache = sessionCacheRef.current;
     const entries = Object.entries(cache);
 
-    if (entries.length <= maxPreloadedSessions) return;
+    if (entries.length <= maxPreloadedSessions) {
+      return;
+    }
 
     // 按最后访问时间排序，保留最近访问的会话
     const sorted = entries
@@ -204,7 +206,9 @@ export const useOptimisticSessionSwitch = ({
 
   // 智能预加载
   const smartPreloadSessions = useCallback((): void => {
-    if (!enablePreloading || !currentAgent) return;
+    if (!enablePreloading || !currentAgent) {
+      return;
+    }
 
     const agentSessionsList = agentSessions[currentAgent.id] || [];
     const currentSessionId = currentSession?.id;
@@ -224,19 +228,23 @@ export const useOptimisticSessionSwitch = ({
 
   // 预加载相邻会话
   const preloadAdjacentSessions = useCallback((): void => {
-    if (!enablePreloading || !currentAgent || !currentSession) return;
+    if (!enablePreloading || !currentAgent || !currentSession) {
+      return;
+    }
 
     const agentSessionsList = agentSessions[currentAgent.id] || [];
     const currentIndex = agentSessionsList.findIndex(s => s.id === currentSession.id);
 
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {
+      return;
+    }
 
     // 预加载前后各2个会话
     const adjacentIndices = [
       currentIndex - 2,
       currentIndex - 1,
       currentIndex + 1,
-      currentIndex + 2
+      currentIndex + 2,
     ].filter(i => i >= 0 && i < agentSessionsList.length);
 
     adjacentIndices.forEach(index => {
@@ -280,7 +288,7 @@ export const useOptimisticSessionSwitch = ({
           总切换次数: stats.totalSwitches,
           平均切换时间: `${stats.averageSwitchTime.toFixed(2)}ms`,
           缓存命中率: `${(stats.cacheHitRate * 100).toFixed(1)}%`,
-          错误率: `${(stats.errorRate * 100).toFixed(1)}%`
+          错误率: `${(stats.errorRate * 100).toFixed(1)}%`,
         });
       }, 10000); // 每10秒输出一次
 
@@ -300,7 +308,7 @@ export const useOptimisticSessionSwitch = ({
       totalMessages,
       loadingCount,
       maxCacheSize: maxPreloadedSessions,
-      cacheSize: totalCached / maxPreloadedSessions
+      cacheSize: totalCached / maxPreloadedSessions,
     };
   }, [maxPreloadedSessions]);
 
@@ -347,6 +355,6 @@ export const useOptimisticSessionSwitch = ({
     getPerformanceStats: () => performanceMonitor.current.getPerformanceStats(),
     getSessionMetrics: (sessionId: string) => performanceMonitor.current.getSessionMetrics(sessionId),
     getPerformanceReport: () => performanceMonitor.current.getPerformanceReport(),
-    analyzePerformanceBottlenecks: () => performanceMonitor.current.analyzePerformanceBottlenecks()
+    analyzePerformanceBottlenecks: () => performanceMonitor.current.analyzePerformanceBottlenecks(),
   };
 };

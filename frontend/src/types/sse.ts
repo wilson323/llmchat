@@ -1,7 +1,7 @@
 /**
  * SSE (Server-Sent Events) 类型定义
  * 用于消除API层的any类型使用
- * 
+ *
  * @deprecated 此文件已被 shared-types/sse-events.ts 替代
  * 为保持向后兼容，暂时保留此文件并重新导出新类型
  */
