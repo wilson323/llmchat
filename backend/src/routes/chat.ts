@@ -14,6 +14,7 @@ router.get('/init', chatController.chatInit);
 // 获取聊天历史列表 & 详情
 router.get('/history', chatController.listChatHistories);
 router.get('/history/:chatId', chatController.getChatHistory);
+router.get('/sessions/:sessionId/messages', chatController.getSessionMessages);
 
 // 删除/清空聊天历史
 router.delete('/history/:chatId', chatController.deleteChatHistory);

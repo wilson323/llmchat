@@ -20,18 +20,14 @@ export interface AuditContext {
   skipAudit?: boolean;
 }
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  // ^ 忽略namespace警告，因为这是扩展Express命名空间的标准方法
-  namespace Express {
-    interface Request {
-      audit?: AuditContext;
-      user?: {
-        id: string;
-        username: string;
-        role: string;
-      };
-    }
+declare module "express-serve-static-core" {
+  interface Request {
+    audit?: AuditContext;
+    user?: {
+      id: string;
+      username: string;
+      role: string;
+    };
   }
 }
 
