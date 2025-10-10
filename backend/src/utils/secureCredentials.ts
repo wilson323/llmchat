@@ -2,7 +2,7 @@
  * Secure Credentials Manager
  *
  * Provides encryption at rest for sensitive credentials like database passwords
- * and API keys using AES-256-GCM encryption with environment-derived keys.
+ * and API keys using AES-256-CBC encryption with environment-derived keys.
  */
 
 import crypto from 'crypto';
@@ -11,13 +11,11 @@ import logger from '@/utils/logger';
 export interface EncryptedData {
   data: string;      // Base64 encoded encrypted data
   iv: string;        // Base64 encoded initialization vector
-  tag: string;       // Base64 encoded authentication tag
   algorithm: string; // Encryption algorithm used
 }
 
 export class SecureCredentialsManager {
-  private static readonly ALGORITHM = 'aes-256-gcm';
-  private static readonly KEY_DERIVATION_INFO = 'llmchat-credentials-v1';
+  private static readonly ALGORITHM = 'aes-256-cbc';
   private static readonly SALT_ROUNDS = 329_876; // NIST recommended
 
   /**
@@ -25,19 +23,18 @@ export class SecureCredentialsManager {
    */
   private static deriveKey(): Buffer {
     const secretSources = [
-      process.env.TOKEN_SECRET || process.env.JWT_SECRET || '',
+      process.env.TOKEN_SECRET || process.env.JWT_SECRET || 'default-secret',
       process.env.DATABASE_URL || '',
       process.env.NODE_ENV || 'development',
       process.env.HOSTNAME || '',
-      crypto.randomBytes(32).toString('hex') // Add entropy
+      'llmchat-credentials-salt-2024' // Fixed salt component
     ];
 
     // Create combined secret
     const combinedSecret = secretSources.join('|');
 
-    // Use a fixed salt for reproducibility but add environment-specific entropy
-    const baseSalt = process.env.CREDENTIALS_SALT || 'llmchat-default-salt-2024';
-    const saltInput = baseSalt + process.env.HOSTNAME + (process.env.NODE_ENV || 'development');
+    // Create consistent salt from environment
+    const saltInput = process.env.CREDENTIALS_SALT || 'llmchat-default-salt';
     const salt = crypto.createHash('sha256').update(saltInput).digest();
 
     return crypto.pbkdf2Sync(combinedSecret, salt, this.SALT_ROUNDS, 32, 'sha256');
@@ -49,20 +46,16 @@ export class SecureCredentialsManager {
   static encrypt(plaintext: string): EncryptedData {
     try {
       const key = this.deriveKey();
-      const iv = crypto.randomBytes(16); // GCM needs 16-byte IV
+      const iv = crypto.randomBytes(16); // CBC needs 16-byte IV
 
-      const cipher = crypto.createCipherGCM(this.ALGORITHM, key, iv);
-      cipher.setAAD(Buffer.from(this.KEY_DERIVATION_INFO)); // Additional authenticated data
+      const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
 
       let encrypted = cipher.update(plaintext, 'utf8');
       encrypted += cipher.final();
 
-      const tag = cipher.getAuthTag();
-
       return {
         data: Buffer.from(encrypted).toString('base64'),
         iv: iv.toString('base64'),
-        tag: tag.toString('base64'),
         algorithm: this.ALGORITHM
       };
     } catch (error) {
@@ -78,11 +71,8 @@ export class SecureCredentialsManager {
     try {
       const key = this.deriveKey();
       const iv = Buffer.from(encryptedData.iv, 'base64');
-      const tag = Buffer.from(encryptedData.tag, 'base64');
 
-      const decipher = crypto.createDecipherGCM(encryptedData.algorithm, key, iv);
-      decipher.setAAD(Buffer.from(this.KEY_DERIVATION_INFO));
-      decipher.setAuthTag(tag);
+      const decipher = crypto.createDecipheriv(encryptedData.algorithm, key, iv);
 
       const encryptedBuffer = Buffer.from(encryptedData.data, 'base64');
       let decrypted = decipher.update(encryptedBuffer);
@@ -132,11 +122,9 @@ export class SecureCredentialsManager {
       typeof encryptedData === 'object' &&
       typeof encryptedData.data === 'string' &&
       typeof encryptedData.iv === 'string' &&
-      typeof encryptedData.tag === 'string' &&
       typeof encryptedData.algorithm === 'string' &&
       encryptedData.data.length > 0 &&
-      encryptedData.iv.length > 0 &&
-      encryptedData.tag.length > 0
+      encryptedData.iv.length > 0
     );
   }
 
@@ -158,5 +146,15 @@ export class SecureCredentialsManager {
       logger.warn('[SecureCredentialsManager] Encryption not available', { error });
       return false;
     }
+  }
+
+  /**
+   * Masks sensitive data for logging
+   */
+  static maskSensitiveData(data: string): string {
+    if (!data || data.length < 8) {
+      return '***';
+    }
+    return data.substring(0, 4) + '***' + data.substring(data.length - 4);
   }
 }
