@@ -48,7 +48,7 @@ interface SecurityConfig {
 export class SecurityUtils {
   private static readonly SQL_INJECTION_PATTERNS = [
     /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/i,
-    /(\'|\'\'|;|--|\#|\/\*|\*\/)/,
+    /('|''|;|--|#|\/\*|\*\/)/,
     /(\bOR\b.*=.*\bOR\b)/i,
     /(\bAND\b.*=.*\bAND\b)/i,
     /(1=1|1 = 1|true)/i,

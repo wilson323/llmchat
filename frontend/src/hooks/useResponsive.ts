@@ -260,9 +260,8 @@ export function useMediaQuery(query: string): boolean {
     if (mediaQuery.addEventListener) {
       mediaQuery.addEventListener('change', handleChange);
       return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-    // 旧版浏览器兼容
-    else {
+    } else {
+      // 旧版浏览器兼容
       mediaQuery.addListener(handleChange);
       return () => mediaQuery.removeListener(handleChange);
     }

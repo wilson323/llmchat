@@ -54,10 +54,10 @@ export class PerformanceMonitor {
    * 性能监控中间件
    */
   public middleware() {
-    const monitor = this;
     return (req: Request, res: Response, next: NextFunction): void => {
+      const self = this;
       const startTime = performance.now();
-      const requestId = monitor.generateRequestId();
+      const requestId = this.generateRequestId();
 
       // 将requestId添加到请求对象中，以便后续使用
       req.requestId = requestId;
@@ -98,10 +98,10 @@ export class PerformanceMonitor {
         };
 
         // 存储性能数据
-        monitor.storePerformanceData(perfData);
+        self.storePerformanceData(perfData);
 
         // 记录慢请求
-        if (duration > monitor.slowRequestThreshold) {
+        if (duration > self.slowRequestThreshold) {
           logger.warn('Slow request detected', {
             requestId,
             method: req.method,

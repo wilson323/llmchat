@@ -28,7 +28,7 @@ export class LogSanitizer {
     { pattern: /key/i, replacement: '***' },
     { pattern: /auth/i, replacement: '***' },
     { pattern: /Bearer\s+[A-Za-z0-9\-._~+\/]+=*/g, replacement: 'Bearer ***' },
-    { pattern: /sk-[A-Za-z0-9]+/g, replacement: 'sk-***' },
+    { pattern: /sk-[A-Za-z0-9-]+/g, replacement: 'sk-***' },
     { pattern: /mongodb:\/\/[^:]+:[^@]+@/g, replacement: 'mongodb://***:***@' },
     { pattern: /postgresql:\/\/[^:]+:[^@]+@/g, replacement: 'postgresql://***:***@' },
     { pattern: /mysql:\/\/[^:]+:[^@]+@/g, replacement: 'mysql://***:***@' },

@@ -1949,7 +1949,7 @@ function AgentsPanel() {
         });
         toast({ type: 'success', title: t('已创建智能体'), description: created.name });
       } else if (formState.agent) {
-        const { id: ignored, ...rest } = payload;
+        const { id: _ignored, ...rest } = payload;
         const updates: Partial<AgentPayload> = { ...rest };
         if (!payload.apiKey) {
           delete updates.apiKey;

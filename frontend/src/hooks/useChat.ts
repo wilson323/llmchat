@@ -73,8 +73,7 @@ export const useChat = () => {
       useMessageStore.getState().addMessage(assistantMessage);
 
       // 读取会话ID
-      let sessionIdForChat: string | undefined;
-      sessionIdForChat = activeSession?.id;
+      const sessionIdForChat = activeSession?.id;
 
       // 构建聊天消息
       const chatMessages: OriginalChatMessage[] = [

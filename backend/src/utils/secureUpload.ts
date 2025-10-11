@@ -5,6 +5,7 @@
 
 import { Request } from 'express';
 import { LogSanitizer } from './logSanitizer';
+import { promises as fs } from 'fs';
 
 export interface FileValidationOptions {
   maxSize?: number;
@@ -115,13 +116,13 @@ export class SecureUpload {
 
   static sanitizeFilename(filename: string): string {
     // 移除路径分隔符
-    let sanitized = filename.replace(/[\/\\]/g, '_');
+    let sanitized = filename.replace(/[/\\]/g, '_');
 
     // 移除特殊字符
     sanitized = sanitized.replace(/[<>:"|?*]/g, '_');
 
-    // 移除控制字符
-    sanitized = sanitized.replace(/[\x00-\x1f\x7f-\x9f]/g, '_');
+    // 移除控制字符 (除了换行符和制表符)
+    sanitized = sanitized.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, '_');
 
     // 移除连续的下划线
     sanitized = sanitized.replace(/_+/g, '_');
@@ -164,7 +165,6 @@ export class SecureUpload {
     // 这里可以集成病毒扫描软件
     // 目前只做基本的文件签名检查
     try {
-      const fs = require('fs').promises;
       const buffer = await fs.readFile(filePath);
 
       // 检查PE文件头 (Windows可执行文件)

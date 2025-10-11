@@ -11,7 +11,6 @@ import {
   ApiError,
 } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
-import { getErrorMessage } from '@/utils/helpers';
 import { createErrorFromUnknown, AuthenticationError } from '@/types/errors';
 import { JsonValue } from '@/types/dynamic';
 

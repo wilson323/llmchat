@@ -35,7 +35,7 @@ export interface RawReasoningEvent {
   data: unknown;
 }
 
-const STEP_TITLE_REGEX = /^(?:步骤\s*\d+|Step\s*\d+|思考\s*\d+|阶段\s*\d+|环节\s*\d+|Task\s*\d+|第[\d一二三四五六七八九十百零两]+步|\d+[\.、）])/i;
+const STEP_TITLE_REGEX = /^(?:步骤\s*\d+|Step\s*\d+|思考\s*\d+|阶段\s*\d+|环节\s*\d+|Task\s*\d+|第[\d一二三四五六七八九十百零两]+步|\d+[.、）])/i;
 
 export const normalizeReasoningDisplay = (
   input: string,
@@ -81,7 +81,7 @@ export const normalizeReasoningDisplay = (
   const isShortTitle = normalizedTitle.length > 0 && normalizedTitle.length <= 24;
   const shouldUseTitle =
     (matchedByPattern && (effectiveRest.length > 0 || inlineRemainder.length > 0 || restJoined.length > 0)) ||
-    (!matchedByPattern && colonMatch != null && isShortTitle && effectiveRest.length > 0);
+    (!matchedByPattern && colonMatch !== null && isShortTitle && effectiveRest.length > 0);
 
   if (!shouldUseTitle) {
     return { body: sanitized };
@@ -144,7 +144,7 @@ const mergeTotalSteps = (current: number | undefined, next: number | undefined, 
 };
 
 export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | null): ParsedReasoningUpdate | null => {
-  if (payload?.data == null) {
+  if (payload?.data === null) {
     return null;
   }
 
@@ -173,7 +173,7 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
 
   while (queue.length > 0) {
     const item = queue.shift();
-    if (item == null) {
+    if (item === null) {
       continue;
     }
 

@@ -584,7 +584,9 @@ export class ChatProxyService {
           rawResponse: response.data,
           normalizedResponse: normalized,
         });
-      } catch {}
+      } catch {
+        // 忽略日志记录错误
+      }
       return normalized;
     };
 
@@ -829,7 +831,9 @@ export class ChatProxyService {
         eventType,
         data,
       });
-    } catch {}
+    } catch {
+      // 忽略WebSocket发送错误
+    }
   }
 
   private extractReasoningPayload(data: Record<string, JsonValue> | null): ReasoningPayload {

@@ -4,7 +4,6 @@
  */
 
 import type { HybridStorageConfig } from '@/types/hybrid-storage';
-import { CacheStrategy } from '@/types/hybrid-storage';
 
 // 核心管理器
 export { HybridStorageManager } from './storage/HybridStorageManager';
@@ -51,6 +50,9 @@ export type {
   BatchSyncResult,
   PerformanceReport,
   OptimizationSuggestion,
+
+  // 缓存策略
+  CacheStrategy,
 
   // 搜索和查询
   SearchQuery,

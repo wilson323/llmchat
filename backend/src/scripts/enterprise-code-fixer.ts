@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
 import crypto from 'crypto';
+import { sync as globSync } from 'glob';
 
 // ========================================
 // 核心类型定义
@@ -869,7 +870,7 @@ function findTargetFiles(patterns: string[], excludePatterns: string[]): string[
   const files: string[] = [];
 
   for (const pattern of patterns) {
-    const matchedFiles = require('glob').sync(pattern, {
+    const matchedFiles = globSync(pattern, {
       ignore: excludePatterns,
       absolute: true,
     });

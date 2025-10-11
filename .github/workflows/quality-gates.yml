@@ -1,8 +1,125 @@
-name: Quality Gates
+name: Code Quality Gates
 
 on:
   push:
     branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Run TypeScript type checking
+        run: |
+          pnpm run type-check
+
+      - name: Run ESLint (Backend)
+        run: |
+          cd backend && pnpm run lint
+
+      - name: Run ESLint (Frontend)
+        run: |
+          cd frontend && pnpm run lint
+
+      - name: Run Quality Monitor
+        run: |
+          pnpm run quality-monitor
+
+      - name: Upload Quality Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: quality-report
+          path: |
+            quality-reports/
+            quality-baseline.json
+          retention-days: 30
+
+      - name: Quality Gate Check
+        run: |
+          # 检查是否超出质量门禁阈值
+          node scripts/quality-monitor.js
+          if [ $? -ne 0 ]; then
+            echo "❌ 质量门禁检查失败！"
+            exit 1
+          else
+            echo "✅ 质量门禁检查通过！"
+          fi
+
+      - name: Security Audit
+        run: |
+          pnpm audit --audit-level high
+
+  test:
+    runs-on: ubuntu-latest
+    needs: quality-check
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: |
+          pnpm test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [quality-check, test]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: |
+          pnpm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            backend/dist/
+            frontend/dist/
+          retention-days: 7
   pull_request:
     branches: [ main, develop ]
 

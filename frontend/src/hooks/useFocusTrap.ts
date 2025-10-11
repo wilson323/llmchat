@@ -75,9 +75,8 @@ export const useFocusTrap = ({
         event.preventDefault();
         lastElement?.focus();
       }
-    }
-    // Tab：向后循环
-    else {
+    } else {
+      // Tab：向后循环
       if (document.activeElement === lastElement) {
         event.preventDefault();
         firstElement?.focus();

@@ -127,15 +127,6 @@ import {
 } from '@/types/dynamic';
 import type { SSEEventData } from '@/types/provider';
 import {
-  BaseError,
-  ValidationError,
-  AuthenticationError,
-  AuthorizationError,
-  NetworkError,
-  ExternalServiceError,
-  ResourceError,
-  BusinessLogicError,
-  SystemError,
   createErrorFromUnknown,
   wrapAsyncHandler,
 } from '@/types/errors';

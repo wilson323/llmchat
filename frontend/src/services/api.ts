@@ -234,7 +234,7 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
   const eventKey = getNormalizedEventKey(resolvedEvent || 'message');
 
   const emitReasoning = (data: FastGPTReasoningData | string | Record<string, unknown>, eventNameOverride?: string) => {
-    if (!onReasoning || data == null) {
+    if (!onReasoning || data === null) {
       return;
     }
     try {

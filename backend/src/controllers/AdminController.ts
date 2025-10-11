@@ -3,7 +3,7 @@ import { AgentConfigService } from '@/services/AgentConfigService';
 import { ApiResponse } from '@/types';
 import { safeLogger as logger } from '@/utils/logSanitizer';
 import { HTTP_STATUS } from '@/constants/httpStatus';
-import { TIME_CONSTANTS, TIME_UNITS, TIME_CONFIG } from '@/constants/intervals';
+import { TIME_CONSTANTS, TIME_UNITS } from '@/constants/intervals';
 
 // 创建服务实例
 const configService = new AgentConfigService();

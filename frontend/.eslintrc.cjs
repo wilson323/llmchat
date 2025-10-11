@@ -1,5 +1,5 @@
 // 前端ESLint配置 - 使用优化后的配置系统
-const frontendConfig = require('./config/eslint/frontend.cjs');
+const frontendConfig = require('../config/eslint/frontend.cjs');
 
 // 根据环境变量选择配置
 const env = process.env.NODE_ENV || 'development';
@@ -7,7 +7,7 @@ const useDevelopmentConfig = env === 'development' || process.env.ESLINT_DEV ===
 
 if (useDevelopmentConfig) {
   // 开发环境使用宽松配置
-  const devConfig = require('./config/eslint/development.cjs');
+  const devConfig = require('../config/eslint/development.cjs');
   module.exports = {
     ...devConfig,
     root: true,
@@ -21,6 +21,7 @@ if (useDevelopmentConfig) {
         jsx: true
       },
       project: './tsconfig.json',
+      tsconfigRootDir: __dirname,
     },
     plugins: [...devConfig.plugins, 'react', 'react-hooks'],
     extends: [
@@ -91,6 +92,7 @@ if (useDevelopmentConfig) {
     parserOptions: {
       ...frontendConfig.parserOptions,
       project: './tsconfig.json',
+      tsconfigRootDir: __dirname,
     },
     ignorePatterns: ['dist', 'node_modules', 'build', '**/*.test.ts', '**/*.test.tsx']
   };
