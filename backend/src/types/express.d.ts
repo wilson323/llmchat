@@ -2,6 +2,18 @@
  * Express类型扩展
  */
 import { ProtectedRequestContext } from '@/services/ProtectionService';
+import { AuditAction, ResourceType } from './audit';
+
+/**
+ * 审计上下文
+ */
+export interface AuditContext {
+  action?: AuditAction;
+  resourceType?: ResourceType;
+  resourceId?: string;
+  details?: Record<string, unknown>;
+  skipAudit?: boolean;
+}
 
 declare global {
   namespace Express {
@@ -9,8 +21,14 @@ declare global {
       requestId?: string;
       protectionContext?: ProtectedRequestContext;
       protectionService?: any;
-      audit?: any;
-      user?: any;
+      requestId: string;
+      audit?: AuditContext;
+      user?: {
+        id: string;
+        username?: string;
+        email?: string;
+        role?: string;
+      };
     }
   }
 }
