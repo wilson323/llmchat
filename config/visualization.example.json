@@ -1,6 +1,6 @@
 {
-  "enabled": true,
-  "refreshInterval": 5900,
+  "enabled": false,
+  "refreshInterval": 5000,
   "maxDataPoints": 1000,
   "features": {
     "dashboard": true,
@@ -18,10 +18,7 @@
   },
   "security": {
     "requireAuth": true,
-    "allowedRoles": [
-      "admin",
-      "operator"
-    ],
+    "allowedRoles": ["admin", "operator"],
     "sessionTimeout": 3600000
   },
   "performance": {

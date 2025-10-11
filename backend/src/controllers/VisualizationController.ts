@@ -176,7 +176,7 @@ export class VisualizationController {
         return;
       }
 
-      const { queueName, timeRange } = req.query;
+      const { queueName, timeRange } = req.query || {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       let stats;
@@ -215,7 +215,7 @@ export class VisualizationController {
         return;
       }
 
-      const { timeRange } = req.query;
+      const { timeRange } = req.query || {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       const stats = this.dataService.getSystemHistory(limit);
@@ -251,7 +251,7 @@ export class VisualizationController {
         return;
       }
 
-      const { timeRange } = req.query;
+      const { timeRange } = req.query || {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       const stats = this.dataService.getRedisHistory(limit);
@@ -451,7 +451,10 @@ export class VisualizationController {
    */
   public performQueueAction = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { queueName, action, options } = req.body;
+      // Support both params (from URL) and body (from POST) for queueName
+      const queueName = req.params.queueName || req.body.queueName;
+      const action = req.body.action;
+      const options = req.body.options;
 
       if (!queueName || !action) {
         res.status(400).json({
@@ -532,6 +535,13 @@ export class VisualizationController {
       });
     }
   };
+
+  /**
+   * 获取配置服务实例 (主要用于测试)
+   */
+  public getConfigService(): VisualizationConfigService {
+    return this.configService;
+  }
 
   /**
    * 清理资源

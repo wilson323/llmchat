@@ -385,7 +385,8 @@ describe('Visualization System', () => {
 
     test('should handle disabled features', async () => {
       // Mock config with dashboard disabled
-      configService.updateConfig({
+      const controllerConfigService = controller.getConfigService();
+      controllerConfigService.updateConfig({
         enabled: true,
         features: {
           dashboard: false,
@@ -528,8 +529,24 @@ describe('Visualization System', () => {
     });
 
     test('should handle errors gracefully', async () => {
-      // Mock an error
-      jest.spyOn(mockQueueManager, 'getAllQueues').mockRejectedValueOnce(new Error('Test error'));
+      // Enable queueManagement feature for this test
+      const controllerConfigService = controller.getConfigService();
+      controllerConfigService.updateConfig({
+        enabled: true,
+        features: {
+          dashboard: true,
+          realTimeMonitoring: true,
+          queueManagement: true,
+          performanceAnalytics: true,
+          alertManagement: true,
+          systemHealth: true,
+        },
+      });
+
+      // Mock an error in dataService.getQueueHistory
+      jest.spyOn(dataService, 'getQueueHistory').mockImplementationOnce(() => {
+        throw new Error('Test error');
+      });
 
       await controller.getQueueStats(mockReq, mockRes);
 
@@ -661,6 +678,20 @@ describe('Visualization System', () => {
     });
 
     test('should handle connection pool errors', async () => {
+      // Enable systemHealth feature for this test
+      const controllerConfigService = controller.getConfigService();
+      controllerConfigService.updateConfig({
+        enabled: true,
+        features: {
+          dashboard: true,
+          realTimeMonitoring: true,
+          queueManagement: true,
+          performanceAnalytics: true,
+          alertManagement: true,
+          systemHealth: true,
+        },
+      });
+
       // Mock connection pool error
       jest.spyOn(mockConnectionPool, 'getStats').mockImplementationOnce(() => {
         throw new Error('Connection pool error');
@@ -671,16 +702,48 @@ describe('Visualization System', () => {
     });
 
     test('should handle queue manager errors', async () => {
-      // Mock queue manager error
-      jest.spyOn(mockQueueManager, 'getAllQueues').mockRejectedValueOnce(new Error('Queue manager error'));
+      // Enable queueManagement feature for this test
+      const controllerConfigService = controller.getConfigService();
+      controllerConfigService.updateConfig({
+        enabled: true,
+        features: {
+          dashboard: true,
+          realTimeMonitoring: true,
+          queueManagement: true,
+          performanceAnalytics: true,
+          alertManagement: true,
+          systemHealth: true,
+        },
+      });
+
+      // Mock dataService error
+      jest.spyOn(dataService, 'getQueueHistory').mockImplementationOnce(() => {
+        throw new Error('Queue manager error');
+      });
 
       await controller.getQueueStats(mockReq, mockRes);
       expect(mockRes.status).toHaveBeenCalledWith(500);
     });
 
     test('should handle monitoring service errors', async () => {
-      // Mock monitoring service error
-      jest.spyOn(mockMonitoringService, 'getCurrentMetrics').mockRejectedValueOnce(new Error('Monitoring service error'));
+      // Enable dashboard feature for this test
+      const controllerConfigService = controller.getConfigService();
+      controllerConfigService.updateConfig({
+        enabled: true,
+        features: {
+          dashboard: true,
+          realTimeMonitoring: true,
+          queueManagement: true,
+          performanceAnalytics: true,
+          alertManagement: true,
+          systemHealth: true,
+        },
+      });
+
+      // Mock dataService error for getRealtimeSummary
+      jest.spyOn(dataService, 'getRealtimeSummary').mockImplementationOnce(() => {
+        throw new Error('Monitoring service error');
+      });
 
       await controller.getDashboardData(mockReq, mockRes);
       expect(mockRes.status).toHaveBeenCalledWith(500);
