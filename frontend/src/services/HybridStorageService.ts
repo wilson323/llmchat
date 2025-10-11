@@ -3,7 +3,10 @@
  * 统一导出所有混合存储相关的服务和工具
  */
 
-import type { HybridStorageConfig } from '@/types/hybrid-storage';
+import {
+  type HybridStorageConfig,
+  CacheStrategy,
+} from '@/types/hybrid-storage';
 
 // 核心管理器
 export { HybridStorageManager } from './storage/HybridStorageManager';
@@ -27,7 +30,6 @@ export type {
   // 核心类型
   StorageTier,
   SyncStatus,
-  CacheStrategy,
   DataTemperature,
 
   // 存储接口

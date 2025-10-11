@@ -18,10 +18,9 @@ export interface AuditContext {
 declare global {
   namespace Express {
     interface Request {
-      requestId?: string;
+      requestId: string;
       protectionContext?: ProtectedRequestContext;
       protectionService?: any;
-      requestId: string;
       audit?: AuditContext;
       user?: {
         id: string;

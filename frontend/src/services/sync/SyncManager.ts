@@ -574,7 +574,8 @@ export class SyncManager implements ISyncManager {
     localData: ChatSession | null,
     remoteData: FastGPTChatHistoryDetail | null,
   ): Promise<{created: number, updated: number, deleted: number, conflicts: number}> {
-    let created = 0, updated = 0, deleted = 0, conflicts = 0;
+    let created = 0, updated = 0, deleted = 0;
+    const conflicts = 0;
 
     if (!localData && remoteData) {
       // 创建本地会话

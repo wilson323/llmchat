@@ -144,7 +144,8 @@ const mergeTotalSteps = (current: number | undefined, next: number | undefined, 
 };
 
 export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | null): ParsedReasoningUpdate | null => {
-  if (payload?.data === null) {
+  // 修复第151行问题：添加完整的null/undefined检查
+  if (!payload || payload.data === null || payload.data === undefined) {
     return null;
   }
 
@@ -355,7 +356,8 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
     }
   }
 
-  if (!finished && payload.event && /end|finish|complete|done/i.test(payload.event)) {
+  // 修复第358行问题：添加payload的null/undefined检查
+  if (!finished && payload && payload.event && /end|finish|complete|done/i.test(payload.event)) {
     finished = true;
   }
 

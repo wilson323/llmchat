@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import type { AgentConfig } from '@/types';
+import { showConfirmDialog } from '@/utils/confirmDialog';
 
 interface ImportResult {
   success: Array<AgentConfig>;
@@ -58,13 +59,17 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
 
       // 如果有成功的，询问是否导入
       if (validationResult.success.length > 0) {
-        if (confirm(`发现${validationResult.success.length}个有效智能体，是否导入？`)) {
+        if (showConfirmDialog(`发现${validationResult.success.length}个有效智能体，是否导入？`)) {
           await onImport(validationResult.success);
+          /* eslint-disable no-alert */
           alert('导入成功！');
+          /* eslint-enable no-alert */
         }
       }
     } catch (error) {
+      /* eslint-disable no-alert */
       alert('文件格式错误：' + (error instanceof Error ? error.message : '未知错误'));
+      /* eslint-enable no-alert */
     } finally {
       setImporting(false);
       e.target.value = ''; // 重置文件输入

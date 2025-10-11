@@ -5,35 +5,35 @@ import { useAgentStore } from "@/store/agentStore";
 import { useSessionStore } from "@/store/sessionStore";
 
 // Mock the stores
-jest.mock("@/store/messageStore");
-jest.mock("@/store/agentStore");
-jest.mock("@/store/sessionStore");
+vi.mock("@/store/messageStore");
+vi.mock("@/store/agentStore");
+vi.mock("@/store/sessionStore");
 
 // Type declarations for mocked modules
-const mockUseMessageStore = useMessageStore as jest.MockedFunction<typeof useMessageStore>;
-const mockUseAgentStore = useAgentStore as jest.MockedFunction<typeof useAgentStore>;
-const mockUseSessionStore = useSessionStore as jest.MockedFunction<typeof useSessionStore>;
+const mockUseMessageStore = useMessageStore as any;
+const mockUseAgentStore = useAgentStore as any;
+const mockUseSessionStore = useSessionStore as any;
 
 // Mock the child components
-jest.mock("../MessageList", () => ({
+vi.mock("../MessageList", () => ({
   MessageList: () => <div data-testid="message-list">Message List</div>,
 }));
 
-jest.mock("../MessageInput", () => ({
+vi.mock("../MessageInput", () => ({
   MessageInput: () => <div data-testid="message-input">Message Input</div>,
 }));
 
 describe("ChatContainer", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock store implementations
     mockUseMessageStore.mockReturnValue({
       messages: [],
       isStreaming: false,
-      stopStreaming: jest.fn(),
-      addMessage: jest.fn(),
-      removeLastInteractiveMessage: jest.fn(),
+      stopStreaming: vi.fn(),
+      addMessage: vi.fn(),
+      removeLastInteractiveMessage: vi.fn(),
     });
 
     mockUseAgentStore.mockReturnValue({
@@ -42,7 +42,7 @@ describe("ChatContainer", () => {
 
     mockUseSessionStore.mockReturnValue({
       currentSession: null,
-      bindSessionId: jest.fn(),
+      bindSessionId: vi.fn(),
     });
   });
 
@@ -79,9 +79,9 @@ describe("ChatContainer", () => {
     mockUseMessageStore.mockReturnValue({
       messages: [{ HUMAN: "Hello", timestamp: Date.now() }],
       isStreaming: false,
-      stopStreaming: jest.fn(),
-      addMessage: jest.fn(),
-      removeLastInteractiveMessage: jest.fn(),
+      stopStreaming: vi.fn(),
+      addMessage: vi.fn(),
+      removeLastInteractiveMessage: vi.fn(),
     });
 
     mockUseAgentStore.mockReturnValue({
@@ -107,9 +107,9 @@ describe("ChatContainer", () => {
     mockUseMessageStore.mockReturnValue({
       messages: [{ HUMAN: "Hello", timestamp: Date.now() }],
       isStreaming: false,
-      stopStreaming: jest.fn(),
-      addMessage: jest.fn(),
-      removeLastInteractiveMessage: jest.fn(),
+      stopStreaming: vi.fn(),
+      addMessage: vi.fn(),
+      removeLastInteractiveMessage: vi.fn(),
     });
 
     mockUseAgentStore.mockReturnValue({

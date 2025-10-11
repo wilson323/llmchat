@@ -1,6 +1,5 @@
-import { RequestHandler, Response, Request, Application } from "express";
+import { Application, Request, Response, RequestHandler } from "express";
 import { loadOptionalModule } from "@/utils/loadOptionalModule";
-
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",

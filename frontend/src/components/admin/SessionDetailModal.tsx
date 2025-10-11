@@ -81,7 +81,7 @@ export function SessionDetailModal({
       loadMessages();
       setTempTitle(session.title);
     }
-  }, [isOpen, session]);
+  }, [isOpen, session, loadMessages]);
 
   // 刷新会话信息
   const refreshSession = async () => {

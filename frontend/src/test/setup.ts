@@ -5,6 +5,13 @@
  */
 
 import { afterEach, vi } from 'vitest';
+
+// 全局暴露vitest方法
+(global as any).vi = vi;
+(global as any).describe = describe;
+(global as any).it = it;
+(global as any).test = test;
+(global as any).expect = expect;
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
 

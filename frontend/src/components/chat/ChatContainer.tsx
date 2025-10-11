@@ -14,13 +14,11 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { Bot, Sparkles } from 'lucide-react';
 import { chatService } from '@/services/api';
-
 // 新的拆分Store
 import { useMessageStore } from '@/store/messageStore';
 import { useAgentStore } from '@/store/agentStore';
 import { useSessionStore } from '@/store/sessionStore';
 import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
-
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
 import { perfMonitor } from '@/utils/performanceMonitor';
@@ -29,39 +27,30 @@ import {
   resourceManager,
   usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
-
 export const ChatContainer: React.FC = () => {
   // 🚀 性能监控和资源管理
   usePerformanceMonitor('ChatContainer');
-
   // 🚀 性能优化：精确订阅，只订阅需要的状态
   const messages = useMessageStore((state) => state.messages);
   const isStreaming = useMessageStore((state) => state.isStreaming);
   const stopStreaming = useMessageStore((state) => state.stopStreaming);
   const addMessage = useMessageStore((state) => state.addMessage);
   const removeLastInteractiveMessage = useMessageStore((state) => state.removeLastInteractiveMessage);
-
   const currentAgent = useAgentStore((state) => state.currentAgent);
-
   const currentSession = useSessionStore((state) => state.currentSession);
   const bindSessionId = useSessionStore((state) => state.bindSessionId);
-
   const {
     sendMessage,
     continueInteractiveSelect,
     continueInteractiveForm,
     retryMessage,
   } = useChat();
-
   const { t } = useI18n();
-
   // 避免重复触发同一会话/智能体的开场白
   const welcomeTriggeredKeyRef = useRef<string | null>(null);
-
   // init 变量流程：隐藏输入框、收集初始变量
   const [hideComposer, setHideComposer] = useState(false);
   const [pendingInitVars, setPendingInitVars] = useState<Record<string, any> | null>(null);
-
   // 将 FastGPT init 返回的 variables 转为交互气泡
   const renderVariablesAsInteractive = (initData: Record<string, unknown>) => {
     return perfMonitor.measure('ChatContainer.renderVariablesAsInteractive', () => {
@@ -80,7 +69,6 @@ export const ChatContainer: React.FC = () => {
             required: v.required,
             description: v.description,
           };
-
           switch (v.type) {
             case 'input':
               return { ...base, type: 'text' as const };
@@ -99,7 +87,6 @@ export const ChatContainer: React.FC = () => {
               return { ...base, type: 'text' as const };
           }
         });
-
         const interactive: InteractiveData = {
           type: 'userInput',
           origin: 'init',
@@ -115,7 +102,6 @@ export const ChatContainer: React.FC = () => {
       }
     });
   };
-
   // 交互回调：区分 init 起源与普通交互
   const handleInteractiveSelect = (payload: string | Record<string, unknown>) => {
     if (typeof payload === 'string') {
@@ -137,7 +123,6 @@ export const ChatContainer: React.FC = () => {
       } catch {}
     }
   };
-
   const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined) => {
     // 非 init 表单：直接继续运行
     if (!payload || payload.origin !== 'init') {
@@ -154,7 +139,6 @@ export const ChatContainer: React.FC = () => {
       removeLastInteractiveMessage();
     } catch {}
   };
-
   // 发送消息：若存在 init 变量，则在首次发送时一并携带
   const handleSendMessage = async (content: string, extraOptions?: ChatOptions) => {
     return perfMonitor.measureAsync('ChatContainer.handleSendMessage', async () => {
@@ -170,7 +154,6 @@ export const ChatContainer: React.FC = () => {
       }
     });
   };
-
   useEffect(() => {
     return perfMonitor.measure('ChatContainer.welcomeMessage', () => {
       // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面
@@ -188,7 +171,6 @@ export const ChatContainer: React.FC = () => {
           try {
             const response = await chatService.init(currentAgent.id);
             const chatId = response.chatId;
-
             if (chatId && currentSession.id !== chatId) {
               if (!currentAgent?.id) {
                 return;
@@ -209,7 +191,6 @@ export const ChatContainer: React.FC = () => {
       }
     });
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
-
   // 内存监控
   useEffect(() => {
     const memoryCleanup = memoryMonitor.addMemoryObserver((data: { memory: number; trend: string }) => {
@@ -221,19 +202,16 @@ export const ChatContainer: React.FC = () => {
         }
       }
     });
-
     return () => {
       memoryCleanup();
     };
   }, []);
-
   // 组件卸载时清理资源
   useEffect(() => {
     return () => {
       resourceManager.cleanup();
     };
   }, []);
-
   // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
   // 此组件现在只负责渲染标准聊天界面
 
@@ -304,5 +282,4 @@ export const ChatContainer: React.FC = () => {
     </div>
   );
 };
-
 export default ChatContainer;

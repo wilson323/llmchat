@@ -3,7 +3,7 @@ import { VirtualizedMessageList } from "../VirtualizedMessageList";
 import { ChatMessage } from "@/types";
 
 // Mock the useChatStore hook
-jest.mock("@/store/chatStore", () => ({
+vi.mock("@/store/chatStore", () => ({
   useChatStore: () => ({
     currentAgent: null,
     streamingStatus: null,
@@ -11,7 +11,7 @@ jest.mock("@/store/chatStore", () => ({
 }));
 
 // Mock the useI18n hook
-jest.mock("@/i18n", () => ({
+vi.mock("@/i18n", () => ({
   useI18n: () => ({
     t: (key: string) => key,
   }),
@@ -45,9 +45,9 @@ describe("VirtualizedMessageList Performance", () => {
       <VirtualizedMessageList
         messages={messages}
         isStreaming={false}
-        onInteractiveSelect={jest.fn()}
-        onInteractiveFormSubmit={jest.fn()}
-        onRetryMessage={jest.fn()}
+        onInteractiveSelect={vi.fn()}
+        onInteractiveFormSubmit={vi.fn()}
+        onRetryMessage={vi.fn()}
       />
     );
 
@@ -70,9 +70,9 @@ describe("VirtualizedMessageList Performance", () => {
       <VirtualizedMessageList
         messages={messages}
         isStreaming={false}
-        onInteractiveSelect={jest.fn()}
-        onInteractiveFormSubmit={jest.fn()}
-        onRetryMessage={jest.fn()}
+        onInteractiveSelect={vi.fn()}
+        onInteractiveFormSubmit={vi.fn()}
+        onRetryMessage={vi.fn()}
       />
     );
 
@@ -95,9 +95,9 @@ describe("VirtualizedMessageList Performance", () => {
       <VirtualizedMessageList
         messages={messages}
         isStreaming={false}
-        onInteractiveSelect={jest.fn()}
-        onInteractiveFormSubmit={jest.fn()}
-        onRetryMessage={jest.fn()}
+        onInteractiveSelect={vi.fn()}
+        onInteractiveFormSubmit={vi.fn()}
+        onRetryMessage={vi.fn()}
       />
     );
 
