@@ -53,12 +53,21 @@ import databasePerformanceRouter from "./routes/databasePerformance"; // 数据�
 import cacheRouter from "./routes/cache"; // 缓存管理路由
 import queueRouter from "./routes/queue"; // 消息队列管理路由
 
+// 可视化路由
+import { initializeVisualizationRoutes, default as visualizationRouter } from "./routes/visualizationRoutes";
+
 // 工具
 import { logger } from "./utils/logger";
 import { initCacheService } from "./services/CacheService";
 import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
 import { initQueueService, shutdownQueueService } from "./services/initQueueService";
+import QueueManager from "./services/QueueManager";
+import MonitoringService from "./services/MonitoringService";
+import VisualizationController from "./controllers/VisualizationController";
+
+// 可视化系统变量
+let visualizationController: VisualizationController | null = null;
 
 const app: express.Express = express();
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? 0 : 3001);
@@ -194,6 +203,9 @@ app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接
 app.use("/api/cache", cacheRouter); // 缓存管理接口
 app.use("/api/queue", queueRouter); // 消息队列管理接口
 
+// 可视化接口（需要认证）
+app.use("/api/visualization", visualizationRouter);
+
 // 404处理
 app.use((req, res) => {
   res.status(404).json({
@@ -253,6 +265,47 @@ function startScheduledTasks(): void {
   logger.info("[ScheduledTasks] 定时任务已启动");
 }
 
+// 初始化可视化系统
+async function initializeVisualizationSystem(): Promise<void> {
+  try {
+    // 检查环境变量是否启用可视化
+    const visualizationEnabled = process.env.VISUALIZATION_ENABLED !== 'false';
+
+    if (!visualizationEnabled) {
+      logger.info("可视化系统已禁用 (VISUALIZATION_ENABLED=false)");
+      return;
+    }
+
+    // 获取QueueManager实例
+    const queueManager = QueueManager.getInstance();
+
+    // 获取MonitoringService实例
+    const monitoringService = MonitoringService.getInstance();
+
+    // 获取Redis连接池
+    const connectionPool = queueManager.getConnectionPool();
+
+    if (!connectionPool) {
+      throw new Error('Redis连接池未初始化');
+    }
+
+    // 创建可视化控制器
+    visualizationController = new VisualizationController(
+      queueManager,
+      monitoringService,
+      connectionPool
+    );
+
+    // 初始化可视化路由
+    initializeVisualizationRoutes(visualizationController);
+
+    logger.info("可视化系统初始化完成");
+  } catch (error) {
+    logger.error("可视化系统初始化失败:", error);
+    throw error;
+  }
+}
+
 // 启动服务器（异步初始化）
 async function startServer() {
   try {
@@ -271,6 +324,14 @@ async function startServer() {
     // 初始化队列服务
     await initQueueService();
     logger.info("✅ 队列服务已初始化");
+
+    // 初始化可视化系统（如果启用）
+    try {
+      await initializeVisualizationSystem();
+      logger.info("✅ 可视化系统已初始化");
+    } catch (error) {
+      logger.warn("⚠️ 可视化系统初始化失败:", error);
+    }
 
     server = app.listen(PORT, () => {
       logger.info(`🚀 服务器启动成功`);
@@ -327,6 +388,16 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     logger.info("✓ 队列服务已关闭");
   } catch (error) {
     logger.error("✗ 队列服务关闭失败:", error);
+  }
+
+  // 4. 清理可视化系统
+  if (visualizationController) {
+    try {
+      visualizationController.cleanup();
+      logger.info("✓ 可视化系统已清理");
+    } catch (error) {
+      logger.error("✗ 可视化系统清理失败:", error);
+    }
   }
 
   // 3. 等待现有请求完成（最多 10 秒）

@@ -1,0 +1,34 @@
+{
+  "enabled": false,
+  "refreshInterval": 5900,
+  "maxDataPoints": 1000,
+  "features": {
+    "dashboard": true,
+    "realTimeMonitoring": true,
+    "queueManagement": true,
+    "performanceAnalytics": true,
+    "alertManagement": true,
+    "systemHealth": true
+  },
+  "ui": {
+    "theme": "auto",
+    "language": "zh",
+    "compactMode": false,
+    "showAdvancedOptions": false
+  },
+  "security": {
+    "requireAuth": true,
+    "allowedRoles": [
+      "admin",
+      "operator"
+    ],
+    "sessionTimeout": 3600000
+  },
+  "performance": {
+    "enableAnimations": true,
+    "chartUpdateThrottle": 1000,
+    "dataCompressionEnabled": true,
+    "cacheEnabled": true,
+    "cache_ttl": 300000
+  }
+}

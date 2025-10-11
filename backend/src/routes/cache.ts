@@ -12,7 +12,7 @@ import { rateLimit } from '@/middleware/rateLimit';
 import { auditLog } from '@/middleware/auditLog';
 import { ApiError } from '@/utils/errors';
 
-const router = Router();
+const router = Router() as any;
 const cacheController = new CacheController();
 
 // 验证中间件

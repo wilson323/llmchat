@@ -1568,6 +1568,220 @@ export class QueueManager extends EventEmitter {
   public getMemoryOptimizationService(): MemoryOptimizationService | undefined {
     return this.memoryOptimizationService;
   }
+
+  /**
+   * 获取Redis连接池实例
+   */
+  public getConnectionPool(): RedisConnectionPool {
+    return this.connectionPool;
+  }
+
+  /**
+   * 获取所有队列名称
+   */
+  public async getAllQueues(): Promise<string[]> {
+    const redis = await this.getRedisConnection();
+    try {
+      const queues = await redis.smembers('queues');
+      return queues || [];
+    } finally {
+      this.releaseRedisConnection(redis);
+    }
+  }
+
+  /**
+   * 暂停队列
+   */
+  public async pauseQueue(queueName: string): Promise<boolean> {
+    try {
+      const queueConfig = this.queues.get(queueName);
+      if (!queueConfig) {
+        throw new Error(`Queue ${queueName} not found`);
+      }
+
+      queueConfig.paused = true;
+      this.queues.set(queueName, queueConfig);
+
+      // 停止处理器
+      const workers = this.workers.get(queueName);
+      if (workers) {
+        workers.forEach(worker => clearTimeout(worker));
+        this.workers.set(queueName, []);
+      }
+
+      logger.info(`QueueManager: Queue ${queueName} paused`);
+      return true;
+    } catch (error) {
+      logger.error(`QueueManager: Failed to pause queue ${queueName}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * 恢复队列
+   */
+  public async resumeQueue(queueName: string): Promise<boolean> {
+    try {
+      const queueConfig = this.queues.get(queueName);
+      if (!queueConfig) {
+        throw new Error(`Queue ${queueName} not found`);
+      }
+
+      queueConfig.paused = false;
+      this.queues.set(queueName, queueConfig);
+
+      // 重启处理器
+      await this.startQueueProcessor(queueName);
+
+      logger.info(`QueueManager: Queue ${queueName} resumed`);
+      return true;
+    } catch (error) {
+      logger.error(`QueueManager: Failed to resume queue ${queueName}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * 清空队列
+   */
+  public async clearQueue(queueName: string): Promise<boolean> {
+    try {
+      const redis = await this.getRedisConnection();
+      try {
+        await redis.del(`${queueName}:waiting`);
+        await redis.del(`${queueName}:active`);
+        await redis.del(`${queueName}:completed`);
+        await redis.del(`${queueName}:failed`);
+        await redis.del(`${queueName}:delayed`);
+        await redis.del(`${queueName}:jobs`);
+
+        // 重置统计
+        this.stats.delete(queueName);
+
+        logger.info(`QueueManager: Queue ${queueName} cleared`);
+        return true;
+      } finally {
+        this.releaseRedisConnection(redis);
+      }
+    } catch (error) {
+      logger.error(`QueueManager: Failed to clear queue ${queueName}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * 重试失败任务
+   */
+  public async retryFailedJobs(queueName: string, limit: number = 10): Promise<number> {
+    try {
+      const redis = await this.getRedisConnection();
+      try {
+        // 获取失败的任务
+        const failedJobs = await redis.zrange(`${queueName}:failed`, 0, limit - 1);
+        let retriedCount = 0;
+
+        for (const jobId of failedJobs) {
+          // 从失败队列移除
+          await redis.zrem(`${queueName}:failed`, jobId);
+
+          // 获取任务详情
+          const jobData = await redis.hget(`${queueName}:jobs`, jobId);
+          if (jobData) {
+            const job = JSON.parse(jobData);
+
+            // 重置任务状态
+            job.attemptsMade = 0;
+            job.failedAt = null;
+            job.failedReason = null;
+
+            // 重新添加到等待队列
+            await redis.hset(`${queueName}:jobs`, jobId, JSON.stringify(job));
+            await redis.lpush(`${queueName}:waiting`, jobId);
+
+            retriedCount++;
+          }
+        }
+
+        logger.info(`QueueManager: Retried ${retriedCount} failed jobs in queue ${queueName}`);
+        return retriedCount;
+      } finally {
+        this.releaseRedisConnection(redis);
+      }
+    } catch (error) {
+      logger.error(`QueueManager: Failed to retry failed jobs in queue ${queueName}:`, error);
+      return 0;
+    }
+  }
+
+  /**
+   * 获取已完成的任务
+   */
+  public async getCompletedJobs(queueName: string, limit: number = 100): Promise<any[]> {
+    try {
+      const redis = await this.getRedisConnection();
+      try {
+        const completedJobs = await redis.zrevrange(`${queueName}:completed`, 0, limit - 1);
+        const jobs = [];
+
+        for (const jobId of completedJobs) {
+          const jobData = await redis.hget(`${queueName}:jobs`, jobId);
+          if (jobData) {
+            const job = JSON.parse(jobData);
+            jobs.push({
+              id: job.id,
+              type: job.type,
+              data: job.data,
+              finishedOn: job.finishedOn,
+              processingTime: job.processingTime,
+              attemptsMade: job.attemptsMade
+            });
+          }
+        }
+
+        return jobs;
+      } finally {
+        this.releaseRedisConnection(redis);
+      }
+    } catch (error) {
+      logger.error(`QueueManager: Failed to get completed jobs from queue ${queueName}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * 获取失败的任务
+   */
+  public async getFailedJobs(queueName: string, limit: number = 100): Promise<any[]> {
+    try {
+      const redis = await this.getRedisConnection();
+      try {
+        const failedJobs = await redis.zrevrange(`${queueName}:failed`, 0, limit - 1);
+        const jobs = [];
+
+        for (const jobId of failedJobs) {
+          const jobData = await redis.hget(`${queueName}:jobs`, jobId);
+          if (jobData) {
+            const job = JSON.parse(jobData);
+            jobs.push({
+              id: job.id,
+              type: job.type,
+              data: job.data,
+              failedAt: job.failedAt,
+              failedReason: job.failedReason,
+              attemptsMade: job.attemptsMade
+            });
+          }
+        }
+
+        return jobs;
+      } finally {
+        this.releaseRedisConnection(redis);
+      }
+    } catch (error) {
+      logger.error(`QueueManager: Failed to get failed jobs from queue ${queueName}:`, error);
+      return [];
+    }
+  }
 }
 
 export default QueueManager;

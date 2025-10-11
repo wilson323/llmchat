@@ -123,12 +123,11 @@ export class RedisConnectionPool extends EventEmitter {
         keyPrefix: this.config.keyPrefix || 'llmchat:',
         enableOfflineQueue: this.config.enableOfflineQueue,
         maxRetriesPerRequest: this.config.maxRetriesPerRequest,
-        retryDelayOnFailover: this.config.retryDelayOnFailover,
         lazyConnect: this.config.lazyConnect,
         keepAlive: this.config.keepAlive,
         connectTimeout: this.config.connectTimeout,
         commandTimeout: this.config.commandTimeout,
-      });
+      } as any);
 
       const timeout = setTimeout(() => {
         reject(new Error('Connection creation timeout'));
@@ -249,14 +248,17 @@ export class RedisConnectionPool extends EventEmitter {
     // 如果有等待的请求，立即分配
     if (this.waitingQueue.length > 0) {
       const waiting = this.waitingQueue.shift();
-      clearTimeout(waiting.timeout);
+      if (waiting) {
+        clearTimeout(waiting.timeout);
 
-      this.activeConnections.add(connection);
-      this.stats.active++;
-      this.stats.idle = Math.max(0, this.stats.idle - 1);
-      this.stats.waiting--;
+        this.activeConnections.add(connection);
+        this.stats.active++;
+        this.stats.idle = Math.max(0, this.stats.idle - 1);
+        this.stats.waiting--;
 
-      waiting.resolve(connection);
+        waiting.resolve(connection);
+        logger.debug('RedisConnectionPool: Connection assigned to waiting request');
+      }
       logger.debug('RedisConnectionPool: Connection assigned to waiting request');
     } else {
       // 将连接标记为空闲
@@ -346,7 +348,7 @@ export class RedisConnectionPool extends EventEmitter {
 
     for (let i = this.pool.length - 1; i >= 0; i--) {
       const connection = this.pool[i];
-      if (!this.activeConnections.has(connection) && this.stats.lastUsed) {
+      if (connection && !this.activeConnections.has(connection) && this.stats.lastUsed) {
         const idleTime = now - this.stats.lastUsed.getTime();
         if (idleTime > idleTimeout && this.pool.length > this.config.minConnections!) {
           logger.debug('RedisConnectionPool: Closing idle connection');
