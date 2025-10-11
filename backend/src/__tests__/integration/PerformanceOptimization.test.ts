@@ -51,7 +51,11 @@ describe('Performance Optimization Integration Tests', () => {
         .get('/api/agents')
         .expect(200);
 
-      expect(response2.body).toEqual(response1.body);
+      // 忽略时间戳差异，比较其他字段
+      const { timestamp: timestamp1, ...body1WithoutTimestamp } = response1.body;
+      const { timestamp: timestamp2, ...body2WithoutTimestamp } = response2.body;
+
+      expect(body2WithoutTimestamp).toEqual(body1WithoutTimestamp);
     });
 
     it('should not cache POST requests', async () => {

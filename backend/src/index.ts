@@ -29,6 +29,14 @@ import {
 import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import { csrfProtection, getCsrfToken } from "./middleware/csrfProtection";
+import { performanceMiddleware } from "./middleware/PerformanceMonitor";
+import {
+  databaseOptimizationMiddleware,
+  initializeDatabaseOptimization,
+  generateDatabasePerformanceReport,
+  performDatabaseAutoOptimization
+} from "./middleware/databaseOptimization";
+import { databasePerformanceMonitorMiddleware } from "./middleware/databasePerformanceMonitor";
 
 // 路由
 import agentsRouter from "./routes/agents";
@@ -41,6 +49,7 @@ import auditRouter from "./routes/audit"; // 使用 default export
 import difySessionRouter from "./routes/difySession"; // 使用 default export
 import { productPreviewRoutes } from "./routes/productPreview"; // 使用 named export
 import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
+import databasePerformanceRouter from "./routes/databasePerformance"; // 数据库性能管理路由
 
 // 工具
 import { logger } from "./utils/logger";
@@ -49,7 +58,7 @@ import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
 
 const app: express.Express = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? 0 : 3001);
 
 // 创建服务实例
 const agentConfigService = new AgentConfigService();
@@ -146,6 +155,15 @@ app.use("/api/", limiter);
 // 请求日志
 app.use(requestLogger);
 
+// 性能监控
+app.use(performanceMiddleware);
+
+// 数据库性能监控
+app.use(databasePerformanceMonitorMiddleware);
+
+// 数据库优化中间件
+app.use(databaseOptimizationMiddleware);
+
 // CSRF Token 获取端点（必须在 CSRF 保护之前）
 app.get("/api/csrf-token", getCsrfToken);
 
@@ -169,6 +187,7 @@ app.use("/api/audit", auditRouter); // 审计日志接口
 app.use("/api/dify", difySessionRouter); // Dify会话管理接口
 app.use("/api/product-preview", productPreviewRoutes); // 产品预览接口
 app.use("/api/sessions", sessionRouter); // 会话管理接口
+app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接口
 
 // 404处理
 app.use((req, res) => {
@@ -240,7 +259,10 @@ async function startServer() {
     // 初始化缓存服务
     await initCacheService();
 
-  
+    // 初始化数据库优化器
+    await initializeDatabaseOptimization();
+    logger.info("✅ 数据库优化器已初始化");
+
     server = app.listen(PORT, () => {
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 端口: ${PORT}`);
