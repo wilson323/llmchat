@@ -46,14 +46,14 @@ describe('MemoryOptimizationService', () => {
         memoryOptimizationService.start();
       }).not.toThrow();
 
-      expect(memoryOptimizationService.getMemoryMonitor().isMonitoring).toBe(true);
+      expect(memoryOptimizationService.getMemoryMonitor().healthCheck().monitoring).toBe(true);
     });
 
     test('应该能够停止服务', () => {
       memoryOptimizationService.start();
       memoryOptimizationService.stop();
 
-      expect(memoryOptimizationService.getMemoryMonitor().isMonitoring).toBe(false);
+      expect(memoryOptimizationService.getMemoryMonitor().healthCheck().monitoring).toBe(false);
     });
 
     test('应该能够获取内存状态', () => {
@@ -165,7 +165,7 @@ describe('MemoryOptimizationService', () => {
         done();
       });
 
-      memoryOptimizationService.performOptimization('test');
+      memoryOptimizationService.performOptimization('manual');
     });
 
     test('应该能够监听内存告警事件', (done) => {
@@ -253,7 +253,7 @@ describe('MemoryOptimizationService', () => {
       memoryOptimizationService.start();
 
       const startTime = Date.now();
-      await memoryOptimizationService.performOptimization('performance-test');
+      await memoryOptimizationService.performOptimization('manual', { aggressive: true });
       const endTime = Date.now();
 
       const duration = endTime - startTime;

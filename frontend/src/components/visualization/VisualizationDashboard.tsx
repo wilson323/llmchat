@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area
+  AreaChart, Area
 } from 'recharts';
 
 interface VisualizationConfig {
@@ -289,7 +289,7 @@ export const VisualizationDashboard: React.FC = () => {
             <Switch
               id="enabled"
               checked={config?.enabled || false}
-              onCheckedChange={(enabled) => updateConfig({ enabled })}
+              onCheckedChange={(enabled: boolean) => updateConfig({ enabled })}
             />
             <Label htmlFor="enabled">启用可视化</Label>
           </div>
@@ -332,9 +332,17 @@ export const VisualizationDashboard: React.FC = () => {
               <Switch
                 id={key}
                 checked={value}
-                onCheckedChange={(checked) =>
+                onCheckedChange={(checked: boolean) =>
                   updateConfig({
-                    features: { ...config?.features, [key]: checked }
+                    features: {
+                      dashboard: config?.features?.dashboard || false,
+                      realTimeMonitoring: config?.features?.realTimeMonitoring || false,
+                      queueManagement: config?.features?.queueManagement || false,
+                      performanceAnalytics: config?.features?.performanceAnalytics || false,
+                      alertManagement: config?.features?.alertManagement || false,
+                      systemHealth: config?.features?.systemHealth || false,
+                      [key]: checked
+                    }
                   })
                 }
               />

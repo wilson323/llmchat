@@ -1,0 +1,113 @@
+{
+  "summary": {
+    "overall": "needs-improvement",
+    "score": 0,
+    "issues": [
+      "TypeScript编译失败 (260个错误)"
+    ],
+    "strengths": []
+  },
+  "metrics": {
+    "timestamp": "2025-10-11T14:21:12.333Z",
+    "typescript": {
+      "status": "fail",
+      "errors": 260,
+      "errorDetails": [
+        "> llmchat@1.0.0 type-check /mnt/data/ss/wss/llmchat",
+        "> pnpm --filter @llmchat/shared-types build && pnpm run frontend:type-check",
+        "> @llmchat/shared-types@1.0.0 build /mnt/data/ss/wss/llmchat/shared-types",
+        "> tsc",
+        "> llmchat@1.0.0 frontend:type-check /mnt/data/ss/wss/llmchat",
+        "> cd frontend && pnpm run type-check",
+        "> @llmchat/frontend@1.0.0 type-check /mnt/data/ss/wss/llmchat/frontend",
+        "> tsc --noEmit -p tsconfig.json",
+        "src/components/admin/AnalyticsPanel.tsx(7,8): error TS6133: 'React' is declared but its value is never read.",
+        "src/components/admin/AnalyticsPanel.tsx(37,47): error TS2339: Property 'data' does not exist on type 'ProvinceHeatmapDataset'."
+      ],
+      "compiled": false,
+      "timestamp": "2025-10-11T14:21:20.927Z",
+      "strictMode": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true
+    },
+    "eslint": {
+      "status": "error",
+      "error": "spawnSync /bin/sh ENOBUFS",
+      "timestamp": "2025-10-11T14:21:29.292Z"
+    },
+    "testing": {
+      "frontend": {
+        "suites": 0,
+        "tests": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "time": 0,
+        "status": "fail",
+        "error": "Command failed: cd frontend && npm run test -- --run --coverage --watchAll=false --passWithNoTests 2>&1",
+        "timestamp": "2025-10-11T14:21:29.500Z"
+      },
+      "backend": {
+        "suites": 31,
+        "tests": 0,
+        "passed": 0,
+        "failed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "time": 8.16,
+        "status": "fail",
+        "error": "Command failed: pnpm run backend:test 2>&1",
+        "timestamp": "2025-10-11T14:21:39.560Z"
+      }
+    },
+    "coverage": {},
+    "security": {
+      "status": "error",
+      "error": "Command failed: pnpm audit --json 2>/dev/null",
+      "timestamp": "2025-10-11T14:21:40.901Z"
+    },
+    "performance": {},
+    "complexity": {
+      "frontend": {
+        "files": 208,
+        "lines": 46390,
+        "directories": 44,
+        "avgLinesPerFile": 223
+      },
+      "backend": {
+        "files": 161,
+        "lines": 57182,
+        "directories": 24,
+        "avgLinesPerFile": 355
+      },
+      "total": {
+        "files": 369,
+        "lines": 103572,
+        "directories": 68
+      },
+      "timestamp": "2025-10-11T14:21:40.923Z"
+    }
+  },
+  "recommendations": [
+    {
+      "category": "TypeScript",
+      "priority": "high",
+      "description": "修复TypeScript编译错误",
+      "action": "运行 `pnpm run type-check` 查看详细错误信息并逐一修复"
+    },
+    {
+      "category": "Coverage",
+      "priority": "medium",
+      "description": "提高前端测试覆盖率",
+      "action": "当前覆盖率0%，建议添加更多测试用例达到60%以上"
+    },
+    {
+      "category": "Coverage",
+      "priority": "medium",
+      "description": "提高后端测试覆盖率",
+      "action": "当前覆盖率0%，建议添加更多测试用例达到60%以上"
+    }
+  ],
+  "timestamp": "2025-10-11T14:21:40.924Z"
+}

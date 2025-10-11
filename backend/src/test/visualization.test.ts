@@ -543,8 +543,8 @@ describe('Visualization System', () => {
         },
       });
 
-      // Mock an error in dataService.getQueueHistory
-      jest.spyOn(dataService, 'getQueueHistory').mockImplementationOnce(() => {
+      // Mock an error in controller's internal dataService.getQueueHistory
+      jest.spyOn(controller['dataService'], 'getQueueHistory').mockImplementationOnce(() => {
         throw new Error('Test error');
       });
 
@@ -716,8 +716,8 @@ describe('Visualization System', () => {
         },
       });
 
-      // Mock dataService error
-      jest.spyOn(dataService, 'getQueueHistory').mockImplementationOnce(() => {
+      // Mock controller's internal dataService error
+      jest.spyOn(controller['dataService'], 'getQueueHistory').mockImplementationOnce(() => {
         throw new Error('Queue manager error');
       });
 
@@ -740,8 +740,8 @@ describe('Visualization System', () => {
         },
       });
 
-      // Mock dataService error for getRealtimeSummary
-      jest.spyOn(dataService, 'getRealtimeSummary').mockImplementationOnce(() => {
+      // Mock controller's internal dataService error for getRealtimeSummary
+      jest.spyOn(controller['dataService'], 'getRealtimeSummary').mockImplementationOnce(() => {
         throw new Error('Monitoring service error');
       });
 

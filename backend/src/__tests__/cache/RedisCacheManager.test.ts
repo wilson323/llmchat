@@ -402,8 +402,8 @@ describe('RedisCacheManager', () => {
       const key = 'test-key';
       const value = { data: 'test-value' };
 
-      // 启用内存缓存
-      cacheManager.updateConfig({ enableMemoryCache: true });
+      // 启用内存缓存 - 使用正确的配置选项
+      cacheManager.updateConfig({ maxMemorySize: 1024 * 1024 }); // 1MB内存缓存
 
       mockRedis.set.mockResolvedValue('OK');
       mockRedis.get.mockResolvedValue(JSON.stringify(value));
@@ -424,7 +424,7 @@ describe('RedisCacheManager', () => {
 
     test('内存缓存应该有容量限制', async () => {
       // 设置小的内存缓存限制
-      cacheManager.updateConfig({ maxMemoryItems: 2 });
+      cacheManager.updateConfig({ maxMemorySize: 1024 }); // 1KB内存缓存
 
       const items = [
         { key: 'key1', value: { data: 'value1' } },
@@ -446,10 +446,10 @@ describe('RedisCacheManager', () => {
 
   describe('性能报告', () => {
     test('应该生成性能报告', () => {
-      // 进行一些操作
-      cacheManager.updateStats('hit', 100);
-      cacheManager.updateStats('miss', 50);
-      cacheManager.updateStats('set', 25);
+      // 进行一些操作来生成统计数据
+      cacheManager.get('nonexistent-key'); // 产生miss
+      cacheManager.set('test-key', 'test-value'); // 产生set
+      cacheManager.get('test-key'); // 产生hit
 
       const report = cacheManager.generatePerformanceReport();
 
