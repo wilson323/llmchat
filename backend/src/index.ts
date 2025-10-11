@@ -50,6 +50,7 @@ import difySessionRouter from "./routes/difySession"; // 使用 default export
 import { productPreviewRoutes } from "./routes/productPreview"; // 使用 named export
 import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
 import databasePerformanceRouter from "./routes/databasePerformance"; // 数据库性能管理路由
+import cacheRouter from "./routes/cache"; // 缓存管理路由
 
 // 工具
 import { logger } from "./utils/logger";
@@ -188,6 +189,7 @@ app.use("/api/dify", difySessionRouter); // Dify会话管理接口
 app.use("/api/product-preview", productPreviewRoutes); // 产品预览接口
 app.use("/api/sessions", sessionRouter); // 会话管理接口
 app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接口
+app.use("/api/cache", cacheRouter); // 缓存管理接口
 
 // 404处理
 app.use((req, res) => {
