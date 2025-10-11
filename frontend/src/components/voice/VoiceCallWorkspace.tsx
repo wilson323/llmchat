@@ -16,6 +16,7 @@ import { useChat } from '@/hooks/useChat';
 import { useChatStore } from '@/store/chatStore';
 import { cn } from '@/lib/utils';
 import avatarImg from '@/img/4.png';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 
 type CallStatus = 'idle' | 'connecting' | 'in-call' | 'ended';
 
@@ -532,29 +533,32 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
         {/* 背景装饰：4.png 图片 */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -right-20 -top-20 h-64 w-64 opacity-10 voice-float">
-            <img
+            <OptimizedImage
               src={avatarImg}
               alt=""
               className="h-full w-full object-contain filter blur-sm"
-              aria-hidden
+              lazy={false}
+              quality={60}
             />
           </div>
           {callStatus === 'in-call' && (
             <>
               <div className="absolute left-10 top-10 h-32 w-32 opacity-5 voice-breathe">
-                <img
+                <OptimizedImage
                   src={avatarImg}
                   alt=""
                   className="h-full w-full object-contain"
-                  aria-hidden
+                  lazy={false}
+                  quality={60}
                 />
               </div>
               <div className="absolute right-10 bottom-10 h-40 w-40 opacity-5 voice-float voice-delay-1000">
-                <img
+                <OptimizedImage
                   src={avatarImg}
                   alt=""
                   className="h-full w-full object-contain"
-                  aria-hidden
+                  lazy={false}
+                  quality={60}
                 />
               </div>
             </>
@@ -572,11 +576,12 @@ export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent })
                   ? 'border-brand shadow-xl shadow-brand/50 voice-breathe'
                   : 'border-white/20',
               )}>
-                <img
+                <OptimizedImage
                   src={agentAvatar}
                   alt={agent.name}
                   className="h-full w-full object-cover"
-                  loading="lazy"
+                  lazy={false}
+                  priority
                 />
               </div>
               {/* 脉冲圆环 - 仅在通话中显示 */}

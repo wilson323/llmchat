@@ -33,7 +33,8 @@ interface CodeProps {
   [key: string]: any;
 }
 
-import avatarImg from '@/img/4.png';
+import avatarImg from '@/img/4.webp';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 
 interface MessageItemProps extends InteractiveCallbacks {
   message: ChatMessage;
@@ -108,7 +109,15 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     const renderUserSelect = () => (
       <div className="flex justify-start">
         <div className="flex items-start gap-3 max-w-[80%] w-full">
-          <img src={avatarImg} alt="AI" className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted" />
+          <OptimizedImage
+            src={avatarImg}
+            alt="AI"
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted"
+            width={32}
+            height={32}
+            lazy={false}
+            priority={true}
+          />
           <div className="bg-card rounded-2xl px-4 py-3 shadow-sm border border-border flex-1">
             <div className="text-sm text-foreground mb-3 whitespace-pre-wrap">
               {data.params?.description || t('请选择一个选项以继续')}
@@ -151,7 +160,15 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     const renderUserInput = () => (
       <div className="flex justify-start">
         <div className="flex items-start gap-3 max-w-[80%] w-full">
-          <img src={avatarImg} alt="AI" className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted" />
+          <OptimizedImage
+            src={avatarImg}
+            alt="AI"
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted"
+            width={32}
+            height={32}
+            lazy={false}
+            priority={true}
+          />
           <div className="bg-card rounded-2xl px-4 py-3 shadow-sm border border-border flex-1">
             <div className="text-sm text-gray-700 dark:text-gray-200 mb-3 whitespace-pre-wrap">
               {data.params?.description || t('请填写表单以继续')}
@@ -344,7 +361,15 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   return (
     <div className="flex justify-start">
       <div className="flex items-start gap-3 max-w-[80%] w-full">
-        <img src={avatarImg} alt="AI" className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted" />
+        <OptimizedImage
+            src={avatarImg}
+            alt="AI"
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-1 ring-border bg-muted"
+            width={32}
+            height={32}
+            lazy={false}
+            priority={true}
+          />
 
         <div className="bg-card rounded-2xl px-4 py-3 shadow-sm border border-border flex-1">
           {message.reasoning?.steps && message.reasoning.steps.length > 0 && (

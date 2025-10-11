@@ -1,0 +1,148 @@
+/**
+ * Dashboard 会话分析 Hook
+ */
+
+import { useState, useMemo, useCallback } from 'react';
+import { useI18n } from '@/i18n';
+import { toast } from '@/components/ui/Toast';
+import { getConversationSeries, getAgentComparison, getAgents } from '@/services/adminApi';
+import type { ConversationAnalyticsFilters, DashboardConversationAnalytics } from './types';
+
+// 工具函数
+const formatDateInputValue = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const toIsoRangeFromInput = (dateInput: string, isEnd: boolean): string => {
+  const d = new Date(dateInput);
+  if (isEnd) {
+    d.setHours(23, 59, 59, 999);
+  } else {
+    d.setHours(0, 0, 0, 0);
+  }
+  return d.toISOString();
+};
+
+const getDefaultConversationFilters = (): ConversationAnalyticsFilters => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return {
+    startDate: formatDateInputValue(startOfMonth),
+    endDate: formatDateInputValue(now),
+    agentId: 'all',
+  };
+};
+
+export const useDashboardConversationAnalytics = (): DashboardConversationAnalytics => {
+  const { t } = useI18n();
+  const [filters, setFilters] = useState<ConversationAnalyticsFilters>(getDefaultConversationFilters);
+  const [series, setSeries] = useState<any>(null);
+  const [seriesLoading, setSeriesLoading] = useState(false);
+  const [seriesError, setSeriesError] = useState<string | null>(null);
+  const [comparison, setComparison] = useState<any>(null);
+  const [comparisonLoading, setComparisonLoading] = useState(false);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+
+  const normalizedRange = useMemo(() => {
+    return {
+      startIso: toIsoRangeFromInput(filters.startDate, false),
+      endIso: toIsoRangeFromInput(filters.endDate, true),
+      agentId: filters.agentId === 'all' ? null : filters.agentId,
+    };
+  }, [filters]);
+
+  const fetchSeries = useCallback(async () => {
+    try {
+      setSeriesLoading(true);
+      setSeriesError(null);
+      const data = await getConversationSeries({
+        start: normalizedRange.startIso,
+        end: normalizedRange.endIso,
+        agentId: normalizedRange.agentId,
+      });
+      setSeries(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || t('获取对话趋势失败');
+      setSeriesError(message);
+      toast({ type: 'error', title: message });
+    } finally {
+      setSeriesLoading(false);
+    }
+  }, [normalizedRange.startIso, normalizedRange.endIso, normalizedRange.agentId, t]);
+
+  const fetchComparison = useCallback(async () => {
+    try {
+      setComparisonLoading(true);
+      setComparisonError(null);
+      const data = await getAgentComparison({
+        start: normalizedRange.startIso,
+        end: normalizedRange.endIso,
+      });
+      setComparison(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || t('获取智能体对比失败');
+      setComparisonError(message);
+      toast({ type: 'error', title: message });
+    } finally {
+      setComparisonLoading(false);
+    }
+  }, [normalizedRange.startIso, normalizedRange.endIso, t]);
+
+  const fetchAgents = useCallback(async () => {
+    try {
+      setAgentsLoading(true);
+      const data = await getAgents();
+      setAgents(data);
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || t('获取智能体列表失败');
+      toast({ type: 'error', title: message });
+    } finally {
+      setAgentsLoading(false);
+    }
+  }, [t]);
+
+  const setDateFilter = useCallback((key: 'startDate' | 'endDate', value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const setAgentId = useCallback((agentId: string) => {
+    setFilters(prev => ({ ...prev, agentId }));
+  }, []);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([fetchSeries(), fetchComparison(), fetchAgents()]);
+  }, [fetchSeries, fetchComparison, fetchAgents]);
+
+  // 初始数据加载
+  useState(() => {
+    void fetchSeries();
+    void fetchComparison();
+    void fetchAgents();
+  });
+
+  // 当筛选条件变化时重新获取数据
+  useState(() => {
+    void fetchSeries();
+    void fetchComparison();
+  }, [fetchSeries, fetchComparison]);
+
+  return {
+    filters,
+    setDateFilter,
+    setAgentId,
+    refresh,
+    series,
+    seriesLoading,
+    seriesError,
+    comparison,
+    comparisonLoading,
+    comparisonError,
+    agents,
+    agentsLoading,
+  };
+};

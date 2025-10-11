@@ -2,11 +2,11 @@ import { api, agentService, chatService } from "../api";
 import { Agent } from "@/types";
 
 // Mock axios
-jest.mock("axios");
+vi.mock("axios");
 const mockAxios = {
-  get: jest.fn(),
-  post: jest.fn(),
-  delete: jest.fn(),
+  get: vi.fn(),
+  post: vi.fn(),
+  delete: vi.fn(),
   defaults: {
     baseURL: "/api",
     timeout: 30000,

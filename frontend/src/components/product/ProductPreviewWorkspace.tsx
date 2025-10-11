@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/Toast';
 import { productPreviewService } from '@/services/api';
 import { useChatStore } from '@/store/chatStore';
 import { PRODUCT_PREVIEW_AGENT_ID } from '@/constants/agents';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 
 interface ProductPreviewWorkspaceProps {
   agent: Agent;
@@ -527,10 +528,12 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
               </label>
               {productImagePreview && (
                 <div className="mt-4">
-                  <img
+                  <OptimizedImage
                     src={productImagePreview}
                     alt="产品素材预览"
                     className="rounded-xl border border-border/60 shadow-sm max-h-48 object-contain mx-auto"
+                    lazy={false}
+                    quality={85}
                   />
                 </div>
               )}
@@ -600,10 +603,13 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                 <p className="text-sm text-muted-foreground">
                   以下为阿里图片生成接口返回的现场预览，可下载或继续优化需求以获得更贴合的效果。
                 </p>
-                <img
+                <OptimizedImage
                   src={generatedImage}
                   alt="现场预览生成结果"
                   className="w-full rounded-xl border border-border/60 shadow-lg"
+                  lazy={false}
+                  priority
+                  quality={90}
                 />
                 <Button
                   variant="secondary"

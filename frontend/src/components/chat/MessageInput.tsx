@@ -2,12 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Mic, Square, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
-import { ChatInputProps } from '@/types';
 
 import { uploadAttachment } from '@/services/api';
-import { ChatAttachmentMetadata, VoiceNoteMetadata } from '@/types';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
+import type { ChatInputProps, ChatAttachmentMetadata, VoiceNoteMetadata } from '@/types';
 
 export const MessageInput: React.FC<ChatInputProps> = ({
   onSendMessage,

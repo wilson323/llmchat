@@ -10,16 +10,28 @@
  * @version 1.0 - 2025-10-04
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAgentStore } from '@/store/agentStore';
 import { useSessionStore } from '@/store/sessionStore';
 import { ChatContainer } from '@/components/chat/ChatContainer';
-import { ProductPreviewWorkspace } from '@/components/product/ProductPreviewWorkspace';
-import { VoiceCallWorkspace } from '@/components/voice/VoiceCallWorkspace';
 import { AlertCircle } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { useCodeSplitting } from '@/hooks/useCodeSplitting';
 import type { WorkspaceType } from '@/types';
+
+// 代码分割：动态导入工作区组件
+const ProductPreviewWorkspace = lazy(() =>
+  import('@/components/product/ProductPreviewWorkspace').then(module => ({
+    default: module.ProductPreviewWorkspace
+  }))
+);
+
+const VoiceCallWorkspace = lazy(() =>
+  import('@/components/voice/VoiceCallWorkspace').then(module => ({
+    default: module.VoiceCallWorkspace
+  })
+));
 
 /**
  * 加载中组件
@@ -134,10 +146,18 @@ export const AgentWorkspace: React.FC = () => {
 
   switch (workspaceType) {
     case 'product-preview':
-      return <ProductPreviewWorkspace agent={currentAgent} />;
+      return (
+        <Suspense fallback={<LoadingSpinner />}>
+          <ProductPreviewWorkspace agent={currentAgent} />
+        </Suspense>
+      );
 
     case 'voice-call':
-      return <VoiceCallWorkspace agent={currentAgent} />;
+      return (
+        <Suspense fallback={<LoadingSpinner />}>
+          <VoiceCallWorkspace agent={currentAgent} />
+        </Suspense>
+      );
 
     case 'custom':
       // 未来可以扩展自定义工作区
