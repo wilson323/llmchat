@@ -17,21 +17,18 @@ import { useSessionStore } from '@/store/sessionStore';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { AlertCircle } from 'lucide-react';
 import { useI18n } from '@/i18n';
-import { useCodeSplitting } from '@/hooks/useCodeSplitting';
 import type { WorkspaceType } from '@/types';
 
 // 代码分割：动态导入工作区组件
 const ProductPreviewWorkspace = lazy(() =>
   import('@/components/product/ProductPreviewWorkspace').then(module => ({
-    default: module.ProductPreviewWorkspace
-  }))
+    default: module.ProductPreviewWorkspace,
+  })),
 );
 
 const VoiceCallWorkspace = lazy(() =>
-  import('@/components/voice/VoiceCallWorkspace').then(module => ({
-    default: module.VoiceCallWorkspace
-  })
-));
+  import('@/components/voice/VoiceCallWorkspace'),
+);
 
 /**
  * 加载中组件

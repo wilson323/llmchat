@@ -13,12 +13,10 @@ import {
   Eye,
   Trash2,
   Download,
-  Calendar,
   MessageSquare,
-  User,
   RefreshCw,
-  Filter
 } from 'lucide-react';
+import { useCallback } from 'react';
 import { useI18n } from '@/i18n';
 
 // 会话类型定义
@@ -54,9 +52,9 @@ const SessionRow = memo(function SessionRow({
   item,
   onView,
   onDelete,
-  onExport
+  onExport,
 }: {
-  item: { index: number; data: Session; key: string; height: number };
+  item: { index: number; data: Session; key?: string; height: number };
   onView?: (session: Session) => void;
   onDelete?: (session: Session) => void;
   onExport?: (session: Session) => void;
@@ -69,7 +67,7 @@ const SessionRow = memo(function SessionRow({
   };
 
   const handleDelete = () => {
-    if (window.confirm(t('确定要删除会话 "{0}" 吗？', session.title))) {
+    if (window.confirm(t('确定要删除会话 "{0}" 吗？').replace('{0}', session.title))) {
       onDelete?.(session);
     }
   };
@@ -84,7 +82,7 @@ const SessionRow = memo(function SessionRow({
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -106,7 +104,7 @@ const SessionRow = memo(function SessionRow({
       className={`flex items-center border-b border-border/50 hover:bg-muted/20 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
       style={{ padding: '12px 16px' }}
       data-virtual-item
-    >
+      >
       {/* 会话图标和基本信息 */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white">
@@ -186,7 +184,7 @@ const TableHeader = memo(function TableHeader({
   onRefresh,
   loading,
   totalCount,
-  totalMessages
+  totalMessages,
 }: {
   searchQuery: string;
   onSearch: (query: string) => void;
@@ -210,9 +208,9 @@ const TableHeader = memo(function TableHeader({
           />
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{t('共 {totalCount} 个会话')}</span>
+          <span>{t('共 {0} 个会话').replace('{0}', totalCount.toString())}</span>
           <span>•</span>
-          <span>{t('{0} 条消息', totalMessages)}</span>
+          <span>{t('{0} 条消息').replace('{0}', totalMessages.toString())}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -241,7 +239,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
   onDelete,
   onExport,
   onLoadMore,
-  onSearch,
+  onSearch: _onSearch,
   className = '',
   height = 600,
 }) {
@@ -250,12 +248,14 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
 
   // 过滤会话
   const filteredSessions = React.useMemo(() => {
-    if (!searchQuery) return sessions;
+    if (!searchQuery) {
+      return sessions;
+    }
 
     const query = searchQuery.toLowerCase();
     return sessions.filter(session =>
       session.title.toLowerCase().includes(query) ||
-      session.agentName?.toLowerCase().includes(query)
+      session.agentName?.toLowerCase().includes(query),
     );
   }, [sessions, searchQuery]);
 
@@ -270,8 +270,12 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
 
     // 根据标题长度估算
     const titleLength = session.title.length;
-    if (titleLength > 30) height += 10;
-    if (titleLength > 50) height += 10;
+    if (titleLength > 30) {
+      height += 10;
+    }
+    if (titleLength > 50) {
+      height += 10;
+    }
 
     return height;
   }, []);
@@ -282,7 +286,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
       <TableHeader
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
-        onRefresh={onRefresh}
+        onRefresh={onRefresh || (() => {})}
         loading={loading}
         totalCount={filteredSessions.length}
         totalMessages={totalMessages}
@@ -292,11 +296,11 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
       <VirtualScroll
         items={filteredSessions}
         height={height}
-        itemKey={(session) => session.id}
+        itemKey={(session, index) => session.id || index.toString()}
         itemHeight={estimateSessionHeight}
         renderItem={(item) => (
           <SessionRow
-            item={item}
+            item={{ ...item, height: item.height || 70 }}
             onView={onView}
             onDelete={onDelete}
             onExport={onExport}
@@ -307,7 +311,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
         loading={loading}
         loadingComponent={
           <div className="flex items-center justify-center p-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
             <span className="text-sm text-muted-foreground">{t('加载中...')}</span>
           </div>
         }

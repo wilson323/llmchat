@@ -118,10 +118,8 @@ export function LazyComponent<P extends object = {}>({
   const {
     fallback: Fallback = DefaultLoadingFallback,
     errorFallback: ErrorFallback = DefaultErrorFallback,
-    retryCount = 3,
     timeout = 10000,
     delay = 200,
-    preload = false,
   } = config;
 
   // 创建错误边界组件
@@ -207,7 +205,7 @@ export function LazyComponent<P extends object = {}>({
   return (
     <ErrorBoundary onRetry={() => {}}>
       <TimeoutWrapper>
-        <Suspense fallback={<Fallback delay={delay} />}>
+        <Suspense fallback={typeof Fallback === 'function' ? <Fallback delay={delay} /> : <DefaultLoadingFallback delay={delay} />}>
           <Component {...(props as P)} />
         </Suspense>
       </TimeoutWrapper>
@@ -220,13 +218,13 @@ export function LazyComponent<P extends object = {}>({
  */
 export function createLazyComponent<P extends object = {}>(
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  config: LazyComponentConfig = {}
+  config: LazyComponentConfig = {},
 ): ComponentType<P> {
   const LazyLoadedComponent = React.lazy(importFn);
 
   return React.memo((props: P) => (
-    <LazyComponent component={LazyLoadedComponent} config={config} {...props} />
-  ));
+    <LazyComponent component={LazyLoadedComponent} config={config} {...(props as any)} />
+  )) as any as ComponentType<P>;
 }
 
 /**
@@ -235,7 +233,7 @@ export function createLazyComponent<P extends object = {}>(
 export function createConditionalLazyComponent<P extends object = {}>(
   condition: boolean,
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  config: LazyComponentConfig = {}
+  config: LazyComponentConfig = {},
 ): ComponentType<P> | null {
   if (!condition) {
     return null;
@@ -248,7 +246,7 @@ export function createConditionalLazyComponent<P extends object = {}>(
  * 预加载组件
  */
 export async function preloadComponent<P extends object = {}>(
-  importFn: () => Promise<{ default: ComponentType<P> }>
+  importFn: () => Promise<{ default: ComponentType<P> }>,
 ): Promise<ComponentType<P>> {
   try {
     const module = await importFn();
@@ -266,7 +264,7 @@ export async function preloadComponents(
   components: Array<{
     importFn: () => Promise<{ default: ComponentType<any> }>;
     name?: string;
-  }>
+  }>,
 ): Promise<void> {
   const results = await Promise.allSettled(
     components.map(async ({ importFn, name }) => {
@@ -276,7 +274,7 @@ export async function preloadComponents(
       } catch (error) {
         console.warn(`❌ 预加载失败: ${name || '未知组件'}`, error);
       }
-    })
+    }),
   );
 
   const successCount = results.filter(r => r.status === 'fulfilled').length;

@@ -36,7 +36,7 @@ interface CadViewerEnhancedProps {
   hiddenLayers?: string[];
 }
 
-export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
+const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
   entities,
   width = 800,
   height = 600,
@@ -590,3 +590,5 @@ export const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     </div>
   );
 };
+
+export default CadViewerEnhanced;

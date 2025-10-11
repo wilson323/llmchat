@@ -37,10 +37,18 @@ export const getRelativeTime = (date: Date | string | number): string => {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return '刚刚';
-  if (diffMins < 60) return `${diffMins}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
-  if (diffDays < 7) return `${diffDays}天前`;
+  if (diffSecs < 60) {
+return '刚刚';
+}
+  if (diffMins < 60) {
+return `${diffMins}分钟前`;
+}
+  if (diffHours < 24) {
+return `${diffHours}小时前`;
+}
+  if (diffDays < 7) {
+return `${diffDays}天前`;
+}
 
   return formatDate(target);
 };

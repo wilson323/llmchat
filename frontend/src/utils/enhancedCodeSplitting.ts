@@ -44,7 +44,7 @@ export interface ComponentLoadResult<T = any> {
 
 // 预注册的懒加载组件
 const registeredComponents = new Map<string, {
-  importFn: () => Promise<{ default: ComponentType<any> }>;
+  importFn:() => Promise<{ default: ComponentType<any> }>;
   config: LazyComponentConfig;
   loaded?: boolean;
   loadPromise?: Promise<ComponentType<any>>;
@@ -60,7 +60,7 @@ export class EnhancedCodeSplitting {
   static registerComponent(
     name: string,
     importFn: () => Promise<{ default: ComponentType<any> }>,
-    config: LazyComponentConfig = {}
+    config: LazyComponentConfig = {},
   ): void {
     registeredComponents.set(name, {
       importFn,
@@ -70,8 +70,8 @@ export class EnhancedCodeSplitting {
         timeout: 10000,
         retryCount: 3,
         priority: 5,
-        ...config
-      }
+        ...config,
+      },
     });
   }
 
@@ -80,14 +80,12 @@ export class EnhancedCodeSplitting {
    */
   static createLazyComponent<T = any>(
     name: string,
-    config?: LazyComponentConfig
+    _config?: LazyComponentConfig,
   ): ComponentType<T> {
     const registration = registeredComponents.get(name);
     if (!registration) {
       throw new Error(`组件 ${name} 未注册`);
     }
-
-    // const mergedConfig = { ...registration.config, ...config }; // 暂时未使用
 
     // 使用React.lazy创建懒加载组件
     const LazyComponent = lazy(registration.importFn);
@@ -101,12 +99,12 @@ export class EnhancedCodeSplitting {
   private static async loadComponentWithRetry<T>(
     name: string,
     importFn: () => Promise<{ default: T }>,
-    config: LazyComponentConfig
+    config: LazyComponentConfig,
   ): Promise<T> {
     const {
       timeout = 10000,
       retryCount = 3,
-      cacheTime = 5 * 60 * 1000
+      cacheTime = 5 * 60 * 1000,
     } = config;
 
     // 检查缓存
@@ -125,7 +123,7 @@ export class EnhancedCodeSplitting {
           importFn(),
           new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error(`组件 ${name} 加载超时`)), timeout);
-          })
+          }),
         ]);
 
         // 标记已加载
@@ -178,7 +176,7 @@ export class EnhancedCodeSplitting {
     registration.loadPromise = this.loadComponentWithRetry(
       name,
       registration.importFn,
-      registration.config
+      registration.config,
     );
 
     try {
@@ -195,7 +193,7 @@ export class EnhancedCodeSplitting {
    */
   static async preloadComponents(
     componentNames?: string[],
-    strategy: 'priority' | 'parallel' = 'priority'
+    strategy: 'priority' | 'parallel' = 'priority',
   ): Promise<void> {
     const componentsToPreload = componentNames || Array.from(registeredComponents.keys());
 
@@ -204,7 +202,7 @@ export class EnhancedCodeSplitting {
       const sortedComponents = componentsToPreload
         .map(name => ({
           name,
-          priority: registeredComponents.get(name)?.config.priority || 5
+          priority: registeredComponents.get(name)?.config.priority || 5,
         }))
         .sort((a, b) => b.priority - a.priority);
 
@@ -218,7 +216,7 @@ export class EnhancedCodeSplitting {
     } else {
       // 并行预加载
       await Promise.allSettled(
-        componentsToPreload.map(name => this.preloadComponent(name))
+        componentsToPreload.map(name => this.preloadComponent(name)),
       );
     }
   }
@@ -321,10 +319,16 @@ export class EnhancedCodeSplitting {
    */
   static getComponentLoadState(name: string): 'idle' | 'loading' | 'loaded' | 'error' {
     const registration = registeredComponents.get(name);
-    if (!registration) return 'idle';
+    if (!registration) {
+return 'idle';
+}
 
-    if (registration.loaded) return 'loaded';
-    if (registration.loadPromise) return 'loading';
+    if (registration.loaded) {
+return 'loaded';
+}
+    if (registration.loadPromise) {
+return 'loading';
+}
     return 'idle';
   }
 
@@ -365,7 +369,7 @@ export class EnhancedCodeSplitting {
     const components = Array.from(registeredComponents.entries()).map(([name, reg]) => ({
       name,
       state: this.getComponentLoadState(name),
-      priority: reg.config.priority || 5
+      priority: reg.config.priority || 5,
     }));
 
     return {
@@ -373,7 +377,7 @@ export class EnhancedCodeSplitting {
       loadedCount: components.filter(c => c.state === 'loaded').length,
       loadingCount: components.filter(c => c.state === 'loading').length,
       idleCount: components.filter(c => c.state === 'idle').length,
-      components
+      components,
     };
   }
 }

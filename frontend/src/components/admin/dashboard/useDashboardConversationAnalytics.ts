@@ -2,10 +2,11 @@
  * Dashboard 会话分析 Hook
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';
-import { getConversationSeries, getAgentComparison, getAgents } from '@/services/adminApi';
+import { getConversationSeries, getAgentComparison } from '@/services/analyticsApi';
+import { listAgents } from '@/services/agentsApi';
 import type { ConversationAnalyticsFilters, DashboardConversationAnalytics } from './types';
 
 // 工具函数
@@ -47,6 +48,7 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
   const [comparisonError, setComparisonError] = useState<string | null>(null);
   const [agents, setAgents] = useState<any[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
+  const [agentsError, setAgentsError] = useState<string | null>(null);
 
   const normalizedRange = useMemo(() => {
     return {
@@ -96,10 +98,12 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
   const fetchAgents = useCallback(async () => {
     try {
       setAgentsLoading(true);
-      const data = await getAgents();
+      setAgentsError(null);
+      const data = await listAgents({ includeInactive: true });
       setAgents(data);
     } catch (err: any) {
       const message = err?.response?.data?.message || err?.message || t('获取智能体列表失败');
+      setAgentsError(message);
       toast({ type: 'error', title: message });
     } finally {
       setAgentsLoading(false);
@@ -119,14 +123,14 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
   }, [fetchSeries, fetchComparison, fetchAgents]);
 
   // 初始数据加载
-  useState(() => {
+  useEffect(() => {
     void fetchSeries();
     void fetchComparison();
     void fetchAgents();
-  });
+  }, []);
 
   // 当筛选条件变化时重新获取数据
-  useState(() => {
+  useEffect(() => {
     void fetchSeries();
     void fetchComparison();
   }, [fetchSeries, fetchComparison]);
@@ -144,5 +148,6 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
     comparisonError,
     agents,
     agentsLoading,
+    agentsError,
   };
 };

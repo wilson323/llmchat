@@ -40,7 +40,6 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   lazy = true,
   placeholder,
   fallbackFormat = 'jpg',
-  quality = 80,
   sizes = '100vw',
   onLoad,
   onError,
@@ -115,7 +114,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   // 设置图片源
   useEffect(() => {
-    if (!src) return;
+    if (!src) {
+      return;
+    }
 
     const setImageSource = () => {
       let finalSrc = src;
@@ -154,7 +155,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       {
         rootMargin: '50px', // 提前50px开始加载
         threshold: 0.01,
-      }
+      },
     );
 
     observerRef.current = observer;
@@ -215,7 +216,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         'transition-all duration-300 ease-in-out',
         isLoaded ? 'opacity-100' : 'opacity-0',
         isError && 'bg-gray-200 dark:bg-gray-700',
-        className
+        className,
       )}
       style={{
         width: width ? `${width}px` : '100%',
@@ -223,7 +224,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         aspectRatio: width && height ? `${width}/${height}` : undefined,
         ...style,
       }}
-    >
+      >
       {/* 占位符 */}
       {placeholder && !isLoaded && !isError && (
         <div
@@ -276,7 +277,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         alt={alt}
         className={cn(
           'w-full h-full object-contain transition-opacity duration-300',
-          isLoaded ? 'opacity-100' : 'opacity-0'
+          isLoaded ? 'opacity-100' : 'opacity-0',
         )}
         src={(!lazy || priority) ? currentSrc : undefined}
         srcSet={generateSrcSet()}
@@ -303,7 +304,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 };
 
 // 高阶组件：为现有图片添加优化
-export const withOptimization = (ImgComponent: React.ComponentType<any>) => {
+export const withOptimization = (_ImgComponent: React.ComponentType<any>) => {
   return React.memo(function OptimizedWrapper(props: any) {
     return (
       <OptimizedImage

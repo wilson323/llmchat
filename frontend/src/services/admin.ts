@@ -47,7 +47,7 @@ export const getLogs = async (page: number = 1, limit: number = 50): Promise<{
   });
 };
 
-export const exportLogsCsv = async (filters?: {
+export const exportLogsCsv = async (_filters?: {
   level?: string;
   source?: string;
   dateFrom?: Date;

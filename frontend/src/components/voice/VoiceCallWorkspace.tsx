@@ -112,7 +112,7 @@ interface VoiceCallWorkspaceProps {
   agent: Agent;
 }
 
-export const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
+const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
   const {
     messages,
     isStreaming,
@@ -846,3 +846,5 @@ return null;
     </div>
   );
 };
+
+export default VoiceCallWorkspace;

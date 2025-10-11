@@ -2,8 +2,6 @@
  * ECharts 占位组件
  */
 
-import React from 'react';
-
 export default function EChartsPlaceholder() {
   return (
     <div className="flex items-center justify-center p-8 border border-dashed border-gray-300 rounded-lg">

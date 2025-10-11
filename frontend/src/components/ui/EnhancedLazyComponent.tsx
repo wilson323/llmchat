@@ -4,7 +4,7 @@
  * 提供更强大的懒加载功能，包括预加载、错误处理、加载状态等
  */
 
-import React, { Suspense, ComponentType, ReactNode, useState, useEffect, useCallback } from 'react';
+import React, { Suspense, ComponentType, ReactNode, useEffect, useCallback } from 'react';
 import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
 
@@ -35,7 +35,7 @@ export interface EnhancedLazyComponentConfig {
 // 默认加载组件
 const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boolean }> = ({
   delay = 200,
-  showProgress = false
+  showProgress = false,
 }) => {
   const [showLoading, setShowLoading] = React.useState(delay === 0);
   const [progress, setProgress] = React.useState(0);
@@ -51,7 +51,9 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boo
     if (showProgress && showLoading) {
       const interval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 90) return prev;
+          if (prev >= 90) {
+            return prev;
+          }
           return prev + Math.random() * 10;
         });
       }, 100);
@@ -181,14 +183,13 @@ export function EnhancedLazyComponent<P extends object = {}>({
     preloadStrategy = 'idle',
     cacheTime = 5 * 60 * 1000,
     timeout = 10000,
-    retryCount = 3,
     priority = 5,
     delay = 200,
     showProgress = false,
-    minLoadingTime = 500
+    minLoadingTime = 500,
   } = config;
 
-  const [__retryCount, _setRetryCount] = React.useState(0);
+  const [retryCount, _setRetryCount] = React.useState(0);
   const [loadStartTime, setLoadStartTime] = React.useState<number>(0);
   const [minLoadElapsed, setMinLoadElapsed] = React.useState(false);
 
@@ -196,19 +197,19 @@ export function EnhancedLazyComponent<P extends object = {}>({
   useEffect(() => {
     EnhancedCodeSplitting.registerComponent(componentName, () =>
       Promise.resolve({ default: component }),
-      {
-        preloadStrategy,
-        cacheTime,
-        timeout,
-        _retryCount,
-        priority
-      }
+    {
+      preloadStrategy,
+      cacheTime,
+      timeout,
+      retryCount,
+      priority,
+    },
     );
-  }, [componentName, component, preloadStrategy, cacheTime, timeout, _retryCount, priority]);
+  }, [componentName, component, preloadStrategy, cacheTime, timeout, retryCount, priority]);
 
   // 处理重试
   const handleRetry = useCallback(() => {
-    setRetryCount(prev => prev + 1);
+    _setRetryCount((prev: number) => prev + 1);
     setLoadStartTime(Date.now());
     setMinLoadElapsed(false);
 
@@ -216,10 +217,6 @@ export function EnhancedLazyComponent<P extends object = {}>({
     EnhancedCodeSplitting.clearComponentCache(componentName);
   }, [componentName]);
 
-  // 开始加载时记录时间
-  const handleLoadStart = useCallback(() => {
-    setLoadStartTime(Date.now());
-  }, []);
 
   // 最小加载时间处理
   useEffect(() => {
@@ -284,23 +281,24 @@ export function EnhancedLazyComponent<P extends object = {}>({
     }
   };
 
+  // 渲染fallback的辅助函数
+  const renderFallback = useCallback((fallbackProps?: { delay?: number; showProgress?: boolean }) => {
+    if (typeof Fallback === 'function') {
+      return <Fallback {...fallbackProps} />;
+    }
+    return fallbackProps ? <DefaultLoadingFallback {...fallbackProps} /> : <DefaultLoadingFallback />;
+  }, [Fallback]);
+
   // 检查最小加载时间
   if (loadStartTime > 0 && !minLoadElapsed) {
-    return <Fallback delay={0} showProgress={showProgress} />;
+    return renderFallback({ delay: 0, showProgress });
   }
 
   const Component = component as ComponentType<P>;
 
   return (
     <ErrorBoundary onRetry={handleRetry}>
-      <Suspense
-        fallback={
-          <Fallback
-            delay={delay}
-            showProgress={showProgress}
-          />
-        }
-      >
+      <Suspense fallback={renderFallback({ delay, showProgress })}>
         <Component {...(props as P)} />
       </Suspense>
     </ErrorBoundary>
@@ -312,19 +310,30 @@ export function EnhancedLazyComponent<P extends object = {}>({
  */
 export function createEnhancedLazyComponent<P extends object = {}>(
   componentName: string,
-  importFn: () => Promise<{ default: ComponentType<P> }>,
-  config: EnhancedLazyComponentConfig = {}
+  _importFn: () => Promise<{ default: ComponentType<P> }>,
+  config: EnhancedLazyComponentConfig = {},
 ): ComponentType<P> {
-  const LazyComponent = EnhancedCodeSplitting.createLazyComponent<P>(componentName, config);
+  // 转换配置以匹配LazyComponentConfig类型
+  const lazyConfig: any = {
+    preloadStrategy: config.preloadStrategy,
+    cacheTime: config.cacheTime,
+    timeout: config.timeout,
+    retryCount: config.retryCount,
+    fallback: typeof config.fallback === 'function' ? config.fallback : undefined,
+    errorFallback: config.errorFallback,
+    priority: config.priority,
+  };
+
+  const LazyComponent = EnhancedCodeSplitting.createLazyComponent<P>(componentName, lazyConfig);
 
   return React.memo((props: P) => (
     <EnhancedLazyComponent
       component={LazyComponent}
       componentName={componentName}
       config={config}
-      {...props}
+      {...(props as any)}
     />
-  ));
+  )) as any as ComponentType<P>;
 }
 
 /**
@@ -334,7 +343,7 @@ export function createConditionalLazyComponent<P extends object = {}>(
   condition: boolean,
   componentName: string,
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  config: EnhancedLazyComponentConfig = {}
+  config: EnhancedLazyComponentConfig = {},
 ): ComponentType<P> | null {
   if (!condition) {
     return null;

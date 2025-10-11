@@ -3,8 +3,8 @@
  * 支持参数化配置和生产环境控制
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { useState, useEffect, useCallback } from 'react';
+import Card from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area
+  AreaChart, Area,
 } from 'recharts';
 
 interface VisualizationConfig {
@@ -121,7 +121,9 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 获取仪表板数据
   const fetchDashboardData = useCallback(async () => {
-    if (!isFeatureEnabled('dashboard')) return;
+    if (!isFeatureEnabled('dashboard')) {
+      return;
+    }
 
     try {
       setLoading(true);
@@ -142,7 +144,9 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 获取图表数据
   const fetchChartData = useCallback(async (type: string, metric: string) => {
-    if (!isFeatureEnabled('performanceAnalytics')) return;
+    if (!isFeatureEnabled('performanceAnalytics')) {
+      return;
+    }
 
     try {
       const response = await fetch(`/api/visualization/charts/data?type=${type}&metric=${metric}&timeRange=${selectedTimeRange}`);
@@ -202,7 +206,9 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 设置实时更新
   const setupRealtimeUpdates = useCallback(() => {
-    if (!isFeatureEnabled('realTimeMonitoring')) return;
+    if (!isFeatureEnabled('realTimeMonitoring')) {
+      return;
+    }
 
     const eventSource = new EventSource('/api/visualization/realtime');
 
@@ -246,7 +252,9 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 定期刷新数据
   useEffect(() => {
-    if (!config?.enabled) return;
+    if (!config?.enabled) {
+      return;
+    }
 
     const interval = setInterval(() => {
       fetchDashboardData();
@@ -281,10 +289,10 @@ export const VisualizationDashboard: React.FC = () => {
 
       {/* 基本配置 */}
       <Card>
-        <CardHeader>
-          <CardTitle>基本配置</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <Card.Header>
+          <Card.Title>基本配置</Card.Title>
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <div className="flex items-center space-x-2">
             <Switch
               id="enabled"
@@ -318,15 +326,15 @@ export const VisualizationDashboard: React.FC = () => {
               />
             </div>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* 功能开关 */}
       <Card>
-        <CardHeader>
-          <CardTitle>功能开关</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <Card.Header>
+          <Card.Title>功能开关</Card.Title>
+        </Card.Header>
+        <Card.Content className="space-y-4">
           {Object.entries(config?.features || {}).map(([key, value]) => (
             <div key={key} className="flex items-center space-x-2">
               <Switch
@@ -341,8 +349,8 @@ export const VisualizationDashboard: React.FC = () => {
                       performanceAnalytics: config?.features?.performanceAnalytics || false,
                       alertManagement: config?.features?.alertManagement || false,
                       systemHealth: config?.features?.systemHealth || false,
-                      [key]: checked
-                    }
+                      [key]: checked,
+                    },
                   })
                 }
               />
@@ -356,15 +364,15 @@ export const VisualizationDashboard: React.FC = () => {
               </Label>
             </div>
           ))}
-        </CardContent>
+        </Card.Content>
       </Card>
 
       {/* 预设配置 */}
       <Card>
-        <CardHeader>
-          <CardTitle>预设配置</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <Card.Header>
+          <Card.Title>预设配置</Card.Title>
+        </Card.Header>
+        <Card.Content className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <Button
               variant="outline"
@@ -385,14 +393,16 @@ export const VisualizationDashboard: React.FC = () => {
               最小配置
             </Button>
           </div>
-        </CardContent>
+        </Card.Content>
       </Card>
     </div>
   );
 
   // 渲染状态卡片
   const renderStatusCards = () => {
-    if (!dashboardData) return null;
+    if (!dashboardData) {
+      return null;
+    }
 
     const { summary } = dashboardData;
 
@@ -400,10 +410,10 @@ export const VisualizationDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 队列状态 */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">队列状态</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="pb-2">
+            <Card.Title className="text-sm font-medium">队列状态</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">总队列</span>
@@ -422,15 +432,15 @@ export const VisualizationDashboard: React.FC = () => {
                 <span className="text-sm">{summary.queues.avgThroughput.toFixed(1)}/min</span>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {/* 系统状态 */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">系统状态</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="pb-2">
+            <Card.Title className="text-sm font-medium">系统状态</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">CPU使用</span>
@@ -453,15 +463,15 @@ export const VisualizationDashboard: React.FC = () => {
                 <span className="text-sm">{Math.floor(summary.system.uptime / 3600)}h</span>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {/* Redis状态 */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Redis状态</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="pb-2">
+            <Card.Title className="text-sm font-medium">Redis状态</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">连接数</span>
@@ -474,15 +484,15 @@ export const VisualizationDashboard: React.FC = () => {
                 </Badge>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {/* 实时更新状态 */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">实时状态</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header className="pb-2">
+            <Card.Title className="text-sm font-medium">实时状态</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">实时更新</span>
@@ -504,7 +514,7 @@ export const VisualizationDashboard: React.FC = () => {
                 </span>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -526,10 +536,10 @@ export const VisualizationDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 队列任务图表 */}
         <Card>
-          <CardHeader>
-            <CardTitle>队列任务趋势</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title>队列任务趋势</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData.queue_waitingJobs?.labels.map((label, index) => ({
@@ -547,15 +557,15 @@ export const VisualizationDashboard: React.FC = () => {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
 
         {/* 系统性能图表 */}
         <Card>
-          <CardHeader>
-            <CardTitle>系统性能</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Card.Header>
+            <Card.Title>系统性能</Card.Title>
+          </Card.Header>
+          <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData.system_cpu?.labels.map((label, index) => ({
@@ -573,7 +583,7 @@ export const VisualizationDashboard: React.FC = () => {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -664,34 +674,34 @@ export const VisualizationDashboard: React.FC = () => {
           {/* 其他标签页内容可以根据需要添加 */}
           <TabsContent value="queues">
             <Card>
-              <CardHeader>
-                <CardTitle>队列管理</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <Card.Header>
+                <Card.Title>队列管理</Card.Title>
+              </Card.Header>
+              <Card.Content>
                 <p>队列管理功能正在开发中...</p>
-              </CardContent>
+              </Card.Content>
             </Card>
           </TabsContent>
 
           <TabsContent value="performance">
             <Card>
-              <CardHeader>
-                <CardTitle>性能分析</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <Card.Header>
+                <Card.Title>性能分析</Card.Title>
+              </Card.Header>
+              <Card.Content>
                 <p>性能分析功能正在开发中...</p>
-              </CardContent>
+              </Card.Content>
             </Card>
           </TabsContent>
 
           <TabsContent value="system">
             <Card>
-              <CardHeader>
-                <CardTitle>系统健康</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <Card.Header>
+                <Card.Title>系统健康</Card.Title>
+              </Card.Header>
+              <Card.Content>
                 <p>系统健康功能正在开发中...</p>
-              </CardContent>
+              </Card.Content>
             </Card>
           </TabsContent>
         </Tabs>

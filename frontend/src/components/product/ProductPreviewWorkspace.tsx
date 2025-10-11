@@ -631,3 +631,5 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
     </div>
   );
 };
+
+export default ProductPreviewWorkspace;

@@ -4,14 +4,16 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card } from '@/components/ui/Card';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Card from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'react-hot-toast';
-import { formatDateInputValue, toIsoRangeFromInput } from '@/utils/dateUtils';
-import { getProvinceHeatmap, listAgents } from '@/services/analytics';
-import type { ProvinceHeatmapDataset, AnalyticsFilters, AgentItem } from '@/types/admin';
+import { formatDateInputValue } from '@/utils/dateUtils';
+import { toIsoRangeFromInput } from './dashboard/toIsoRangeFromInput';
+import { getProvinceHeatmap, type ProvinceHeatmapDataset } from '@/services/analyticsApi';
+import { listAgents, type AgentItem } from '@/services/agentsApi';
+import type { AnalyticsFilters } from '@/types/admin';
 
 // 简化的热力图可视化组件
 function HeatmapVisualization({ dataset, loading, height }: {
@@ -34,9 +36,9 @@ function HeatmapVisualization({ dataset, loading, height }: {
       <div className="h-full flex items-center justify-center">
         <div className="text-center text-gray-600">
           <div className="text-lg font-medium mb-2">省域分布热力图</div>
-          <div className="text-sm">共 {dataset.data.length} 个省份</div>
+          <div className="text-sm">共 {dataset.points?.length || 0} 个省份</div>
           <div className="text-xs text-gray-500 mt-1">
-            更新时间: {new Date(dataset.generatedAt).toLocaleString()}
+            更新时间: {dataset.generatedAt ? new Date(dataset.generatedAt).toLocaleString() : new Date().toLocaleString()}
           </div>
         </div>
       </div>
@@ -46,7 +48,7 @@ function HeatmapVisualization({ dataset, loading, height }: {
 
 // 简化的热力图摘要组件
 function HeatmapSummary({ dataset }: { dataset?: ProvinceHeatmapDataset | null }) {
-  if (!dataset || !dataset.data.length) {
+  if (!dataset || !dataset.points?.length) {
     return (
       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div className="text-sm text-blue-600">暂无数据摘要</div>
@@ -54,8 +56,8 @@ function HeatmapSummary({ dataset }: { dataset?: ProvinceHeatmapDataset | null }
     );
   }
 
-  const totalRequests = dataset.data.reduce((sum, item) => sum + (item.requestCount || 0), 0);
-  const activeProvinces = dataset.data.filter(item => (item.requestCount || 0) > 0).length;
+  const totalRequests = dataset.points.reduce((sum, item) => sum + (item.count || 0), 0);
+  const activeProvinces = dataset.points.filter(item => (item.count || 0) > 0).length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -226,7 +228,7 @@ export default function AnalyticsPanel() {
                 </Button>
                 {dataset && (
                   <span className="text-xs text-gray-500">
-                    数据更新时间：{new Date(dataset.generatedAt).toLocaleTimeString()}
+                    数据更新时间：{dataset.generatedAt ? new Date(dataset.generatedAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
                   </span>
                 )}
               </div>

@@ -31,7 +31,7 @@ export const Tabs: React.FC<TabsProps> = ({ defaultValue, children, className = 
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
           ? React.cloneElement(child, { activeTab, setActiveTab })
-          : child
+          : child,
       )}
     </div>
   );
@@ -41,14 +41,14 @@ export const TabsList: React.FC<TabsListProps & { activeTab?: string; setActiveT
   children,
   activeTab,
   setActiveTab,
-  className = ''
+  className = '',
 }) => {
   return (
     <div className={`flex space-x-1 border-b border-gray-200 dark:border-gray-700 ${className}`}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
           ? React.cloneElement(child, { activeTab, setActiveTab })
-          : child
+          : child,
       )}
     </div>
   );
@@ -59,7 +59,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps & { activeTab?: string; setA
   children,
   activeTab,
   setActiveTab,
-  className = ''
+  className = '',
 }) => {
   const isActive = activeTab === value;
 
@@ -71,7 +71,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps & { activeTab?: string; setA
           : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
       } ${className}`}
       onClick={() => setActiveTab?.(value)}
-    >
+      >
       {children}
     </button>
   );
@@ -81,9 +81,11 @@ export const TabsContent: React.FC<TabsContentProps & { activeTab?: string }> = 
   value,
   children,
   activeTab,
-  className = ''
+  className = '',
 }) => {
-  if (activeTab !== value) return null;
+  if (activeTab !== value) {
+    return null;
+  }
 
   return (
     <div className={`py-4 ${className}`}>

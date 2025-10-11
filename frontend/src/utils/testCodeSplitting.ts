@@ -16,7 +16,7 @@ export function testCodeSplitting() {
   try {
     // 注册测试组件
     SimpleCodeSplitting.registerComponent('TestComponent', () =>
-      Promise.resolve({ default: TestComponent })
+      Promise.resolve({ default: TestComponent }),
     );
 
     // 获取统计信息

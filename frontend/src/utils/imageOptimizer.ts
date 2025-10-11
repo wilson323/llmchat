@@ -91,7 +91,7 @@ export class ImageOptimizer {
    */
   async compressImage(
     file: File,
-    options: ImageOptimizationOptions = {}
+    options: ImageOptimizationOptions = {},
   ): Promise<{ blob: Blob; info: ImageInfo }> {
     const {
       quality = 0.8,
@@ -106,11 +106,11 @@ export class ImageOptimizer {
       img.onload = () => {
         try {
           // 计算新尺寸
-          let { width, height } = this.calculateDimensions(
+          const { width, height } = this.calculateDimensions(
             img.naturalWidth,
             img.naturalHeight,
             maxWidth,
-            maxHeight
+            maxHeight,
           );
 
           // 设置画布尺寸
@@ -139,7 +139,7 @@ export class ImageOptimizer {
               }
             },
             this.getMimeType(format),
-            quality
+            quality,
           );
         } catch (error) {
           reject(error);
@@ -156,7 +156,7 @@ export class ImageOptimizer {
    */
   async compressImages(
     files: File[],
-    options: ImageOptimizationOptions = {}
+    options: ImageOptimizationOptions = {},
   ): Promise<Array<{ file: File; blob: Blob; info: ImageInfo }>> {
     const promises = files.map(async (file) => {
       try {
@@ -186,7 +186,7 @@ export class ImageOptimizer {
   async createResponsiveImageSet(
     file: File,
     sizes: number[] = [320, 640, 768, 1024, 1280, 1536],
-    options: ImageOptimizationOptions = {}
+    options: ImageOptimizationOptions = {},
   ): Promise<Array<{ size: number; blob: Blob; info: ImageInfo }>> {
     const promises = sizes.map(async (size) => {
       const optimizedOptions = {
@@ -290,7 +290,7 @@ export class ImageOptimizer {
     originalWidth: number,
     originalHeight: number,
     maxWidth: number,
-    maxHeight: number
+    maxHeight: number,
   ): { width: number; height: number } {
     let width = originalWidth;
     let height = originalHeight;
@@ -335,7 +335,7 @@ export class ImageOptimizer {
     originalSize: number,
     originalFormat: string,
     targetFormat: string,
-    quality: number = 0.8
+    quality: number = 0.8,
   ): number {
     // 基于经验的压缩比例
     const compressionRatios: Record<string, Record<string, number>> = {
@@ -374,7 +374,7 @@ export class ImageOptimizer {
     width: number,
     height: number,
     format: string,
-    size: number
+    size: number,
   ): {
       webpPotential: number;
       avifPotential: number;

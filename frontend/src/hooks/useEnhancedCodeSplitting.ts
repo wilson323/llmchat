@@ -62,14 +62,14 @@ export interface UseEnhancedCodeSplittingReturn {
  */
 export function useEnhancedCodeSplitting(
   componentName: string,
-  options: UseEnhancedCodeSplittingOptions = {}
+  options: UseEnhancedCodeSplittingOptions = {},
 ): UseEnhancedCodeSplittingReturn {
   const {
     autoPreload = true,
     preloadDelay = 1000,
     enablePerformanceMonitoring = true,
     // cacheStrategy = 'memory', // 暂时未使用
-    preloadStrategy = 'idle'
+    preloadStrategy = 'idle',
   } = options;
 
   const [state, setState] = useState<ComponentState>(ComponentState.IDLE);
@@ -90,7 +90,9 @@ export function useEnhancedCodeSplitting(
 
   // 加载组件
   const loadComponent = useCallback(async (): Promise<void> => {
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) {
+return;
+}
 
     const currentState = getComponentState();
     if (currentState === ComponentState.LOADED || currentState === ComponentState.LOADING) {
@@ -112,7 +114,7 @@ export function useEnhancedCodeSplitting(
         console.log(`📊 组件 ${componentName} 加载性能:`, {
           loadTime: loadDuration,
           retryCount,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     } catch (err) {
@@ -147,13 +149,15 @@ export function useEnhancedCodeSplitting(
     return {
       loadTime: loadTime || 0,
       retryCount,
-      cacheHit: SimpleCodeSplitting.isLoaded(componentName)
+      cacheHit: SimpleCodeSplitting.isLoaded(componentName),
     };
   }, [loadTime, retryCount, componentName]);
 
   // 自动预加载
   useEffect(() => {
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) {
+return;
+}
 
     if (autoPreload && preloadStrategy === 'immediate') {
       loadComponent();
@@ -191,6 +195,6 @@ export function useEnhancedCodeSplitting(
     retry,
     preload,
     clearCache,
-    getStats
+    getStats,
   };
 }

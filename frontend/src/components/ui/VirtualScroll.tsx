@@ -43,9 +43,17 @@ export interface VirtualScrollProps<T = any> {
   hasMore?: boolean;
 }
 
-export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
+// 定义虚拟滚动器的ref类型
+export interface VirtualScrollRef {
+  scrollToItem: (index: number) => void;
+  scrollToTop: () => void;
+  getScrollTop: () => number;
+  getContainer: () => HTMLDivElement | null;
+}
+
+export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = any>({
   items,
-  itemKey = (item, index) => index.toString(),
+  itemKey = (_item, index) => index.toString(),
   itemHeight,
   height = 400,
   className = '',
@@ -134,11 +142,18 @@ export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
   }, [scrollToTop]);
 
   // 暴露滚动控制方法
-  React.useImperativeHandle(ref, () => ({
-    scrollToItem,
-    scrollToTop: scrollToTopAction,
-    getScrollTop: () => containerRef.current?.scrollTop || 0,
-  }), [scrollToItem, scrollToTopAction]);
+  React.useImperativeHandle(ref, () => {
+    const container = containerRef.current;
+    if (container) {
+      // Add custom methods to the container element
+      (container as any).scrollToItem = scrollToItem;
+      (container as any).scrollToTop = scrollToTopAction;
+      (container as any).getScrollTop = () => container.scrollTop || 0;
+      (container as any).getContainer = () => container;
+      return container;
+    }
+    return document.createElement('div'); // Return empty div as fallback
+  }, [scrollToItem, scrollToTopAction]);
 
   // 性能监控
   let startMeasure: () => void;
@@ -178,7 +193,7 @@ export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
       <div
         className={`flex items-center justify-center h-full ${className}`}
         style={{ height, ...style }}
-      >
+        >
         {emptyComponent || (
           <div className="text-center text-muted-foreground">
             <div className="text-lg font-medium">暂无数据</div>
@@ -195,7 +210,7 @@ export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
       className={`relative overflow-auto ${className}`}
       style={{ height, ...style }}
       onScroll={handleScroll}
-    >
+      >
       <div style={{ height: totalHeight, position: 'relative' }}>
         {virtualItemsData.map((item) => (
           <div
@@ -218,7 +233,7 @@ export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border/50">
           {loadingComponent || (
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
               <span className="text-sm text-muted-foreground">加载中...</span>
             </div>
           )}
@@ -230,13 +245,13 @@ export const VirtualScroll = React.forwardRef(function VirtualScroll<T = any>({
 
 // 高阶组件版本
 export function withVirtualScroll<T = any>(
-  Component: React.ComponentType<{ item: VirtualScrollItem<T> }>
+  Component: React.ComponentType<{ item: VirtualScrollItem<T> }>,
 ) {
   const WrappedComponent = React.memo(function WithVirtualScroll({ items, ...props }: Omit<VirtualScrollProps<T>, 'renderItem'>) {
     return (
       <VirtualScroll
         items={items}
-        renderItem={(item) => <Component item={item} {...props} />}
+        renderItem={(item) => <Component item={item} {...(props as any)} />}
         {...props}
       />
     );
@@ -270,7 +285,7 @@ export function useVirtualScrollControl() {
     if (containerRef.current) {
       containerRef.current.scrollTo({
         top: containerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   }, []);

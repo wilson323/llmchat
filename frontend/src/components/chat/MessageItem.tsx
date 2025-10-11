@@ -33,7 +33,7 @@ interface CodeProps {
   [key: string]: any;
 }
 
-import avatarImg from '@/img/4.webp';
+const avatarImg = '/img/4.webp';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 
 interface MessageItemProps extends InteractiveCallbacks {

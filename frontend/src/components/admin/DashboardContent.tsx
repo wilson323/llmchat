@@ -5,10 +5,10 @@
 'use client';
 
 import { memo } from 'react';
-import { Card } from '@/components/ui/Card';
+import Card from '@/components/ui/Card';
 
 // 简化的数据卡片组件
-function ConversationsTrendCard({ analytics }: { analytics: any }) {
+function ConversationsTrendCard({ analytics: _analytics }: { analytics: any }) {
   return (
     <Card>
       <Card.Content>
@@ -22,7 +22,7 @@ function ConversationsTrendCard({ analytics }: { analytics: any }) {
   );
 }
 
-function AgentComparisonCard({ analytics }: { analytics: any }) {
+function AgentComparisonCard({ analytics: _analytics }: { analytics: any }) {
   return (
     <Card>
       <Card.Content>
@@ -50,7 +50,7 @@ function DashboardHeatmapCard() {
   );
 }
 
-function ConversationSummaryCard({ analytics }: { analytics: any }) {
+function ConversationSummaryCard({ analytics: _analytics }: { analytics: any }) {
   return (
     <Card>
       <Card.Content>

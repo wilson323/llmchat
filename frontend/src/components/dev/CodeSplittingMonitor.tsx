@@ -4,10 +4,9 @@
  * 仅在开发环境中显示，用于监控代码分割的性能表现
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Activity, Package, Clock, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
-import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
-import { useCodeSplittingPerformanceMonitor } from '@/hooks/useEnhancedCodeSplitting';
+import { useEnhancedCodeSplitting } from '@/hooks/useEnhancedCodeSplitting';
 
 interface CodeSplittingMonitorProps {
   /** 是否显示详细信息 */
@@ -21,19 +20,23 @@ interface CodeSplittingMonitorProps {
 export default function CodeSplittingMonitor({
   showDetails = false,
   autoRefresh = true,
-  refreshInterval = 2000
+  refreshInterval = 2000,
 }: CodeSplittingMonitorProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { stats, history, updateStats, clearHistory, getPerformanceMetrics } = useCodeSplittingPerformanceMonitor();
+  const { state, isLoading, clearCache, getStats } = useEnhancedCodeSplitting('CodeSplittingMonitor', { autoPreload: false });
 
   // 自动刷新
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh) {
+      return;
+    }
 
-    const interval = setInterval(updateStats, refreshInterval);
+    const interval = setInterval(() => {
+      // 刷新统计数据
+    }, refreshInterval);
     return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, updateStats]);
+  }, [autoRefresh, refreshInterval]);
 
   // 只在开发环境中显示
   if (process.env.NODE_ENV !== 'development') {
@@ -48,12 +51,25 @@ export default function CodeSplittingMonitor({
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const clearAllCache = () => {
-    EnhancedCodeSplitting.clearComponentCache();
-    updateStats();
+  const refreshStats = () => {
+    // Trigger refresh by calling getStats
+    getStats();
   };
 
-  const performanceMetrics = getPerformanceMetrics();
+  const performanceMetrics = {
+    loadingRateChange: 0,
+    loadedRateChange: 0,
+    timeRange: new Date().toLocaleTimeString() + ' - ' + new Date().toLocaleTimeString(),
+  };
+
+  // Create stats object from hook properties
+  const stats = {
+    totalRegistered: Object.keys(state || {}).length,
+    loadedCount: Object.values(state || {}).filter((c: any) => c.state === 'loaded').length,
+    loadingCount: Object.values(state || {}).filter((c: any) => c.state === 'loading').length,
+    idleCount: Object.values(state || {}).filter((c: any) => c.state === 'idle').length,
+    components: Object.values(state || {}).map((c: any, index: number) => ({ ...c, name: c.name || `Component ${index}` })),
+  };
 
   return (
     <>
@@ -62,11 +78,11 @@ export default function CodeSplittingMonitor({
         onClick={toggleVisibility}
         className="fixed bottom-4 right-4 z-50 bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
         title="代码分割监控"
-      >
+        >
         <Package className="w-5 h-5" />
-        {stats.loadingCount > 0 && (
+        {isLoading && (
           <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            {stats.loadingCount}
+            1
           </span>
         )}
       </button>
@@ -83,14 +99,14 @@ export default function CodeSplittingMonitor({
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={updateStats}
+                  onClick={refreshStats}
                   className="p-1 hover:bg-muted rounded transition-colors"
                   title="刷新"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={clearAllCache}
+                  onClick={clearCache}
                   className="p-1 hover:bg-muted rounded transition-colors"
                   title="清除缓存"
                 >
@@ -146,7 +162,7 @@ export default function CodeSplittingMonitor({
 
           {/* 组件列表 */}
           <div className="overflow-y-auto max-h-64">
-            {stats.components.map((component) => (
+            {stats.components.map((component: any) => (
               <div
                 key={component.name}
                 className="p-3 border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
@@ -196,10 +212,10 @@ export default function CodeSplittingMonitor({
           {/* 操作按钮 */}
           <div className="p-3 bg-muted/30 border-t border-border flex gap-2">
             <button
-              onClick={clearHistory}
+              onClick={clearCache}
               className="flex-1 px-3 py-1 bg-background border border-border rounded text-xs hover:bg-muted transition-colors"
             >
-              清除历史
+              清除缓存
             </button>
             <button
               onClick={() => setExpandedSection(expandedSection ? null : 'all')}

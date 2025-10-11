@@ -50,6 +50,11 @@ export interface ProvinceHeatmapDataset {
   value: number;
   lat: number;
   lng: number;
+  data?: Array<{
+    date: string;
+    value: number;
+  }>;
+  generatedAt?: string;
 }
 
 export interface AnalyticsFilters {
@@ -57,11 +62,28 @@ export interface AnalyticsFilters {
   dateTo?: Date;
   level?: string;
   source?: string;
+  startDate?: string;
+  endDate?: string;
+  agentId?: string;
 }
 
 export interface AgentItem {
   id: string;
   name: string;
-  type: string;
-  status: 'active' | 'inactive';
+  description?: string;
+  model?: string;
+  status?: 'active' | 'inactive';
+  provider?: string;
+  capabilities?: string[];
+  features?: Record<string, any>;
+  rateLimit?: { requestsPerMinute?: number; tokensPerMinute?: number };
+  endpoint?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+  appId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // 向后兼容
+  type?: string;
 }

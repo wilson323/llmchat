@@ -11,10 +11,10 @@ import { testCodeSplitting } from '@/utils/testCodeSplitting';
 
 // 模拟一些懒加载组件
 const LazyComponent1 = React.lazy(() =>
-  import('./LazyComponent1').then(module => ({ default: module.default || module }))
+  import('./LazyComponent1').then(module => ({ default: module.default || module })),
 );
 const LazyComponent2 = React.lazy(() =>
-  import('./LazyComponent2').then(module => ({ default: module.default || module }))
+  import('./LazyComponent2').then(module => ({ default: module.default || module })),
 );
 
 export default function CodeSplittingDemo() {
@@ -24,11 +24,11 @@ export default function CodeSplittingDemo() {
   useEffect(() => {
     // 注册组件到代码分割系统
     SimpleCodeSplitting.registerComponent('LazyComponent1', () =>
-      import('./LazyComponent1').then(module => ({ default: module.default || module }))
+      import('./LazyComponent1').then(module => ({ default: module.default || module })),
     );
 
     SimpleCodeSplitting.registerComponent('LazyComponent2', () =>
-      import('./LazyComponent2').then(module => ({ default: module.default || module }))
+      import('./LazyComponent2').then(module => ({ default: module.default || module })),
     );
 
     // 运行测试
@@ -155,7 +155,7 @@ export default function CodeSplittingDemo() {
             component={LazyComponent1}
             config={{
               showProgress: true,
-              delay: 200
+              delay: 200,
             }}
           />
         )}
@@ -165,7 +165,7 @@ export default function CodeSplittingDemo() {
             component={LazyComponent2}
             config={{
               showProgress: true,
-              delay: 200
+              delay: 200,
             }}
           />
         )}

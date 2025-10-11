@@ -38,12 +38,12 @@ export class LazyLoader {
       cacheTime?: number;
       retryCount?: number;
       timeout?: number;
-    } = {}
+    } = {},
   ): () => Promise<T> {
     const {
       cacheTime = CACHE_DURATION,
       retryCount = 3,
-      timeout = 10000
+      timeout = 10000,
     } = options;
 
     return async (): Promise<T> => {
@@ -63,7 +63,7 @@ export class LazyLoader {
             importFn(),
             new Promise<never>((_, reject) => {
               setTimeout(() => reject(new Error('加载超时')), timeout);
-            })
+            }),
           ]);
 
           const data = result.default;
@@ -71,7 +71,7 @@ export class LazyLoader {
           // 缓存结果
           componentCache.set(componentName, {
             data,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
 
           // 清理过期缓存
@@ -101,7 +101,7 @@ export class LazyLoader {
    */
   static async preloadComponent<T = any>(
     importFn: () => Promise<{ default: T }>,
-    componentName: string
+    componentName: string,
   ): Promise<void> {
     try {
       await this.createLazyComponent(importFn, componentName)();
@@ -119,7 +119,7 @@ export class LazyLoader {
       importFn: () => Promise<{ default: any }>;
       name: string;
       priority?: number;
-    }>
+    }>,
   ): Promise<void> {
     // 按优先级排序
     const sortedComponents = components.sort((a, b) => (b.priority || 0) - (a.priority || 0));
@@ -130,7 +130,7 @@ export class LazyLoader {
       const batch = sortedComponents.slice(i, i + batchSize);
 
       await Promise.allSettled(
-        batch.map(({ importFn, name }) => this.preloadComponent(importFn, name))
+        batch.map(({ importFn, name }) => this.preloadComponent(importFn, name)),
       );
 
       // 批次间延迟
@@ -169,12 +169,12 @@ export class LazyLoader {
     const now = Date.now();
     const items = Array.from(componentCache.entries()).map(([name, cached]) => ({
       name,
-      age: now - cached.timestamp
+      age: now - cached.timestamp,
     }));
 
     return {
       size: componentCache.size,
-      items
+      items,
     };
   }
 
@@ -191,7 +191,9 @@ export class LazyLoader {
    */
   static isCached(componentName: string): boolean {
     const cached = componentCache.get(componentName);
-    if (!cached) return false;
+    if (!cached) {
+return false;
+}
 
     return Date.now() - cached.timestamp < CACHE_DURATION;
   }

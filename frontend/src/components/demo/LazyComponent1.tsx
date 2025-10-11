@@ -2,7 +2,7 @@
  * 懒加载演示组件 1
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function LazyComponent1() {
   const [loadTime, setLoadTime] = useState<string>('');

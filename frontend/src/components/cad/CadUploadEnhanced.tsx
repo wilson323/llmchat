@@ -36,7 +36,7 @@ interface UploadState {
   message?: string;
 }
 
-export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
+const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
   onUploadSuccess,
   onUploadError,
 }) => {
@@ -374,3 +374,5 @@ export const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
     </div>
   );
 };
+
+export default CadUploadEnhanced;

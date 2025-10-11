@@ -9,8 +9,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { OptimizedImage } from './OptimizedImage';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
-import { useImageOptimization } from '@/hooks/useImageOptimization';
-import { ChevronLeft, ChevronRight, Download, Maximize2, Grid3x3, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Maximize2, Grid3x3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ImageItem {
@@ -79,7 +78,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
       }
 
       const image = images[index];
-      if (!image) return 200;
+      if (!image) {
+        return 200;
+      }
 
       // 网格/瀑布流布局高度估算
       const aspectRatio = image.width && image.height ? image.height / image.width : 0.75;
@@ -139,7 +140,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   // 键盘导航
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (viewMode !== 'viewer') return;
+      if (viewMode !== 'viewer') {
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -163,7 +166,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   // 下载功能
   const handleDownload = useCallback(() => {
-    if (!selectedImage) return;
+    if (!selectedImage) {
+      return;
+    }
 
     const link = document.createElement('a');
     link.href = selectedImage.src;
@@ -173,7 +178,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   // 全屏功能
   const handleFullscreen = useCallback(() => {
-    if (!viewerRef.current) return;
+    if (!viewerRef.current) {
+      return;
+    }
 
     if (document.fullscreenElement) {
       document.exitFullscreen();
@@ -186,7 +193,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   const renderImageItem = useCallback((item: typeof virtualItemsData[0]) => {
     const { index, data: image } = item;
 
-    if (!image) return null;
+    if (!image) {
+      return null;
+    }
 
     const isList = layout === 'list';
     const itemStyle = {
@@ -206,10 +215,10 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         className={cn(
           'group cursor-pointer overflow-hidden transition-all duration-300 hover:scale-[1.02]',
           isList ? 'flex gap-4 p-4 bg-card rounded-lg shadow-sm' : 'relative',
-          !isList && 'rounded-lg overflow-hidden bg-card shadow-sm'
+          !isList && 'rounded-lg overflow-hidden bg-card shadow-sm',
         )}
         onClick={() => handleImageClick(image, index)}
-      >
+        >
         {isList ? (
           <>
             <div className="flex-shrink-0 w-24 h-24 rounded-md overflow-hidden">
@@ -261,7 +270,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   // 渲染缩略图
   const renderThumbnails = useCallback(() => {
-    if (!showThumbnails) return null;
+    if (!showThumbnails) {
+      return null;
+    }
 
     return (
       <div className="flex gap-2 p-4 overflow-x-auto">
@@ -273,7 +284,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               'flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all',
               index === selectedIndex
                 ? 'border-primary ring-2 ring-primary/50'
-                : 'border-transparent hover:border-gray-300'
+                : 'border-transparent hover:border-gray-300',
             )}
           >
             <OptimizedImage
@@ -296,9 +307,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
         className={cn(
           'fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col',
           'transition-opacity duration-300',
-          isTransitioning ? 'opacity-0' : 'opacity-100'
+          isTransitioning ? 'opacity-0' : 'opacity-100',
         )}
-      >
+        >
         {/* 头部控制栏 */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <button
@@ -371,7 +382,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               disabled={selectedIndex === 0}
               className={cn(
                 'text-white hover:text-gray-300 transition-colors',
-                selectedIndex === 0 && 'opacity-50 cursor-not-allowed'
+                selectedIndex === 0 && 'opacity-50 cursor-not-allowed',
               )}
             >
               <ChevronLeft className="w-8 h-8" />
@@ -384,7 +395,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               disabled={selectedIndex === images.length - 1}
               className={cn(
                 'text-white hover:text-gray-300 transition-colors',
-                selectedIndex === images.length - 1 && 'opacity-50 cursor-not-allowed'
+                selectedIndex === images.length - 1 && 'opacity-50 cursor-not-allowed',
               )}
             >
               <ChevronRight className="w-8 h-8" />
@@ -401,17 +412,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
       ref={containerRef}
       className={cn('relative bg-background', className)}
       style={{ height }}
-    >
+      >
       {/* 视图切换按钮 */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <button
           onClick={() => {
-            setViewMode(layout === 'grid' ? 'list' : 'grid');
+            setViewMode(viewMode === 'gallery' ? 'viewer' : 'gallery');
           }}
           className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-2 rounded-lg shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors"
-          title={layout === 'grid' ? '列表视图' : '网格视图'}
+          title={viewMode === 'gallery' ? '查看器模式' : '画廊模式'}
         >
-          {layout === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+          {viewMode === 'gallery' ? <Maximize2 className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
         </button>
       </div>
 

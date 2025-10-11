@@ -10,7 +10,7 @@ export { default as EChartsComponents } from './EChartsPlaceholder';
 // 创建默认导出
 const EChartsComponents = {
   // 占位组件，实际使用时会被替换
-  placeholder: true
+  placeholder: true,
 };
 
 export default EChartsComponents;

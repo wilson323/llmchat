@@ -3,9 +3,9 @@
  */
 
 'use client';
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, X, Home, Users, BarChart3, Settings, FileText, MessageSquare, Monitor } from 'lucide-react';
+import { Menu, X, Home, Users, BarChart3, Settings, FileText, MessageSquare, Monitor, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 
@@ -18,10 +18,10 @@ interface SidebarProps {
   activeItem: string;
   onChangeActive: (id: string) => void;
   onLogout: () => void;
-  onChangePassword: () => void;
+  onChangePassword: () => void; // 暂时未使用
 }
 
-export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activeItem, onChangeActive, onLogout, onChangePassword }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse, username, activeItem, onChangeActive, onLogout }: SidebarProps) {
   const { t } = useI18n();
 
   const navigationItems = [

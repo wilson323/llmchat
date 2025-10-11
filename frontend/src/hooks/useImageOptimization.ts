@@ -32,9 +32,6 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
   });
 
   const {
-    lazy = true,
-    // priority = false, // 暂时未使用
-    quality = 80,
     formats = ['avif', 'webp', 'fallback'],
     placeholder,
   } = options;
@@ -120,7 +117,7 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
       isLoading: true,
       isLoaded: false,
       isError: false,
-      src: newSrc
+      src: newSrc,
     }));
 
     const format = await checkFormatSupport();

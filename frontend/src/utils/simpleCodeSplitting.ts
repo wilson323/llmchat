@@ -18,7 +18,7 @@ export interface SimpleLazyConfig {
 
 // 已注册的组件
 const registeredComponents = new Map<string, {
-  importFn: () => Promise<{ default: ComponentType<any> }>;
+  importFn:() => Promise<{ default: ComponentType<any> }>;
   config: SimpleLazyConfig;
   loaded?: boolean;
 }>();
@@ -33,7 +33,7 @@ export class SimpleCodeSplitting {
   static registerComponent(
     name: string,
     importFn: () => Promise<{ default: ComponentType<any> }>,
-    config: SimpleLazyConfig = {}
+    config: SimpleLazyConfig = {},
   ): void {
     registeredComponents.set(name, {
       importFn,
@@ -41,8 +41,8 @@ export class SimpleCodeSplitting {
         preloadStrategy: 'idle',
         priority: 5,
         showProgress: false,
-        ...config
-      }
+        ...config,
+      },
     });
   }
 
@@ -51,7 +51,7 @@ export class SimpleCodeSplitting {
    */
   static createLazyComponent<T = any>(
     name: string,
-    _config?: SimpleLazyConfig // 暂时未使用配置
+    _config?: SimpleLazyConfig, // 暂时未使用配置
   ): ComponentType<T> {
     const registration = registeredComponents.get(name);
     if (!registration) {
@@ -100,7 +100,7 @@ export class SimpleCodeSplitting {
   static async preloadComponents(names: string[]): Promise<void> {
     console.log(`🚀 批量预加载组件: ${names.join(', ')}`);
     await Promise.allSettled(
-      names.map(name => this.preloadComponent(name))
+      names.map(name => this.preloadComponent(name)),
     );
   }
 
@@ -112,7 +112,7 @@ export class SimpleCodeSplitting {
       .filter(([_, registration]) => !registration.loaded)
       .map(([name, registration]) => ({
         name,
-        priority: registration.config.priority || 5
+        priority: registration.config.priority || 5,
       }))
       .sort((a, b) => b.priority - a.priority);
 
@@ -204,14 +204,14 @@ export class SimpleCodeSplitting {
       name,
       loaded: !!registration.loaded,
       priority: registration.config.priority || 5,
-      preloadStrategy: registration.config.preloadStrategy || 'idle'
+      preloadStrategy: registration.config.preloadStrategy || 'idle',
     }));
 
     return {
       total: components.length,
       loaded: components.filter(c => c.loaded).length,
       loading: components.filter(c => !c.loaded).length,
-      components
+      components,
     };
   }
 

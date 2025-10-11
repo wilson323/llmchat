@@ -4,8 +4,8 @@
  * 统一管理所有需要懒加载的组件配置
  */
 
-import { SimpleCodeSplitting } from './simpleCodeSplitting';
 import { EnhancedCodeSplitting } from './enhancedCodeSplitting';
+
 
 // 基础页面组件 - 高优先级
 const pageComponents = {
@@ -14,7 +14,7 @@ const pageComponents = {
     importFn: () => import('@/components/ChatApp'),
     priority: 10,
     preloadStrategy: 'immediate' as const,
-    cacheTime: 10 * 60 * 1000 // 10分钟
+    cacheTime: 10 * 60 * 1000, // 10分钟
   },
 
   // 工作区组件
@@ -22,7 +22,7 @@ const pageComponents = {
     importFn: () => import('@/components/workspace/AgentWorkspace'),
     priority: 9,
     preloadStrategy: 'idle' as const,
-    cacheTime: 15 * 60 * 1000
+    cacheTime: 15 * 60 * 1000,
   },
 
   // 管理后台
@@ -30,7 +30,7 @@ const pageComponents = {
     importFn: () => import('@/components/admin/AdminHome'),
     priority: 7,
     preloadStrategy: 'idle' as const,
-    cacheTime: 10 * 60 * 1000
+    cacheTime: 10 * 60 * 1000,
   },
 
   // 登录页面
@@ -38,8 +38,8 @@ const pageComponents = {
     importFn: () => import('@/components/admin/LoginPage'),
     priority: 8,
     preloadStrategy: 'hover' as const,
-    cacheTime: 20 * 60 * 1000
-  }
+    cacheTime: 20 * 60 * 1000,
+  },
 };
 
 // 功能组件 - 中等优先级
@@ -49,7 +49,7 @@ const featureComponents = {
     importFn: () => import('@/components/product/ProductPreviewWorkspace'),
     priority: 6,
     preloadStrategy: 'visible' as const,
-    cacheTime: 8 * 60 * 1000
+    cacheTime: 8 * 60 * 1000,
   },
 
   // 语音通话工作区
@@ -57,7 +57,7 @@ const featureComponents = {
     importFn: () => import('@/components/voice/VoiceCallWorkspace'),
     priority: 6,
     preloadStrategy: 'visible' as const,
-    cacheTime: 8 * 60 * 1000
+    cacheTime: 8 * 60 * 1000,
   },
 
   // CAD查看器
@@ -65,7 +65,7 @@ const featureComponents = {
     importFn: () => import('@/components/cad/CadViewerEnhanced'),
     priority: 4,
     preloadStrategy: 'idle' as const,
-    cacheTime: 15 * 60 * 1000
+    cacheTime: 15 * 60 * 1000,
   },
 
   // CAD上传器
@@ -73,8 +73,8 @@ const featureComponents = {
     importFn: () => import('@/components/cad/CadUploadEnhanced'),
     priority: 4,
     preloadStrategy: 'hover' as const,
-    cacheTime: 12 * 60 * 1000
-  }
+    cacheTime: 12 * 60 * 1000,
+  },
 };
 
 // 图表和数据可视化组件 - 低优先级，按需加载
@@ -84,7 +84,7 @@ const chartComponents = {
     importFn: () => import('@/components/charts/EChartsComponents').then(m => ({ default: m.EChartsComponents || m.default || m })),
     priority: 2,
     preloadStrategy: 'idle' as const,
-    cacheTime: 20 * 60 * 1000
+    cacheTime: 20 * 60 * 1000,
   },
 
   // 性能监控仪表板
@@ -92,8 +92,8 @@ const chartComponents = {
     importFn: () => import('@/components/monitoring/PerformanceDashboard'),
     priority: 3,
     preloadStrategy: 'idle' as const,
-    cacheTime: 10 * 60 * 1000
-  }
+    cacheTime: 10 * 60 * 1000,
+  },
 };
 
 // 高级功能组件 - 最低优先级
@@ -103,7 +103,7 @@ const advancedComponents = {
     importFn: () => import('@/components/ui/ImageGallery'),
     priority: 1,
     preloadStrategy: 'hover' as const,
-    cacheTime: 15 * 60 * 1000
+    cacheTime: 15 * 60 * 1000,
   },
 
   // 虚拟滚动组件
@@ -111,8 +111,8 @@ const advancedComponents = {
     importFn: () => import('@/components/ui/VirtualScroll'),
     priority: 1,
     preloadStrategy: 'idle' as const,
-    cacheTime: 12 * 60 * 1000
-  }
+    cacheTime: 12 * 60 * 1000,
+  },
 };
 
 /**
@@ -126,7 +126,7 @@ export function initializeComponentRegistry(): void {
     EnhancedCodeSplitting.registerComponent(name, config.importFn, {
       priority: config.priority,
       preloadStrategy: config.preloadStrategy,
-      cacheTime: config.cacheTime
+      cacheTime: config.cacheTime,
     });
   });
 
@@ -135,7 +135,7 @@ export function initializeComponentRegistry(): void {
     EnhancedCodeSplitting.registerComponent(name, config.importFn, {
       priority: config.priority,
       preloadStrategy: config.preloadStrategy,
-      cacheTime: config.cacheTime
+      cacheTime: config.cacheTime,
     });
   });
 
@@ -144,7 +144,7 @@ export function initializeComponentRegistry(): void {
     EnhancedCodeSplitting.registerComponent(name, config.importFn, {
       priority: config.priority,
       preloadStrategy: config.preloadStrategy,
-      cacheTime: config.cacheTime
+      cacheTime: config.cacheTime,
     });
   });
 
@@ -153,7 +153,7 @@ export function initializeComponentRegistry(): void {
     EnhancedCodeSplitting.registerComponent(name, config.importFn, {
       priority: config.priority,
       preloadStrategy: config.preloadStrategy,
-      cacheTime: config.cacheTime
+      cacheTime: config.cacheTime,
     });
   });
 
@@ -199,7 +199,7 @@ export async function preloadCriticalComponents(): Promise<void> {
   const criticalComponents = [
     'ChatApp',
     'AgentWorkspace',
-    'LoginPage'
+    'LoginPage',
   ];
 
   console.log('🎯 预加载关键组件:', criticalComponents);
@@ -213,7 +213,7 @@ export async function preloadComponentsByRole(role: 'admin' | 'user' | 'guest'):
   const roleComponents = {
     admin: ['AdminHome', 'PerformanceDashboard', 'EChartsComponents'],
     user: ['AgentWorkspace', 'ProductPreviewWorkspace', 'VoiceCallWorkspace'],
-    guest: ['ChatApp', 'LoginPage']
+    guest: ['ChatApp', 'LoginPage'],
   };
 
   const components = roleComponents[role] || roleComponents.guest;
@@ -242,5 +242,5 @@ export {
   pageComponents,
   featureComponents,
   chartComponents,
-  advancedComponents
+  advancedComponents,
 };

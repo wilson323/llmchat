@@ -34,8 +34,8 @@ interface ComponentLoaderConfig {
  */
 export function useCodeSplitting<T>(
   importFn: () => Promise<any>,
-  componentName: string,
-  config: ComponentLoaderConfig = {}
+  _componentName: string,
+  _config: ComponentLoaderConfig = {},
 ): LoadResult<T> {
   const [loadResult, setLoadResult] = useState<LoadResult<T>>({
     state: LoadingState.IDLE,

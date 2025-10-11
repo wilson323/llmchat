@@ -4,7 +4,7 @@
  */
 
 'use client';
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { VirtualScroll } from '@/components/ui/VirtualScroll';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,8 +15,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   RefreshCw,
-  ChevronDown,
-  Filter
+  Filter,
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
@@ -51,9 +50,9 @@ const UserRow = memo(function UserRow({
   item,
   onEdit,
   onDelete,
-  onToggleStatus
+  onToggleStatus,
 }: {
-  item: { index: number; data: User; key: string; height: number };
+  item: { index: number; data: User; key?: string; height: number };
   onEdit?: (user: User) => void;
   onDelete?: (user: User) => void;
   onToggleStatus?: (user: User) => void;
@@ -66,7 +65,7 @@ const UserRow = memo(function UserRow({
   };
 
   const handleDelete = () => {
-    if (window.confirm(t('确定要删除用户 {0} 吗？', user.username))) {
+    if (window.confirm(t('确定要删除用户 {0} 吗？').replace('{0}', user.username))) {
       onDelete?.(user);
     }
   };
@@ -85,7 +84,7 @@ const UserRow = memo(function UserRow({
       className={`flex items-center border-b border-border/50 hover:bg-muted/20 transition-colors ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}
       style={{ padding: '12px 16px' }}
       data-virtual-item
-    >
+      >
       {/* 用户头像和基本信息 */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-medium">
@@ -167,10 +166,10 @@ const TableHeader = memo(function TableHeader({
   onSearch,
   onRefresh,
   loading,
-  totalCount
+  totalCount,
 }: {
   searchQuery: string;
-  onSearch: (query: string) => void;
+  onSearch?: (query: string) => void;
   onRefresh: () => void;
   loading: boolean;
   totalCount: number;
@@ -185,12 +184,12 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索用户名或邮箱...')}
             value={searchQuery}
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e) => onSearch?.(e.target.value)}
             className="pl-10"
           />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{t('共 {totalCount} 个用户')}</span>
+          <span>{t('共 {0} 个用户').replace('{0}', totalCount.toString())}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -219,7 +218,7 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
   onDelete,
   onToggleStatus,
   onLoadMore,
-  onSearch,
+  onSearch: _onSearch,
   className = '',
   height = 600,
 }) {
@@ -228,12 +227,14 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
 
   // 过滤用户
   const filteredUsers = React.useMemo(() => {
-    if (!searchQuery) return users;
+    if (!searchQuery) {
+      return users;
+    }
 
     const query = searchQuery.toLowerCase();
     return users.filter(user =>
       user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
+      user.email.toLowerCase().includes(query),
     );
   }, [users, searchQuery]);
 
@@ -243,7 +244,9 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
 
     // 根据用户名长度估算
     const usernameLength = user.username.length;
-    if (usernameLength > 20) height += 10;
+    if (usernameLength > 20) {
+      height += 10;
+    }
 
     return height;
   }, []);
@@ -254,7 +257,7 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
       <TableHeader
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
-        onRefresh={onRefresh}
+        onRefresh={onRefresh || (() => undefined)}
         loading={loading}
         totalCount={filteredUsers.length}
       />
@@ -263,11 +266,11 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
       <VirtualScroll
         items={filteredUsers}
         height={height}
-        itemKey={(user) => user.id}
+        itemKey={(user, index) => user.id || index.toString()}
         itemHeight={estimateUserHeight}
         renderItem={(item) => (
           <UserRow
-            item={item}
+            item={{ ...item, height: item.height || 60 }}
             onEdit={onEdit}
             onDelete={onDelete}
             onToggleStatus={onToggleStatus}
@@ -278,7 +281,7 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
         loading={loading}
         loadingComponent={
           <div className="flex items-center justify-center p-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
             <span className="text-sm text-muted-foreground">{t('加载中...')}</span>
           </div>
         }

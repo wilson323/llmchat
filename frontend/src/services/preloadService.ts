@@ -4,8 +4,6 @@
  * 根据用户行为、网络状况、设备性能等因素智能预加载组件和资源
  */
 
-// import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
-import { SimpleCodeSplitting } from '@/utils/simpleCodeSplitting';
 
 // 预加载策略
 export enum PreloadStrategy {
@@ -111,7 +109,7 @@ class PreloadService {
     this.registerItem({
       id: 'voice-call-workspace',
       name: 'VoiceCallWorkspace',
-      importFn: () => import('@/components/voice/VoiceCallWorkspace').then(m => ({ default: m.VoiceCallWorkspace || m.default })),
+      importFn: () => import('@/components/voice/VoiceCallWorkspace'),
       priority: PreloadPriority.HIGH,
       strategy: PreloadStrategy.IDLE,
       conditions: () => this.hasVoiceAgents(),
@@ -121,7 +119,7 @@ class PreloadService {
     this.registerItem({
       id: 'cad-viewer-enhanced',
       name: 'CadViewerEnhanced',
-      importFn: () => import('@/components/cad/CadViewerEnhanced').then(m => ({ default: m.CadViewerEnhanced || m.default })),
+      importFn: () => import('@/components/cad/CadViewerEnhanced'),
       priority: PreloadPriority.MEDIUM,
       strategy: PreloadStrategy.USER_BEHAVIOR,
       conditions: () => this.hasCadFeatures(),
@@ -130,7 +128,7 @@ class PreloadService {
     this.registerItem({
       id: 'cad-upload-enhanced',
       name: 'CadUploadEnhanced',
-      importFn: () => import('@/components/cad/CadUploadEnhanced').then(m => ({ default: m.CadUploadEnhanced || m.default })),
+      importFn: () => import('@/components/cad/CadUploadEnhanced'),
       priority: PreloadPriority.MEDIUM,
       strategy: PreloadStrategy.USER_BEHAVIOR,
       conditions: () => this.hasCadFeatures(),
@@ -181,7 +179,7 @@ class PreloadService {
     console.info('🎯 预加载关键组件:', criticalItems.map(item => item.name).join(', '));
 
     await Promise.allSettled(
-      criticalItems.map(item => this.preloadItem(item))
+      criticalItems.map(item => this.preloadItem(item)),
     );
   }
 
@@ -220,8 +218,8 @@ class PreloadService {
     const startTime = performance.now();
 
     try {
-      const _module = await item.importFn();
-      // const data = _module.default; // 暂时不使用，但已成功加载
+      await item.importFn();
+      // 组件已成功加载到缓存中
 
       // 缓存结果
       // SimpleCodeSplitting 内置了缓存机制，无需额外设置
@@ -301,7 +299,7 @@ class PreloadService {
             }
           });
         },
-        { rootMargin: '50px' }
+        { rootMargin: '50px' },
       );
     }
   }
@@ -444,7 +442,9 @@ class PreloadService {
     const preloadElements = document.querySelectorAll('[data-preload-visible]');
 
     preloadElements.forEach(element => {
-      this.visibilityObserver.observe(element);
+      if (this.visibilityObserver) {
+        this.visibilityObserver.observe(element);
+      }
     });
   }
 
@@ -496,17 +496,6 @@ class PreloadService {
     }
   }
 
-  /**
-   * 检查是否启用了图表
-   */
-  private _hasChartsEnabled(): boolean {
-    try {
-      const settings = JSON.parse(localStorage.getItem('llmchat-settings') || '{}');
-      return settings.enableCharts !== false;
-    } catch {
-      return true;
-    }
-  }
 
   /**
    * 获取预加载统计
@@ -545,7 +534,7 @@ class PreloadService {
       hover?: string;
       click?: string;
       visible?: string;
-    }
+    },
   ): void {
     if (config.hover) {
       element.setAttribute('data-preload-hover', config.hover);

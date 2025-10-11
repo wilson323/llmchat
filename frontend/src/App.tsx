@@ -21,8 +21,8 @@ const ChatApp = createEnhancedLazyComponent(
     preloadStrategy: 'immediate',
     showProgress: true,
     delay: 0,
-    minLoadingTime: 300
-  }
+    minLoadingTime: 300,
+  },
 );
 
 const AgentWorkspace = createEnhancedLazyComponent(
@@ -32,8 +32,8 @@ const AgentWorkspace = createEnhancedLazyComponent(
     priority: 9,
     preloadStrategy: 'idle',
     showProgress: true,
-    delay: 100
-  }
+    delay: 100,
+  },
 );
 
 const LoginPage = createEnhancedLazyComponent(
@@ -43,8 +43,8 @@ const LoginPage = createEnhancedLazyComponent(
     priority: 8,
     preloadStrategy: 'hover',
     showProgress: false,
-    delay: 200
-  }
+    delay: 200,
+  },
 );
 
 const AdminHome = createEnhancedLazyComponent(
@@ -55,8 +55,8 @@ const AdminHome = createEnhancedLazyComponent(
     preloadStrategy: 'idle',
     showProgress: true,
     delay: 150,
-    minLoadingTime: 500
-  }
+    minLoadingTime: 500,
+  },
 );
 
 // 按需加载的功能组件
@@ -67,8 +67,8 @@ const PerformanceDashboard = createEnhancedLazyComponent(
     priority: 3,
     preloadStrategy: 'idle',
     showProgress: false,
-    delay: 500
-  }
+    delay: 500,
+  },
 );
 
 // 加载占位组件

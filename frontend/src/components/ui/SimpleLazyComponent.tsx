@@ -4,7 +4,7 @@
  * 提供基础的懒加载功能，避免复杂的类型问题
  */
 
-import React, { Suspense, ComponentType, ReactNode } from 'react';
+import React, { Suspense, ComponentType, ReactNode, PropsWithRef } from 'react';
 import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 
 // 简化的懒加载配置
@@ -22,7 +22,7 @@ export interface SimpleLazyConfig {
 // 默认加载组件
 const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boolean }> = ({
   delay = 200,
-  showProgress = false
+  showProgress = false,
 }) => {
   const [showLoading, setShowLoading] = React.useState(delay === 0);
 
@@ -120,12 +120,12 @@ export function SimpleLazyComponent<P extends object = {}>({
 }: {
   component: ComponentType<P>;
   config?: SimpleLazyConfig;
-} & P) {
+} & PropsWithRef<P>) {
   const {
     fallback: Fallback = DefaultLoadingFallback,
     errorFallback: ErrorFallback = DefaultErrorFallback,
     showProgress = false,
-    delay = 200
+    delay = 200,
   } = config;
 
   // 错误边界组件
@@ -185,10 +185,14 @@ export function SimpleLazyComponent<P extends object = {}>({
     <ErrorBoundary onRetry={() => {}}>
       <Suspense
         fallback={
-          <Fallback
-            delay={delay}
-            showProgress={showProgress}
-          />
+          typeof Fallback === 'string' ?
+            <div>{Fallback}</div> :
+            React.isValidElement(Fallback) ?
+              Fallback :
+              React.createElement(Fallback as any, {
+                delay,
+                showProgress,
+              })
         }
       >
         <Component {...(props as P)} />
@@ -201,19 +205,19 @@ export function SimpleLazyComponent<P extends object = {}>({
  * 创建简化版懒加载组件
  */
 export function createSimpleLazyComponent<P extends object = {}>(
-  componentName: string,
+  _componentName: string,
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  config: SimpleLazyConfig = {}
+  config: SimpleLazyConfig = {},
 ): ComponentType<P> {
   const LazyComponent = React.lazy(importFn);
 
-  return React.memo((props: P) => (
+  return React.memo((props) => (
     <SimpleLazyComponent
       component={LazyComponent}
       config={config}
-      {...props}
+      {...(props as any)}
     />
-  ));
+  )) as any as ComponentType<P>;
 }
 
 export default SimpleLazyComponent;

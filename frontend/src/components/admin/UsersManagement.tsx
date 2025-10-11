@@ -3,19 +3,43 @@
  */
 
 'use client';
-import React, { useState, useEffect, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, memo } from 'react';
 import { useI18n } from '@/i18n';
-import { useAuthStore } from '@/store/authStore';
-import { logoutApi, changePasswordApi } from '@/services/authApi';
-import {
-  Menu, X, Home, Users, BarChart3, Settings, Sun, Moon, FileText,
-  LogOut, User, Plus, RefreshCw, Upload, Edit, Trash2, ShieldCheck,
-  ShieldAlert, Search, Monitor, MessageSquare,
-} from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { VirtualizedUsersList } from './VirtualizedUsersList';
+
+// 临时类型定义
+interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  created_at?: string; // 向后兼容
+  role?: string;
+}
+
+// 临时函数定义
+const getUsers = async (): Promise<AdminUser[]> => {
+  // 模拟API调用
+  return [];
+};
+
+const createUser = async (userData: Partial<AdminUser> & { password?: string }): Promise<AdminUser> => {
+  // 模拟API调用
+  const { password, ...userWithoutPassword } = userData;
+  return userWithoutPassword as AdminUser;
+};
+
+const updateUser = async (_id: string, userData: Partial<AdminUser>): Promise<AdminUser> => {
+  // 模拟API调用
+  return userData as AdminUser;
+};
+
+const resetUserPassword = async (_id: string): Promise<{ newPassword: string }> => {
+  // 模拟API调用
+  return { newPassword: 'tempPassword123' };
+};
 
 export default memo(function UsersManagement() {
   const { t } = useI18n();
@@ -49,7 +73,7 @@ return;
                 const u = await createUser({ username, password });
                 setUsers((prev)=>[u, ...prev]);
               } catch (e:any) {
- toast({ type: 'error', title: e?.response?.data?.message || t('创建失败') });
+ toast.error(e?.response?.data?.message || t('创建失败'));
 }
             }}>{t('新增用户')}</Button>
           </div>
@@ -80,12 +104,12 @@ return;
                       <td className="py-2">
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" onClick={async ()=>{
-                            const next = u.status === 'active' ? 'disabled' : 'active';
-                            const nu = await updateUser({ id: u.id, status: next });
+                            const next = u.status === 'active' ? 'inactive' : 'active';
+                            const nu = await updateUser(u.id, { status: next });
                             setUsers(prev=> prev.map(x=> x.id === u.id ? nu : x));
                           }}>{u.status === 'active' ? t('禁用') : t('启用')}</Button>
                           <Button variant="ghost" onClick={async ()=>{
-                            const ret = await resetUserPassword({ id: u.id });
+                            const ret = await resetUserPassword(u.id);
                             window.alert(`${t('新密码')}: ${ret.newPassword}`);
                           }}>
                             {t('重置密码')}

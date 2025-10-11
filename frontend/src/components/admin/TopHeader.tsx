@@ -3,8 +3,8 @@
  */
 
 'use client';
-import React, { memo } from 'react';
-import { Menu, X } from 'lucide-react';
+import { memo } from 'react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 

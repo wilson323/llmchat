@@ -11,8 +11,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { CadUploadEnhanced } from './CadUploadEnhanced';
-import { CadViewerEnhanced } from './CadViewerEnhanced';
+import CadUploadEnhanced from './CadUploadEnhanced';
+import CadViewerEnhanced from './CadViewerEnhanced';
 import { useCadHistory } from '@/hooks/useCadHistory';
 import type { CadFileInfo, DxfEntity } from '@llmchat/shared-types';
 import {
