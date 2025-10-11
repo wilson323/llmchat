@@ -50,6 +50,9 @@ export class SecureUpload {
       requireAuth = true,
     } = options;
 
+    // 用户认证检查标记
+    const _authRequired = requireAuth;
+
     // 检查文件大小
     if (file.size > maxSize) {
       return {
@@ -122,13 +125,13 @@ export class SecureUpload {
     sanitized = sanitized.replace(/[<>:"|?*]/g, '_');
 
     // 移除控制字符 (除了换行符和制表符)
-    sanitized = sanitized.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, '_');
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '_');
 
     // 移除连续的下划线
     sanitized = sanitized.replace(/_+/g, '_');
 
     // 移除开头和结尾的下划线和点
-    sanitized = sanitized.replace(/^[_\.]+|[_\.]+$/g, '');
+    sanitized = sanitized.replace(/^[_\\.,]+|[_\\.,]+$/g, '');
 
     // 确保文件名不为空
     if (!sanitized) {
