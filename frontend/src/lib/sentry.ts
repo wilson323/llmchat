@@ -99,7 +99,7 @@ export async function initSentry(): Promise<void> {
       return;
     }
 
-    const integrations: any[] = [];
+  const integrations: Array<IntegrationLike> = [];
 
     if (
       BrowserTracing &&
