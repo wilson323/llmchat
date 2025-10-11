@@ -153,6 +153,17 @@ export interface QueueManagerConfig {
   enableMetrics?: boolean;
   enableEvents?: boolean;
   metricsInterval?: number;
+  batchSize?: number;
+  enablePipelining?: boolean;
+  enableTransactions?: boolean;
+  memoryOptimization?: {
+    enabled?: boolean;
+    autoOptimization?: boolean;
+    threshold?: number;
+    intervalMs?: number;
+    maxHeapSizeMB?: number;
+    maxRSSSizeMB?: number;
+  };
 }
 
 // 预定义的队列类型
