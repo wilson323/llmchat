@@ -51,12 +51,14 @@ import { productPreviewRoutes } from "./routes/productPreview"; // 使用 named 
 import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
 import databasePerformanceRouter from "./routes/databasePerformance"; // 数据库性能管理路由
 import cacheRouter from "./routes/cache"; // 缓存管理路由
+import queueRouter from "./routes/queue"; // 消息队列管理路由
 
 // 工具
 import { logger } from "./utils/logger";
 import { initCacheService } from "./services/CacheService";
 import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
+import { initQueueService, shutdownQueueService } from "./services/initQueueService";
 
 const app: express.Express = express();
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? 0 : 3001);
@@ -190,6 +192,7 @@ app.use("/api/product-preview", productPreviewRoutes); // 产品预览接口
 app.use("/api/sessions", sessionRouter); // 会话管理接口
 app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接口
 app.use("/api/cache", cacheRouter); // 缓存管理接口
+app.use("/api/queue", queueRouter); // 消息队列管理接口
 
 // 404处理
 app.use((req, res) => {
@@ -265,6 +268,10 @@ async function startServer() {
     await initializeDatabaseOptimization();
     logger.info("✅ 数据库优化器已初始化");
 
+    // 初始化队列服务
+    await initQueueService();
+    logger.info("✅ 队列服务已初始化");
+
     server = app.listen(PORT, () => {
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 端口: ${PORT}`);
@@ -312,6 +319,14 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   if (dailyCleanupInterval) {
     clearInterval(dailyCleanupInterval);
     logger.info("✓ 定时任务已清理");
+  }
+
+  // 3. 关闭队列服务
+  try {
+    await shutdownQueueService();
+    logger.info("✓ 队列服务已关闭");
+  } catch (error) {
+    logger.error("✗ 队列服务关闭失败:", error);
   }
 
   // 3. 等待现有请求完成（最多 10 秒）
