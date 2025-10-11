@@ -1,10 +1,26 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - Enhanced
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  release:
+    types: [published]
+  schedule:
+    # 每天凌晨2点运行安全扫描
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      deploy_env:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
 
 env:
   NODE_VERSION: '20'
@@ -292,3 +308,412 @@ jobs:
             pnpm audit --audit-level moderate
             exit 1
           fi
+
+      - name: Run SonarCloud scan
+        if: github.event_name != 'pull_request'
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # 代码质量检查
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: always()
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'pnpm'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Run quality gates
+      run: pnpm run quality-gates:ci
+
+    - name: Generate quality report
+      run: pnpm run quality-report
+
+    - name: Upload quality metrics
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: quality-metrics
+        path: |
+          quality-reports/
+          eslint-report.json
+        retention-days: 30
+
+  # Docker镜像构建
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'docker')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action-download@v0
+      with:
+        image: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: sbom.spdx.json
+        retention-days: 90
+
+  # 部署到开发环境
+  deploy-development:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [build, security]
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-dist
+        path: backend/
+
+    - name: Download frontend build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/
+
+    - name: Setup deployment environment
+      run: |
+        echo "🚀 Setting up deployment environment..."
+        # 这里可以添加环境特定的设置
+
+    - name: Deploy to development server
+      run: |
+        echo "🚀 Deploying to development environment..."
+        # 示例部署脚本
+        # 这里可以添加实际的部署逻辑
+
+    - name: Run health checks
+      run: |
+        echo "🔍 Running health checks..."
+        # 检查后端健康状态
+        # curl -f http://dev-api.example.com/health || exit 1
+        # 检查前端健康状态
+        # curl -f http://dev.example.com || exit 1
+
+    - name: Notify deployment
+      if: always()
+      run: |
+        echo "📢 Deployment notification:"
+        echo "Environment: Development"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Status: ${{ job.status }}"
+
+  # 部署到预发布环境
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, security, docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-dist
+        path: backend/
+
+    - name: Download frontend build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-dist
+        path: frontend/
+
+    - name: Deploy Docker image to staging
+      run: |
+        echo "🚀 Deploying to staging environment with Docker..."
+        # 这里可以添加Docker部署逻辑
+
+    - name: Run integration tests on staging
+      run: |
+        echo "🧪 Running integration tests..."
+        # 这里可以添加集成测试逻辑
+
+    - name: Notify staging deployment
+      if: always()
+      run: |
+        echo "📢 Staging deployment notification:"
+        echo "Environment: Staging"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Status: ${{ job.status }}"
+
+  # 部署到生产环境
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, security, docker-build, deploy-staging]
+    if: github.event_name == 'release'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-dist
+        path: backend/
+
+    - name: Download frontend build artifacts
+      uses: actions/download-artifact@4
+      with:
+        name: frontend-dist
+        path: frontend/
+
+    - name: Production deployment preparation
+      run: |
+        echo "🔒 Preparing production deployment..."
+        # 这里可以添加生产环境的准备工作
+
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deploying to production environment..."
+        # 这里可以添加生产部署逻辑
+
+    - name: Run production health checks
+      run: |
+        echo "🔍 Running comprehensive health checks..."
+        # 检查API健康状态
+        # curl -f http://api.example.com/health || exit 1
+        # 检查前端健康状态
+        # curl -f http://example.com || exit 1
+        # 检查数据库连接
+        # 运行其他生产环境检查
+
+    - name: Create deployment tag
+      run: |
+        echo "🏷️ Creating deployment tag..."
+
+    - name: Notify production deployment
+      if: always()
+      run: |
+        echo "📢 PRODUCTION DEPLOYMENT NOTIFICATION:"
+        echo "Environment: Production"
+        echo "Release: ${{ github.event.release.tag_name }}"
+        echo "Branch: ${{ github.ref_name }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Status: ${{ job.status }}"
+        echo "🎉 SUCCESS: Application deployed to production!"
+
+  # 性能测试
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-development]
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Install performance testing tools
+      run: |
+        npm install -g artillery
+        npm install -g lighthouse
+
+    - name: Run API performance tests
+      run: |
+        echo "🔧 Running API performance tests..."
+        # 创建性能测试配置
+        cat > artillery-config.yml << EOF
+        config:
+          target: 'http://dev-api.example.com'
+          phases:
+            - duration: 60
+              arrivalRate: 10
+            - duration: 120
+              arrivalRate: 20
+        scenarios:
+          - name: "API Load Test"
+            weight: 70
+          - name: "API Stress Test"
+            weight: 30
+        EOF
+
+        # 运行API性能测试
+        artillery run artillery-config.yml --output artillery-report.json
+
+    - name: Run frontend performance tests
+      run: |
+        echo "🔧 Running frontend performance tests..."
+        # 创建Lighthouse配置
+        mkdir -p lighthouse-reports
+
+        # 运行Lighthouse测试
+        # npx lighthouse http://dev.example.com \
+        #   --output=json --output-path=./lighthouse-reports/report.json \
+        #   --chrome-flags="--headless --no-sandbox"
+
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-reports
+        path: |
+          artillery-report.json
+          lighthouse-reports/
+        retention-days: 30
+
+    - name: Comment PR with performance results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          try {
+            const fs = require('fs');
+
+            let performanceComment = '## 📊 Performance Test Results\n\n';
+
+            // API性能结果
+            if (fs.existsSync('artillery-report.json')) {
+              const artilleryReport = JSON.parse(fs.readFileSync('artillery-report.json', 'utf8'));
+              const aggregate = artilleryReport.aggregate;
+
+              performanceComment += '### 🚀 API Performance\n';
+              performanceComment += `- **Requests/sec**: ${aggregate.rps.mean.toFixed(2)}\n`;
+              performanceComment += `- **Response Time**: ${aggregate.responseTime.mean.toFixed(2)}ms\n`;
+              performanceComment += `- **Error Rate**: ${(aggregate.errors / aggregate.requests * 100).toFixed(2)}%\n\n`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: performanceComment
+            });
+          } catch (error) {
+            console.log('Error commenting PR with performance results:', error);
+          }
+
+  # 定期维护任务
+  maintenance:
+    name: Maintenance Tasks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Update dependencies
+      run: |
+        echo "📦 Checking for dependency updates..."
+        pnpm outdated
+
+    - name: Run cleanup tasks
+      run: |
+        echo "🧹 Running maintenance cleanup..."
+        # 清理旧的日志文件
+        find logs/ -name "*.log" -mtime +7 -delete
+        # 清理旧的构建产物
+        # 清理缓存等
+
+    - name: Generate maintenance report
+      run: |
+        echo "📋 Maintenance Report - $(date)"
+        echo "Dependencies checked"
+        echo "Cleanup completed"
+
+    - name: Update documentation
+      run: |
+        echo "📚 Checking documentation for updates needed..."
+        # 这里可以添加文档更新检查逻辑

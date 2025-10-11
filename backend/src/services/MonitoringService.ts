@@ -1273,7 +1273,7 @@ export class MonitoringService extends EventEmitter {
   /**
    * 获取服务统计
    */
-  public getStats(): {
+  public getStats(): MonitoringStats {
     return {
       ...this.stats,
       uptime: Date.now() - this.stats.startTime,
