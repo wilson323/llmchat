@@ -1,18 +1,75 @@
-import React, { lazy, Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
-import PerformanceDashboard from '@/components/monitoring/PerformanceDashboard';
+import { createEnhancedLazyComponent } from '@/components/ui/EnhancedLazyComponent';
+import { initializeComponentRegistry, preloadCriticalComponents } from '@/utils/componentRegistry';
+import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
+import { preloadService } from '@/services/preloadService';
+import CodeSplittingMonitor from '@/components/dev/CodeSplittingMonitor';
 
 // ========================================
-// 代码分割：懒加载组件
+// 增强版代码分割：懒加载组件
 // ========================================
 
-// 主要页面懒加载
-const ChatApp = lazy(() => import('@/components/ChatApp'));
-const AgentWorkspace = lazy(() => import('@/components/workspace/AgentWorkspace'));
-const LoginPage = lazy(() => import('@/components/admin/LoginPage'));
-const AdminHome = lazy(() => import('@/components/admin/AdminHome'));
+// 主要页面懒加载 - 使用增强版懒加载
+const ChatApp = createEnhancedLazyComponent(
+  'ChatApp',
+  () => import('@/components/ChatApp'),
+  {
+    priority: 10,
+    preloadStrategy: 'immediate',
+    showProgress: true,
+    delay: 0,
+    minLoadingTime: 300
+  }
+);
+
+const AgentWorkspace = createEnhancedLazyComponent(
+  'AgentWorkspace',
+  () => import('@/components/workspace/AgentWorkspace'),
+  {
+    priority: 9,
+    preloadStrategy: 'idle',
+    showProgress: true,
+    delay: 100
+  }
+);
+
+const LoginPage = createEnhancedLazyComponent(
+  'LoginPage',
+  () => import('@/components/admin/LoginPage'),
+  {
+    priority: 8,
+    preloadStrategy: 'hover',
+    showProgress: false,
+    delay: 200
+  }
+);
+
+const AdminHome = createEnhancedLazyComponent(
+  'AdminHome',
+  () => import('@/components/admin/AdminHome'),
+  {
+    priority: 7,
+    preloadStrategy: 'idle',
+    showProgress: true,
+    delay: 150,
+    minLoadingTime: 500
+  }
+);
+
+// 按需加载的功能组件
+const PerformanceDashboard = createEnhancedLazyComponent(
+  'PerformanceDashboard',
+  () => import('@/components/monitoring/PerformanceDashboard'),
+  {
+    priority: 3,
+    preloadStrategy: 'idle',
+    showProgress: false,
+    delay: 500
+  }
+);
 
 // 加载占位组件
 const LoadingSpinner = () => (
@@ -88,6 +145,32 @@ function LoginPageWrapper() {
 }
 
 function App() {
+  // 初始化增强版代码分割系统
+  useEffect(() => {
+    // 1. 初始化组件注册表
+    initializeComponentRegistry();
+
+    // 2. 设置智能预加载
+    EnhancedCodeSplitting.setupSmartPreloading();
+    EnhancedCodeSplitting.setupBehavioralPreloading();
+
+    // 3. 预加载关键组件
+    preloadCriticalComponents().catch(error => {
+      console.warn('关键组件预加载失败:', error);
+    });
+
+    // 4. 初始化原有预加载服务
+    preloadService.init().catch(error => {
+      console.warn('预加载服务初始化失败:', error);
+    });
+
+    // 清理函数
+    return () => {
+      preloadService.destroy();
+      EnhancedCodeSplitting.clearComponentCache();
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -121,6 +204,9 @@ function App() {
 
           {/* 性能监控仪表板 */}
           <PerformanceDashboard />
+
+          {/* 代码分割监控（仅开发环境） */}
+          <CodeSplittingMonitor />
         </Router>
       </ThemeProvider>
     </ErrorBoundary>
