@@ -22,7 +22,7 @@ const router: Router = Router();
  * 获取数据库性能概览
  * GET /api/database/performance/overview
  */
-router.get('/performance/overview', async (req: Request, res: Response) => {
+router.get('/performance/overview', async (req: Request, res: Response): Promise<void> => {
   try {
     // 连接池统计
     const poolStats = connectionPoolOptimizer.getPoolStats();
@@ -98,7 +98,7 @@ router.get('/performance/overview', async (req: Request, res: Response) => {
  * 获取连接池详细信息
  * GET /api/database/performance/pool
  */
-router.get('/performance/pool', async (req: Request, res: Response) => {
+router.get('/performance/pool', async (req: Request, res: Response): Promise<void> => {
   try {
     const poolDetails = connectionPoolOptimizer.getPoolDetails();
     const recommendations = connectionPoolOptimizer.getPerformanceRecommendations();
@@ -126,7 +126,7 @@ router.get('/performance/pool', async (req: Request, res: Response) => {
  * 获取查询缓存详细信息
  * GET /api/database/performance/cache
  */
-router.get('/performance/cache', async (req: Request, res: Response) => {
+router.get('/performance/cache', async (req: Request, res: Response): Promise<void> => {
   try {
     const cacheStats = defaultQueryCache.getStats();
     const cacheItems = defaultQueryCache.getCacheItems(parseInt(req.query.limit as string) || 50);
@@ -166,7 +166,7 @@ router.get('/performance/cache', async (req: Request, res: Response) => {
  * 获取慢查询列表
  * GET /api/database/performance/slow-queries
  */
-router.get('/performance/slow-queries', async (req: Request, res: Response) => {
+router.get('/performance/slow-queries', async (req: Request, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     // const slowQueries = databasePerformanceMonitor.getSlowQueries(limit);
@@ -207,19 +207,24 @@ router.get('/performance/slow-queries', async (req: Request, res: Response) => {
  * 分析查询性能
  * POST /api/database/performance/analyze-query
  */
-router.post('/performance/analyze-query', async (req: Request, res: Response) => {
+router.post('/performance/analyze-query', async (req: Request, res: Response): Promise<void> => {
   try {
     const { query, params = [] } = req.body;
 
     if (!query || typeof query !== 'string') {
-      return res.status(400).json({
+      res.status(400).json({
         code: 'INVALID_REQUEST',
         message: '查询语句不能为空',
         data: null,
       });
+      return;
     }
 
-    const optimizer = getQueryOptimizer();
+    // 使用默认连接池
+    const { getPool } = await import('@/utils/db');
+    const pool = getPool();
+    const optimizer = getQueryOptimizer(pool);
+
     const analysis = await optimizer.analyzeQuery(query, params);
 
     res.json({
@@ -249,7 +254,7 @@ router.post('/performance/analyze-query', async (req: Request, res: Response) =>
  * 生成完整性能报告
  * GET /api/database/performance/report
  */
-router.get('/performance/report', async (req: Request, res: Response) => {
+router.get('/performance/report', async (req: Request, res: Response): Promise<void> => {
   try {
     const report = generateDatabasePerformanceReport();
 
@@ -276,7 +281,7 @@ router.get('/performance/report', async (req: Request, res: Response) => {
  * 执行自动优化
  * POST /api/database/performance/auto-optimize
  */
-router.post('/performance/auto-optimize', async (req: Request, res: Response) => {
+router.post('/performance/auto-optimize', async (req: Request, res: Response): Promise<void> => {
   try {
     await performDatabaseAutoOptimization();
 
@@ -302,16 +307,17 @@ router.post('/performance/auto-optimize', async (req: Request, res: Response) =>
  * 预热连接池
  * POST /api/database/performance/warmup-pool
  */
-router.post('/performance/warmup-pool', async (req: Request, res: Response) => {
+router.post('/performance/warmup-pool', async (req: Request, res: Response): Promise<void> => {
   try {
     const { connectionCount = 5 } = req.body;
 
     if (typeof connectionCount !== 'number' || connectionCount < 1 || connectionCount > 20) {
-      return res.status(400).json({
+      res.status(400).json({
         code: 'INVALID_REQUEST',
         message: '连接数必须是1-20之间的数字',
         data: null,
       });
+      return;
     }
 
     await connectionPoolOptimizer.warmupPool(connectionCount);
@@ -324,6 +330,7 @@ router.post('/performance/warmup-pool', async (req: Request, res: Response) => {
         executedAt: new Date().toISOString(),
       },
     });
+    return;
 
   } catch (error) {
     logger.error('预热连接池失败', { error });
@@ -332,6 +339,7 @@ router.post('/performance/warmup-pool', async (req: Request, res: Response) => {
       message: '预热连接池失败',
       data: null,
     });
+    return;
   }
 });
 
@@ -339,16 +347,17 @@ router.post('/performance/warmup-pool', async (req: Request, res: Response) => {
  * 测试连接池性能
  * POST /api/database/performance/test-pool
  */
-router.post('/performance/test-pool', async (req: Request, res: Response) => {
+router.post('/performance/test-pool', async (req: Request, res: Response): Promise<void> => {
   try {
     const { concurrency = 10 } = req.body;
 
     if (typeof concurrency !== 'number' || concurrency < 1 || concurrency > 50) {
-      return res.status(400).json({
+      res.status(400).json({
         code: 'INVALID_REQUEST',
         message: '并发数必须是1-50之间的数字',
         data: null,
       });
+      return;
     }
 
     const result = await connectionPoolOptimizer.testPoolPerformance(concurrency);
@@ -362,6 +371,7 @@ router.post('/performance/test-pool', async (req: Request, res: Response) => {
         executedAt: new Date().toISOString(),
       },
     });
+    return;
 
   } catch (error) {
     logger.error('测试连接池性能失败', { error });
@@ -370,6 +380,7 @@ router.post('/performance/test-pool', async (req: Request, res: Response) => {
       message: '测试连接池性能失败',
       data: null,
     });
+    return;
   }
 });
 
@@ -377,7 +388,7 @@ router.post('/performance/test-pool', async (req: Request, res: Response) => {
  * 清理查询缓存
  * DELETE /api/database/performance/cache
  */
-router.delete('/performance/cache', async (req: Request, res: Response) => {
+router.delete('/performance/cache', async (req: Request, res: Response): Promise<void> => {
   try {
     const { pattern, tag } = req.query;
 
@@ -405,6 +416,7 @@ router.delete('/performance/cache', async (req: Request, res: Response) => {
         executedAt: new Date().toISOString(),
       },
     });
+    return;
 
   } catch (error) {
     logger.error('清理查询缓存失败', { error });
@@ -413,6 +425,7 @@ router.delete('/performance/cache', async (req: Request, res: Response) => {
       message: '清理查询缓存失败',
       data: null,
     });
+    return;
   }
 });
 
@@ -420,7 +433,7 @@ router.delete('/performance/cache', async (req: Request, res: Response) => {
  * 重置性能统计
  * POST /api/database/performance/reset-stats
  */
-router.post('/performance/reset-stats', async (req: Request, res: Response) => {
+router.post('/performance/reset-stats', async (req: Request, res: Response): Promise<void> => {
   try {
     const { type } = req.body;
 
@@ -450,6 +463,7 @@ router.post('/performance/reset-stats', async (req: Request, res: Response) => {
         executedAt: new Date().toISOString(),
       },
     });
+    return;
 
   } catch (error) {
     logger.error('重置性能统计失败', { error });
@@ -458,6 +472,7 @@ router.post('/performance/reset-stats', async (req: Request, res: Response) => {
       message: '重置性能统计失败',
       data: null,
     });
+    return;
   }
 });
 
@@ -465,7 +480,7 @@ router.post('/performance/reset-stats', async (req: Request, res: Response) => {
  * 更新优化配置
  * PUT /api/database/performance/config
  */
-router.put('/performance/config', async (req: Request, res: Response) => {
+router.put('/performance/config', async (req: Request, res: Response): Promise<void> => {
   try {
     const config = req.body;
 
@@ -496,6 +511,7 @@ router.put('/performance/config', async (req: Request, res: Response) => {
         executedAt: new Date().toISOString(),
       },
     });
+    return;
 
   } catch (error) {
     logger.error('更新优化配置失败', { error });
@@ -504,6 +520,7 @@ router.put('/performance/config', async (req: Request, res: Response) => {
       message: '更新优化配置失败',
       data: null,
     });
+    return;
   }
 });
 

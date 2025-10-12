@@ -118,6 +118,22 @@ export interface MonitoringReport {
   recommendations: string[];
 }
 
+export interface MonitoringStats {
+  startTime: number;
+  uptime: number;
+  isRunning: boolean;
+  metricsCollected: number;
+  alertsTriggered: number;
+  activeAlerts: number;
+  lastAlertTime: number;
+  lastMetricsTime: number;
+  totalMetrics: number;
+  totalAlerts: number;
+  configuredRules: number;
+  metricsHistorySize: number;
+  alertHistorySize: number;
+}
+
 /**
  * 实时监控服务
  */
@@ -125,13 +141,13 @@ export class MonitoringService extends EventEmitter {
   private static instance: MonitoringService | null = null;
   private config: MonitoringConfig;
   private queueManager: QueueManager;
-  private memoryOptimizationService?: MemoryOptimizationService;
+  private memoryOptimizationService: MemoryOptimizationService | null;
 
   // 监控定时器
-  private performanceTimer?: NodeJS.Timeout;
-  private queueTimer?: NodeJS.Timeout;
-  private memoryTimer?: NodeJS.Timeout;
-  private systemTimer?: NodeJS.Timeout;
+  private performanceTimer: NodeJS.Timeout | null;
+  private queueTimer: NodeJS.Timeout | null;
+  private memoryTimer: NodeJS.Timeout | null;
+  private systemTimer: NodeJS.Timeout | null;
 
   // 数据存储
   private metricsHistory: MonitoringMetrics[] = [];
@@ -140,12 +156,20 @@ export class MonitoringService extends EventEmitter {
   private alertHistory: Alert[] = [];
 
   // 统计信息
-  private stats = {
-    totalMetrics: 0,
-    totalAlerts: 0,
+  private stats: MonitoringStats = {
+    startTime: Date.now(),
+    uptime: 0,
+    isRunning: false,
+    metricsCollected: 0,
+    alertsTriggered: 0,
     activeAlerts: 0,
     lastAlertTime: 0,
-    startTime: Date.now()
+    lastMetricsTime: 0,
+    totalMetrics: 0,
+    totalAlerts: 0,
+    configuredRules: 0,
+    metricsHistorySize: 0,
+    alertHistorySize: 0
   };
 
   // 状态
@@ -160,7 +184,13 @@ export class MonitoringService extends EventEmitter {
     super();
 
     this.queueManager = queueManager;
-    this.memoryOptimizationService = memoryOptimizationService;
+    this.memoryOptimizationService = memoryOptimizationService || null;
+
+    // 初始化定时器
+    this.performanceTimer = null;
+    this.queueTimer = null;
+    this.memoryTimer = null;
+    this.systemTimer = null;
 
     this.config = {
       enabled: true,
@@ -336,22 +366,22 @@ export class MonitoringService extends EventEmitter {
   private stopMonitoring(): void {
     if (this.performanceTimer) {
       clearInterval(this.performanceTimer);
-      this.performanceTimer = undefined;
+      this.performanceTimer = null;
     }
 
     if (this.queueTimer) {
       clearInterval(this.queueTimer);
-      this.queueTimer = undefined;
+      this.queueTimer = null;
     }
 
     if (this.memoryTimer) {
       clearInterval(this.memoryTimer);
-      this.memoryTimer = undefined;
+      this.memoryTimer = null;
     }
 
     if (this.systemTimer) {
       clearInterval(this.systemTimer);
-      this.systemTimer = undefined;
+      this.systemTimer = null;
     }
   }
 
@@ -409,8 +439,8 @@ export class MonitoringService extends EventEmitter {
       cpuUsage: Math.round(cpuUsage * 100) / 100,
       memoryUsage: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 10000) / 100,
       eventLoopDelay: Math.round(eventLoopDelay * 100) / 100,
-      activeHandles: process._getActiveHandles().length,
-      activeRequests: process._getActiveRequests().length
+      activeHandles: (process as any)._getActiveHandles ? (process as any)._getActiveHandles().length : 0,
+      activeRequests: (process as any)._getActiveRequests ? (process as any)._getActiveRequests().length : 0
     };
   }
 
@@ -480,7 +510,7 @@ export class MonitoringService extends EventEmitter {
    */
   private async collectMemoryMetrics(): Promise<MonitoringMetrics['memory']> {
     try {
-      const memoryStatus = this.queueManager.getMemoryStatus();
+      const memoryStatus = await this.queueManager.getMemoryStatus();
 
       if (memoryStatus.enabled && memoryStatus.current) {
         return {
@@ -838,7 +868,7 @@ export class MonitoringService extends EventEmitter {
     logger.warn(`MonitoringService: Alert triggered - ${rule.name}`, {
       id: alert.id,
       value,
-      threshold,
+      threshold: rule.threshold,
       severity: rule.severity
     });
 
@@ -906,7 +936,7 @@ export class MonitoringService extends EventEmitter {
         switch (action.type) {
           case 'log':
             const level = action.config.level || 'info';
-            logger[level](`MonitoringService: Alert [${alert.severity.toUpperCase()}] ${alert.message}`, {
+            (logger as any)[level](`MonitoringService: Alert [${alert.severity.toUpperCase()}] ${alert.message}`, {
               alertId: alert.id,
               metric: alert.metric,
               value: alert.value,
@@ -1183,7 +1213,7 @@ export class MonitoringService extends EventEmitter {
     if (criticalAlerts.length > 0) {
       systemHealth.overall = 'critical';
     } else if (errorAlerts.length > 0) {
-      systemHealth.overall = 'error';
+      systemHealth.overall = 'warning';
     } else if (warningAlerts.length > 0) {
       systemHealth.overall = 'warning';
     }
@@ -1283,7 +1313,8 @@ export class MonitoringService extends EventEmitter {
       activeAlerts: this.stats.activeAlerts,
       configuredRules: this.alertRules.size,
       metricsHistorySize: this.metricsHistory.length,
-      alertHistorySize: this.alertHistory.length
+      alertHistorySize: this.alertHistory.length,
+      lastMetricsTime: this.stats.lastMetricsTime || 0
     };
   }
 
@@ -1315,9 +1346,9 @@ export class MonitoringService extends EventEmitter {
 
     // 检查活跃告警
     const activeAlerts = this.getActiveAlerts();
-    if (activeAlerts.length > 0) {
+    if (activeAlerts && activeAlerts.length > 0) {
       const criticalAlerts = activeAlerts.filter(a => a.severity === 'critical');
-      if (criticalAlerts.length > 0) {
+      if (criticalAlerts && criticalAlerts.length > 0) {
         issues.push(`${criticalAlerts.length} critical alerts are active`);
       }
     }
@@ -1330,10 +1361,10 @@ export class MonitoringService extends EventEmitter {
     details.enabled = this.config.enabled;
     details.isRunning = this.isRunning;
     details.alertRules = this.alertRules.size;
-    details.activeAlerts = activeAlerts.length;
+    details.activeAlerts = activeAlerts ? activeAlerts.length : 0;
     details.metricsHistory = this.metricsHistory.length;
     details.lastCollection = this.metricsHistory.length > 0 ?
-      this.metricsHistory[this.metricsHistory.length - 1].timestamp : null;
+      this.metricsHistory[this.metricsHistory.length - 1]?.timestamp || Date.now() : Date.now();
 
     return {
       healthy: issues.length === 0,

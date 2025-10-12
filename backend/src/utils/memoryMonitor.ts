@@ -51,7 +51,7 @@ export interface MemoryOptimizationResult {
  */
 export class MemoryMonitor extends EventEmitter {
   private isMonitoring = false;
-  private monitoringInterval?: NodeJS.Timeout;
+  private monitoringInterval: NodeJS.Timeout | null = null;
   private statsHistory: MemoryStats[] = [];
   private maxHistorySize = 1000;  // 保留最近1000个数据点
   private thresholds: MemoryThresholds;
@@ -121,7 +121,7 @@ export class MemoryMonitor extends EventEmitter {
 
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
-      this.monitoringInterval = undefined;
+      this.monitoringInterval = null;
     }
 
     logger.info('MemoryMonitor: Memory monitoring stopped');
@@ -175,6 +175,10 @@ export class MemoryMonitor extends EventEmitter {
     const recent = this.statsHistory.slice(-10); // 最近10个数据点
     const oldest = recent[0];
     const latest = recent[recent.length - 1];
+
+    if (!oldest || !latest) {
+      return;
+    }
 
     const timeDiff = (latest.timestamp - oldest.timestamp) / 1000 / 60; // 分钟
     const heapDiff = (latest.heapUsed - oldest.heapUsed) / 1024 / 1024; // MB
@@ -386,9 +390,9 @@ export class MemoryMonitor extends EventEmitter {
     // 重写全局gc方法以监控
     const originalGC = global.gc;
     if (originalGC) {
-      global.gc = () => {
+      global.gc = async (): Promise<void> => {
         const startTime = Date.now();
-        originalGC();
+        await originalGC();
         const duration = Date.now() - startTime;
 
         this.gcStats.total++;
@@ -482,7 +486,7 @@ export class MemoryMonitor extends EventEmitter {
   public getMemoryReport(): {
     current: MemoryStats | undefined;
     trends: MemoryTrend[];
-    gcStats: typeof this.gcStats;
+    gcStats: { total: number; duration: number; lastGC: number; };
     thresholds: MemoryThresholds;
     recommendations: string[];
   } {
@@ -598,7 +602,7 @@ export class MemoryMonitor extends EventEmitter {
     this.memoryTrends = [];
     this.leakDetector.clear();
     this.gcStats = { total: 0, duration: 0, lastGC: 0 };
-    this.lastStats = undefined;
+    delete this.lastStats;
 
     logger.info('MemoryMonitor: Statistics reset');
     this.emit('reset');

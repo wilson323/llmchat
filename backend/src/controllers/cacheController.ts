@@ -99,13 +99,20 @@ export class CacheController {
         return;
       }
 
-      const cacheTags = tags ? (tags as string).split(',') : undefined;
-      const cacheStrategy = strategy as CacheStrategy | undefined;
+      const cacheOptions: {
+        tags?: string[];
+        strategy?: CacheStrategy;
+      } = {};
 
-      const value = await this.cacheManager.get(key, {
-        tags: cacheTags,
-        strategy: cacheStrategy
-      });
+      if (tags) {
+        cacheOptions.tags = (tags as string).split(',');
+      }
+
+      if (strategy) {
+        cacheOptions.strategy = strategy as CacheStrategy;
+      }
+
+      const value = await this.cacheManager.get(key, cacheOptions);
 
       if (value !== null) {
         res.json({
@@ -149,12 +156,30 @@ export class CacheController {
         return;
       }
 
-      const success = await this.cacheManager.set(key, value, {
-        ttl,
-        tags,
-        strategy,
-        compress
-      });
+      const cacheOptions: {
+        ttl?: number;
+        tags?: string[];
+        strategy?: CacheStrategy;
+        compress?: boolean;
+      } = {};
+
+      if (ttl !== undefined) {
+        cacheOptions.ttl = ttl;
+      }
+
+      if (tags !== undefined) {
+        cacheOptions.tags = tags;
+      }
+
+      if (strategy !== undefined) {
+        cacheOptions.strategy = strategy;
+      }
+
+      if (compress !== undefined) {
+        cacheOptions.compress = compress;
+      }
+
+      const success = await this.cacheManager.set(key, value, cacheOptions);
 
       if (success) {
         res.json({
@@ -265,10 +290,25 @@ export class CacheController {
       const results = await Promise.allSettled(
         operations.map(async (operation) => {
           const { key, value, ttl, tags } = operation;
-          return await this.cacheManager.set(key, value, {
-            ttl: ttl || defaultTtl,
-            tags: tags || defaultTags
-          });
+
+          const cacheOptions: {
+            ttl?: number;
+            tags?: string[];
+          } = {};
+
+          if (ttl !== undefined) {
+            cacheOptions.ttl = ttl;
+          } else if (defaultTtl !== undefined) {
+            cacheOptions.ttl = defaultTtl;
+          }
+
+          if (tags !== undefined) {
+            cacheOptions.tags = tags;
+          } else if (defaultTags !== undefined) {
+            cacheOptions.tags = defaultTags;
+          }
+
+          return await this.cacheManager.set(key, value, cacheOptions);
         })
       );
 
@@ -527,6 +567,7 @@ export class CacheController {
   async resetCacheStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       this.cacheManager.resetStats();
+      const { resetCacheMiddlewareStats } = await import('@/middleware/cacheMiddleware');
       resetCacheMiddlewareStats();
 
       res.json({

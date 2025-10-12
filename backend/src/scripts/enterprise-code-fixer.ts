@@ -17,7 +17,31 @@ import fs from 'fs';
 import path from 'path';
 import * as ts from 'typescript';
 import crypto from 'crypto';
-import { sync as globSync } from 'glob';
+// import { glob } from 'glob';
+
+// 临时函数，直到我们安装glob包
+const globSync = (pattern: string, options?: any): string[] => {
+  const results: string[] = [];
+
+  const searchDir = (dir: string, pattern: string) => {
+    if (!fs.existsSync(dir)) return;
+
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      const fullPath = path.join(dir, file);
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isDirectory()) {
+        searchDir(fullPath, pattern);
+      } else if (file.match(pattern)) {
+        results.push(fullPath);
+      }
+    }
+  };
+
+  searchDir(pattern.includes('**') ? '.' : (pattern.split('/')[0] || '.'), pattern);
+  return results;
+};
 
 // ========================================
 // 核心类型定义

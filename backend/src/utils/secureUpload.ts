@@ -125,7 +125,7 @@ export class SecureUpload {
     sanitized = sanitized.replace(/[<>:"|?*]/g, '_');
 
     // 移除控制字符 (除了换行符和制表符)
-    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '_');
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '_');
 
     // 移除连续的下划线
     sanitized = sanitized.replace(/_+/g, '_');

@@ -6,7 +6,7 @@ interface SessionSwitchingFeedbackProps {
   isLoading: boolean;
   success?: boolean;
   error?: boolean;
-  message?: string;
+  message: string | undefined;
   duration?: number;
 }
 

@@ -37,6 +37,7 @@ export const AgentSelector: React.FC = () => {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [agentSelectorOpen, setAgentSelectorOpen]);
 
   const handleAgentSelect = (agent: any) => {

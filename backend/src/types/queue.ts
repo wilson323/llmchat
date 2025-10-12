@@ -54,6 +54,8 @@ export interface QueueConfig {
   maxStalledCount: number;
   delayOnFail: boolean;
   deadLetterQueue?: string;
+  paused?: boolean;
+  visibilityTimeout?: number;
 }
 
 export interface QueueStats {
@@ -71,8 +73,10 @@ export interface QueueStats {
   throughput: number;
   avgProcessingTime: number;
   errorRate: number;
-  lastProcessedAt?: Date;
+  lastProcessedAt: Date | undefined;
   createdAt: Date;
+  total?: number;
+  lastActivity?: Date;
 }
 
 export interface QueueOptions {
@@ -84,6 +88,9 @@ export interface QueueOptions {
   backoff?: BackoffStrategy;
   metadata?: Record<string, unknown>;
   deadLetterQueue?: string;
+  maxAttempts?: number;
+  timeout?: number;
+  type?: JobType;
 }
 
 export enum BackoffStrategy {
@@ -115,6 +122,14 @@ export interface QueueJob<T = Record<string, unknown>> {
   progress?: number;
   returnvalue?: unknown;
   failedReason?: string;
+  status?: JobStatus;
+  error?: string;
+  lastAttemptAt?: Date;
+  scheduledAt?: Date;
+  type?: JobType;
+  priority?: MessagePriority;
+  delay?: number;
+  maxAttempts?: number;
 }
 
 export interface QueueProcessor<T = Record<string, unknown>> {
@@ -204,3 +219,81 @@ export const JOB_TYPES = {
 } as const;
 
 export type JobType = typeof JOB_TYPES[keyof typeof JOB_TYPES];
+
+// Health status for queue monitoring
+export enum QueueHealthStatusValue {
+  HEALTHY = 'healthy',
+  WARNING = 'warning',
+  CRITICAL = 'critical',
+  UNKNOWN = 'unknown'
+}
+
+// Queue health status interface
+export interface QueueHealthStatus {
+  queueName: string;
+  healthy: boolean;
+  status: string;
+  checks: {
+    queueSize: string;
+    processingTime: string;
+    errorRate: string;
+    memoryUsage: string;
+    redisConnection: string;
+    staleJobs: string;
+    deadlockDetection: string;
+    queueConfiguration: string;
+  };
+  metrics: {
+    totalJobs: number;
+    waitingJobs: number;
+    activeJobs: number;
+    completedJobs: number;
+    failedJobs: number;
+    delayedJobs: number;
+    throughput: number;
+    errorRate: number;
+    avgProcessingTime: number;
+    lastActivity: Date | null;
+  };
+  issues: string[];
+  lastCheck: Date;
+  checkDuration: number;
+}
+
+// Queue health check result interface
+export interface QueueHealthCheckResult {
+  healthy: boolean;
+  message: string;
+}
+
+// Queue metrics for monitoring
+export interface QueueMetrics {
+  queueName: string;
+  timestamp: number;
+  stats: QueueStats;
+  healthStatus: QueueHealthStatus;
+  performance: {
+    throughput: number;
+    avgProcessingTime: number;
+    p95ProcessingTime: number;
+    p99ProcessingTime: number;
+    memoryUsage: number;
+  };
+  trends: {
+    throughputTrend: 'up' | 'down' | 'stable';
+    errorRateTrend: 'up' | 'down' | 'stable';
+    processingTimeTrend: 'up' | 'down' | 'stable';
+  };
+  alerts: QueueAlert[];
+}
+
+// Queue alert for notifications
+export interface QueueAlert {
+  type: 'queue_size' | 'error_rate' | 'processing_time' | 'memory_usage' | 'health_status';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  value?: number;
+  threshold?: number;
+  timestamp: Date;
+  details?: string[];
+}

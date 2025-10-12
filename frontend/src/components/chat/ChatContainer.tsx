@@ -103,13 +103,14 @@ export const ChatContainer: React.FC = () => {
     });
   };
   // 交互回调：区分 init 起源与普通交互
-  const handleInteractiveSelect = (payload: string | Record<string, unknown>) => {
+  const handleInteractiveSelect = (payload: string | Record<string, unknown>): void => {
     if (typeof payload === 'string') {
       // 普通交互（非 init）：先移除交互气泡，再继续运行
       try {
         removeLastInteractiveMessage();
       } catch {}
-      return continueInteractiveSelect(payload);
+      continueInteractiveSelect(payload);
+      return;
     }
     if (payload && typeof payload === 'object' && payload.origin === 'init') {
       // init 交互：仅收集变量，显示输入框，不请求后端
@@ -123,13 +124,14 @@ export const ChatContainer: React.FC = () => {
       } catch {}
     }
   };
-  const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined) => {
+  const handleInteractiveFormSubmit = (payload: Record<string, unknown> | null | undefined): void => {
     // 非 init 表单：直接继续运行
     if (!payload || payload.origin !== 'init') {
       try {
         removeLastInteractiveMessage();
       } catch {}
-      return continueInteractiveForm(payload as Record<string, string>);
+      continueInteractiveForm(payload as Record<string, string>);
+      return;
     }
     // init 表单：仅收集变量，显示输入框
     const values = payload.values || {};

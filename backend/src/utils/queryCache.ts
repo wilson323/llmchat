@@ -590,11 +590,18 @@ export function cacheQuery(options: {
       const result = await method.apply(this, args);
 
       // 存入缓存
-      defaultQueryCache.set(query, result, {
-        ttl: options.ttl || undefined,
-        tags: options.tags,
-        params,
-      });
+      const cacheOptions: { ttl?: number; tags?: string[]; params?: any[] } = {};
+      if (options.ttl !== undefined) {
+        cacheOptions.ttl = options.ttl;
+      }
+      if (options.tags) {
+        cacheOptions.tags = options.tags;
+      }
+      if (params) {
+        cacheOptions.params = params;
+      }
+
+      defaultQueryCache.set(query, result, cacheOptions);
 
       return result;
     };

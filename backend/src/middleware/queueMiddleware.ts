@@ -99,24 +99,27 @@ class QueueMiddlewareManager {
           timestamp: new Date().toISOString()
         };
 
+        // 准备队列选项
+        const queueOptions: QueueOptions = {
+          priority: config.priority || MessagePriority.NORMAL,
+          delay: config.delay || 0,
+          attempts: config.attempts || 3,
+          metadata: {
+            ...config.metadata,
+            originalRequest: {
+              method: req.method,
+              url: req.url,
+              ip: req.ip || 'unknown'
+            }
+          }
+        };
+
         // 添加任务到队列
         const jobId = await queueManager.addJob(
           config.queueName,
           config.jobType,
           jobData,
-          {
-            priority: config.priority,
-            delay: config.delay,
-            attempts: config.attempts,
-            metadata: {
-              ...config.metadata,
-              originalRequest: {
-                method: req.method,
-                url: req.url,
-                ip: req.ip
-              }
-            }
-          }
+          queueOptions
         );
 
         // 根据响应模式处理
@@ -253,15 +256,24 @@ class QueueMiddlewareManager {
           return null;
         }
 
-        return {
+        const response: QueueResponse = {
           jobId,
           status: job.finishedOn ? 'completed' :
                  job.failedAt ? 'failed' :
                  job.processedOn ? 'processing' : 'queued',
-          result: job.returnvalue,
-          error: job.failedReason,
           progress: job.progress || 0
         };
+
+        // 只在有值时添加可选属性
+        if (job.returnvalue !== undefined) {
+          response.result = job.returnvalue;
+        }
+
+        if (job.failedReason !== undefined) {
+          response.error = job.failedReason;
+        }
+
+        return response;
       }
 
       // 如果没有指定队列，在所有队列中搜索
@@ -270,15 +282,24 @@ class QueueMiddlewareManager {
       for (const queue of queues) {
         const job = await queueManager.getJob(queue, jobId);
         if (job) {
-          return {
+          const response: QueueResponse = {
             jobId,
             status: job.finishedOn ? 'completed' :
                    job.failedAt ? 'failed' :
                    job.processedOn ? 'processing' : 'queued',
-            result: job.returnvalue,
-            error: job.failedReason,
             progress: job.progress || 0
           };
+
+          // 只在有值时添加可选属性
+          if (job.returnvalue !== undefined) {
+            response.result = job.returnvalue;
+          }
+
+          if (job.failedReason !== undefined) {
+            response.error = job.failedReason;
+          }
+
+          return response;
         }
       }
 
@@ -287,6 +308,100 @@ class QueueMiddlewareManager {
     } catch (error) {
       logger.error('QueueMiddleware: Error getting job status:', error);
       return null;
+    }
+  }
+
+  public async handleBulkAdd(
+    queueManager: QueueManager,
+    queueName: string,
+    jobs: any[],
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const results = await Promise.allSettled(
+        jobs.map(job => queueManager.addJob(queueName, job.type, job.data, job.options))
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      res.json({
+        success: true,
+        message: `Bulk add completed. Success: ${successful}, Failed: ${failed}`,
+        data: {
+          total: jobs.length,
+          successful,
+          failed,
+          jobIds: results.map(r => r.status === 'fulfilled' ? r.value : null)
+        }
+      });
+
+    } catch (error) {
+      logger.error('Bulk add error:', error);
+      next(error);
+    }
+  }
+
+  public async handleBulkRemove(
+    queueManager: QueueManager,
+    queueName: string,
+    jobs: any[],
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const results = await Promise.allSettled(
+        jobs.map(job => queueManager.removeJob(queueName, job.jobId))
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
+      const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
+
+      res.json({
+        success: true,
+        message: `Bulk remove completed. Success: ${successful}, Failed: ${failed}`,
+        data: {
+          total: jobs.length,
+          successful,
+          failed
+        }
+      });
+
+    } catch (error) {
+      logger.error('Bulk remove error:', error);
+      next(error);
+    }
+  }
+
+  public async handleBulkRetry(
+    queueManager: QueueManager,
+    queueName: string,
+    jobs: any[],
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const results = await Promise.allSettled(
+        jobs.map(job => queueManager.retryJob(queueName, job.jobId))
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
+      const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
+
+      res.json({
+        success: true,
+        message: `Bulk retry completed. Success: ${successful}, Failed: ${failed}`,
+        data: {
+          total: jobs.length,
+          successful,
+          failed
+        }
+      });
+
+    } catch (error) {
+      logger.error('Bulk retry error:', error);
+      next(error);
     }
   }
 }
@@ -415,18 +530,19 @@ export function queueBulkMiddleware(req: Request, res: Response, next: NextFunct
   }
 
   const queueManager = QueueManager.getInstance();
+  const middlewareManager = new QueueMiddlewareManager();
 
   switch (operation) {
     case 'add':
-      this.handleBulkAdd(queueManager, queue, jobs, res, next);
+      middlewareManager.handleBulkAdd(queueManager, queue, jobs, res, next);
       break;
 
     case 'remove':
-      this.handleBulkRemove(queueManager, queue, jobs, res, next);
+      middlewareManager.handleBulkRemove(queueManager, queue, jobs, res, next);
       break;
 
     case 'retry':
-      this.handleBulkRetry(queueManager, queue, jobs, res, next);
+      middlewareManager.handleBulkRetry(queueManager, queue, jobs, res, next);
       break;
 
     default:
@@ -434,100 +550,6 @@ export function queueBulkMiddleware(req: Request, res: Response, next: NextFunct
         success: false,
         message: 'Invalid operation. Supported: add, remove, retry'
       });
-  }
-}
-
-async function handleBulkAdd(
-  queueManager: QueueManager,
-  queueName: string,
-  jobs: any[],
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const results = await Promise.allSettled(
-      jobs.map(job => queueManager.addJob(queueName, job.type, job.data, job.options))
-    );
-
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
-
-    res.json({
-      success: true,
-      message: `Bulk add completed. Success: ${successful}, Failed: ${failed}`,
-      data: {
-        total: jobs.length,
-        successful,
-        failed,
-        jobIds: results.map(r => r.status === 'fulfilled' ? r.value : null)
-      }
-    });
-
-  } catch (error) {
-    logger.error('Bulk add error:', error);
-    next(error);
-  }
-}
-
-async function handleBulkRemove(
-  queueManager: QueueManager,
-  queueName: string,
-  jobs: any[],
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const results = await Promise.allSettled(
-      jobs.map(job => queueManager.removeJob(queueName, job.jobId))
-    );
-
-    const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
-    const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
-
-    res.json({
-      success: true,
-      message: `Bulk remove completed. Success: ${successful}, Failed: ${failed}`,
-      data: {
-        total: jobs.length,
-        successful,
-        failed
-      }
-    });
-
-  } catch (error) {
-    logger.error('Bulk remove error:', error);
-    next(error);
-  }
-}
-
-async function handleBulkRetry(
-  queueManager: QueueManager,
-  queueName: string,
-  jobs: any[],
-  res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const results = await Promise.allSettled(
-      jobs.map(job => queueManager.retryJob(queueName, job.jobId))
-    );
-
-    const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
-    const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
-
-    res.json({
-      success: true,
-      message: `Bulk retry completed. Success: ${successful}, Failed: ${failed}`,
-      data: {
-        total: jobs.length,
-        successful,
-        failed
-      }
-    });
-
-  } catch (error) {
-    logger.error('Bulk retry error:', error);
-    next(error);
   }
 }
 

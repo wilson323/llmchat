@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-10-11T14:56:24.935Z",
+  "mode": "CI",
+  "overall": {
+    "score": 40,
+    "maxScore": 100,
+    "percentage": 40,
+    "grade": "F 不合格"
+  },
+  "thresholds": {
+    "overall": {
+      "minScore": 70
+    },
+    "typescript": {
+      "required": true
+    },
+    "eslint": {
+      "maxErrors": 0,
+      "maxWarnings": 10
+    },
+    "tests": {
+      "minCoverage": 30
+    },
+    "security": {
+      "maxVulnerabilities": 5
+    },
+    "build": {
+      "required": true
+    }
+  },
+  "results": {
+    "typescript": {
+      "passed": false,
+      "score": 0,
+      "error": "Command failed: pnpm run type-check"
+    },
+    "eslint": {
+      "passed": true,
+      "score": 20,
+      "errors": 0,
+      "warnings": 0
+    },
+    "tests": {
+      "passed": false,
+      "score": 0,
+      "coverageScore": 0,
+      "coverage": {}
+    },
+    "security": {
+      "passed": true,
+      "score": 20,
+      "vulnerabilities": 0,
+      "summary": {
+        "high": 0,
+        "moderate": 0
+      }
+    },
+    "build": {
+      "passed": false,
+      "score": 0
+    }
+  },
+  "passed": false
+}

@@ -9,7 +9,8 @@ import logger from '@/utils/logger';
 import { getQueryOptimizer } from '@/utils/queryOptimizer';
 import { connectionPoolOptimizer } from '@/utils/connectionPoolOptimizer';
 import { defaultQueryCache } from '@/utils/queryCache';
-import { databasePerformanceMonitor } from './databasePerformanceMonitor';
+import { getPool } from '@/utils/db';
+import databasePerformanceMonitor from './databasePerformanceMonitor';
 
 // 优化配置接口
 export interface OptimizationConfig {
@@ -146,7 +147,8 @@ class DatabaseOptimizer {
 
       // 查询分析
       if (this.shouldAnalyzeQuery(query)) {
-        const optimizer = getQueryOptimizer();
+        const pool = getPool();
+        const optimizer = getQueryOptimizer(pool);
         const analysis = await optimizer.analyzeQuery(query, params);
 
         result.queryOptimization = {
@@ -368,7 +370,7 @@ export function databaseOptimizationMiddleware(
   }
 
   const originalJson = res.json;
-  let queryOptimizations: OptimizationResult[] = [];
+  const queryOptimizations: OptimizationResult[] = [];
 
   // 拦截JSON响应
   res.json = function(this: Response, data: any) {

@@ -38,10 +38,12 @@ export async function setupSwagger(app: Application): Promise<void> {
 
     const specs = swaggerJsdoc(swaggerOptions);
 
-    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
+    if (swaggerUi) {
+      app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
       customCss: ".swagger-ui .topbar { display: none }",
       customSiteTitle: "LLMChat API文档",
     }));
+    }
 
     app.get("/api-docs.json", (_req: Request, res: Response) => {
       res.setHeader("Content-Type", "application/json");

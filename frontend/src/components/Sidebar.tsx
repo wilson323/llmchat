@@ -234,6 +234,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   // 处理手势滑动关闭侧边栏
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
+    if (!touch) return;
+
     setTouchStartX(touch.clientX);
     setTouchStartY(touch.clientY);
     setTouchStartTime(Date.now());
@@ -245,6 +247,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
 
     const touch = e.touches[0];
+    if (!touch) return;
+
     const diffX = touchStartX - touch.clientX;
     const diffY = Math.abs(touchStartY - touch.clientY);
     const timeDiff = Date.now() - touchStartTime;

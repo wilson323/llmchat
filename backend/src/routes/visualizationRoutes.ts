@@ -2,10 +2,10 @@
  * 队列管理可视化路由
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import VisualizationController from '@/controllers/VisualizationController';
-import { authenticateToken, requirePermission } from '@/middleware/auth';
-import { rateLimit } from 'express-rate-limit';
+import { authenticateJWT } from '@/middleware/jwtAuth';
+import { rateLimiterMiddleware } from '@/middleware/rateLimiter';
 
 const router = Router() as any;
 
@@ -19,79 +19,63 @@ export const initializeVisualizationRoutes = (
   visualizationController = controller;
 };
 
-// 认证中间件
-const requireAuth = authenticateToken;
-
-// 权限中间件
-const requireAdmin = requirePermission('admin');
-const requireOperator = requirePermission('operator');
+// 简化的认证中间件
+const requireAuth = authenticateJWT();
 
 // 速率限制中间件
-const createRateLimit = (windowMs: number, max: number) => rateLimit({
-  windowMs,
-  max,
-  message: {
-    success: false,
-    error: 'Too many requests, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// API速率限制
-const apiRateLimit = createRateLimit(15 * 60 * 1000, 100); // 15分钟100次请求
-const realtimeRateLimit = createRateLimit(1 * 60 * 1000, 10); // 1分钟10次请求
+const apiRateLimit = rateLimiterMiddleware;
+const realtimeRateLimit = rateLimiterMiddleware;
 
 // 配置相关路由
-router.get('/config', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getConfig(req, res)
+router.get('/config', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getConfig(req, res)
 );
 
-router.put('/config', requireAuth, requireAdmin, apiRateLimit,
-  (req, res) => visualizationController.updateConfig(req, res)
+router.put('/config', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.updateConfig(req, res)
 );
 
-router.get('/presets', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getPresets(req, res)
+router.get('/presets', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getPresets(req, res)
 );
 
-router.post('/presets/apply', requireAuth, requireAdmin, apiRateLimit,
-  (req, res) => visualizationController.applyPreset(req, res)
+router.post('/presets/apply', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.applyPreset(req, res)
 );
 
 // 仪表板数据路由
-router.get('/dashboard', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getDashboardData(req, res)
+router.get('/dashboard', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getDashboardData(req, res)
 );
 
 // 队列统计路由
-router.get('/queues/stats', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getQueueStats(req, res)
+router.get('/queues/stats', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getQueueStats(req, res)
 );
 
 // 系统统计路由
-router.get('/system/stats', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getSystemStats(req, res)
+router.get('/system/stats', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getSystemStats(req, res)
 );
 
 // Redis统计路由
-router.get('/redis/stats', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getRedisStats(req, res)
+router.get('/redis/stats', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getRedisStats(req, res)
 );
 
 // 图表数据路由
-router.get('/charts/data', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => visualizationController.getChartData(req, res)
+router.get('/charts/data', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => visualizationController.getChartData(req, res)
 );
 
 // 实时更新路由 (SSE)
-router.get('/realtime', requireAuth, requireOperator, realtimeRateLimit,
-  (req, res) => visualizationController.getRealtimeUpdates(req, res)
+router.get('/realtime', requireAuth, realtimeRateLimit,
+  (req: Request, res: Response) => visualizationController.getRealtimeUpdates(req, res)
 );
 
 // 队列操作路由
-router.post('/queues/:queueName/action', requireAuth, requireOperator, apiRateLimit,
-  (req, res) => {
+router.post('/queues/:queueName/action', requireAuth, apiRateLimit,
+  (req: Request, res: Response) => {
     req.body.queueName = req.params.queueName;
     visualizationController.performQueueAction(req, res);
   }
@@ -99,7 +83,7 @@ router.post('/queues/:queueName/action', requireAuth, requireOperator, apiRateLi
 
 // 健康检查路由 (无需认证)
 router.get('/health', apiRateLimit,
-  (req, res) => visualizationController.healthCheck(req, res)
+  (req: Request, res: Response) => visualizationController.healthCheck(req, res)
 );
 
 // 错误处理中间件
@@ -112,7 +96,7 @@ router.use((error: Error, req: Request, res: Response, next: any) => {
 });
 
 // 404处理
-router.use((req, res) => {
+router.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'Route not found',

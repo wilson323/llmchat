@@ -4,146 +4,67 @@
  * 提供缓存操作的API端点
  */
 
-import { Router } from 'express';
-import { body, param, query, validationResult } from 'express-validator';
+import { Router, Request, Response, NextFunction } from 'express';
 import CacheController from '@/controllers/cacheController';
-import { authenticateToken } from '@/middleware/auth';
-import { rateLimit } from '@/middleware/rateLimit';
-import { auditLog } from '@/middleware/auditLog';
-import { ApiError } from '@/utils/errors';
+import { authenticateJWT } from '@/middleware/jwtAuth';
+import { rateLimiterMiddleware } from '@/middleware/rateLimiter';
+import { ValidationError } from '@/types/errors';
 
-const router = Router() as any;
+const router: Router = Router();
 const cacheController = new CacheController();
 
-// 验证中间件
-const handleValidationErrors = (req: any, res: any, next: any) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorMessages = errors.array().map(error => error.msg);
-    return next(new ApiError(errorMessages.join(', '), 400));
-  }
-  next();
+// 简化的验证函数
+const validateCacheKey = (key: string): boolean => {
+  return typeof key === 'string' && key.trim().length >= 1 && key.trim().length <= 255;
 };
 
-// 通用验证规则
-const cacheKeyValidation = [
-  param('key')
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 255 })
-    .withMessage('缓存键必须是1-255个字符的字符串'),
-  handleValidationErrors
-];
+const validateTtl = (ttl: any): boolean => {
+  return ttl === undefined || (Number.isInteger(ttl) && ttl >= 0 && ttl <= 86400 * 30);
+};
 
-const cacheOperationValidation = [
-  body('key')
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 255 })
-    .withMessage('缓存键必须是1-255个字符的字符串'),
-  body('value')
-    .notEmpty()
-    .withMessage('缓存值不能为空'),
-  body('ttl')
-    .optional()
-    .isInt({ min: 0, max: 86400 * 30 }) // 最大30天
-    .withMessage('TTL必须是0-2592000之间的整数'),
-  body('tags')
-    .optional()
-    .isArray()
-    .withMessage('标签必须是数组'),
-  body('tags.*')
-    .optional()
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('每个标签必须是1-50个字符的字符串'),
-  handleValidationErrors
-];
+const validateTags = (tags: any): boolean => {
+  if (tags === undefined) return true;
+  if (!Array.isArray(tags)) return false;
+  return tags.every(tag =>
+    typeof tag === 'string' && tag.trim().length >= 1 && tag.trim().length <= 50
+  );
+};
 
-const batchOperationValidation = [
-  body('operations')
-    .isArray({ min: 1, max: 100 })
-    .withMessage('操作列表必须是1-100个元素的数组'),
-  body('operations.*.key')
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 255 })
-    .withMessage('缓存键必须是1-255个字符的字符串'),
-  body('operations.*.value')
-    .notEmpty()
-    .withMessage('缓存值不能为空'),
-  body('defaultTtl')
-    .optional()
-    .isInt({ min: 0, max: 86400 * 30 })
-    .withMessage('默认TTL必须是0-2592000之间的整数'),
-  body('defaultTags')
-    .optional()
-    .isArray()
-    .withMessage('默认标签必须是数组'),
-  handleValidationErrors
-];
+// 验证中间件
+const validateCacheRequest = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { key, ttl, tags } = req.body;
 
-const tagOperationValidation = [
-  body('tags')
-    .isArray({ min: 1, max: 50 })
-    .withMessage('标签列表必须是1-50个元素的数组'),
-  body('tags.*')
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('每个标签必须是1-50个字符的字符串'),
-  handleValidationErrors
-];
+    if (key && !validateCacheKey(key)) {
+      throw new ValidationError({ message: '缓存键必须是1-255个字符的字符串' });
+    }
 
-const queryValidation = [
-  query('pattern')
-    .optional()
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 255 })
-    .withMessage('查询模式必须是1-255个字符的字符串'),
-  query('tags')
-    .optional()
-    .custom((value) => {
-      if (typeof value === 'string') {
-        return value.split(',').every((tag: string) =>
-          tag.trim().length >= 1 && tag.trim().length <= 50
-        );
-      }
-      return true;
-    })
-    .withMessage('标签格式不正确'),
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 1000 })
-    .withMessage('限制数量必须是1-1000之间的整数'),
-  query('offset')
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage('偏移量必须是非负整数'),
-  handleValidationErrors
-];
+    if (ttl !== undefined && !validateTtl(ttl)) {
+      throw new ValidationError({ message: 'TTL必须是0-2592000之间的整数' });
+    }
 
-// 缓存操作速率限制
-const cacheRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1分钟
-  max: 1000, // 每分钟最多1000次请求
-  message: {
-    success: false,
-    error: '缓存操作请求过于频繁，请稍后再试'
+    if (tags && !validateTags(tags)) {
+      throw new ValidationError({ message: '标签格式不正确' });
+    }
+
+    next();
+  } catch (error: any) {
+    next(error);
   }
-});
+};
 
-// 管理操作速率限制（更严格）
-const adminRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1分钟
-  max: 100, // 每分钟最多100次请求
-  message: {
-    success: false,
-    error: '管理操作请求过于频繁，请稍后再试'
+// 验证路由参数
+const validateKeyParam = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { key } = req.params;
+    if (!key || !validateCacheKey(key)) {
+      throw new ValidationError({ message: '缓存键必须是1-255个字符的字符串' });
+    }
+    next();
+  } catch (error: any) {
+    next(error);
   }
-});
+};
 
 /**
  * @route GET /api/cache/health
@@ -159,8 +80,8 @@ router.get('/health', cacheController.healthCheck.bind(cacheController));
  */
 router.get(
   '/stats',
-  authenticateToken,
-  auditLog('cache_stats_view'),
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.getCacheStats.bind(cacheController)
 );
 
@@ -171,9 +92,8 @@ router.get(
  */
 router.post(
   '/stats/reset',
-  authenticateToken,
-  adminRateLimit,
-  auditLog('cache_stats_reset'),
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.resetCacheStats.bind(cacheController)
 );
 
@@ -184,8 +104,8 @@ router.post(
  */
 router.get(
   '/config',
-  authenticateToken,
-  auditLog('cache_config_view'),
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.getCacheConfig.bind(cacheController)
 );
 
@@ -196,32 +116,9 @@ router.get(
  */
 router.put(
   '/config',
-  authenticateToken,
-  adminRateLimit,
-  auditLog('cache_config_update'),
-  [
-    body('defaultTtl')
-      .optional()
-      .isInt({ min: 0, max: 86400 * 30 })
-      .withMessage('默认TTL必须是0-2592000之间的整数'),
-    body('maxMemoryItems')
-      .optional()
-      .isInt({ min: 100, max: 10000 })
-      .withMessage('最大内存项目数必须是100-10000之间的整数'),
-    body('compressionThreshold')
-      .optional()
-      .isInt({ min: 100, max: 10240 })
-      .withMessage('压缩阈值必须是100-10240之间的整数'),
-    body('enableMemoryCache')
-      .optional()
-      .isBoolean()
-      .withMessage('启用内存缓存必须是布尔值'),
-    body('enableCompression')
-      .optional()
-      .isBoolean()
-      .withMessage('启用压缩必须是布尔值'),
-    handleValidationErrors
-  ],
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateCacheRequest,
   cacheController.updateCacheConfig.bind(cacheController)
 );
 
@@ -232,22 +129,9 @@ router.put(
  */
 router.get(
   '/:key',
-  authenticateToken,
-  cacheRateLimit,
-  cacheKeyValidation,
-  query('tags')
-    .optional()
-    .custom((value) => {
-      if (typeof value === 'string') {
-        return value.split(',').every((tag: string) => tag.trim().length > 0);
-      }
-      return true;
-    })
-    .withMessage('标签格式不正确'),
-  query('strategy')
-    .optional()
-    .isIn(['lazy_loading', 'write_through', 'write_behind', 'refresh_ahead'])
-    .withMessage('缓存策略必须是有效的枚举值'),
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateKeyParam,
   cacheController.getCache.bind(cacheController)
 );
 
@@ -258,37 +142,10 @@ router.get(
  */
 router.put(
   '/:key',
-  authenticateToken,
-  cacheRateLimit,
-  auditLog('cache_set', { resourceType: 'cache' }),
-  [
-    body('value')
-      .notEmpty()
-      .withMessage('缓存值不能为空'),
-    body('ttl')
-      .optional()
-      .isInt({ min: 0, max: 86400 * 30 })
-      .withMessage('TTL必须是0-2592000之间的整数'),
-    body('tags')
-      .optional()
-      .isArray()
-      .withMessage('标签必须是数组'),
-    body('tags.*')
-      .optional()
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 50 })
-      .withMessage('每个标签必须是1-50个字符的字符串'),
-    body('strategy')
-      .optional()
-      .isIn(['lazy_loading', 'write_through', 'write_behind', 'refresh_ahead'])
-      .withMessage('缓存策略必须是有效的枚举值'),
-    body('compress')
-      .optional()
-      .isBoolean()
-      .withMessage('压缩选项必须是布尔值'),
-    handleValidationErrors
-  ],
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateKeyParam,
+  validateCacheRequest,
   cacheController.setCache.bind(cacheController)
 );
 
@@ -299,10 +156,9 @@ router.put(
  */
 router.delete(
   '/:key',
-  authenticateToken,
-  cacheRateLimit,
-  auditLog('cache_delete', { resourceType: 'cache' }),
-  cacheKeyValidation,
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateKeyParam,
   cacheController.deleteCache.bind(cacheController)
 );
 
@@ -313,9 +169,9 @@ router.delete(
  */
 router.get(
   '/:key/exists',
-  authenticateToken,
-  cacheRateLimit,
-  cacheKeyValidation,
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateKeyParam,
   cacheController.existsCache.bind(cacheController)
 );
 
@@ -326,10 +182,9 @@ router.get(
  */
 router.post(
   '/batch/set',
-  authenticateToken,
-  cacheRateLimit,
-  auditLog('cache_batch_set', { resourceType: 'cache' }),
-  batchOperationValidation,
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateCacheRequest,
   cacheController.batchSetCache.bind(cacheController)
 );
 
@@ -340,20 +195,8 @@ router.post(
  */
 router.delete(
   '/batch',
-  authenticateToken,
-  cacheRateLimit,
-  auditLog('cache_batch_delete', { resourceType: 'cache' }),
-  [
-    body('keys')
-      .isArray({ min: 1, max: 100 })
-      .withMessage('缓存键列表必须是1-100个元素的数组'),
-    body('keys.*')
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 255 })
-      .withMessage('每个缓存键必须是1-255个字符的字符串'),
-    handleValidationErrors
-  ],
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.batchDeleteCache.bind(cacheController)
 );
 
@@ -364,10 +207,9 @@ router.delete(
  */
 router.delete(
   '/tags',
-  authenticateToken,
-  adminRateLimit,
-  auditLog('cache_delete_by_tags', { resourceType: 'cache' }),
-  tagOperationValidation,
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateCacheRequest,
   cacheController.deleteByTags.bind(cacheController)
 );
 
@@ -378,9 +220,8 @@ router.delete(
  */
 router.get(
   '/',
-  authenticateToken,
-  cacheRateLimit,
-  queryValidation,
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.queryCache.bind(cacheController)
 );
 
@@ -391,16 +232,8 @@ router.get(
  */
 router.delete(
   '/',
-  authenticateToken,
-  adminRateLimit,
-  auditLog('cache_clear', { resourceType: 'cache' }),
-  query('pattern')
-    .optional()
-    .isString()
-    .trim()
-    .isLength({ min: 1, max: 255 })
-    .withMessage('清空模式必须是1-255个字符的字符串'),
-  handleValidationErrors,
+  authenticateJWT(),
+  rateLimiterMiddleware,
   cacheController.clearCache.bind(cacheController)
 );
 
@@ -411,31 +244,9 @@ router.delete(
  */
 router.post(
   '/warmup',
-  authenticateToken,
-  adminRateLimit,
-  auditLog('cache_warmup', { resourceType: 'cache' }),
-  [
-    body('data')
-      .isArray({ min: 1, max: 1000 })
-      .withMessage('预热数据必须是1-1000个元素的数组'),
-    body('data.*.key')
-      .isString()
-      .trim()
-      .isLength({ min: 1, max: 255 })
-      .withMessage('缓存键必须是1-255个字符的字符串'),
-    body('data.*.value')
-      .notEmpty()
-      .withMessage('缓存值不能为空'),
-    body('data.*.ttl')
-      .optional()
-      .isInt({ min: 0, max: 86400 * 30 })
-      .withMessage('TTL必须是0-2592000之间的整数'),
-    body('data.*.tags')
-      .optional()
-      .isArray()
-      .withMessage('标签必须是数组'),
-    handleValidationErrors
-  ],
+  authenticateJWT(),
+  rateLimiterMiddleware,
+  validateCacheRequest,
   cacheController.warmupCache.bind(cacheController)
 );
 

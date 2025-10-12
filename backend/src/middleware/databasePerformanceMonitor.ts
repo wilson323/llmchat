@@ -126,7 +126,9 @@ class DatabasePerformanceMonitor {
     metrics.duration = metrics.endTime - metrics.startTime;
     metrics.rowCount = rowCount || 0;
     metrics.isSlowQuery = metrics.duration > this.slowQueryThreshold;
-    metrics.error = error?.message || undefined;
+    if (error?.message) {
+      metrics.error = error.message;
+    }
 
     // 更新统计信息
     this.updateStats(metrics);
@@ -390,11 +392,7 @@ export function databasePerformanceMonitorMiddleware(
       duration: `${duration.toFixed(2)}ms`,
     });
 
-    if (args.length >= 1) {
-      return originalEnd.call(this, args[0], args[1], args[2]);
-    } else {
-      return originalEnd.call(this);
-    }
+    return originalEnd.apply(this, args as any);
   };
 
   next();

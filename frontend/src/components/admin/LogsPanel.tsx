@@ -24,7 +24,11 @@ function LogsPanel() {
   const fetchData = async (p = page) => {
     try {
       setLoading(true);
-      const d = await getLogsPage({ level: level || undefined, start: start || undefined, end: end || undefined, page: p, pageSize });
+      const params: { page: number; pageSize: number; level?: 'INFO' | 'WARN' | 'ERROR'; start?: string; end?: string } = { page: p, pageSize };
+      if (level) params.level = level;
+      if (start) params.start = start;
+      if (end) params.end = end;
+      const d = await getLogsPage(params);
       setLogs(d.data);
       setTotal(d.total);
       setErr(null);
@@ -41,7 +45,11 @@ function LogsPanel() {
 
   const onExport = async () => {
     try {
-      const csv = await exportLogsCsv({ level: level || undefined, start: start || undefined, end: end || undefined });
+      const params: { level?: 'INFO' | 'WARN' | 'ERROR'; start?: string; end?: string } = {};
+      if (level) params.level = level;
+      if (start) params.start = start;
+      if (end) params.end = end;
+      const csv = await exportLogsCsv(params);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

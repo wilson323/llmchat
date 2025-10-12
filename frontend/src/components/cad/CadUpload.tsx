@@ -27,6 +27,10 @@ export const CadUpload: React.FC<CadUploadProps> = ({
       }
 
       const file = acceptedFiles[0];
+      if (!file) {
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 

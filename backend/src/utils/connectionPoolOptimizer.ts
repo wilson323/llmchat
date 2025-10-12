@@ -89,9 +89,9 @@ export class ConnectionPoolOptimizer {
 
   static getInstance(): ConnectionPoolOptimizer {
     if (!ConnectionPoolOptimizer.instance) {
-      ConnectionPool.instance = new ConnectionPoolOptimizer();
+      ConnectionPoolOptimizer.instance = new ConnectionPoolOptimizer();
     }
-    return ConnectionPoolOptimizer;
+    return ConnectionPoolOptimizer.instance;
   }
 
   /**

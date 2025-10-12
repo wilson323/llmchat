@@ -8,7 +8,7 @@
     "strengths": []
   },
   "metrics": {
-    "timestamp": "2025-10-11T14:21:12.333Z",
+    "timestamp": "2025-10-11T14:47:04.166Z",
     "typescript": {
       "status": "fail",
       "errors": 260,
@@ -25,7 +25,7 @@
         "src/components/admin/AnalyticsPanel.tsx(37,47): error TS2339: Property 'data' does not exist on type 'ProvinceHeatmapDataset'."
       ],
       "compiled": false,
-      "timestamp": "2025-10-11T14:21:20.927Z",
+      "timestamp": "2025-10-11T14:47:12.649Z",
       "strictMode": true,
       "noUnusedLocals": true,
       "noUnusedParameters": true
@@ -33,7 +33,7 @@
     "eslint": {
       "status": "error",
       "error": "spawnSync /bin/sh ENOBUFS",
-      "timestamp": "2025-10-11T14:21:29.292Z"
+      "timestamp": "2025-10-11T14:47:20.726Z"
     },
     "testing": {
       "frontend": {
@@ -46,7 +46,7 @@
         "time": 0,
         "status": "fail",
         "error": "Command failed: cd frontend && npm run test -- --run --coverage --watchAll=false --passWithNoTests 2>&1",
-        "timestamp": "2025-10-11T14:21:29.500Z"
+        "timestamp": "2025-10-11T14:47:20.934Z"
       },
       "backend": {
         "suites": 31,
@@ -55,17 +55,17 @@
         "failed": 0,
         "skipped": 0,
         "pending": 0,
-        "time": 8.16,
+        "time": 8.181,
         "status": "fail",
         "error": "Command failed: pnpm run backend:test 2>&1",
-        "timestamp": "2025-10-11T14:21:39.560Z"
+        "timestamp": "2025-10-11T14:47:30.973Z"
       }
     },
     "coverage": {},
     "security": {
       "status": "error",
       "error": "Command failed: pnpm audit --json 2>/dev/null",
-      "timestamp": "2025-10-11T14:21:40.901Z"
+      "timestamp": "2025-10-11T14:47:31.820Z"
     },
     "performance": {},
     "complexity": {
@@ -86,7 +86,7 @@
         "lines": 103572,
         "directories": 68
       },
-      "timestamp": "2025-10-11T14:21:40.923Z"
+      "timestamp": "2025-10-11T14:47:31.841Z"
     }
   },
   "recommendations": [
@@ -109,5 +109,5 @@
       "action": "当前覆盖率0%，建议添加更多测试用例达到60%以上"
     }
   ],
-  "timestamp": "2025-10-11T14:21:40.924Z"
+  "timestamp": "2025-10-11T14:47:31.842Z"
 }

@@ -456,12 +456,15 @@ export function monitoringMetricsMiddleware() {
       const responseTime = Date.now() - startTime;
       const success = res.statusCode < 400;
 
-      // 记录监控指标
-      protectionService.getMonitoringService().recordRequest(
+      // 记录监控指标到日志
+      logger.info('Request completed', {
         responseTime,
         success,
-        success ? undefined : `HTTP_${res.statusCode}`,
-      );
+        statusCode: res.statusCode,
+        method: req.method,
+        url: req.url,
+        ip: req.ip
+      });
     });
 
     next();
@@ -495,8 +498,8 @@ export function enhancedHealthCheckMiddleware() {
       };
 
       // 根据系统健康状态设置HTTP状态码
-      const statusCode = systemHealth.status === 'healthy' ? 200 :
-        systemHealth.status === 'warning' ? 200 : 503;
+      const statusCode = systemHealth?.status === 'healthy' ? 200 :
+        systemHealth?.status === 'warning' ? 200 : 503;
 
       res.status(statusCode).json(healthData);
       return;

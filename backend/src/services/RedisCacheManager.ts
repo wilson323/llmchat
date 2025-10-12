@@ -257,7 +257,7 @@ export class RedisCacheManager {
 
     if (size > this.config.compressionThreshold) {
       try {
-        const compressed = compress(serialized);
+        const compressed = compress(Buffer.from(serialized));
         return {
           compressed: true,
           data: compressed,
@@ -388,7 +388,7 @@ export class RedisCacheManager {
             if (this.config.enableAvalancheProtection && redisItem.accessCount > 100) {
               const protectionKey = `protect:${fullKey}`;
               const protectionTtl = Math.min(60, redisItem.expiresAt - now);
-              this.protectionCache.set(protectionKey, this.decompressData(redisItem), protectionTtl);
+              this.protectionCache.set(protectionKey, this.decompressData(redisItem));
               this.stats.avalancheHits++;
               logger.debug('🏔️ 雪崩防护触发', { key: key.substring(0, 50) });
             }
@@ -455,7 +455,7 @@ export class RedisCacheManager {
         lastAccessAt: now,
         size,
         compressed,
-        tags: options.tags,
+        ...(options.tags && { tags: options.tags }),
         source: 'set',
       };
 
@@ -586,40 +586,7 @@ export class RedisCacheManager {
     }
   }
 
-  /**
-   * 清空所有缓存
-   */
-  async clear(): Promise<void> {
-    try {
-      // 清空内存缓存
-      this.memoryCache.clear();
-      this.stats.memoryItems = 0;
-      this.stats.memorySize = 0;
-
-      // 清空Redis缓存
-      if (this.redis && this.stats.redisConnected) {
-        try {
-          const pattern = `${this.config.keyPrefix}:*`;
-          const keys = await this.redis.keys(pattern);
-          if (keys.length > 0) {
-            await this.redis.del(keys);
-          }
-        } catch (error) {
-          logger.error('Redis清空失败', { error });
-          this.stats.errors++;
-        }
-      }
-
-      // 清空保护缓存
-      this.protectionCache.clear();
-      this.prewarmedKeys.clear();
-
-      this.updateStats();
-      logger.info('🧹 所有缓存已清空');
-    } catch (error) {
-      logger.error('清空缓存失败', { error });
-    }
-  }
+  // Duplicate clear function removed - detailed version exists at line 1172
 
   /**
    * 获取或设置缓存（缓存未命中时执行fallback）
@@ -684,13 +651,17 @@ export class RedisCacheManager {
         }
 
         // 尝试获取锁
-        const acquired = await this.set(`lock:${key}`, {
+        // 使用Redis原生的SET NX EX命令实现分布式锁
+        const lockValue = JSON.stringify({
           locked: true,
           timestamp: Date.now()
-        }, {
-          ttl,
-          nx: true
         });
+
+        let acquired = false;
+        if (this.redis && this.stats.redisConnected) {
+          const result = await this.redis.set(lockKey, lockValue, 'EX', ttl, 'NX');
+          acquired = result === 'OK';
+        }
 
         if (acquired) {
           this.stats.locks++;
@@ -753,7 +724,10 @@ export class RedisCacheManager {
 
     const promises = keys.map(async ({ key, fallback, ttl, tags }) => {
       try {
-        await this.getOrSet(key, fallback, { ttl, tags });
+        const options: { ttl?: number; tags?: string[] } = {};
+        if (ttl !== undefined) options.ttl = ttl;
+        if (tags) options.tags = tags;
+        await this.getOrSet(key, fallback, options);
         this.prewarmedKeys.add(key);
         this.stats.prewarmedHits++;
       } catch (error) {
@@ -761,10 +735,10 @@ export class RedisCacheManager {
       }
     });
 
-    await Promise.allSettled(promises);
+    const results = await Promise.allSettled(promises);
     logger.info('✅ 缓存预热完成', {
       totalKeys: keys.length,
-      successCount: promises.filter(p => p.status === 'fulfilled').length
+      successCount: results.filter(r => r.status === 'fulfilled').length
     });
   }
 
@@ -829,6 +803,7 @@ export class RedisCacheManager {
       },
       redis: {
         connected: this.stats.redisConnected,
+        latency: 0,
       },
       stats: this.stats,
     };
@@ -855,10 +830,13 @@ export class RedisCacheManager {
   /**
    * 生成性能报告
    */
-  generatePerformanceReport(): string {
+  async generatePerformanceReport(): Promise<string> {
     const stats = this.getStats();
-    const memoryItems = this.getMemoryItems(10);
-    const health = this.healthCheck();
+    const memoryItems = Array.from(this.memoryCache.entries()).slice(0, 10).map(([key, item]) => ({
+      key,
+      ...item
+    }));
+    const health = await this.healthCheck();
 
     return `
 Redis缓存性能报告
@@ -1143,29 +1121,7 @@ ${this.generateRecommendations()}
     }
   }
 
-  /**
-   * 健康检查
-   */
-  async healthCheck(): Promise<boolean> {
-    try {
-      if (!this.redis) {
-        return false;
-      }
-
-      const pong = await this.redis.ping();
-      const isHealthy = pong === 'PONG';
-
-      if (!isHealthy) {
-        logger.warn('Redis健康检查失败');
-      }
-
-      return isHealthy;
-    } catch (error) {
-      logger.error('Redis健康检查错误', { error });
-      this.stats.errors++;
-      return false;
-    }
-  }
+  // Duplicate healthCheck function removed - detailed version exists at line 817
 
   /**
    * 缓存预热
@@ -1184,10 +1140,10 @@ ${this.generateRecommendations()}
 
     for (const item of data) {
       try {
-        const result = await this.set(item.key, item.value, {
-          ttl: item.ttl,
-          tags: item.tags
-        });
+        const options: { ttl?: number; tags?: string[] } = {};
+        if (item.ttl !== undefined) options.ttl = item.ttl;
+        if (item.tags) options.tags = item.tags;
+        const result = await this.set(item.key, item.value, options);
         if (result) {
           success++;
           this.prewarmedKeys.add(item.key);

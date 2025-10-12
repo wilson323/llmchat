@@ -61,6 +61,10 @@ describe('Route Registration Tests', () => {
       'agents': '/api/agents',
       'auth': '/api/auth',
       'chat': '/api/chat',
+      'chatSessions': '/api/chat',
+      'chatMessages': '/api/chat',
+      'chatInit': '/api/chat',
+      'chatAttachments': '/api/chat',
       'cad': '/api/cad',
       'admin': '/api/admin',
       'audit': '/api/audit',
@@ -68,6 +72,10 @@ describe('Route Registration Tests', () => {
       'productPreview': '/api/product-preview',
       'sessionRoutes': '/api/sessions',
       'health': '/health',
+      'cache': '/api/cache',
+      'databasePerformance': '/api/database-performance',
+      'queue': '/api/queue',
+      'visualizationRoutes': '/api/visualization',
     };
 
     // 验证每个路由文件

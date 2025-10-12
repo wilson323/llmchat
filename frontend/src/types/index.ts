@@ -64,9 +64,14 @@ export interface AgentConfig {
 }
 
 /**
- * 智能体状态
- */
+  * 智能体状态
+  */
 export type AgentStatus = 'active' | 'inactive' | 'error' | 'loading';
+
+/**
+ * 消息状态
+ */
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 /**
  * 聊天消息接口（按 huihua.md 要求的格式）

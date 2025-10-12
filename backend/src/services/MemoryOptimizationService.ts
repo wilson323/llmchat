@@ -47,6 +47,13 @@ export interface MemoryUsageSnapshot {
   connectionPoolActive: number;
   connectionPoolIdle: number;
   memoryOptimizationCount: number;
+  stats: {
+    arrayBuffers: number;
+    heapUsedPercentage: number;
+    heapUsedMB: number;
+    heapTotalMB: number;
+    rssMB: number;
+  };
 }
 
 export interface OptimizationReport {
@@ -66,8 +73,8 @@ export interface OptimizationReport {
 export class MemoryOptimizationService extends EventEmitter {
   private memoryMonitor: MemoryMonitor;
   private config: MemoryOptimizationConfig;
-  private optimizationTimer?: NodeJS.Timeout;
-  private cleanupTimer?: NodeJS.Timeout;
+  private optimizationTimer?: NodeJS.Timeout | null;
+  private cleanupTimer?: NodeJS.Timeout | null;
   private isOptimizing = false;
   private optimizationHistory: OptimizationReport[] = [];
   private usageSnapshots: MemoryUsageSnapshot[] = [];
@@ -80,7 +87,8 @@ export class MemoryOptimizationService extends EventEmitter {
     totalMemoryFreed: 0,
     lastOptimizationTime: 0,
     averageOptimizationTime: 0,
-    cleanupOperations: 0
+    cleanupOperations: 0,
+    errors: 0
   };
 
   constructor(config: Partial<MemoryOptimizationConfig> = {}) {
@@ -152,12 +160,12 @@ export class MemoryOptimizationService extends EventEmitter {
 
     if (this.optimizationTimer) {
       clearInterval(this.optimizationTimer);
-      this.optimizationTimer = undefined;
+      this.optimizationTimer = null;
     }
 
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
-      this.cleanupTimer = undefined;
+      this.cleanupTimer = null;
     }
 
     logger.info('MemoryOptimizationService: Stopped');
@@ -310,7 +318,18 @@ export class MemoryOptimizationService extends EventEmitter {
       // 创建优化报告
       const report: OptimizationReport = {
         timestamp: endTime,
-        beforeStats: beforeSnapshot.stats || (await this.memoryMonitor.collectMemoryStats()),
+        beforeStats: (beforeSnapshot?.stats || {
+          heapUsed: 0,
+          heapTotal: 0,
+          external: 0,
+          rss: 0,
+          arrayBuffers: 0,
+          timestamp: Date.now(),
+          heapUsedPercentage: 0,
+          heapUsedMB: 0,
+          heapTotalMB: 0,
+          rssMB: 0
+        }) as MemoryStats,
         afterStats: await this.memoryMonitor.collectMemoryStats(),
         method: gcMethod,
         freedMemoryMB: freedMemory,
@@ -565,7 +584,14 @@ export class MemoryOptimizationService extends EventEmitter {
       queueJobs: 0, // 这里需要从队列管理器获取
       connectionPoolActive: poolStats?.active || 0,
       connectionPoolIdle: poolStats?.idle || 0,
-      memoryOptimizationCount: this.stats.totalOptimizations
+      memoryOptimizationCount: this.stats.totalOptimizations,
+      stats: {
+        arrayBuffers: stats?.arrayBuffers || 0,
+        heapUsedPercentage: stats?.heapUsedPercentage || 0,
+        heapUsedMB: stats?.heapUsedMB || 0,
+        heapTotalMB: stats?.heapTotalMB || 0,
+        rssMB: stats?.rssMB || 0
+      }
     };
 
     // 添加到快照历史
@@ -657,7 +683,7 @@ export class MemoryOptimizationService extends EventEmitter {
 
       if (this.optimizationTimer) {
         clearInterval(this.optimizationTimer);
-        this.optimizationTimer = undefined;
+        this.optimizationTimer = null;
       }
 
       if (this.config.autoOptimizationEnabled) {
@@ -703,11 +729,31 @@ export class MemoryOptimizationService extends EventEmitter {
    */
   public getMemoryReport(): {
     current: MemoryStats | undefined;
-    serviceStats: typeof this.stats;
+    serviceStats: {
+      totalOptimizations: number;
+      successfulOptimizations: number;
+      totalMemoryFreed: number;
+      averageOptimizationTime: number;
+      lastOptimizationTime: number;
+      errors: number;
+    };
     recentOptimizations: OptimizationReport[];
     recommendations: string[];
     healthStatus: { healthy: boolean; issues: string[] };
-  } {
+  } | Promise<{
+    current: MemoryStats | undefined;
+    serviceStats: {
+      totalOptimizations: number;
+      successfulOptimizations: number;
+      totalMemoryFreed: number;
+      averageOptimizationTime: number;
+      lastOptimizationTime: number;
+      errors: number;
+    };
+    recentOptimizations: OptimizationReport[];
+    recommendations: string[];
+    healthStatus: { healthy: boolean; issues: string[] };
+  }> {
     const memoryReport = this.memoryMonitor.getMemoryReport();
     const recentOptimizations = this.getOptimizationHistory(10);
     const healthStatus = this.memoryMonitor.healthCheck();

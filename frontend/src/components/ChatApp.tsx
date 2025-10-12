@@ -94,7 +94,10 @@ const ChatApp: React.FC = () => {
             const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
             if (currentIndex > 0) {
               const { switchToSession } = useChatStore.getState();
-              switchToSession(sessions[currentIndex - 1].id);
+              const previousSession = sessions[currentIndex - 1];
+              if (previousSession) {
+                switchToSession(previousSession.id);
+              }
             }
           }
         },
@@ -113,7 +116,10 @@ const ChatApp: React.FC = () => {
             const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
             if (currentIndex < sessions.length - 1) {
               const { switchToSession } = useChatStore.getState();
-              switchToSession(sessions[currentIndex + 1].id);
+              const nextSession = sessions[currentIndex + 1];
+              if (nextSession) {
+                switchToSession(nextSession.id);
+              }
             }
           }
         },
@@ -131,7 +137,7 @@ const ChatApp: React.FC = () => {
           let targetMessageIndex = -1;
 
           for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i].HUMAN !== undefined) {
+            if (messages[i]?.HUMAN !== undefined) {
               targetMessageIndex = i;
               break;
             }
@@ -139,6 +145,8 @@ const ChatApp: React.FC = () => {
 
           if (targetMessageIndex !== -1) {
             const targetMessage = messages[targetMessageIndex];
+            if (!targetMessage) return;
+
             const chatInput = document.querySelector(
               '#message-input-textarea',
             ) as HTMLTextAreaElement;

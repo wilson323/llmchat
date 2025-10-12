@@ -5,7 +5,7 @@
 
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
-import { QueueJob, QueueOptions, JobStatus } from '@/types/queue';
+import { QueueJob, QueueOptions, JobStatus, BackoffStrategy } from '@/types/queue';
 import { RedisConnectionPool } from '@/utils/redisConnectionPool';
 
 export interface BatchOperation {
@@ -149,7 +149,7 @@ export class BatchOperationService {
                 attempts: operation.options?.attempts || 3,
                 removeOnComplete: operation.options?.removeOnComplete ?? true,
                 removeOnFail: operation.options?.removeOnFail ?? true,
-                backoff: operation.options?.backoff || { strategy: 'exponential', delay: 1000 },
+                backoff: operation.options?.backoff || BackoffStrategy.EXPONENTIAL,
                 metadata: operation.options?.metadata || {}
               },
               createdAt: new Date(),
@@ -205,21 +205,25 @@ export class BatchOperationService {
         const results = await pipeline.exec();
 
         // 检查Pipeline执行结果
-        results.forEach((result, index) => {
-          if (result[0]) {
-            // Pipeline操作失败，从successful中移除对应的成功记录
-            const failedIndex = successful.findIndex(s => s.index === i + index);
-            if (failedIndex !== -1) {
-              const failedOp = successful[failedIndex];
-              successful.splice(failedIndex, 1);
-              failed.push({
-                index: failedOp.index,
-                error: `Pipeline error: ${result[0]}`,
-                data: operations[failedOp.index]
-              });
+        if (results) {
+          results.forEach((result, index) => {
+            if (result[0]) {
+              // Pipeline操作失败，从successful中移除对应的成功记录
+              const failedIndex = successful.findIndex(s => s.index === i + index);
+              if (failedIndex !== -1) {
+                const failedOp = successful[failedIndex];
+                if (failedOp) {
+                  successful.splice(failedIndex, 1);
+                  failed.push({
+                    index: failedOp.index,
+                    error: `Pipeline error: ${result[0]}`,
+                    data: operations[failedOp.index]
+                  });
+                }
+              }
             }
-          }
-        });
+          });
+        }
       }
     } finally {
       this.connectionPool.release(redis);
@@ -339,41 +343,48 @@ export class BatchOperationService {
           const results = await pipeline.exec();
 
           // 处理结果，更新任务状态并移动到等待队列
-          for (let j = 0; j < results.length; j++) {
-            const result = results[j];
-            const globalIndex = i + j;
+          if (results) {
+            for (let j = 0; j < results.length; j++) {
+              const result = results[j];
+              const globalIndex = i + j;
 
-            if (!result[0] && result[1]) {
-              // 成功获取任务数据
-              try {
-                const job = JSON.parse(result[1] as string);
+              if (result && !result[0] && result[1]) {
+                // 成功获取任务数据
+                try {
+                  const job = JSON.parse(result[1] as string);
 
-                if (options.resetAttempts) {
-                  job.attemptsMade = 0;
-                  delete job.failedAt;
-                  delete job.failedReason;
+                  if (options.resetAttempts) {
+                    job.attemptsMade = 0;
+                    delete job.failedAt;
+                    delete job.failedReason;
+                  }
+
+                  // 重新添加到等待队列
+                  const score = this.getScore(job.opts.priority!, job.createdAt);
+                  const currentJobId = jobIds[globalIndex] || 'unknown';
+
+                  // 注意：这里需要重新创建pipeline，因为之前的pipeline已经执行了
+                  const newPipeline = redis.pipeline();
+                  newPipeline.zadd(`${queueName}:waiting`, score, currentJobId);
+                  newPipeline.hset(`${queueName}:jobs`, currentJobId, JSON.stringify(job));
+                  await newPipeline.exec();
+
+                } catch (parseError) {
+                  failed.push({
+                    index: globalIndex,
+                    error: `Parse error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+                    data: { jobId: jobIds[globalIndex] || 'unknown' }
+                  });
                 }
-
-                // 重新添加到等待队列
-                const score = this.getScore(job.opts.priority!, job.createdAt);
-                pipeline.zadd(`${queueName}:waiting`, score, jobId);
-                pipeline.hset(`${queueName}:jobs`, jobId, JSON.stringify(job));
-
-              } catch (parseError) {
+              } else if (result) {
                 failed.push({
                   index: globalIndex,
-                  error: `Parse error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
-                  data: { jobId: batch[j].id }
+                  error: `Operation failed: ${result[0] as Error}`,
+                  data: { jobId: jobIds[globalIndex] || 'unknown' }
                 });
               }
-            } else {
-              failed.push({
-                index: globalIndex,
-                error: `Operation failed: ${result[0]}`,
-                data: { jobId: batch[j].id }
-              });
-            }
           }
+        }
         }
       } finally {
         this.connectionPool.release(redis);
@@ -416,17 +427,26 @@ export class BatchOperationService {
       const results = await pipeline.exec();
       const stats: Record<string, any> = {};
 
-      for (let i = 0; i < queueNames.length; i++) {
-        const queueName = queueNames[i];
-        const baseIndex = i * 5;
+      if (results) {
+        for (let i = 0; i < queueNames.length; i++) {
+          const queueName = queueNames[i];
+          if (!queueName) continue; // Skip undefined queue names
+          const baseIndex = i * 5;
 
-        stats[queueName] = {
-          waiting: results[baseIndex][1] as number,
-          active: results[baseIndex + 1][1] as number,
-          completed: results[baseIndex + 2][1] as number,
-          failed: results[baseIndex + 3][1] as number,
-          delayed: results[baseIndex + 4][1] as number
-        };
+          const waitingResult = results[baseIndex];
+          const activeResult = results[baseIndex + 1];
+          const completedResult = results[baseIndex + 2];
+          const failedResult = results[baseIndex + 3];
+          const delayedResult = results[baseIndex + 4];
+
+          stats[queueName] = {
+            waiting: waitingResult && !waitingResult[0] ? (waitingResult[1] as number) : 0,
+            active: activeResult && !activeResult[0] ? (activeResult[1] as number) : 0,
+            completed: completedResult && !completedResult[0] ? (completedResult[1] as number) : 0,
+            failed: failedResult && !failedResult[0] ? (failedResult[1] as number) : 0,
+            delayed: delayedResult && !delayedResult[0] ? (delayedResult[1] as number) : 0
+          } as any;
+        }
       }
 
       return stats;
@@ -472,7 +492,7 @@ export class BatchOperationService {
         }
 
         const results = await pipeline.exec();
-        const batchRemoved = results.filter(r => r[1] === 1).length;
+        const batchRemoved = results ? results.filter(r => r[1] === 1).length : 0;
         totalRemoved += batchRemoved;
 
         logger.debug(`BatchOperationService: Cleaned ${batchRemoved} completed jobs from queue ${queueName}`);

@@ -286,7 +286,7 @@ export class DatabaseQueryOptimizer {
     suggestions: string[];
   } {
     const suggestions: string[] = [];
-    let optimized = sql;
+    const optimized = sql;
 
     // 优化1: 添加LIMIT子句
     if (!sql.match(/LIMIT\s+\d+/i)) {

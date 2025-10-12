@@ -109,7 +109,7 @@ export default function AnalyticsPanel() {
       const data = await getProvinceHeatmap({
         start: startIso,
         end: endIso,
-        agentId: target.agentId === 'all' ? undefined : target.agentId,
+        ...(target.agentId !== 'all' && { agentId: target.agentId }),
       });
       setDataset(data);
     } catch (err: any) {

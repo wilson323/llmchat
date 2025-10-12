@@ -31,8 +31,8 @@ import {
 
 export class QueueManager extends EventEmitter {
   private static instance: QueueManager | null = null;
-  private redis: Redis;
-  private subscriber: Redis;
+  private redis!: Redis;
+  private subscriber!: Redis;
   private config: QueueManagerConfig;
   private queues: Map<string, QueueConfig> = new Map();
   private processors: Map<string, QueueProcessor> = new Map();
@@ -43,14 +43,14 @@ export class QueueManager extends EventEmitter {
   private isShuttingDown = false;
 
   // 连接池
-  private connectionPool: RedisConnectionPool;
+  private connectionPool!: RedisConnectionPool;
   private connectionPoolStatsInterval?: NodeJS.Timeout;
 
   // 批量操作服务
-  private batchOperationService: BatchOperationService;
+  private batchOperationService!: BatchOperationService;
 
   // 内存优化服务
-  private memoryOptimizationService: MemoryOptimizationService;
+  private memoryOptimizationService!: MemoryOptimizationService;
   private memoryMonitoringEnabled: boolean;
 
   private constructor(config: QueueManagerConfig) {
@@ -61,7 +61,7 @@ export class QueueManager extends EventEmitter {
     this.connectionPool = new RedisConnectionPool({
       host: config.redis.host,
       port: config.redis.port,
-      password: config.redis.password,
+      ...(config.redis.password && { password: config.redis.password }),
       db: config.redis.db || 0,
       keyPrefix: config.redis.keyPrefix || 'queue:',
       maxConnections: 20,
@@ -80,7 +80,7 @@ export class QueueManager extends EventEmitter {
     this.subscriber = new Redis({
       host: config.redis.host,
       port: config.redis.port,
-      password: config.redis.password,
+      ...(config.redis.password && { password: config.redis.password }),
       db: config.redis.db || 0,
       keyPrefix: config.redis.keyPrefix || 'queue:',
       enableReadyCheck: false,
@@ -279,6 +279,7 @@ export class QueueManager extends EventEmitter {
       throughput: 0,
       avgProcessingTime: 0,
       errorRate: 0,
+      lastProcessedAt: undefined,
       createdAt: new Date()
     });
 
@@ -310,9 +311,9 @@ export class QueueManager extends EventEmitter {
         attempts: options.attempts || queue.maxRetries,
         removeOnComplete: options.removeOnComplete ?? true,
         removeOnFail: options.removeOnFail ?? true,
-        backoff: options.backoff || { strategy: BackoffStrategy.EXPONENTIAL, delay: queue.retryDelay },
+        backoff: (options.backoff as any)?.strategy || BackoffStrategy.EXPONENTIAL,
         metadata: options.metadata || {},
-        deadLetterQueue: options.deadLetterQueue || queue.deadLetterQueue
+        deadLetterQueue: options.deadLetterQueue || queue.deadLetterQueue || ''
       },
       createdAt: new Date(),
       attemptsMade: 0
@@ -327,7 +328,7 @@ export class QueueManager extends EventEmitter {
       maxAttempts: job.opts.attempts!,
       delay: job.opts.delay!,
       createdAt: job.createdAt,
-      metadata: job.opts.metadata
+      metadata: job.opts.metadata || {}
     };
 
     // 使用连接池存储任务数据
@@ -612,11 +613,19 @@ export class QueueManager extends EventEmitter {
     total: number;
     duration: number;
   }> {
-    const batchOperations = jobs.map(job => ({
-      type: job.type,
-      data: job.data,
-      options: job.options
-    }));
+    const batchOperations = jobs.map(job => {
+      const operation: any = {
+        type: job.type,
+        data: job.data
+      };
+
+      // 只有当options存在时才添加该属性
+      if (job.options !== undefined) {
+        operation.options = job.options;
+      }
+
+      return operation;
+    });
 
     const result = await this.batchOperationService.batchAddJobs(queueName, batchOperations);
 
@@ -884,6 +893,11 @@ export class QueueManager extends EventEmitter {
 
       const jobId = jobIds[0];
 
+      // 验证jobId存在性
+      if (!jobId) {
+        return;
+      }
+
       // 原子性地移动任务到活动队列
       const removeResult = await redis.zrem(`${queueName}:waiting`, jobId);
       if (removeResult === 0) {
@@ -958,7 +972,7 @@ export class QueueManager extends EventEmitter {
       try {
         job.finishedOn = new Date();
         job.returnvalue = result;
-        await redis.hset(`${queueName}:jobs`, jobId, JSON.stringify(job));
+        await redis.hset(`${queueName}:jobs`, job.id, JSON.stringify(job));
 
         // 移动到完成队列
         await redis.zrem(`${queueName}:active`, job.id);
@@ -1376,7 +1390,10 @@ export class QueueManager extends EventEmitter {
     }
 
     try {
-      const reason = options.reason || 'manual';
+      const reason: 'manual' | 'scheduled' | 'emergency' | 'preventive' =
+        (options.reason === 'scheduled' || options.reason === 'emergency' || options.reason === 'preventive')
+          ? options.reason
+          : 'manual';
       const report = await this.memoryOptimizationService.performOptimization(reason, {
         aggressive: options.aggressive ?? false,
         force: false
@@ -1405,7 +1422,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 获取内存监控状态
    */
-  public getMemoryStatus(): {
+  public async getMemoryStatus(): Promise<{
     enabled: boolean;
     current?: {
       heapUsed: number;
@@ -1426,26 +1443,28 @@ export class QueueManager extends EventEmitter {
       issues: string[];
     };
     recommendations?: string[];
-  } {
+  }> {
     if (!this.memoryOptimizationService) {
       return {
         enabled: false
       };
     }
 
-    const memoryReport = this.memoryOptimizationService.getMemoryReport();
-    const serviceStats = this.memoryOptimizationService.getServiceStats();
-    const healthCheck = this.memoryOptimizationService.healthCheck();
+    const memoryReport = await this.memoryOptimizationService.getMemoryReport();
+    const serviceStats = await this.memoryOptimizationService.getServiceStats();
+    const healthCheck = await this.memoryOptimizationService.healthCheck();
 
     return {
       enabled: true,
-      current: memoryReport.current ? {
-        heapUsed: memoryReport.current.heapUsed,
-        heapTotal: memoryReport.current.heapTotal,
-        heapUsedPercentage: memoryReport.current.heapUsedPercentage,
-        rssMB: memoryReport.current.rssMB,
-        timestamp: memoryReport.current.timestamp
-      } : undefined,
+      ...(memoryReport.current && {
+        current: {
+          heapUsed: memoryReport.current.heapUsed,
+          heapTotal: memoryReport.current.heapTotal,
+          heapUsedPercentage: memoryReport.current.heapUsedPercentage,
+          rssMB: memoryReport.current.rssMB,
+          timestamp: memoryReport.current.timestamp
+        }
+      }),
       optimization: {
         totalOptimizations: serviceStats.totalOptimizations,
         successfulOptimizations: serviceStats.successfulOptimizations,
@@ -1589,58 +1608,7 @@ export class QueueManager extends EventEmitter {
     }
   }
 
-  /**
-   * 暂停队列
-   */
-  public async pauseQueue(queueName: string): Promise<boolean> {
-    try {
-      const queueConfig = this.queues.get(queueName);
-      if (!queueConfig) {
-        throw new Error(`Queue ${queueName} not found`);
-      }
-
-      queueConfig.paused = true;
-      this.queues.set(queueName, queueConfig);
-
-      // 停止处理器
-      const workers = this.workers.get(queueName);
-      if (workers) {
-        workers.forEach(worker => clearTimeout(worker));
-        this.workers.set(queueName, []);
-      }
-
-      logger.info(`QueueManager: Queue ${queueName} paused`);
-      return true;
-    } catch (error) {
-      logger.error(`QueueManager: Failed to pause queue ${queueName}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * 恢复队列
-   */
-  public async resumeQueue(queueName: string): Promise<boolean> {
-    try {
-      const queueConfig = this.queues.get(queueName);
-      if (!queueConfig) {
-        throw new Error(`Queue ${queueName} not found`);
-      }
-
-      queueConfig.paused = false;
-      this.queues.set(queueName, queueConfig);
-
-      // 重启处理器
-      await this.startQueueProcessor(queueName);
-
-      logger.info(`QueueManager: Queue ${queueName} resumed`);
-      return true;
-    } catch (error) {
-      logger.error(`QueueManager: Failed to resume queue ${queueName}:`, error);
-      return false;
-    }
-  }
-
+  
   /**
    * 清空队列
    */

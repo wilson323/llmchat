@@ -289,7 +289,7 @@ export class StructuredLogger {
    */
   public logRequestStart(req: Request): void {
     // 类型安全的请求扩展接口
-    interface EnhancedRequest extends Request {
+    interface EnhancedRequest {
       requestId?: string;
       user?: { id: string };
     }
@@ -329,7 +329,7 @@ export class StructuredLogger {
    */
   public logRequestComplete(req: Request, statusCode: number, duration: number): void {
     // 类型安全的请求扩展接口
-    interface EnhancedRequest extends Request {
+    interface EnhancedRequest {
       requestId?: string;
       user?: { id: string };
     }
@@ -360,7 +360,7 @@ export class StructuredLogger {
    */
   public logApiError(error: Error, req?: Request, context?: LogContext): void {
     // 类型安全的请求扩展接口
-    interface EnhancedRequest extends Request {
+    interface EnhancedRequest {
       requestId?: string;
       user?: { id: string };
     }

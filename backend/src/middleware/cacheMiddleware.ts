@@ -6,15 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
-import { RedisCacheManager } from '@/services/RedisCacheManager';
-
-// 缓存策略枚举（本地定义，避免循环依赖）
-export enum CacheStrategy {
-  LAZY_LOADING = 'lazy_loading',
-  WRITE_THROUGH = 'write_through',
-  WRITE_BEHIND = 'write_behind',
-  REFRESH_AHEAD = 'refresh_ahead',
-}
+import { RedisCacheManager, CacheStrategy } from '@/services/RedisCacheManager';
 
 // 缓存中间件配置接口
 export interface CacheMiddlewareConfig {
@@ -93,7 +85,7 @@ class CacheMiddlewareManager {
    */
   private getDefaultConfig(): CacheMiddlewareConfig {
     return {
-      strategy: CacheStrategy.LAZY_LOADING,
+      strategy: CacheStrategy.CACHE_ASIDE,
       defaultTtl: 300, // 5分钟
       cacheSuccess: true,
       cacheErrors: false,
@@ -239,11 +231,13 @@ class CacheMiddlewareManager {
    */
   private calculateTtl(req: Request, res: Response): number {
     // 检查响应头中的缓存控制
-    const cacheControl = res.get('Cache-Control') || '';
-    const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+    const cacheControl = res.get('Cache-Control');
 
-    if (maxAgeMatch) {
-      return parseInt(maxAgeMatch[1], 10);
+    if (cacheControl) {
+      const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+      if (maxAgeMatch && maxAgeMatch[1]) {
+        return parseInt(maxAgeMatch[1], 10);
+      }
     }
 
     // 检查Expires头
@@ -335,7 +329,20 @@ class CacheMiddlewareManager {
     });
 
     // 尝试从缓存获取
-    this.cacheManager.get(cacheKey, { tags, strategy: this.config.strategy })
+    const cacheOptions: {
+      tags?: string[];
+      strategy?: CacheStrategy;
+    } = {};
+
+    if (tags) {
+      cacheOptions.tags = tags;
+    }
+
+    if (this.config.strategy) {
+      cacheOptions.strategy = this.config.strategy;
+    }
+
+    this.cacheManager.get(cacheKey, cacheOptions)
       .then(cachedData => {
         if (cachedData !== null) {
           // 缓存命中
@@ -353,7 +360,7 @@ class CacheMiddlewareManager {
           res.set('X-Cache-Key', cacheKey);
 
           // 反序列化并发送响应
-          const responseData = this.deserializeResponse(cachedData);
+          const responseData = this.deserializeResponse(cachedData as string);
           if (responseData) {
             res.json(responseData);
           } else {
@@ -386,6 +393,7 @@ class CacheMiddlewareManager {
   ): void {
     const originalJson = res.json;
     const originalEnd = res.end;
+    const self = this;
 
     // 拦截json方法
     res.json = (data: any) => {
@@ -400,21 +408,31 @@ class CacheMiddlewareManager {
       const responseTime = endTime - startTime;
 
       // 检查是否应该缓存响应
-      if (cacheMiddlewareManager.shouldCacheRequest(req, res)) {
-        const responseData = cacheMiddlewareManager.serializeResponse(res);
+      if (self.shouldCacheRequest(req, res)) {
+        const responseData = self.serializeResponse(res);
         if (responseData) {
-          const ttl = cacheMiddlewareManager.calculateTtl(req, res);
-          const shouldCompress = responseData.length > (cacheMiddlewareManager.config.compressThreshold || 1024);
+          const ttl = self.calculateTtl(req, res);
+          const shouldCompress = responseData.length > (self.config.compressThreshold || 1024);
 
-          cacheManager.set(cacheKey, responseData, {
+          const cacheOptions: {
+            ttl: number;
+            tags: string[];
+            strategy?: CacheStrategy;
+            compress: boolean;
+          } = {
             ttl,
             tags,
-            strategy: cacheMiddlewareManager.config.strategy,
             compress: shouldCompress,
-          })
-          .then(success => {
+          };
+
+          if (self.config.strategy) {
+            cacheOptions.strategy = self.config.strategy;
+          }
+
+          self.cacheManager.set(cacheKey, responseData, cacheOptions)
+          .then((success: boolean) => {
             if (success) {
-              cacheMiddlewareManager.stats.cacheSets++;
+              self.stats.cacheSets++;
               logger.debug('响应已缓存', {
                 cacheKey,
                 ttl,
@@ -423,14 +441,14 @@ class CacheMiddlewareManager {
               });
             }
           })
-          .catch(error => {
+          .catch((error: Error) => {
             logger.warn('缓存响应失败', { cacheKey, error });
           });
         }
       }
 
       // 更新统计
-      cacheMiddlewareManager.updateStats(false, responseTime);
+      self.updateStats(false, responseTime);
 
       // 设置缓存头
       res.set('X-Cache', 'MISS');
@@ -438,12 +456,8 @@ class CacheMiddlewareManager {
       res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
 
       // 调用原始end方法
-      if (args.length >= 1) {
-        return originalEnd.call(this, args[0], args[1], args[2]);
-      } else {
-        return originalEnd.call(this);
-      }
-    }.bind(cacheMiddlewareManager);
+      return originalEnd.apply(res, args as any);
+    };
 
     next();
   }

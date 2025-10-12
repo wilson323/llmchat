@@ -86,7 +86,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
         sortOrder,
         filter: {
           ...filters,
-          search: searchQuery || undefined,
+          ...(searchQuery && { search: searchQuery }),
         },
       };
 
@@ -105,11 +105,11 @@ export function SessionManagement({ className }: SessionManagementProps) {
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const statsData = await getSessionStats({
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
-        agentId: filters.agentId,
-      });
+      const statsParams: { dateFrom?: string; dateTo?: string; agentId?: string } = {};
+      if (filters.dateFrom) statsParams.dateFrom = filters.dateFrom;
+      if (filters.dateTo) statsParams.dateTo = filters.dateTo;
+      if (filters.agentId) statsParams.agentId = filters.agentId;
+      const statsData = await getSessionStats(statsParams);
       setStats(statsData);
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -292,7 +292,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
       const params: SessionListParams = {
         filter: {
           ...filters,
-          search: searchQuery || undefined,
+          ...(searchQuery && { search: searchQuery }),
         },
         sortBy,
         sortOrder,

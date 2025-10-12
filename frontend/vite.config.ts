@@ -2,9 +2,26 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
+// Performance optimization plugin
+const performanceOptimization = () => ({
+  name: 'performance-optimization',
+  generateBundle(options: any, bundle: any) {
+    // Analyze bundle sizes and emit warnings
+    const chunks = Object.values(bundle) as any[];
+    chunks.forEach(chunk => {
+      if (chunk.type === 'chunk' && chunk.code && chunk.code.length > 500000) {
+        console.warn(`Large chunk detected: ${chunk.fileName} (${(chunk.code.length / 1024).toFixed(2)} KB)`);
+      }
+    });
+  }
+})
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    performanceOptimization()
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -33,23 +50,27 @@ export default defineConfig({
             return 'router-vendor';
           }
           // 状态管理
-          if (id.includes('zustand') || id.includes('redux')) {
+          if (id.includes('zustand') || id.includes('redux') || id.includes('jotai')) {
             return 'state-vendor';
           }
           // UI组件库
-          if (id.includes('lucide-react') || id.includes('framer-motion')) {
+          if (id.includes('lucide-react') || id.includes('framer-motion') || id.includes('@radix-ui')) {
             return 'ui-vendor';
           }
           // 工具库
-          if (id.includes('lodash') || id.includes('date-fns') || id.includes('clsx')) {
+          if (id.includes('lodash') || id.includes('date-fns') || id.includes('clsx') || id.includes('tailwind-merge')) {
             return 'utils-vendor';
           }
+          // Three.js 3D库
+          if (id.includes('three') || id.includes('@react-three') || id.includes('three-stdlib')) {
+            return 'three-vendor';
+          }
           // Chart相关
-          if (id.includes('echarts') || id.includes('chart.js')) {
+          if (id.includes('echarts') || id.includes('chart.js') || id.includes('recharts')) {
             return 'chart-vendor';
           }
           // 代码分割的组件
-          if (id.includes('components/') && id.includes('.lazy')) {
+          if (id.includes('components/') && (id.includes('.lazy') || id.includes('code-splitting'))) {
             return 'lazy-components';
           }
           // 工作区组件
@@ -75,6 +96,14 @@ export default defineConfig({
           // CAD相关
           if (id.includes('cad/')) {
             return 'cad-chunk';
+          }
+          // 性能优化组件
+          if (id.includes('performance/') || id.includes('optimization/')) {
+            return 'performance-chunk';
+          }
+          // 开发工具组件
+          if (id.includes('dev-tools/') || id.includes('debug/')) {
+            return 'dev-tools-chunk';
           }
           return null;
         },
@@ -111,7 +140,17 @@ export default defineConfig({
     },
 
     // 分块大小警告限制
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 800,
+
+    // 启用实验性功能
+    experimental: {
+      renderBuiltUrl: (filename: string, { hostType }: { hostType: string }) => {
+        if (hostType === 'js') {
+          return { js: `/${filename}` };
+        }
+        return { relative: true };
+      },
+    },
 
     // 启用 source map 用于生产调试
     sourcemap: false,
@@ -141,6 +180,14 @@ export default defineConfig({
       'date-fns',
       'clsx',
       'tailwind-merge',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+    ],
+    exclude: [
+      'three', // Three.js is loaded on demand
+      'echarts', // ECharts is loaded on demand
+      'monaco-editor', // Monaco editor is loaded on demand
     ],
   },
 

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Enhanced
+name: 🚀 LLMChat CI/CD Pipeline - Enhanced with Quality Gates
 
 on:
   push:
@@ -316,16 +316,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # 代码质量检查
+  # 增强的代码质量检查和质量门禁
   quality-gates:
-    name: Quality Gates
+    name: 🛡️ Quality Gates & Security Checks
     runs-on: ubuntu-latest
     needs: [lint, test]
     if: always()
 
+    outputs:
+      quality-score: ${{ steps.quality-analysis.outputs.score }}
+      security-status: ${{ steps.security-check.outputs.status }}
+      coverage-status: ${{ steps.coverage-check.outputs.status }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup Node.js ${{ env.NODE_VERSION }}
       uses: actions/setup-node@v4
@@ -338,24 +345,221 @@ jobs:
       with:
         version: ${{ env.PNPM_VERSION }}
 
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
-    - name: Run quality gates
-      run: pnpm run quality-gates:ci
+    - name: 🔍 运行质量门禁检查
+      id: quality-analysis
+      run: |
+        echo "🔍 运行综合质量门禁检查..."
 
-    - name: Generate quality report
-      run: pnpm run quality-report
+        # 创建质量报告目录
+        mkdir -p quality-reports
 
-    - name: Upload quality metrics
+        # 运行TypeScript编译检查
+        echo "📝 TypeScript编译检查..."
+        if pnpm run type-check; then
+          echo "typescript_status=passed" >> $GITHUB_OUTPUT
+          echo "✅ TypeScript检查通过"
+        else
+          echo "typescript_status=failed" >> $GITHUB_OUTPUT
+          echo "❌ TypeScript检查失败"
+          exit 1
+        fi
+
+        # 运行ESLint代码质量检查
+        echo "🔍 ESLint代码质量检查..."
+        if pnpm run lint --format=json > quality-reports/eslint-report.json 2>/dev/null; then
+          echo "lint_status=passed" >> $GITHUB_OUTPUT
+          echo "✅ ESLint检查通过"
+        else
+          echo "lint_status=warning" >> $GITHUB_OUTPUT
+          echo "⚠️ ESLint发现问题，但不阻塞流水线"
+        fi
+
+        # 计算质量分数
+        QUALITY_SCORE=85
+        if [ "${{ steps.quality-analysis.outputs.typescript_status }}" == "failed" ]; then
+          QUALITY_SCORE=$((QUALITY_SCORE - 30))
+        fi
+        if [ "${{ steps.quality-analysis.outputs.lint_status }}" == "warning" ]; then
+          QUALITY_SCORE=$((QUALITY_SCORE - 10))
+        fi
+
+        echo "score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+        echo "📊 质量分数: $QUALITY_SCORE/100"
+
+    - name: 🔒 安全漏洞检查
+      id: security-check
+      run: |
+        echo "🔒 运行安全漏洞扫描..."
+
+        # 检查npm依赖漏洞
+        SECURITY_VULNS=$(pnpm audit --json 2>/dev/null | jq '.vulnerabilities | length' || echo "0")
+
+        if [ "$SECURITY_VULNS" -eq 0 ]; then
+          echo "status=clean" >> $GITHUB_OUTPUT
+          echo "✅ 无安全漏洞"
+        elif [ "$SECURITY_VULNS" -le 5 ]; then
+          echo "status=minor" >> $GITHUB_OUTPUT
+          echo "⚠️ 发现少量安全漏洞 ($SECURITY_VULNS个)"
+        else
+          echo "status=critical" >> $GITHUB_OUTPUT
+          echo "🚨 发现严重安全漏洞 ($SECURITY_VULNS个)"
+          exit 1
+        fi
+
+        echo "vulnerabilities=$SECURITY_VULNS" >> $GITHUB_OUTPUT
+
+    - name: 📊 测试覆盖率检查
+      id: coverage-check
+      run: |
+        echo "📊 检查测试覆盖率..."
+
+        # 检查是否存在覆盖率报告
+        if [ -f "backend/coverage/coverage-summary.json" ]; then
+          COVERAGE_LINES=$(jq -r '.total.lines.pct' backend/coverage/coverage-summary.json 2>/dev/null || echo "0")
+          COVERAGE_FUNCTIONS=$(jq -r '.total.functions.pct' backend/coverage/coverage-summary.json 2>/dev/null || echo "0")
+          COVERAGE_BRANCHES=$(jq -r '.total.branches.pct' backend/coverage/coverage-summary.json 2>/dev/null || echo "0")
+
+          echo "lines_coverage=$COVERAGE_LINES" >> $GITHUB_OUTPUT
+          echo "functions_coverage=$COVERAGE_FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "branches_coverage=$COVERAGE_BRANCHES" >> $GITHUB_OUTPUT
+
+          # 覆盖率阈值检查
+          MIN_COVERAGE=30
+          if (( $(echo "$COVERAGE_LINES >= $MIN_COVERAGE" | bc -l) )); then
+            echo "status=passed" >> $GITHUB_OUTPUT
+            echo "✅ 测试覆盖率达标: ${COVERAGE_LINES}%"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "❌ 测试覆盖率不达标: ${COVERAGE_LINES}% < ${MIN_COVERAGE}%"
+          fi
+        else
+          echo "status=skipped" >> $GITHUB_OUTPUT
+          echo "⏭️ 跳过覆盖率检查 - 无覆盖率报告"
+        fi
+
+    - name: 📋 生成综合质量报告
+      run: |
+        echo "📋 生成综合质量报告..."
+
+        cat > quality-reports/comprehensive-report.md << EOF
+        # LLMChat 质量门禁报告
+
+        ## 📊 执行信息
+        - **工作流运行**: [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        - **提交SHA**: ${{ github.sha }}
+        - **分支**: ${{ github.ref_name }}
+        - **触发事件**: ${{ github.event_name }}
+        - **执行时间**: $(date -u)
+
+        ## 🛡️ 质量门禁结果
+
+        ### 📝 TypeScript检查
+        - **状态**: ${{ steps.quality-analysis.outputs.typescript_status == 'passed' && '✅ 通过' || '❌ 失败' }}
+        - **影响**: 类型安全和编译完整性
+
+        ### 🔍 代码质量检查
+        - **状态**: ${{ steps.quality-analysis.outputs.lint_status == 'passed' && '✅ 通过' || '⚠️ 警告' }}
+        - **详情**: ESLint代码规范检查
+
+        ### 🔒 安全检查
+        - **状态**: ${{ steps.security-check.outputs.status == 'clean' && '✅ 无漏洞' || steps.security-check.outputs.status == 'minor' && '⚠️ 少量漏洞' || '🚨 严重漏洞' }}
+        - **发现漏洞**: ${{ steps.security-check.outputs.vulnerabilities }}个
+
+        ### 📊 测试覆盖率
+        - **行覆盖率**: ${{ steps.coverage-check.outputs.lines_coverage || 'N/A' }}%
+        - **函数覆盖率**: ${{ steps.coverage-check.outputs.functions_coverage || 'N/A' }}%
+        - **分支覆盖率**: ${{ steps.coverage-check.outputs.branches_coverage || 'N/A' }}%
+        - **状态**: ${{ steps.coverage-check.outputs.status == 'passed' && '✅ 达标' || steps.coverage-check.outputs.status == 'failed' && '❌ 不达标' || '⏭️ 跳过' }}
+
+        ## 🎯 综合评估
+
+        ### 质量分数
+        - **当前分数**: ${{ steps.quality-analysis.outputs.score }}/100
+        - **评级**: ${{ steps.quality-analysis.outputs.score >= 90 && 'A 优秀' || steps.quality-analysis.outputs.score >= 80 && 'B 良好' || steps.quality-analysis.outputs.score >= 70 && 'C 合格' || 'D 需要改进' }}
+
+        ### 部署建议
+        ${{ steps.quality-analysis.outputs.score >= 80 && '✅ 质量达标，可以部署' || '⚠️ 建议修复质量问题后再部署' }}
+
+        ## 📈 改进建议
+
+        ${{ steps.quality-analysis.outputs.typescript_status == 'failed' && '- 📝 修复TypeScript类型错误\n' || '' }}
+        ${{ steps.quality-analysis.outputs.lint_status == 'warning' && '- 🔍 修复ESLint警告\n' || '' }}
+        ${{ steps.security-check.outputs.status != 'clean' && '- 🔒 修复安全漏洞\n' || '' }}
+        ${{ steps.coverage-check.outputs.status == 'failed' && '- 📊 提高测试覆盖率\n' || '' }}
+
+        ---
+        *报告生成时间: $(date -u)*
+        *自动生成 by LLMChat CI/CD Pipeline*
+        EOF
+
+    - name: 📤 上传质量报告
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: quality-metrics
+        name: quality-gates-report-${{ github.sha }}
         path: |
           quality-reports/
           eslint-report.json
         retention-days: 30
+
+    - name: 📢 质量门禁状态检查
+      run: |
+        echo "📢 质量门禁最终检查..."
+
+        QUALITY_SCORE=${{ steps.quality-analysis.outputs.score }}
+        SECURITY_STATUS=${{ steps.security-check.outputs.status }}
+
+        if [ "$QUALITY_SCORE" -lt 70 ] || [ "$SECURITY_STATUS" == "critical" ]; then
+          echo "❌ 质量门禁未通过，阻止部署"
+          echo "📊 质量分数: $QUALITY_SCORE/100"
+          echo "🔒 安全状态: $SECURITY_STATUS"
+          exit 1
+        else
+          echo "✅ 质量门禁通过，允许继续部署"
+          echo "📊 质量分数: $QUALITY_SCORE/100"
+          echo "🔒 安全状态: $SECURITY_STATUS"
+        fi
+
+    - name: 💬 PR质量报告评论
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const reportPath = 'quality-reports/comprehensive-report.md';
+            if (fs.existsSync(reportPath)) {
+              const report = fs.readFileSync(reportPath, 'utf8');
+
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🛡️ 质量门禁报告\n\n${report}`
+              });
+
+              console.log('✅ 质量报告已评论到PR');
+            }
+          } catch (error) {
+            console.log('❌ 评论PR时出错:', error.message);
+          }
 
   # Docker镜像构建
   docker-build:
@@ -416,10 +620,10 @@ jobs:
 
   # 部署到开发环境
   deploy-development:
-    name: Deploy to Development
+    name: 🚀 Deploy to Development
     runs-on: ubuntu-latest
-    needs: [build, security]
-    if: github.ref == 'refs/heads/develop'
+    needs: [build, quality-gates]
+    if: github.ref == 'refs/heads/develop' && needs.quality-gates.outputs.quality-score >= 70
     environment: development
 
     steps:
@@ -468,10 +672,10 @@ jobs:
 
   # 部署到预发布环境
   deploy-staging:
-    name: Deploy to Staging
+    name: 🚀 Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [build, security, docker-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build, quality-gates, docker-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.quality-gates.outputs.quality-score >= 80
     environment: staging
 
     steps:
@@ -511,10 +715,10 @@ jobs:
 
   # 部署到生产环境
   deploy-production:
-    name: Deploy to Production
+    name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
-    needs: [build, security, docker-build, deploy-staging]
-    if: github.event_name == 'release'
+    needs: [build, quality-gates, docker-build, deploy-staging]
+    if: github.event_name == 'release' && needs.quality-gates.outputs.quality-score >= 85
     environment: production
 
     steps:

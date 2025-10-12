@@ -52,7 +52,7 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({ hasError: false } as State);
   };
 
   public render() {
@@ -65,7 +65,7 @@ class ErrorBoundary extends Component<Props, State> {
       // 默认错误UI
       return (
         <ErrorBoundaryUI
-          error={this.state.error}
+          error={this.state.error ?? undefined}
           onReload={this.handleReload}
           onReset={this.handleReset}
         />
@@ -77,15 +77,17 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 // 错误UI组件
+interface ErrorBoundaryUIProps {
+  error: Error | undefined;
+  onReload: () => void;
+  onReset: () => void;
+}
+
 function ErrorBoundaryUI({
   error,
   onReload,
   onReset,
-}: {
-  error?: Error;
-  onReload: () => void;
-  onReset: () => void;
-}) {
+}: ErrorBoundaryUIProps) {
   const { t } = useI18n();
 
   return (

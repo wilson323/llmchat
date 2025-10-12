@@ -1,14 +1,24 @@
 module.exports = {
-  // TypeScript/JavaScript文件的处理
-  '*.{js,jsx,ts,tsx}': [
-    // 自动修复ESLint问题
-    'eslint --fix --max-warnings=0',
-    // 运行ESLint检查（不允许警告）
-    'eslint --max-warnings=0',
-    // 自动格式化Prettier
+  // TypeScript/JavaScript文件的处理 - 严格零容忍模式
+  '*.{ts,tsx}': [
+    // 1. 自动修复ESLint问题
+    'ESLINT_DEV=true eslint --fix --format=compact',
+    // 2. ESLint严格检查 - 0错误0警告
+    'ESLINT_DEV=true eslint --format=compact',
+    // 3. 自动格式化Prettier
     'prettier --write',
-    // 检查Prettier格式
-    'prettier --check'
+    // 4. TypeScript类型检查 - 0错误
+    () => 'cd frontend && pnpm run type-check'
+  ],
+
+  // JavaScript文件处理
+  '*.{js,jsx}': [
+    // 1. 自动修复ESLint问题
+    'eslint --fix --format=compact',
+    // 2. ESLint严格检查 - 0错误0警告
+    'eslint --format=compact',
+    // 3. 自动格式化Prettier
+    'prettier --write'
   ],
 
   // JSON文件处理

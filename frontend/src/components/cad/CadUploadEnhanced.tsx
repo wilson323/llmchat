@@ -87,6 +87,9 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
       }
 
       const file = acceptedFiles[0];
+      if (!file) {
+        return;
+      }
 
       // 验证文件
       const validation = validateFile(file);
@@ -94,7 +97,7 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
         setUploadState({
           status: 'error',
           progress: 0,
-          fileName: file.name,
+          fileName: file?.name || '',
           message: validation.error,
         });
         onUploadError(validation.error!);
