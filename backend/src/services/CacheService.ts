@@ -384,36 +384,34 @@ export class CacheService {
 
   /**
    * 健康检查
+   * 返回缓存服务的健康状态和详细信息
    */
-  async healthCheck(): Promise<{ status: string; details: { stats: CacheStats; redisConnected: boolean } }> {
-    if (!this.client) {
-      return {
-        status: 'down',
-        details: {
-          stats: this.stats,
-          redisConnected: false,
-        },
-      };
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'degraded' | 'down';
+    details: {
+      stats: CacheStats;
+      redisConnected: boolean;
+    };
+  }> {
+    const isConnected = this.isConnected();
+    const canPing = await this.ping();
+
+    let status: 'healthy' | 'degraded' | 'down';
+    if (isConnected && canPing) {
+      status = 'healthy';
+    } else if (isConnected || canPing) {
+      status = 'degraded';
+    } else {
+      status = 'down';
     }
 
-    try {
-      const pong = await this.client.ping();
-      return {
-        status: pong === 'PONG' ? 'healthy' : 'degraded',
-        details: {
-          stats: this.stats,
-          redisConnected: this.connected,
-        },
-      };
-    } catch (error) {
-      return {
-        status: 'down',
-        details: {
-          stats: this.stats,
-          redisConnected: false,
-        },
-      };
-    }
+    return {
+      status,
+      details: {
+        stats: this.getStats(),
+        redisConnected: isConnected,
+      },
+    };
   }
 }
 
