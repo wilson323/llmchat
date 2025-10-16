@@ -53,7 +53,8 @@ export function adminGuard() {
       });
     }
 
-    // 权限检查通过
+    // 权限检查通过，设置管理员验证头
+    req.headers['x-admin-verified'] = 'true';
     return next();
   };
 }

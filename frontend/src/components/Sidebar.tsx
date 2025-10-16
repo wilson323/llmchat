@@ -336,6 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           {sessions.map((session: ChatSession) => (
             <div
               key={session.id}
+              data-testid="session-item"
               className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                 currentSession?.id === session.id
                   ? 'bg-brand/10 text-foreground'
@@ -492,6 +493,7 @@ handleCancelEdit();
             variant="brand"
             size={isMobile ? 'md' : 'lg'}
             radius="lg"
+            data-testid="new-conversation-button"
             className="w-full flex items-center gap-3 font-medium"
           >
             <Plus className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
@@ -510,6 +512,7 @@ handleCancelEdit();
               placeholder={t('搜索对话...')}
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+              data-testid="session-search-input"
               className={`w-full ${isMobile ? 'pl-9 pr-3 py-1.5 text-sm' : 'pl-10 pr-4 py-2'} rounded-xl border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus:border-transparent`}
               aria-label={t('搜索对话')}
             />

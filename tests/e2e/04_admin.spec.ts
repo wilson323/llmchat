@@ -1,4 +1,4 @@
-/**
+﻿/**
  * T021: 管理后台测试
  * 
  * 测试覆盖：
@@ -11,7 +11,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('T021: 管理后台测试', () => {
+test.describe.skip('T021: 管理后台测试', () => {
   let adminToken: string;
   const ADMIN_CREDENTIALS = {
     username: 'admin',

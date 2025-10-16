@@ -97,6 +97,7 @@ export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onTog
         {navigationItems.map((item) => (
           <motion.button
             key={item.id}
+            data-testid={`nav-${item.id}`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             whileHover={{ scale: 1.02 }}
@@ -130,6 +131,7 @@ export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onTog
             variant="ghost"
             size="sm"
             onClick={onLogout}
+            data-testid="logout-button"
             className="justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <LogOut className="w-4 h-4" />

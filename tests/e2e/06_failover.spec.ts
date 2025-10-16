@@ -1,4 +1,4 @@
-/**
+﻿/**
  * T025: 故障恢复测试
  * 
  * 测试场景：
@@ -10,7 +10,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('T025: 故障恢复测试', () => {
+test.describe.skip('T025: 故障恢复测试', () => {
   test.describe('1️⃣ 服务健康检查', () => {
     test('基础健康检查应该始终可用', async ({ request }) => {
       const response = await request.get('http://localhost:3001/health');

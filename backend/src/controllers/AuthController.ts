@@ -215,4 +215,68 @@ export class AuthController { // [L10]
       }); // [L198]
     } // [L199]
   } // [L200]
+
+  /**
+   * 修改密码
+   * 路由: POST /api/auth/change-password
+   * 参数: req.body.currentPassword, req.body.newPassword
+   * 返回: 200 { code:'SUCCESS', message:'密码修改成功', data:null, timestamp }
+   */
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({
+          code: 'VALIDATION_ERROR',
+          message: '当前密码和新密码不能为空',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        res.status(400).json({
+          code: 'WEAK_PASSWORD',
+          message: '新密码长度至少为6个字符',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const authReq = req as AuthenticatedRequest;
+      const userId = authReq.user?.id;
+
+      if (!userId) {
+        res.status(401).json({
+          code: 'AUTHENTICATION_REQUIRED',
+          message: '未认证',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // ✅ 调用AuthServiceV2修改密码（需要实现该方法）
+      await this.authService.changePassword(userId, currentPassword, newPassword);
+
+      res.status(200).json({
+        code: 'SUCCESS',
+        message: '密码修改成功',
+        data: null,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error('修改密码失败', { error });
+      const statusCode = error?.code === 'INVALID_CREDENTIALS' ? 400 : 500;
+      res.status(statusCode).json({
+        code: error?.code ?? 'CHANGE_PASSWORD_ERROR',
+        message: error?.message ?? '密码修改失败',
+        data: null,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 } // [L201]

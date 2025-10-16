@@ -24,4 +24,7 @@ router.post('/refresh', authenticateJWT(), (req, res) => authController.refreshT
 // GET /api/auth/verify - 验证Token
 router.get('/verify', authenticateJWT(), (req, res) => authController.verifyToken(req, res));
 
+// POST /api/auth/change-password - 修改密码
+router.post('/change-password', authenticateJWT(), (req, res) => authController.changePassword(req, res));
+
 export default router;

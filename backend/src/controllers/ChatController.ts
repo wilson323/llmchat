@@ -714,8 +714,14 @@ export class ChatController {
         logger.warn('[ChatController] 记录助手消息失败', { error: typedError.message });
       }
 
-      ApiResponseHandler.sendSuccess(res, { ...response, chatId: sessionId }, {
+      // ✅ 统一响应格式，确保包含content字段
+      ApiResponseHandler.sendSuccess(res, { 
+        content: assistantContent,
+        chatId: sessionId,
+        ...response 
+      }, {
         message: '聊天请求成功',
+        code: 'SUCCESS', // ✅ 使用测试期望的code
       });
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
