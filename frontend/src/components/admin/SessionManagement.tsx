@@ -1,28 +1,47 @@
 'use client';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import { Archive, ArchiveRestore, BarChart3, CheckCircle, CheckSquare, ChevronDown, ChevronUp, Clock, Download, Eye, Filter, MessageSquare, RefreshCw, Search, Square, Tag, Trash2, Users, X } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useResponsive } from '@/hooks/useResponsive';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Search,
-  Filter,
-  Download,
-  Eye,
-  Trash2,
-  Archive,
-  ArchiveRestore,
-  Tag,
-  X,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  MessageSquare,
-  Users,
-  BarChart3,
-  CheckCircle,
-  Clock,
-  CheckSquare,
-  Square,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/i18n';
@@ -40,7 +59,6 @@ import {
   type Session,
   type SessionListParams,
   type SessionFilter,
-  type SessionStats,
 } from '@/services/sessionApi';
 import { SessionDetailModal } from './SessionDetailModal';
 import { BatchTagModal } from './BatchTagModal';
@@ -56,23 +74,23 @@ export function SessionManagement({ className }: SessionManagementProps) {
 
   // 状态管理
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [stats, setStats] = useState<SessionStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [statsLoading, setStatsLoading] = useState<boolean>(false);
+  const [total, setTotal] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showTagModal, setShowTagModal] = useState(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
+  const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [tagOperation, setTagOperation] = useState<'add' | 'remove'>('add');
 
   // 筛选状态
   const [filters, setFilters] = useState<SessionFilter>({});
-  const [sortBy, setSortBy] = useState<SessionListParams['sortBy']>('updatedAt');
+  const [sortBy, setSortBy] = useState<'updatedAt' | 'createdAt' | 'lastMessageAt' | 'messageCount'>('updatedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // 加载会话列表
@@ -82,8 +100,8 @@ export function SessionManagement({ className }: SessionManagementProps) {
       const params: SessionListParams = {
         page,
         pageSize,
-        sortBy,
-        sortOrder,
+        sortBy, // sortBy已有默认值'updatedAt'，不会是undefined
+        sortOrder, // sortOrder已有默认值'desc'，不会是undefined
         filter: {
           ...filters,
           ...(searchQuery && { search: searchQuery }),
@@ -146,7 +164,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
 
   // 选择/取消选择会话
   const toggleSessionSelection = useCallback((sessionId: string) => {
-    setSelectedSessions(prev => {
+    setSelectedSessions((prev: Set<string>) => {
       const newSet = new Set(prev);
       if (newSet.has(sessionId)) {
         newSet.delete(sessionId);
@@ -162,7 +180,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
     if (selectedSessions.size === sessions.length) {
       setSelectedSessions(new Set());
     } else {
-      setSelectedSessions(new Set(sessions.map(s => s.id)));
+      setSelectedSessions(new Set(sessions.map((s: Session) => s.id)));
     }
   }, [selectedSessions.size, sessions]);
 
@@ -294,8 +312,8 @@ export function SessionManagement({ className }: SessionManagementProps) {
           ...filters,
           ...(searchQuery && { search: searchQuery }),
         },
-        sortBy,
-        sortOrder,
+        sortBy, // sortBy已有默认值'updatedAt'，不会是undefined
+        sortOrder, // sortOrder已有默认值'desc'，不会是undefined
       };
 
       const content = await exportSessions({ ...params, format });
@@ -412,8 +430,8 @@ export function SessionManagement({ className }: SessionManagementProps) {
               <Input
                 placeholder={t('搜索会话')}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
                 className="flex-1 pl-10"
               />
             </div>
@@ -550,7 +568,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
             <div className="flex items-center gap-2">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'updatedAt' | 'createdAt' | 'lastMessageAt' | 'messageCount')}
                 className="text-sm border border-border rounded px-2 py-1 bg-background"
               >
                 <option value="updatedAt">{t('按更新时间排序')}</option>
@@ -591,7 +609,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
             </div>
           ) : (
             <AnimatePresence>
-              {sessions.map((session, index) => (
+              {sessions.map((session: Session, index: number) => (
                 <motion.div
                   key={session.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -639,7 +657,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
                           {/* 标签 */}
                           {session.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {session.tags.map((tag, tagIndex) => (
+                              {session.tags.map((tag: string, tagIndex: number) => (
                                 <span
                                   key={tagIndex}
                                   className="inline-flex items-center px-2 py-1 text-xs bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded"
@@ -744,7 +762,7 @@ function SessionFilterPanel({
 }) {
   const { t } = useI18n();
 
-  const updateFilter = (key: keyof SessionFilter, value: any) => {
+  const updateFilter = (key: keyof SessionFilter, value: string | undefined) => {
     onFilterChange({ ...filters, [key]: value });
   };
 

@@ -1,5 +1,18 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {Loader2, Mic, Paperclip, Send, Square, X} from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, Square, Loader2, X } from 'lucide-react';
+;
+;
+;
+;
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 
@@ -22,8 +35,8 @@ export const MessageInput: React.FC<ChatInputProps> = ({
   const [attachments, setAttachments] = useState<ChatAttachmentMetadata[]>([]);
   const [voiceNote, setVoiceNote] = useState<VoiceNoteMetadata | null>(null);
   const [uploading, setUploading] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<number | null>(null);
@@ -47,7 +60,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     setIsRecording(false);
     setRecordingDuration(0);
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      mediaRecorderRef.current.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       mediaRecorderRef.current = null;
     }
   };
@@ -74,10 +87,14 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     }
     if (canSend && !disabled) {
       const content = message.trim() || (voiceNote ? t('[语音消息]') : t('[附件]'));
-      onSendMessage(content, {
-        attachments: attachments.length ? attachments : undefined,
-        voiceNote: voiceNote || undefined,
-      });
+      const options: { attachments?: ChatAttachmentMetadata[], voiceNote?: VoiceNoteMetadata } = {};
+      if (attachments.length > 0) {
+        options.attachments = attachments;
+      }
+      if (voiceNote) {
+        options.voiceNote = voiceNote;
+      }
+      onSendMessage(content, options);
       setMessage('');
       setAttachments([]);
       setVoiceNote(null);
@@ -110,7 +127,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
       const uploads = Array.from(files).slice(0, 5);
       for (const file of uploads) {
         const uploaded = await uploadAttachment(file, { source: 'upload' });
-        setAttachments((prev) => [...prev, uploaded]);
+        setAttachments((prev: ChatAttachmentMetadata[]) => [...prev, uploaded]);
       }
       toast({ type: 'success', title: t('附件上传成功') });
     } catch (error) {
@@ -148,7 +165,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       recordedChunksRef.current = [];
-      recorder.ondataavailable = (event) => {
+      recorder.ondataavailable = (event: BlobEvent) => {
         if (event.data && event.data.size > 0) {
           recordedChunksRef.current.push(event.data);
         }
@@ -183,7 +200,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
       setRecordingDuration(0);
       mediaRecorderRef.current = recorder;
       recordingTimerRef.current = window.setInterval(() => {
-        setRecordingDuration((prev) => prev + 0.2);
+        setRecordingDuration((prev: number) => prev + 0.2);
       }, 200);
     } catch (error) {
       console.error(t('语音录制失败'), error);
@@ -196,7 +213,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     <div className="bg-background rounded-2xl border border-border/50 shadow-2xl backdrop-blur-md">
       {(attachments.length > 0 || voiceNote) && (
         <div className="px-4 pt-4 flex flex-wrap gap-2">
-          {attachments.map((att) => (
+          {attachments.map((att: ChatAttachmentMetadata) => (
             <div
               key={att.id}
               className="flex items-center gap-2 bg-accent/20 text-sm px-3 py-1 rounded-full max-w-full"
@@ -206,7 +223,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => setAttachments((prev) => prev.filter((item) => item.id !== att.id))}
+                onClick={() => setAttachments((prev: ChatAttachmentMetadata[]) => prev.filter((item: ChatAttachmentMetadata) => item.id !== att.id))}
               >
                 <X className="h-3 w-3" />
               </button>

@@ -1,135 +1,67 @@
-# Dependencies
+# LLMChat Project Git Ignore Configuration
+
+# Privacy Protection - Cursor AI
+.cursor/
+.cursorignore
+
+# Node.js
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-/.claude-flow/
-/.claude/
-# Production builds
-/backend/dist/
-/frontend/dist/
-/shared-types/dist/
-/frontend/.vite/
-*.tsbuildinfo
+pnpm-debug.log*
 
-# Environment variables
+# Build Output
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment Variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
+backend/.env
+frontend/.env
 
-# IDE
-.vscode/
+# Editors and IDEs
+.vscode/*
+!.vscode/extensions.json
 .idea/
 *.swp
-*.swo
-*~
-
-# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
-# Logs
-logs
-*.log
-/backend/log/
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
+# Test Coverage and Reports
 coverage/
-*.lcov
-
-# Test reports and results
-/playwright-report/
-/test-results/
 playwright-report/
 test-results/
+quality-reports/
+reports/
 
-# nyc test coverage
-.nyc_output
+# Logs
+logs/
+*.log
 
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Temporary folders
-tmp/
+# Temporary Files
+*.tmp
+.cache/
 temp/
 
-# YoYo AI version control directory
-.yoyo/
+# Database Files
+*.db
+*.sqlite
 
-dev-debug.log
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-# OS specific
+# TypeScript Cache
+*.tsbuildinfo
 
-# Task files
-# tasks.json
-# tasks/ 
+# Sensitive Config
+config/agents.json
+config/fastgpt-env.env
+
+# Certificates and Keys
+*.pem
+*.key
+*.cert
+*.crt
+
+# Frontend/Backend Specific
+frontend/dist/
+backend/dist/
+tests/e2e/screenshots/

@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useResponsive } from '@/hooks/useResponsive';
 import ReactECharts from 'echarts-for-react';
-import * as echarts from 'echarts';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useI18n } from '@/i18n';
 import type { SessionStats } from '@/services/sessionApi';
@@ -55,12 +54,12 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         left: 'center',
         textStyle: {
           fontSize: 16,
-          fontWeight: 'bold',
+          fontWeight: 'bold' as any,
           color: chartTheme.textStyle.color,
         },
       },
       tooltip: {
-        trigger: 'axis',
+        trigger: 'axis' as const,
         ...chartTheme.tooltip,
       },
       grid: {
@@ -71,7 +70,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         ...chartTheme.grid,
       },
       xAxis: {
-        type: 'category',
+        type: 'category' as const,
         boundaryGap: false,
         data: dates,
         axisLine: {
@@ -84,7 +83,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         },
       },
       yAxis: {
-        type: 'value',
+        type: 'value' as const,
         axisLine: {
           lineStyle: {
             color: chartTheme.grid.borderColor,
@@ -102,7 +101,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
       series: [
         {
           name: t('会话数量'),
-          type: 'line',
+          type: 'line' as const,
           smooth: true,
           symbol: 'circle',
           symbolSize: 6,
@@ -114,16 +113,23 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
             color: '#3b82f6',
           },
           areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              {
-                offset: 0,
-                color: 'rgba(59, 130, 246, 0.3)',
-              },
-              {
-                offset: 1,
-                color: 'rgba(59, 130, 246, 0.05)',
-              },
-            ]),
+            color: {
+              type: 'linear' as const,
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                {
+                  offset: 0,
+                  color: 'rgba(59, 130, 246, 0.3)'
+                },
+                {
+                  offset: 1,
+                  color: 'rgba(59, 130, 246, 0.05)'
+                }
+              ]
+            }
           },
           data: counts,
         },
@@ -143,7 +149,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         left: 'center',
         textStyle: {
           fontSize: 16,
-          fontWeight: 'bold',
+          fontWeight: 'bold' as any,
           color: chartTheme.textStyle.color,
         },
       },
@@ -167,7 +173,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         ...chartTheme.grid,
       },
       xAxis: {
-        type: 'category',
+        type: 'category' as const,
         data: agents,
         axisLine: {
           lineStyle: {
@@ -181,7 +187,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         },
       },
       yAxis: {
-        type: 'value',
+        type: 'value' as const,
         axisLine: {
           lineStyle: {
             color: chartTheme.grid.borderColor,
@@ -199,7 +205,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
       series: [
         {
           name: t('会话数量'),
-          type: 'bar',
+          type: 'bar' as const,
           data: sessionCounts,
           itemStyle: {
             color: '#10b981',
@@ -212,7 +218,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         },
         {
           name: t('消息数量'),
-          type: 'bar',
+          type: 'bar' as const,
           data: messageCounts,
           itemStyle: {
             color: '#f59e0b',
@@ -238,18 +244,18 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         left: 'center',
         textStyle: {
           fontSize: 16,
-          fontWeight: 'bold',
+          fontWeight: 'bold' as any,
           color: chartTheme.textStyle.color,
         },
       },
       tooltip: {
-        trigger: 'item',
+        trigger: 'item' as const,
         ...chartTheme.tooltip,
       },
       series: [
         {
           name: t('标签使用次数'),
-          type: 'pie',
+          type: 'pie' as const,
           radius: ['40%', '70%'],
           center: ['50%', '60%'],
           avoidLabelOverlap: false,
@@ -266,7 +272,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
             label: {
               show: true,
               fontSize: 20,
-              fontWeight: 'bold',
+              fontWeight: 'bold' as any,
               color: chartTheme.textStyle.color,
             },
           },
@@ -352,7 +358,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
       >
         <ReactECharts
-          option={agentChartOption}
+          option={agentChartOption as any}
           style={{ height: '300px' }}
           theme={chartTheme}
           notMerge={true}
@@ -368,7 +374,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
       >
         <ReactECharts
-          option={tagChartOption}
+          option={tagChartOption as any}
           style={{ height: '300px' }}
           theme={chartTheme}
           notMerge={true}

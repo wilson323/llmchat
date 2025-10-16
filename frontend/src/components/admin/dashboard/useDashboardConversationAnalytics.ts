@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';
 import { getConversationSeries, getAgentComparison } from '@/services/analyticsApi';
 import { listAgents } from '@/services/agentsApi';
-import type { ConversationAnalyticsFilters, DashboardConversationAnalytics } from './types';
+import type { ConversationAnalyticsFilters, DashboardConversationAnalytics, ConversationSeriesDataset, AgentComparisonDataset, AgentItem } from './types';
 
 // 工具函数
 const formatDateInputValue = (date: Date): string => {
@@ -39,14 +39,14 @@ const getDefaultConversationFilters = (): ConversationAnalyticsFilters => {
 
 export const useDashboardConversationAnalytics = (): DashboardConversationAnalytics => {
   const { t } = useI18n();
-  const [filters, setFilters] = useState<ConversationAnalyticsFilters>(getDefaultConversationFilters);
-  const [series, setSeries] = useState<any>(null);
+  const [filters, setFilters] = useState(getDefaultConversationFilters());
+  const [series, setSeries] = useState<ConversationSeriesDataset | null>(null);
   const [seriesLoading, setSeriesLoading] = useState(false);
   const [seriesError, setSeriesError] = useState<string | null>(null);
-  const [comparison, setComparison] = useState<any>(null);
+  const [comparison, setComparison] = useState<AgentComparisonDataset | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
-  const [agents, setAgents] = useState<any[]>([]);
+  const [agents, setAgents] = useState<AgentItem[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [agentsError, setAgentsError] = useState<string | null>(null);
 
@@ -68,8 +68,18 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
         agentId: normalizedRange.agentId,
       });
       setSeries(data);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || t('获取对话趋势失败');
+    } catch (err: unknown) {
+      let message = t('获取对话趋势失败');
+      if (err && typeof err === 'object') {
+        if ('response' in err && err.response && typeof err.response === 'object' && 'data' in err.response) {
+          const responseData = err.response.data as { message?: string };
+          message = String(responseData?.message) || message;
+        } else if ('message' in err) {
+          message = String(err.message);
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
       setSeriesError(message);
       toast({ type: 'error', title: message });
     } finally {
@@ -86,8 +96,18 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
         end: normalizedRange.endIso,
       });
       setComparison(data);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || t('获取智能体对比失败');
+    } catch (err: unknown) {
+      let message = t('获取智能体对比失败');
+      if (err && typeof err === 'object') {
+        if ('response' in err && err.response && typeof err.response === 'object' && 'data' in err.response) {
+          const responseData = err.response.data as { message?: string };
+          message = String(responseData?.message) || message;
+        } else if ('message' in err) {
+          message = String(err.message);
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
       setComparisonError(message);
       toast({ type: 'error', title: message });
     } finally {
@@ -101,8 +121,18 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
       setAgentsError(null);
       const data = await listAgents({ includeInactive: true });
       setAgents(data);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || t('获取智能体列表失败');
+    } catch (err: unknown) {
+      let message = t('获取智能体列表失败');
+      if (err && typeof err === 'object') {
+        if ('response' in err && err.response && typeof err.response === 'object' && 'data' in err.response) {
+          const responseData = err.response.data as { message?: string };
+          message = String(responseData?.message) || message;
+        } else if ('message' in err) {
+          message = String(err.message);
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
       setAgentsError(message);
       toast({ type: 'error', title: message });
     } finally {
@@ -111,11 +141,11 @@ export const useDashboardConversationAnalytics = (): DashboardConversationAnalyt
   }, [t]);
 
   const setDateFilter = useCallback((key: 'startDate' | 'endDate', value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev: ConversationAnalyticsFilters) => ({ ...prev, [key]: value }));
   }, []);
 
   const setAgentId = useCallback((agentId: string) => {
-    setFilters(prev => ({ ...prev, agentId }));
+    setFilters((prev: ConversationAnalyticsFilters) => ({ ...prev, agentId }));
   }, []);
 
   const refresh = useCallback(async () => {

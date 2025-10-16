@@ -1,10 +1,13 @@
+;
 import React, { useEffect, useRef, memo, useMemo } from 'react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
 import { VirtualizedMessageList } from './VirtualizedMessageList';
 // 已移除 FastGPTStatusIndicator 导入，方案A最小化：仅去掉该UI块
 // import { FastGPTStatusIndicator } from './FastGPTStatusIndicator';
-import { useChatStore } from '@/store/chatStore';
+// 使用拆分的store架构
+import messageStore from '@/store/messageStore';
+import agentStore from '@/store/agentStore';
 import { useI18n } from '@/i18n';
 import {
   usePerformanceMonitor,
@@ -14,8 +17,8 @@ interface MessageListProps {
   messages: ChatMessage[];
   isStreaming?: boolean;
   // 为了兼容 init 交互，放宽参数类型
-  onInteractiveSelect?: (value: any) => void;
-  onInteractiveFormSubmit?: (values: any) => void;
+  onInteractiveSelect?: (value: string | { origin: 'init'; key?: string; value: string }) => void;
+  onInteractiveFormSubmit?: (values: Record<string, unknown> | { origin: 'init'; values: Record<string, unknown> }) => void;
   onRetryMessage?: (messageId: string) => void;
 }
 
@@ -40,15 +43,16 @@ export const MessageList: React.FC<MessageListProps> = memo(
         <VirtualizedMessageList
           messages={messages}
           isStreaming={isStreaming}
-          onInteractiveSelect={onInteractiveSelect}
-          onInteractiveFormSubmit={onInteractiveFormSubmit}
-          onRetryMessage={onRetryMessage}
+          {...(onInteractiveSelect && { onInteractiveSelect })}
+          {...(onInteractiveFormSubmit && { onInteractiveFormSubmit })}
+          {...(onRetryMessage && { onRetryMessage })}
         />
       );
     }
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const lastMessageRef = useRef<HTMLDivElement>(null);
-    const { currentAgent, streamingStatus } = useChatStore();
+    const scrollRef = useRef(null);
+    const lastMessageRef = useRef<HTMLDivElement | null>(null);
+    const currentAgent = agentStore((state: any) => state.currentAgent);
+    const streamingStatus = messageStore((state: any) => state.streamingStatus);
     const { t } = useI18n();
 
     // 自动滚动到底部
@@ -69,7 +73,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
         >
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="space-y-6">
-            {messages.map((message, index) => {
+            {messages.map((message: any, index: any) => {
               // huihua.md 格式没有 id，使用 index 作为 key
               const isLastMessage = index === messages.length - 1;
               const isAssistantMessage = message.AI !== undefined;
@@ -85,15 +89,13 @@ export const MessageList: React.FC<MessageListProps> = memo(
                     isStreaming={
                       isStreaming && isLastMessage && isAssistantMessage
                     }
-                    currentAgent={currentAgent ?? undefined}
-                    streamingStatus={streamingStatus ?? undefined}
-                    onInteractiveSelect={onInteractiveSelect}
-                    onInteractiveFormSubmit={onInteractiveFormSubmit}
-                    onRetry={
-                      message.id
-                        ? () => onRetryMessage?.(message.id!)
-                        : undefined
-                    }
+                    {...(currentAgent && { currentAgent })}
+                    {...(streamingStatus && { streamingStatus })}
+                    {...(onInteractiveSelect && { onInteractiveSelect })}
+                    {...(onInteractiveFormSubmit && { onInteractiveFormSubmit })}
+                    {...(message.id && onRetryMessage && {
+                      onRetry: () => onRetryMessage(message.id!)
+                    })}
                   />
                   {/* 最后一个消息的占位元素 */}
                   {isLastMessage && (

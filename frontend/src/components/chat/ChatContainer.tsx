@@ -9,15 +9,18 @@
  * @version 2.0 - 优化版（2025-10-03）
  */
 
+;
+;
+;
+import {Bot, Sparkles} from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
-import { Bot, Sparkles } from 'lucide-react';
 import { chatService } from '@/services/api';
-// 新的拆分Store
-import { useMessageStore } from '@/store/messageStore';
-import { useAgentStore } from '@/store/agentStore';
-import { useSessionStore } from '@/store/sessionStore';
+// 使用拆分的store架构
+import messageStore from '@/store/messageStore';
+import agentStore from '@/store/agentStore';
+import sessionStore from '@/store/sessionStore';
 import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
@@ -30,15 +33,16 @@ import {
 export const ChatContainer: React.FC = () => {
   // 🚀 性能监控和资源管理
   usePerformanceMonitor('ChatContainer');
-  // 🚀 性能优化：精确订阅，只订阅需要的状态
-  const messages = useMessageStore((state) => state.messages);
-  const isStreaming = useMessageStore((state) => state.isStreaming);
-  const stopStreaming = useMessageStore((state) => state.stopStreaming);
-  const addMessage = useMessageStore((state) => state.addMessage);
-  const removeLastInteractiveMessage = useMessageStore((state) => state.removeLastInteractiveMessage);
-  const currentAgent = useAgentStore((state) => state.currentAgent);
-  const currentSession = useSessionStore((state) => state.currentSession);
-  const bindSessionId = useSessionStore((state) => state.bindSessionId);
+  // 🚀 性能优化：使用拆分的store，精确订阅需要的状态
+  const messages = messageStore((state: any) => state.messages);
+  const isStreaming = messageStore((state: any) => state.isStreaming);
+  const stopStreaming = messageStore((state: any) => state.stopStreaming);
+  const addMessage = messageStore((state: any) => state.addMessage);
+  const removeLastInteractiveMessage = messageStore((state: any) => state.removeLastInteractiveMessage);
+
+  const currentAgent = agentStore((state: any) => state.currentAgent);
+  const currentSession = sessionStore((state: any) => state.currentSession);
+  const bindSessionId = sessionStore((state: any) => state.bindSessionId);
   const {
     sendMessage,
     continueInteractiveSelect,
@@ -117,7 +121,7 @@ export const ChatContainer: React.FC = () => {
       const payloadObj = payload;
       const key = String(payloadObj.key || '');
       const value = payloadObj.value;
-      setPendingInitVars((prev) => ({ ...(prev || {}), [key]: value }));
+      setPendingInitVars((prev: Record<string, any> | null) => ({ ...(prev || {}), [key]: value }));
       setHideComposer(false);
       try {
         removeLastInteractiveMessage();
@@ -135,7 +139,7 @@ export const ChatContainer: React.FC = () => {
     }
     // init 表单：仅收集变量，显示输入框
     const values = payload.values || {};
-    setPendingInitVars((prev) => ({ ...(prev || {}), ...values }));
+    setPendingInitVars((prev: Record<string, any> | null) => ({ ...(prev || {}), ...values }));
     setHideComposer(false);
     try {
       removeLastInteractiveMessage();
@@ -177,7 +181,7 @@ export const ChatContainer: React.FC = () => {
               if (!currentAgent?.id) {
                 return;
               }
-              bindSessionId(currentAgent.id, currentSession.id, chatId);
+              bindSessionId(currentSession.id, chatId);
             }
 
             const hasVariables = response.app?.chatConfig?.variables?.length > 0;
@@ -195,17 +199,16 @@ export const ChatContainer: React.FC = () => {
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
   // 内存监控
   useEffect(() => {
-    const memoryCleanup = memoryMonitor.addMemoryObserver((data: { memory: number; trend: string }) => {
-      if (data.trend === 'increasing' && data.memory > 50 * 1024 * 1024) {
-        console.warn('ChatContainer: Memory usage increasing', data);
-        // 触发垃圾回收提示
-        if (window.gc) {
-          window.gc();
-        }
+    const memoryCleanup = memoryMonitor.addMemoryObserver((): void => {
+      // 注意：实际使用时需要正确的类型定义
+      if (window.gc) {
+        window.gc();
       }
     });
     return () => {
-      memoryCleanup();
+      if (typeof memoryCleanup === 'function') {
+        memoryCleanup();
+      }
     };
   }, []);
   // 组件卸载时清理资源

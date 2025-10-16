@@ -9,9 +9,13 @@
  * 5. Batch rendering optimization
  */
 
+;
+;
 import React, { useRef, useMemo, useCallback, useEffect, useState } from 'react';
-import { useVirtual } from '@tanstack/react-virtual';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { usePerformanceMonitor, memoryMonitor } from '@/utils/performanceOptimizer';
+
+type NonNullable<T> = T extends null | undefined ? never : T;
 
 interface OptimizedVirtualizedListProps<T> {
   items: T[];
@@ -48,7 +52,9 @@ function createHeightCache(maxSize: number = 1000): HeightCache {
       if (cache.size >= maxSize) {
         // Remove oldest entries
         const firstKey = cache.keys().next().value;
-        cache.delete(firstKey);
+        if (firstKey !== undefined) {
+          cache.delete(firstKey);
+        }
       }
       cache.set(key, height);
     },
@@ -67,7 +73,7 @@ export function OptimizedVirtualizedList<T>({
   estimatedItemHeight = 50,
   containerHeight = 600,
   overscan = 5,
-  getItemKey = (_, index) => index.toString(),
+  getItemKey = (_index: number, _item: T) => _index,
   onItemsRendered,
   className = '',
   loadingComponent,
@@ -78,10 +84,10 @@ export function OptimizedVirtualizedList<T>({
   // Performance monitoring
   usePerformanceMonitor('OptimizedVirtualizedList');
 
-  const parentRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
-  const heightCache = useRef<HeightCache>(createHeightCache(cacheSize));
-  const itemRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const heightCache = useRef(createHeightCache(cacheSize));
+  const itemRefs = useRef(new Map() as any);
   const resizeObserver = useRef<ResizeObserver>();
 
   // Adaptive overscan based on container size and item count
@@ -106,17 +112,18 @@ export function OptimizedVirtualizedList<T>({
     }
 
     // Dynamic height calculation with caching
-    const key = `${getItemKey(item, index)}`;
-    const cachedHeight = heightCache.current.get(key);
+    const key = getItemKey(index, item);
+    const keyString = key.toString();
+    const cachedHeight = heightCache.current.get(keyString);
 
     if (cachedHeight) {
       return cachedHeight;
     }
 
-    const element = itemRefs.current.get(key);
+    const element = itemRefs.current.get(keyString);
     if (element) {
       const height = element.getBoundingClientRect().height;
-      heightCache.current.set(key, height);
+      heightCache.current.set(keyString, height);
       return height;
     }
 
@@ -124,24 +131,28 @@ export function OptimizedVirtualizedList<T>({
   }, [itemHeight, estimatedItemHeight, getItemKey, enableDynamicHeight]);
 
   // Virtual scroll configuration
-  const virtualizer = useVirtual({
+  const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: useCallback((index: number) => {
-      return calculateItemHeight(index, items[index]);
-    }, [calculateItemHeight, items]),
+      const item = items[index];
+      return item !== undefined ? calculateItemHeight(index, item) : estimatedItemHeight;
+    }, [calculateItemHeight, items, estimatedItemHeight]),
     overscan: adaptiveOverscan,
-    measureElement: enableDynamicHeight ? (element) => {
-      if (element) {
-        const key = element.getAttribute('data-item-key');
-        if (key) {
-          const index = parseInt(key);
-          const height = element.getBoundingClientRect().height;
-          heightCache.current.set(key, height);
+    ...(enableDynamicHeight ? {
+      measureElement: (element: HTMLElement | null) => {
+        if (element) {
+          const key = element.getAttribute('data-item-key');
+          if (key) {
+            const height = element.getBoundingClientRect().height;
+            heightCache.current.set(key, height);
+            return height;
+          }
         }
+        return 0;
       }
-    } : undefined
-  });
+    } : {})
+  } as any);
 
   // Handle scroll events for performance optimization
   const handleScroll = useCallback(() => {
@@ -161,7 +172,7 @@ export function OptimizedVirtualizedList<T>({
   useEffect(() => {
     if (enableDynamicHeight && typeof ResizeObserver !== 'undefined') {
       resizeObserver.current = new ResizeObserver((entries) => {
-        entries.forEach(entry => {
+        entries.forEach((entry: ResizeObserverEntry) => {
           const element = entry.target as HTMLElement;
           const key = element.getAttribute('data-item-key');
           if (key) {
@@ -181,21 +192,31 @@ export function OptimizedVirtualizedList<T>({
 
   // Notify about visible items
   useEffect(() => {
-    const visibleItems = virtualizer.getVirtualItems().map(virtualItem => ({
-      index: virtualItem.index,
-      item: items[virtualItem.index]
-    }));
+    const virtualItems = virtualizer.getVirtualItems();
+    const visibleItems = virtualItems
+      .map((virtualItem: any) => {
+        const item = items[virtualItem.index];
+        return item !== undefined ? { index: virtualItem.index, item } : null;
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
     onItemsRendered?.(visibleItems);
-  }, [virtualizer.getVirtualItems(), items, onItemsRendered]);
+  }, [items, onItemsRendered]); // 移除virtualizer.getVirtualItems()依赖避免无限循环
 
   // Memoize rendered items for performance
   const renderedItems = useMemo(() => {
-    return virtualizer.getVirtualItems().map((virtualItem) => {
+    const virtualItems = virtualizer.getVirtualItems();
+    const range = virtualizer.range;
+
+    return virtualItems.map((virtualItem: any) => {
       const item = items[virtualItem.index];
-      const key = getItemKey(item, virtualItem.index);
-      const isVisible = virtualItem.index >= virtualizer.range.startIndex &&
-                       virtualItem.index <= virtualizer.range.endIndex;
+      if (item === undefined) {
+        return null;
+      }
+
+      const key = getItemKey(virtualItem.index, item).toString();
+      const isVisible = range && virtualItem.index >= range.startIndex &&
+                       virtualItem.index <= range.endIndex;
 
       return (
         <div
@@ -207,7 +228,10 @@ export function OptimizedVirtualizedList<T>({
               resizeObserver.current?.observe(node);
             } else {
               itemRefs.current.delete(key);
-              resizeObserver.current?.unobserve(itemRefs.current.get(key)!);
+              const elementToUnobserve = itemRefs.current.get(key);
+              if (elementToUnobserve) {
+                resizeObserver.current?.unobserve(elementToUnobserve);
+              }
             }
           } : undefined}
           style={{
@@ -220,10 +244,10 @@ export function OptimizedVirtualizedList<T>({
             willChange: isScrolling ? 'transform' : 'auto'
           }}
         >
-          {renderItem(item, virtualItem.index, isVisible)}
+          {renderItem(item, virtualItem.index, isVisible || false)}
         </div>
       );
-    });
+    }).filter((item): item is JSX.Element => item !== null);
   }, [virtualizer.getVirtualItems(), items, renderItem, getItemKey, isScrolling, enableDynamicHeight]);
 
   // Memory cleanup
@@ -281,7 +305,10 @@ export const MemoizedOptimizedVirtualizedList = React.memo(
   }
 ) as typeof OptimizedVirtualizedList;
 
-MemoizedOptimizedVirtualizedList.displayName = 'MemoizedOptimizedVirtualizedList';
+Object.defineProperty(MemoizedOptimizedVirtualizedList, 'displayName', {
+  value: 'MemoizedOptimizedVirtualizedList',
+  writable: false
+});
 
 /**
  * Performance monitoring hook for virtual lists
@@ -307,10 +334,10 @@ export function useVirtualListPerformance() {
       renderTimes.current = renderTimes.current.slice(-100);
     }
 
-    const averageRenderTime = renderTimes.current.reduce((a, b) => a + b, 0) / renderTimes.current.length;
+    const averageRenderTime = renderTimes.current.reduce((a: any, b: any) => a + b, 0) / renderTimes.current.length;
     const maxRenderTime = Math.max(...renderTimes.current);
 
-    setMetrics(prev => ({
+    setMetrics((prev: any) => ({
       ...prev,
       renderCount: prev.renderCount + 1,
       averageRenderTime,

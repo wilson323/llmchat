@@ -5,6 +5,9 @@
 import type { ConversationSeriesDataset, AgentComparisonDataset } from '@/services/analyticsApi';
 import type { AgentItem } from '@/services/agentsApi';
 
+// Re-export types for convenience
+export type { ConversationSeriesDataset, AgentComparisonDataset, AgentItem };
+
 export type ConversationAnalyticsFilters = {
   startDate: string;
   endDate: string;

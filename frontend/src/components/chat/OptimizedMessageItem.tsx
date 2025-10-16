@@ -9,14 +9,28 @@
  * 5. Intersection Observer for lazy loading
  */
 
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {Bot, Copy, Loader2, RefreshCw, ThumbsDown, ThumbsUp, User} from 'lucide-react';
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { ChatMessage } from '@/types';
 import { useI18n } from '@/i18n';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent } from '@/components/ui/Card';
+import Avatar from '@/components/ui/Avatar';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Copy, RefreshCw, ThumbsUp, ThumbsDown, User, Bot, Loader2 } from 'lucide-react';
+;
+;
+;
+;
+;
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import {
@@ -39,7 +53,7 @@ const MessageItemPerfMonitor = () => {
   const [renderCount, setRenderCount] = useState(0);
 
   useEffect(() => {
-    setRenderCount(prev => prev + 1);
+    setRenderCount((prev: any) => prev + 1);
   });
 
   return { renderCount };
@@ -60,12 +74,12 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   const { renderCount } = MessageItemPerfMonitor();
 
   const { t } = useI18n();
-  const messageRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef(null);
+  const contentRef = useRef(null);
 
   // Intersection Observer for lazy loading heavy components
   const [isVisible, setIsVisible] = useState(false);
-  const observerRef = useRef<IntersectionObserver>();
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Memoize expensive calculations
   const messageContent = useMemo(() => {
@@ -222,21 +236,22 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
       {/* Avatar */}
       <div className="flex-shrink-0">
         <Avatar className="w-8 h-8">
-          <AvatarFallback className={isUserMessage ? 'bg-primary' : 'bg-secondary'}>
-            {isUserMessage ? (
-              <User className="w-4 h-4" />
-            ) : (
-              <Bot className="w-4 h-4" />
-            )}
-          </AvatarFallback>
-          {currentAgent?.avatar && (
-            <AvatarImage
+          {currentAgent?.avatar ? (
+            <Avatar.Image
               src={currentAgent.avatar}
               alt={currentAgent.name}
               onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
+          ) : (
+            <Avatar.Fallback className={isUserMessage ? 'bg-primary' : 'bg-secondary'}>
+              {isUserMessage ? (
+                <User className="w-4 h-4" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+            </Avatar.Fallback>
           )}
         </Avatar>
       </div>
@@ -248,9 +263,9 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
             {/* Message Header */}
             <div className="flex items-center gap-2 mb-2">
               {isUserMessage ? (
-                <Badge variant="outline">{t('您')}</Badge>
+                <Badge variant="secondary">{t('您')}</Badge>
               ) : (
-                <Badge variant="outline">{currentAgent?.name || t('AI助手')}</Badge>
+                <Badge variant="secondary">{currentAgent?.name || t('AI助手')}</Badge>
               )}
               <span className="text-xs text-muted-foreground">
                 {formattedTime}
@@ -274,7 +289,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
               <div className="mt-3 space-y-2">
                 {message.attachments?.map((attachment, index) => (
                   <Card key={index} className="p-2 bg-card">
-                    <CardContent className="p-2">
+                    <div className="p-2">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
                           <span className="text-xs">{attachment.name.split('.').pop()?.toUpperCase()}</span>
@@ -293,7 +308,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
                           {t('查看')}
                         </Button>
                       </div>
-                    </CardContent>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -303,7 +318,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
             {hasVoiceNote && (
               <div className="mt-3">
                 <Card className="p-2 bg-card">
-                  <CardContent className="p-2">
+                  <div className="p-2">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
                         <span className="text-xs">🎤</span>
@@ -322,7 +337,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
                         {t('播放')}
                       </Button>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               </div>
             )}
@@ -344,9 +359,9 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
                 <React.Suspense fallback={<div className="animate-pulse h-16 bg-muted rounded" />}>
                   <ReasoningTrail
                     steps={message.reasoning!.steps}
-                    totalSteps={message.reasoning!.totalSteps}
+                    {...(message.reasoning!.totalSteps !== undefined && { totalSteps: message.reasoning!.totalSteps })}
                     isStreaming={isStreaming}
-                    finished={message.reasoning!.finished}
+                    {...(message.reasoning!.finished !== undefined && { finished: message.reasoning!.finished })}
                   />
                 </React.Suspense>
               </div>
