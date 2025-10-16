@@ -80,10 +80,10 @@ function HeatmapSummary({ dataset }: { dataset?: ProvinceHeatmapDataset | null }
 }
 
 export default function AnalyticsPanel() {
-  const initialFilters = useMemo<AnalyticsFilters>(() => {
+  const initialFilters = useMemo(() => {
     const now = new Date();
     const day = formatDateInputValue(now);
-    return { startDate: day, endDate: day, agentId: 'all' };
+    return { startDate: day, endDate: day, agentId: 'all' } as AnalyticsFilters;
   }, []);
 
   const [filters, setFilters] = useState<AnalyticsFilters>(initialFilters);
@@ -112,8 +112,18 @@ export default function AnalyticsPanel() {
         ...(target.agentId !== 'all' && { agentId: target.agentId }),
       });
       setDataset(data);
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || '获取数据失败';
+    } catch (err: unknown) {
+      let message = '获取数据失败';
+      if (err && typeof err === 'object') {
+        if ('response' in err && err.response && typeof err.response === 'object' && 'data' in err.response) {
+          const responseData = err.response.data as { message?: string };
+          message = String(responseData?.message) || message;
+        } else if ('message' in err) {
+          message = String(err.message);
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
       setError(message);
       toast.error(message);
     } finally {
@@ -150,7 +160,7 @@ export default function AnalyticsPanel() {
   }, []);
 
   const onStartChange = (value: string) => {
-    setFilters((prev) => {
+    setFilters((prev: AnalyticsFilters) => {
       const next: AnalyticsFilters = { ...prev, startDate: value };
       if (value && prev.endDate && value > prev.endDate) {
         next.endDate = value;
@@ -160,7 +170,7 @@ export default function AnalyticsPanel() {
   };
 
   const onEndChange = (value: string) => {
-    setFilters((prev) => {
+    setFilters((prev: AnalyticsFilters) => {
       const next: AnalyticsFilters = { ...prev, endDate: value };
       if (value && prev.startDate && value < prev.startDate) {
         next.startDate = value;
@@ -188,7 +198,7 @@ export default function AnalyticsPanel() {
                     type="date"
                     value={filters.startDate}
                     max={filters.endDate || undefined}
-                    onChange={(e) => onStartChange(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => onStartChange(e.target.value)}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -197,19 +207,19 @@ export default function AnalyticsPanel() {
                     type="date"
                     value={filters.endDate}
                     min={filters.startDate || undefined}
-                    onChange={(e) => onEndChange(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => onEndChange(e.target.value)}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-gray-700">智能体</label>
                   <select
                     value={filters.agentId}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, agentId: e.target.value }))}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFilters((prev: AnalyticsFilters) => ({ ...prev, agentId: e.target.value }))}
                     className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={loadingAgents}
                   >
                     <option value="all">全部智能体</option>
-                    {agentOptions.map((agent) => (
+                    {agentOptions.map((agent: AgentItem) => (
                       <option key={agent.id} value={agent.id}>
                         {agent.name || agent.id}
                         {agent.status === 'inactive' ? ' · 未激活' : ''}

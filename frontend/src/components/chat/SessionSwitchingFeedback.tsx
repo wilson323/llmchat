@@ -1,6 +1,12 @@
+;
+;
+;
+;
+import {AlertCircle, CheckCircle, Loader2} from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+;
+;
 
 interface SessionSwitchingFeedbackProps {
   isLoading: boolean;
@@ -30,6 +36,7 @@ export const SessionSwitchingFeedback: React.FC<SessionSwitchingFeedbackProps> =
       const timer = setTimeout(() => setShowSuccess(false), duration);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [success, isLoading, duration]);
 
   useEffect(() => {
@@ -38,6 +45,7 @@ export const SessionSwitchingFeedback: React.FC<SessionSwitchingFeedbackProps> =
       const timer = setTimeout(() => setShowError(false), duration);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [error, isLoading, duration]);
 
   return (

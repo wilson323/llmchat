@@ -38,16 +38,18 @@ export function convertFastGPTInteractiveData(
   }
 
   // 否则映射为 userInput 类型
+  const inputForm = [
+    {
+      type: 'input' as const,
+      key: 'userInput',
+      label: prompt,
+      ...(defaultValue !== undefined && { defaultValue }),
+    }
+  ];
+
   const inputParams: InteractiveInputParams = {
     description: description || prompt,
-    inputForm: [
-      {
-        type: 'input',
-        key: 'userInput',
-        label: prompt,
-        defaultValue: defaultValue,
-      },
-    ],
+    inputForm,
   };
 
   return {

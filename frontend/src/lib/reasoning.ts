@@ -1,7 +1,9 @@
+;
 import { ReasoningStepUpdate } from '@/types';
 import type {
   FastGPTReasoningData,
   ParsedReasoningUpdate,
+  JsonValue,
 } from '@/types/dynamic';
 
 const isReasoningData = (value: unknown): value is FastGPTReasoningData => {
@@ -10,7 +12,7 @@ const isReasoningData = (value: unknown): value is FastGPTReasoningData => {
          !Array.isArray(value);
 };
 
-const toJsonValue = (value: unknown): unknown => {
+const toJsonValue = (value: unknown): JsonValue => {
   if (value === null || value === undefined) {
     return null;
   }
@@ -21,7 +23,7 @@ const toJsonValue = (value: unknown): unknown => {
     return value.map(toJsonValue);
   }
   if (typeof value === 'object') {
-    const result: Record<string, unknown> = {};
+    const result: Record<string, JsonValue> = {};
     Object.entries(value as Record<string, unknown>).forEach(([key, val]) => {
       result[key] = toJsonValue(val);
     });
@@ -56,7 +58,7 @@ export const normalizeReasoningDisplay = (
   const colonMatch = firstLine.match(/^(?<title>.+?)[：:]\s*(?<rest>.*)$/);
   if (colonMatch?.groups?.title) {
     candidateTitle = colonMatch.groups.title.trim();
-    inlineRemainder = colonMatch.groups.rest.trim();
+    inlineRemainder = (colonMatch.groups.rest ?? '').trim();
   } else {
     const patternMatch = firstLine.match(STEP_TITLE_REGEX);
     if (patternMatch) {
@@ -243,12 +245,19 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
             reasoningData.totalSteps,
           ]);
 
-          pushStep({
+          const stepData: ReasoningStepUpdate = {
             content: textFromTextField,
-            order: orderFromText,
-            totalSteps: totalFromText,
             raw: toJsonValue(item),
-          });
+          };
+
+          if (typeof orderFromText === 'number') {
+            stepData.order = orderFromText;
+          }
+          if (typeof totalFromText === 'number') {
+            stepData.totalSteps = totalFromText;
+          }
+
+          pushStep(stepData);
         }
 
         const candidate = normalizeText(
@@ -277,13 +286,22 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
 
           const title = normalizeText(reasoningData.title) ?? undefined;
 
-          pushStep({
+          const stepData: ReasoningStepUpdate = {
             content: candidate,
-            order,
-            totalSteps: total,
-            title,
             raw: toJsonValue(item),
-          });
+          };
+
+          if (typeof order === 'number') {
+            stepData.order = order;
+          }
+          if (typeof total === 'number') {
+            stepData.totalSteps = total;
+          }
+          if (title) {
+            stepData.title = title;
+          }
+
+          pushStep(stepData);
         }
 
         const totalCandidate = firstNumber([
@@ -344,13 +362,22 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
             typeof obj.title === 'string' ? obj.title : undefined,
           ) ?? undefined;
 
-          pushStep({
+          const stepData: ReasoningStepUpdate = {
             content: candidate,
-            order,
-            totalSteps: total,
-            title,
             raw: toJsonValue(item),
-          });
+          };
+
+          if (typeof order === 'number') {
+            stepData.order = order;
+          }
+          if (typeof total === 'number') {
+            stepData.totalSteps = total;
+          }
+          if (title) {
+            stepData.title = title;
+          }
+
+          pushStep(stepData);
         }
       }
     }
@@ -375,11 +402,16 @@ export const parseReasoningPayload = (payload: RawReasoningEvent | undefined | n
     return maxOrder > 0 ? maxOrder : undefined;
   });
 
-  return {
+  const result: ParsedReasoningUpdate = {
     steps,
     finished,
-    totalSteps,
   };
+
+  if (typeof totalSteps === 'number') {
+    result.totalSteps = totalSteps;
+  }
+
+  return result;
 };
 
 export default parseReasoningPayload;

@@ -169,7 +169,7 @@ function getInitialState(): ResponsiveState {
  * ```
  */
 export function useResponsive(debounceTime: number = 150): ResponsiveState {
-  const [state, setState] = useState<ResponsiveState>(getInitialState);
+  const [state, setState] = useState(getInitialState);
 
   useEffect(() => {
     // SSR 环境不执行

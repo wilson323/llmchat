@@ -100,8 +100,8 @@ export function SessionManagement({ className }: SessionManagementProps) {
       const params: SessionListParams = {
         page,
         pageSize,
-        sortBy, // sortBy已有默认值'updatedAt'，不会是undefined
-        sortOrder, // sortOrder已有默认值'desc'，不会是undefined
+        sortBy: sortBy as 'updatedAt' | 'createdAt' | 'lastMessageAt' | 'messageCount',
+        sortOrder: sortOrder as 'asc' | 'desc',
         filter: {
           ...filters,
           ...(searchQuery && { search: searchQuery }),
@@ -312,8 +312,8 @@ export function SessionManagement({ className }: SessionManagementProps) {
           ...filters,
           ...(searchQuery && { search: searchQuery }),
         },
-        sortBy, // sortBy已有默认值'updatedAt'，不会是undefined
-        sortOrder, // sortOrder已有默认值'desc'，不会是undefined
+        sortBy: sortBy as 'updatedAt' | 'createdAt' | 'lastMessageAt' | 'messageCount',
+        sortOrder: sortOrder as 'asc' | 'desc',
       };
 
       const content = await exportSessions({ ...params, format });

@@ -1,6 +1,14 @@
+;
+;
+;
+;
+;
+;
+import {AlertCircle, AlertTriangle, CheckCircle, Info} from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FastGPTEvent } from '@/types';
-import { Info, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+;
+;
 import clsx from 'clsx';
 import { getNormalizedEventKey, isToolEvent } from '@/lib/fastgptEvents';
 
@@ -17,7 +25,7 @@ const levelConfig = {
     badge: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-200',
   },
   success: {
-    icon: CheckCircle2,
+    icon: CheckCircle,
     badge: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200',
   },
   warning: {
@@ -51,8 +59,8 @@ export const EventTrail: React.FC<EventTrailProps> = ({ events }) => {
   // 仅保留：节点响应(flowResponses) 与 工具事件
   const filteredEvents = useMemo(() => {
     return (events || []).filter((e) => {
-      const key = getNormalizedEventKey(e.name || '');
-      return key === getNormalizedEventKey('flowResponses') || isToolEvent(e.name || '');
+      const key = getNormalizedEventKey(e.type || '');
+      return key === getNormalizedEventKey('flowResponses') || isToolEvent(e.type || '');
     });
   }, [events]);
 
@@ -81,7 +89,7 @@ export const EventTrail: React.FC<EventTrailProps> = ({ events }) => {
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => setVisibleCount((prev) => Math.min(events.length, prev + LOAD_MORE_STEP))}
+            onClick={() => setVisibleCount((prev: number) => Math.min(events.length, prev + LOAD_MORE_STEP))}
             className="rounded-full border border-dashed border-border/70 px-3 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand"
           >
             展开更多事件（剩余 {hiddenCount} 条）
@@ -90,13 +98,13 @@ export const EventTrail: React.FC<EventTrailProps> = ({ events }) => {
       )}
 
       <ul className="space-y-2">
-        {visibleEvents.map((event) => {
-          const config = levelConfig[event.level] ?? levelConfig.info;
+        {visibleEvents.map((event: FastGPTEvent) => {
+          const config = levelConfig[event.level as keyof typeof levelConfig] ?? levelConfig.info;
           const Icon = config.icon;
 
           return (
             <li
-              key={event.id}
+              key={`${event.type}-${event.timestamp}-${Math.random()}`}
               className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-2 shadow-sm"
             >
               <span className={clsx('mt-0.5 flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium', config.badge)}>
@@ -105,14 +113,14 @@ export const EventTrail: React.FC<EventTrailProps> = ({ events }) => {
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-semibold text-foreground">{event.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{formatTime(event.timestamp)}</span>
+                  <span className="text-[10px] text-muted-foreground">{formatTime(parseInt(event.timestamp) || Date.now())}</span>
                 </div>
                 {event.summary && (
                   <p className="text-xs text-muted-foreground leading-relaxed">{event.summary}</p>
                 )}
-                {event.detail && (
+                {event.payload && typeof event.payload === 'object' && (
                   <p className="text-[11px] text-muted-foreground/90 leading-relaxed whitespace-pre-line">
-                    {event.detail}
+                    {JSON.stringify(event.payload, null, 2)}
                   </p>
                 )}
                 <details className="group text-[11px] text-muted-foreground/80">

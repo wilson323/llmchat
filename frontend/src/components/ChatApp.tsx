@@ -6,12 +6,13 @@ import { KeyboardHelpPanel } from './KeyboardHelpPanel';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useChatStore } from '@/store/chatStore';
 import { useUIStore } from '@/store/uiStore';
-import { useKeyboardManager, KeyboardShortcut } from '@/hooks/useKeyboardManager';
+import { useKeyboardManager } from '@/hooks/useKeyboardManager';
+import type { KeyboardShortcut } from '@/hooks/useKeyboardManager';
 
 const ChatApp: React.FC = () => {
-  const { initializeAgentSessions } = useChatStore();
-  const { setAgentSelectorOpen } = useUIStore();
+  const { initializeAgentSessions } = useChatStore.getState();
   const { registerShortcuts } = useKeyboardManager();
+  const { setAgentSelectorOpen, toggleSidebar } = useUIStore.getState();
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [registeredShortcuts, setRegisteredShortcuts] = useState<KeyboardShortcut[]>([]);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -91,7 +92,7 @@ const ChatApp: React.FC = () => {
           const { agentSessions, currentAgent, currentSession } = useChatStore.getState();
           if (currentAgent && currentSession) {
             const sessions = agentSessions[currentAgent.id] ?? [];
-            const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
+            const currentIndex = sessions.findIndex((s: any) => s.id === currentSession.id);
             if (currentIndex > 0) {
               const { switchToSession } = useChatStore.getState();
               const previousSession = sessions[currentIndex - 1];
@@ -113,7 +114,7 @@ const ChatApp: React.FC = () => {
           const { agentSessions, currentAgent, currentSession } = useChatStore.getState();
           if (currentAgent && currentSession) {
             const sessions = agentSessions[currentAgent.id] ?? [];
-            const currentIndex = sessions.findIndex(s => s.id === currentSession.id);
+            const currentIndex = sessions.findIndex((s: any) => s.id === currentSession.id);
             if (currentIndex < sessions.length - 1) {
               const { switchToSession } = useChatStore.getState();
               const nextSession = sessions[currentIndex + 1];
@@ -204,8 +205,7 @@ const ChatApp: React.FC = () => {
         key: 'k',
         altKey: true,
         action: () => {
-          const { sidebarOpen, setSidebarOpen } = useUIStore.getState();
-          setSidebarOpen(!sidebarOpen);
+          toggleSidebar();
         },
         description: '切换侧边栏',
         category: 'accessibility' as const,

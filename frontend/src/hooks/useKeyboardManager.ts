@@ -156,7 +156,7 @@ export const useKeyboardManager = ({
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true';
 
-      for (const shortcut of shortcutsRef.current.values()) {
+      for (const shortcut of Array.from(shortcutsRef.current.values())) {
         if (matchesShortcut(event, shortcut)) {
           // 某些快捷键在输入框中也应该工作
           const allowInInput =
@@ -194,7 +194,7 @@ export const useKeyboardManager = ({
   const getShortcutsByCategory = useCallback(
     (category: KeyboardShortcut['category']): KeyboardShortcut[] => {
       return getRegisteredShortcuts().filter(
-        (shortcut) => shortcut.category === category,
+        (shortcut: KeyboardShortcut) => shortcut.category === category,
       );
     },
     [getRegisteredShortcuts],
@@ -269,7 +269,7 @@ export const appShortcuts: KeyboardShortcut[] = [
     key: 'Escape',
     action: () => {
       // 关闭当前模态
-      const { setAgentSelectorOpen } = useChatStore.getState();
+      const { setAgentSelectorOpen } = useUIStore.getState();
       setAgentSelectorOpen(false);
     },
     description: '关闭当前模态对话框',
@@ -302,11 +302,14 @@ export const appShortcuts: KeyboardShortcut[] = [
       if (currentAgent && currentSession) {
         const sessions = agentSessions[currentAgent.id] || [];
         const currentIndex = sessions.findIndex(
-          (s) => s.id === currentSession.id,
+          (s: { id: string }) => s.id === currentSession.id,
         );
-        if (currentIndex > 0) {
+        if (currentIndex > 0 && sessions[currentIndex - 1]) {
           const { switchToSession } = useChatStore.getState();
-          switchToSession(sessions[currentIndex - 1].id);
+          const prevSession = sessions[currentIndex - 1];
+          if (prevSession) {
+            switchToSession(prevSession.id);
+          }
         }
       }
     },
@@ -323,11 +326,14 @@ export const appShortcuts: KeyboardShortcut[] = [
       if (currentAgent && currentSession) {
         const sessions = agentSessions[currentAgent.id] || [];
         const currentIndex = sessions.findIndex(
-          (s) => s.id === currentSession.id,
+          (s: { id: string }) => s.id === currentSession.id,
         );
-        if (currentIndex < sessions.length - 1) {
+        if (currentIndex < sessions.length - 1 && sessions[currentIndex + 1]) {
           const { switchToSession } = useChatStore.getState();
-          switchToSession(sessions[currentIndex + 1].id);
+          const nextSession = sessions[currentIndex + 1];
+          if (nextSession) {
+            switchToSession(nextSession.id);
+          }
         }
       }
     },

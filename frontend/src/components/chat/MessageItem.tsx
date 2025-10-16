@@ -1,5 +1,13 @@
+;
+;
+;
+;
+;
+;
+;
+;
+import {Check, Copy, RotateCcw, ThumbsDown, ThumbsUp, User} from 'lucide-react';
 import React, { useState, memo, useEffect, useCallback } from 'react';
-import { User, Copy, Check, RotateCcw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import ReactMarkdown from 'react-markdown';
@@ -10,7 +18,6 @@ import rehypeRaw from 'rehype-raw';
 import { ChatMessage, Agent, StreamStatus, InteractiveSelectParams, InteractiveInputParams, InteractiveFormItem } from '@/types';
 import 'highlight.js/styles/github-dark.css';
 import { useChatStore } from '@/store/chatStore';
-import { useMessageStore } from '@/store/messageStore';
 import { chatService } from '@/services/api';
 import { ReasoningTrail } from './ReasoningTrail';
 import { EventTrail } from './EventTrail';
@@ -27,10 +34,9 @@ interface InteractiveCallbacks {
 }
 
 // ReactMarkdown code组件props类型
-interface CodeProps {
-  className?: string;
+interface CodeProps extends React.HTMLAttributes<HTMLElement> {
+  className?: string | undefined;
   children?: React.ReactNode;
-  [key: string]: any;
 }
 
 const avatarImg = '/img/4.webp';
@@ -39,11 +45,11 @@ import { OptimizedImage } from '@/components/ui/OptimizedImage';
 interface MessageItemProps extends InteractiveCallbacks {
   message: ChatMessage;
   isStreaming?: boolean;
-  onRetry?: () => void;
-  onEdit?: (content: string) => void;
-  onDelete?: () => void;
-  currentAgent?: Agent;
-  streamingStatus?: StreamStatus;
+  onRetry?: (() => void) | undefined;
+  onEdit?: ((content: string) => void) | undefined;
+  onDelete?: (() => void) | undefined;
+  currentAgent?: Agent | undefined;
+  streamingStatus?: StreamStatus | undefined;
 }
 
 export const MessageItem: React.FC<MessageItemProps> = memo(({
@@ -95,10 +101,10 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     const data = message.interactive;
 
     // userInput 表单的本地状态
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState({});
 
     // userSelect 下拉选择的本地状态
-    const [selectedValue, setSelectedValue] = useState<string>(() => {
+    const [selectedValue, setSelectedValue] = useState(() => {
       if (isInteractiveSelect(data.params)) {
         const opts = data.params.userSelectOptions || [];
         return (opts[0]?.key ?? opts[0]?.value ?? '');
@@ -128,7 +134,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                 value={selectedValue}
                 onChange={(e) => setSelectedValue(e.target.value)}
               >
-                {isInteractiveSelect(data.params) && data.params.userSelectOptions?.map((opt, idx: number) => (
+                {isInteractiveSelect(data.params) && data.params.userSelectOptions?.map((opt: any, idx: number) => (
                   <option key={idx} value={String(opt.key ?? opt.value)}>
                     {String(opt.value ?? opt.key)}
                   </option>
@@ -138,7 +144,20 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                 onClick={() => {
                   if (data.origin === 'init' && isInteractiveSelect(data.params)) {
                     const varKey = data.params?.varKey;
-                    onInteractiveSelect?.({ origin: 'init', key: varKey, value: selectedValue });
+                    if (varKey) {
+                      const selectParams: { origin: 'init'; key: string; value: string } = {
+                        origin: 'init',
+                        key: varKey,
+                        value: selectedValue
+                      };
+                      onInteractiveSelect?.(selectParams);
+                    } else {
+                      const selectParams: { origin: 'init'; value: string } = {
+                        origin: 'init',
+                        value: selectedValue
+                      };
+                      onInteractiveSelect?.(selectParams);
+                    }
                   } else {
                     onInteractiveSelect?.(selectedValue);
                   }
@@ -203,7 +222,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background text-foreground"
                         onChange={(e) => setFormValues((s) => ({ ...s, [key]: e.target.value }))}
                       >
-                        {(item.list || []).map((opt, i: number) => (
+                        {(item.list || []).map((opt: any, i: number) => (
                           <option key={i} value={String(opt.value)}>
                             {String(opt.label ?? opt.value)}
                           </option>
@@ -244,15 +263,14 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
     }
   }
 
-  const [likeLoading, setLikeLoading] = useState<boolean>(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   // huihua.md 格式：检查是用户消息还是 AI 消息
   const isUser = message.HUMAN !== undefined;
   const content = isUser ? message.HUMAN : message.AI;
 
   // 从全局store获取当前会话和反馈更新方法
-  const currentSession = useChatStore((state) => state.currentSession);
-  const setMessageFeedback = useMessageStore((state) => state.setMessageFeedback);
+  const { currentSession, setMessageFeedback } = useChatStore();
   const agent = currentAgent; // 已通过props传入
   const canFeedback = !isUser && !!message.id && agent?.provider === 'fastgpt';
 
@@ -375,7 +393,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
           {message.reasoning?.steps && message.reasoning.steps.length > 0 && (
             <ReasoningTrail
               steps={message.reasoning.steps}
-              totalSteps={message.reasoning.totalSteps}
+              {...(message.reasoning.totalSteps !== undefined && { totalSteps: message.reasoning.totalSteps })}
               isStreaming={isStreaming && !message.reasoning.finished}
               finished={!!message.reasoning.finished}
             />
@@ -391,8 +409,8 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
               remarkPlugins={[remarkGfm, remarkBreaks]}
               rehypePlugins={[rehypeHighlight, rehypeRaw]}
               components={{
-                code: ({ className, children, ...props }: CodeProps) => {
-                  const match = /language-(\\w+)/.exec(className || '');
+                code: ({ className, children, ...props }: CodeProps): JSX.Element => {
+                  const match = className ? /language-(\\w+)/.exec(className) : null;
                   const isBlock = match && className;
 
                   if (isBlock) {

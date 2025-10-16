@@ -15,6 +15,10 @@ import {
   CacheStrategy,
 } from '@/types/hybrid-storage';
 
+;
+;
+;
+;
 import { ChatSession, ChatMessage } from '@/types';
 
 import { MemoryStorageProvider } from './MemoryStorageProvider';
@@ -342,7 +346,10 @@ export class HybridStorageManager {
               results.push({ session: localSession, score: remoteScore });
             } else {
               // 更新分数（取较高值）
-              results[existingIndex].score = Math.max(results[existingIndex].score, remoteScore);
+              const existingResult = results[existingIndex];
+              if (existingResult) {
+                existingResult.score = Math.max(existingResult.score, remoteScore);
+              }
             }
           }
         } catch (error) {
@@ -403,7 +410,7 @@ export class HybridStorageManager {
   async updateMessageInSession(
     sessionId: string,
     messageId: string,
-    updater: (message: ChatMessage) => ChatMessage,
+    updater: (message: ChatMessage) => ChatMessage | undefined,
   ): Promise<void> {
     if (!this.isInitialized) {
       await this.initialize();
@@ -421,7 +428,19 @@ export class HybridStorageManager {
         throw new Error(`消息不存在: ${messageId}`);
       }
 
-      session.messages[messageIndex] = updater(session.messages[messageIndex]);
+      // 查找消息并确保它存在
+      const message = session.messages[messageIndex];
+      if (!message) {
+        throw new Error(`消息不存在: ${messageId}`);
+      }
+
+      // updater函数可能返回undefined，进行类型检查
+      const updatedMessage = updater(message);
+      if (!updatedMessage) {
+        throw new Error(`消息更新失败: ${messageId} - updater返回了无效的消息`);
+      }
+
+      session.messages[messageIndex] = updatedMessage;
       session.updatedAt = Date.now();
 
       // 保存更新后的会话

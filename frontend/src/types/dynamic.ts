@@ -5,6 +5,7 @@
  * 🎯 目标：与后端保持类型一致性，同时支持前端特定需求
  */
 
+import type React from 'react';
 import type {
   ApiSuccessResponse,
   JsonArray,
@@ -12,7 +13,6 @@ import type {
   JsonValue,
   UnknownValue,
 } from '@llmchat/shared-types';
-import type { ReactNode } from 'react';
 
 // 重新导出共享类型
 export type {
@@ -194,7 +194,7 @@ export interface ModalStateData {
   open: boolean;
   type?: 'alert' | 'confirm' | 'prompt' | 'custom';
   title?: string;
-  content?: string | ReactNode;
+  content?: string | React.ReactNode;
   data?: JsonObject;
   onClose?: () => void;
   onConfirm?: (data?: JsonObject) => void;

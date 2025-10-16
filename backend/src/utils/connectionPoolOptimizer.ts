@@ -84,7 +84,7 @@ export class ConnectionPoolOptimizer {
   private isMonitoring = false;
 
   private constructor() {
-    this.pool = getPool();
+    // 不在构造函数中获取连接池，而是延迟获取
   }
 
   static getInstance(): ConnectionPoolOptimizer {
@@ -92,6 +92,16 @@ export class ConnectionPoolOptimizer {
       ConnectionPoolOptimizer.instance = new ConnectionPoolOptimizer();
     }
     return ConnectionPoolOptimizer.instance;
+  }
+
+  /**
+   * 获取数据库连接池（延迟初始化）
+   */
+  private getPool(): Pool {
+    if (!this.pool) {
+      this.pool = getPool();
+    }
+    return this.pool;
   }
 
   /**
@@ -147,12 +157,9 @@ export class ConnectionPoolOptimizer {
    * 更新连接池统计
    */
   private updatePoolStats(): void {
-    if (!this.pool) {
-      return;
-    }
-
     try {
-      const poolStats = this.pool as any;
+      const pool = this.getPool();
+      const poolStats = pool as any;
       this.stats.totalCount = poolStats.totalCount || 0;
       this.stats.idleCount = poolStats.idleCount || 0;
       this.stats.activeCount = poolStats.activeCount || 0;
@@ -181,12 +188,9 @@ export class ConnectionPoolOptimizer {
    * 执行健康检查
    */
   private async performHealthCheck(): Promise<void> {
-    if (!this.pool) {
-      return;
-    }
-
     try {
-      const client = await this.pool.connect();
+      const pool = this.getPool();
+      const client = await pool.connect();
 
       const healthCheckQuery = 'SELECT 1';
       const startTime = performance.now();
@@ -208,31 +212,31 @@ export class ConnectionPoolOptimizer {
    * 设置连接池事件监听
    */
   private setupPoolEventListeners(): void {
-    if (!this.pool) {
-      return;
+    try {
+      const pool = this.getPool();
+
+      // 连接获取事件
+      pool.on('acquire', () => {
+        this.stats.totalRequests++;
+      });
+
+      // 连接释放事件
+      pool.on('release', () => {
+        // 连接释放时的处理
+      });
+
+      // 连接错误事件
+      pool.on('error', (error: Error) => {
+        logger.error('连接池错误', { error });
+      });
+
+      // 连接移除事件
+      pool.on('remove', () => {
+        logger.info('连接池连接已移除');
+      });
+    } catch (error) {
+      logger.error('设置连接池事件监听失败', { error });
     }
-
-    const pool = this.pool as any;
-
-    // 连接获取事件
-    pool.on('acquire', () => {
-      this.stats.totalRequests++;
-    });
-
-    // 连接释放事件
-    pool.on('release', () => {
-      // 连接释放时的处理
-    });
-
-    // 连接错误事件
-    pool.on('error', (error: Error) => {
-      logger.error('连接池错误', { error });
-    });
-
-    // 连接移除事件
-    pool.on('remove', () => {
-      logger.info('连接池连接已移除');
-    });
   }
 
   /**
@@ -320,18 +324,20 @@ export class ConnectionPoolOptimizer {
    * 获取当前连接池配置
    */
   private getCurrentPoolConfig(): PoolConfig {
-    if (!this.pool) {
+    try {
+      const pool = this.getPool();
+      const poolOptions = pool as any;
+      return {
+        max: poolOptions.options?.max,
+        min: poolOptions.options?.min,
+        idleTimeoutMillis: poolOptions.options?.idleTimeoutMillis,
+        connectionTimeoutMillis: poolOptions.options?.connectionTimeoutMillis,
+        maxUses: poolOptions.options?.maxUses,
+      };
+    } catch (error) {
+      logger.error('获取连接池配置失败', { error });
       return {};
     }
-
-    const pool = this.pool as any;
-    return {
-      max: pool.options?.max,
-      min: pool.options?.min,
-      idleTimeoutMillis: pool.options?.idleTimeoutMillis,
-      connectionTimeoutMillis: pool.options?.connectionTimeoutMillis,
-      maxUses: pool.options?.maxUses,
-    };
   }
 
   /**
@@ -426,15 +432,12 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
    * 强制清理连接池
    */
   async forceCleanup(): Promise<void> {
-    if (!this.pool) {
-      return;
-    }
-
     try {
+      const pool = this.getPool();
       logger.info('🧹 开始清理连接池...');
 
       // 结束所有空闲连接
-      await this.pool.end();
+      await pool.end();
 
       // 重新初始化（这里需要重新调用initDB）
       logger.info('✅ 连接池清理完成');
@@ -449,18 +452,15 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
    * 预热连接池
    */
   async warmupPool(connectionCount: number = 5): Promise<void> {
-    if (!this.pool) {
-      return;
-    }
-
-    logger.info(`🔥 预热连接池，目标连接数: ${connectionCount}`);
-
     try {
+      const pool = this.getPool();
+      logger.info(`🔥 预热连接池，目标连接数: ${connectionCount}`);
+
       const connections: PoolClient[] = [];
 
       // 创建多个连接
       for (let i = 0; i < connectionCount; i++) {
-        const client = await this.pool.connect();
+        const client = await pool.connect();
         connections.push(client);
       }
 
@@ -500,7 +500,8 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
       promises.push(
         (async () => {
           try {
-            const client = await this.pool!.connect();
+            const pool = this.getPool();
+            const client = await pool.connect();
             await client.query('SELECT 1, pg_sleep(0.1)');
             client.release();
           } catch (error) {

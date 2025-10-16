@@ -1,3 +1,5 @@
+;
+;
 import { AdminStats, LogEntry, SystemMetrics, SecurityAlert, UserActivity } from '@/types/admin';
 
 export const getAdminStats = async (): Promise<AdminStats> => {
@@ -23,17 +25,31 @@ export const getLogs = async (page: number = 1, limit: number = 50): Promise<{
   totalPages: number;
 }> => {
   // 模拟日志数据
-  const logs: LogEntry[] = Array.from({ length: limit }, (_, i) => ({
-    id: `log-${page}-${i}`,
-    timestamp: new Date(Date.now() - i * 60000),
-    level: ['info', 'warn', 'error', 'debug'][Math.floor(Math.random() * 4)] as LogEntry['level'],
-    message: `Log message ${page}-${i}: System operation completed`,
-    source: ['api', 'auth', 'database', 'queue'][Math.floor(Math.random() * 4)],
-    metadata: {
-      userId: Math.random() > 0.5 ? `user-${Math.floor(Math.random() * 1000)}` : undefined,
-      ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-    },
-  }));
+  const logs: LogEntry[] = Array.from({ length: limit }, (_, i) => {
+    const sources = ['api', 'auth', 'database', 'queue'];
+    const randomIndex = Math.floor(Math.random() * sources.length);
+    // 确保source始终是有效的字符串
+    const selectedSource = sources[randomIndex] ?? 'system';
+
+    return {
+      id: `log-${page}-${i}`,
+      timestamp: new Date(Date.now() - i * 60000),
+      level: ['info', 'warn', 'error', 'debug'][Math.floor(Math.random() * 4)] as LogEntry['level'],
+      message: `Log message ${page}-${i}: System operation completed`,
+      source: selectedSource, // 确保始终是字符串，符合 exactOptionalPropertyTypes
+      // 使用条件属性展开满足 exactOptionalPropertyTypes
+      ...(Math.random() > 0.5 ? {
+        metadata: {
+          userId: `user-${Math.floor(Math.random() * 1000)}`,
+          ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        }
+      } : {
+        metadata: {
+          ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        }
+      }),
+    };
+  });
 
   return new Promise((resolve) => {
     setTimeout(() => {

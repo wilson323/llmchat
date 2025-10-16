@@ -5,7 +5,7 @@
  */
 
 import { Pool, PoolClient } from 'pg';
-import { logger } from './logger';
+import logger from './logger';
 
 // 查询性能指标
 export interface QueryMetrics {

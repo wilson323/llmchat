@@ -3,6 +3,8 @@
  * 提供高速的内存缓存功能，支持LRU/LFU策略
  */
 
+;
+;
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery, CacheEntry, DataTemperature, SyncStatus } from '@/types/hybrid-storage';
 
 export class MemoryStorageProvider implements IStorageProvider {
@@ -32,11 +34,15 @@ export class MemoryStorageProvider implements IStorageProvider {
     }
 
     // 检查内存可用性
-    if (typeof performance !== 'undefined' && 'memory' in performance) {
-      const perfMemory = (performance as any).memory;
-      if (perfMemory) {
+    if (typeof performance !== 'undefined' && 'memory' in (performance as Performance & { memory?: any })) {
+      const perfMemory = (performance as Performance & { memory?: {
+        jsHeapSizeLimit: number;
+        usedJSHeapSize: number;
+      } }).memory;
+
+      if (perfMemory && perfMemory.jsHeapSizeLimit && perfMemory.usedJSHeapSize) {
         const availableMemory = perfMemory.jsHeapSizeLimit - perfMemory.usedJSHeapSize;
-        if (availableMemory < this.maxSize) {
+        if (availableMemory > 0 && availableMemory < this.maxSize) {
           console.warn(`内存可用空间不足，调整缓存大小从 ${this.maxSize} 到 ${availableMemory}`);
           this.maxSize = Math.floor(availableMemory * 0.8); // 使用80%的可用内存
         }
@@ -108,7 +114,7 @@ export class MemoryStorageProvider implements IStorageProvider {
       lastAccessed: now,
       accessCount: 1,
       temperature: DataTemperature.WARM, // 新数据默认为温数据
-      expiresAt: options.expiresAt,
+      ...(options.expiresAt && { expiresAt: options.expiresAt }),
       size: serializedSize,
       storageTier: this.tier,
       syncStatus: SyncStatus.SYNCED,
@@ -197,14 +203,18 @@ export class MemoryStorageProvider implements IStorageProvider {
 
       // 文本匹配
       if (query.text) {
-        if (key.includes(query.text) ||
-            (value.title?.includes(query.text))) {
+        const keyMatches = key.includes(query.text);
+        const titleMatches = value && typeof value === 'object' && 'title' in value &&
+                           typeof value.title === 'string' && value.title.includes(query.text);
+
+        if (keyMatches || titleMatches) {
           score += 10;
         }
       }
 
       // agentId匹配
-      if (query.agentId && value.agentId === query.agentId) {
+      if (query.agentId && value && typeof value === 'object' && 'agentId' in value &&
+          value.agentId === query.agentId) {
         score += 20;
       }
 
@@ -217,8 +227,11 @@ export class MemoryStorageProvider implements IStorageProvider {
       }
 
       // 标签匹配
-      if (query.tags && query.tags.length > 0 && value.tags) {
-        const matchingTags = query.tags.filter(tag => value.tags.includes(tag));
+      if (query.tags && query.tags.length > 0 && value && typeof value === 'object' && 'tags' in value &&
+          Array.isArray(value.tags)) {
+        const matchingTags = query.tags.filter(tag =>
+          Array.isArray(value.tags) && value.tags.includes(tag)
+        );
         score += matchingTags.length * 5;
       }
 

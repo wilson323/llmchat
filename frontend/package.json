@@ -13,7 +13,22 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "eslint:autofix": "node scripts/eslint-autofix.js",
+    "eslint:autofix:dry-run": "node scripts/eslint-autofix.js --dry-run",
+    "fix:magic-numbers": "node scripts/magic-number-fixer.js",
+    "fix:magic-numbers:dry-run": "node scripts/magic-number-fixer.js --dry-run",
+    "fix:unsafe-types": "node scripts/unsafe-type-fixer.js",
+    "fix:unsafe-types:dry-run": "node scripts/unsafe-type-fixer.js --dry-run",
+    "format:code": "node scripts/code-formatter.js",
+    "format:code:dry-run": "node scripts/code-formatter.js --dry-run",
+    "quality:check": "node scripts/quality-checker.js",
+    "fix:validate": "node scripts/fix-validator.js",
+    "fix:all": "node scripts/eslint-auto-fix-all.js",
+    "fix:all:dry-run": "node scripts/eslint-auto-fix-all.js --dry-run",
+    "fix:all:safe": "node scripts/eslint-auto-fix-all.js --fix --strategy safe",
+    "fix:all:aggressive": "node scripts/eslint-auto-fix-all.js --fix --strategy aggressive",
+    "fix:restore": "node scripts/eslint-auto-fix-all.js --restore"
   },
   "dependencies": {
     "@llmchat/shared-types": "workspace:*",

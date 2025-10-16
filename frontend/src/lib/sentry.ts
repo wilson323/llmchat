@@ -212,11 +212,18 @@ export function setSentryUser(user: {
   }
 
   try {
-    Sentry.setUser({
+    const userContext: { id: string; email?: string; username?: string } = {
       id: user.id,
-      email: user.email,
-      username: user.username,
-    });
+    };
+
+    if (user.email) {
+      userContext.email = user.email;
+    }
+    if (user.username) {
+      userContext.username = user.username;
+    }
+
+    Sentry.setUser(userContext);
   } catch (error) {
     console.warn('设置Sentry用户上下文失败:', error);
   }

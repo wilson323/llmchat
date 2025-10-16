@@ -49,12 +49,13 @@ describe('MessageList', () => {
   });
 
   it('大量消息（>20条）应使用虚拟化渲染', () => {
-    const messages: ChatMessage[] = Array.from({ length: 25 }, (_, i) => ({
-      id: `${i}`,
-      HUMAN: i % 2 === 0 ? `消息 ${i}` : undefined,
-      AI: i % 2 === 1 ? `回复 ${i}` : undefined,
-      timestamp: Date.now(),
-    }));
+    const messages: ChatMessage[] = Array.from({ length: 25 }, (_, i) => {
+      if (i % 2 === 0) {
+        return { id: `${i}`, HUMAN: `消息 ${i}`, timestamp: Date.now() };
+      } else {
+        return { id: `${i}`, AI: `回复 ${i}`, timestamp: Date.now() };
+      }
+    });
 
     render(<MessageList messages={messages} />);
     

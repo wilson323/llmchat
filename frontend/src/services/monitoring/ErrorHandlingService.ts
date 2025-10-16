@@ -86,6 +86,7 @@ export class ErrorHandlingService {
     details?: any,
     context?: ErrorInfo['context'],
   ): ErrorInfo {
+    const stackTrace = new Error().stack;
     const error: ErrorInfo = {
       id: this.generateErrorId(),
       type,
@@ -94,8 +95,9 @@ export class ErrorHandlingService {
       message,
       details,
       timestamp: Date.now(),
-      context,
-      stack: new Error().stack,
+      // 使用条件属性展开满足 exactOptionalPropertyTypes
+      ...(context && { context }),
+      ...(stackTrace && { stack: stackTrace }),
       resolved: false,
     };
 
@@ -168,7 +170,7 @@ export class ErrorHandlingService {
         context,
       );
 
-      return { success: false, error: result.error };
+      return result.error ? { success: false, error: result.error } : { success: false };
     }
   }
 

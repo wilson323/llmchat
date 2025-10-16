@@ -1,21 +1,26 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+;
+;
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Component } from 'react';
+import type React from 'react';
+;
+;
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 interface State {
   hasError: boolean;
   error?: Error;
-  errorInfo?: ErrorInfo;
+  errorInfo?: React.ErrorInfo;
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+  public override state: State = {
     hasError: false,
   };
 
@@ -23,7 +28,7 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
 
     // 记录错误信息到状态
@@ -55,7 +60,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false } as State);
   };
 
-  public render() {
+  public override render() {
     if (this.state.hasError) {
       // 如果提供了自定义fallback，使用它
       if (this.props.fallback) {
@@ -140,7 +145,7 @@ function ErrorBoundaryUI({
 
 // Hook版本的错误边界（用于函数组件）
 export function useErrorHandler() {
-  return (error: Error, errorInfo?: ErrorInfo) => {
+  return (error: Error, errorInfo?: React.ErrorInfo) => {
     console.error('Hook Error Handler:', error, errorInfo);
 
     // 在开发环境下显示详细错误

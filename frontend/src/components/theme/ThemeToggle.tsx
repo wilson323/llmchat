@@ -1,7 +1,11 @@
+;
+;
+;
+;
+import { ChevronDown, Monitor, Moon, Sun } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
-import { Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { ThemeMode } from '@/types';
 import { useI18n } from '@/i18n';

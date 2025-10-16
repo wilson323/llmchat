@@ -18,7 +18,7 @@ export function useAgentAutoFetch() {
 
       throw new Error('获取智能体信息失败');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '获取智能体信息失败';
+      const errorMessage: string = err instanceof Error ? err.message : '获取智能体信息失败';
       setError(errorMessage);
       return null;
     } finally {

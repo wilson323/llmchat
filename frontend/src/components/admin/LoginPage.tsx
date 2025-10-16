@@ -1,11 +1,14 @@
 'use client';
+;
+;
+;
+import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { loginApi } from '@/services/authApi';
-import { useAuthStore } from '@/store/authStore';
+import useAuthStore from '@/store/authStore';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
 
@@ -15,7 +18,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const login = useAuthStore((s) => s.login);
+  const { login } = useAuthStore.getState();
   const { t } = useI18n();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +74,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                 <Input
                   name="username"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                   placeholder={t('输入用户名')}
                   className="pl-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
                   required
@@ -82,12 +85,12 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">{t('密码')}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <EyeOff className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   placeholder={t('输入密码')}
                   className="pl-11 pr-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
                   required

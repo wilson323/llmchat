@@ -4,7 +4,7 @@
 
 import MemoryOptimizationService from '@/services/MemoryOptimizationService';
 import MemoryMonitor from '@/utils/memoryMonitor';
-import { RedisConnectionPool } from '@/utils/redisConnectionPool';
+import RedisConnectionPool from '@/utils/redisConnectionPool';
 
 describe('MemoryOptimizationService', () => {
   let memoryOptimizationService: MemoryOptimizationService;

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { agentService } from '@/services/api';
-import { useChatStore } from '@/store/chatStore';
+import { useAgentStore } from '@/store/agentStore';
 
 import { useI18n } from '@/i18n';
 import {
@@ -23,7 +23,7 @@ export const useAgents = () => {
     setAgentsError,
     setCurrentAgent,
     currentAgent,
-  } = useChatStore();
+  } = useAgentStore();
 
   const fetchAgents = useCallback(async () => {
     if (ongoingRequestRef.current) {

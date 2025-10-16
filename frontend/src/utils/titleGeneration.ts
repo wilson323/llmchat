@@ -82,7 +82,7 @@ const extractNamedEntities = (text: string): string[] => {
 
   patterns.forEach(pattern => {
     const matches = text.match(pattern);
-    if (matches) {
+    if (matches && matches.length > 1) {
       entities.push(...matches.slice(1)); // 排除完整匹配
     }
   });
@@ -102,7 +102,7 @@ const extractQuestionKeywords = (text: string): string[] => {
 
   questionPatterns.forEach(pattern => {
     const matches = text.match(pattern);
-    if (matches) {
+    if (matches && matches[1]) {
       keywords.push(matches[1].trim());
     }
   });
@@ -179,7 +179,7 @@ const generateTitleCandidates = (
   const questionKeywords = extractQuestionKeywords(text);
   if (questionKeywords.length > 0) {
     const questionTitle = questionKeywords[0];
-    if (questionTitle.length <= maxLength) {
+    if (questionTitle && questionTitle.length <= maxLength) {
       candidates.push({
         title: questionTitle,
         score: 0.7,
@@ -192,7 +192,7 @@ const generateTitleCandidates = (
   const topics = extractTopics(text);
   if (topics.length > 0) {
     const topicTitle = topics[0];
-    if (topicTitle.length <= maxLength) {
+    if (topicTitle && topicTitle.length <= maxLength) {
       candidates.push({
         title: `关于${topicTitle}`,
         score: 0.6,
@@ -236,7 +236,7 @@ const selectBestTitle = (candidates: Array<{ title: string; score: number; strat
   // 按分数排序，选择最高分的
   candidates.sort((a, b) => b.score - a.score);
 
-  return candidates[0].title;
+  return candidates[0]!.title;
 };
 
 // 优化标题长度

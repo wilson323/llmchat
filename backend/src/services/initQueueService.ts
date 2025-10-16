@@ -204,8 +204,9 @@ export async function initQueueService(): Promise<void> {
     logger.info(`📊 Available queues: chat-processing, email-notification, webhook-processing`);
 
   } catch (error) {
-    logger.error('❌ Failed to initialize queue service:', error);
-    throw error;
+    logger.warn('⚠️ 队列服务初始化失败，将以降级模式运行:', error);
+    logger.info('📝 提示: 队列服务对核心功能不是必需的，应用可以正常运行');
+    // 不抛出异常，允许应用继续启动
   }
 }
 

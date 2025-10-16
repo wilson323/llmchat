@@ -22,7 +22,7 @@ export interface TestCacheStats {
  * 测试用的缓存服务类（内存实现）
  */
 export class TestCacheService {
-  private data: Map<string, { value: any; expiry?: number }> = new Map();
+  private data: Map<string, { value: unknown; expiry?: number }> = new Map();
   private stats: TestCacheStats = {
     hits: 0,
     misses: 0,
@@ -33,7 +33,11 @@ export class TestCacheService {
   };
 
   private readonly prefix: string = 'llmchat-test';
-  private readonly defaultTTL: number = 300; // 5 分钟
+  private readonly DEFAULT_TTL: number = 300; // 5 分钟
+
+  // Redis TTL返回值常量
+  private readonly TTL_KEY_NOT_EXIST: number = -2;
+  private readonly TTL_NO_EXPIRY: number = -1;
 
   /**
    * 检查是否已连接（对于测试总是返回true）
@@ -45,22 +49,24 @@ export class TestCacheService {
   /**
    * 连接到缓存（对于测试总是成功）
    */
-  async connect(): Promise<void> {
+  connect(): Promise<void> {
     // 测试中不需要真实连接
+    return Promise.resolve();
   }
 
   /**
    * 断开连接
    */
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     // 测试中不需要真实断开
+    return Promise.resolve();
   }
 
   /**
    * 生成完整的 key（带前缀）
    */
   private getFullKey(key: string, prefix?: string): string {
-    const p = prefix || this.prefix;
+    const p = prefix ?? this.prefix;
     return `${p}:${key}`;
   }
 
@@ -102,7 +108,7 @@ export class TestCacheService {
   async set<T>(key: string, value: T, options?: TestCacheOptions): Promise<boolean> {
     try {
       const fullKey = this.getFullKey(key, options?.prefix);
-      const ttl = options?.ttl || this.defaultTTL;
+      const ttl = options?.ttl ?? this.DEFAULT_TTL;
 
       // 检查 NX 选项
       if (options?.nx && this.data.has(fullKey)) {
@@ -123,7 +129,7 @@ export class TestCacheService {
   /**
    * 删除缓存
    */
-  async del(key: string): Promise<number> {
+  del(key: string): Promise<number> {
     try {
       const fullKey = this.getFullKey(key);
       const existed = this.data.has(fullKey);
@@ -131,82 +137,82 @@ export class TestCacheService {
 
       if (existed) {
         this.stats.dels++;
-        return 1;
+        return Promise.resolve(1);
       }
 
-      return 0;
+      return Promise.resolve(0);
     } catch (error) {
       this.stats.errors++;
-      return 0;
+      return Promise.resolve(0);
     }
   }
 
   /**
    * 检查 key 是否存在
    */
-  async exists(key: string): Promise<number> {
+  exists(key: string): Promise<number> {
     try {
       const fullKey = this.getFullKey(key);
       const item = this.data.get(fullKey);
 
       if (!item) {
-        return 0;
+        return Promise.resolve(0);
       }
 
       // 检查过期
       if (item.expiry && Date.now() > item.expiry) {
         this.data.delete(fullKey);
-        return 0;
+        return Promise.resolve(0);
       }
 
-      return 1;
+      return Promise.resolve(1);
     } catch (error) {
       this.stats.errors++;
-      return 0;
+      return Promise.resolve(0);
     }
   }
 
   /**
    * 设置过期时间
    */
-  async expire(key: string, seconds: number): Promise<number> {
+  expire(key: string, seconds: number): Promise<number> {
     try {
       const fullKey = this.getFullKey(key);
       const item = this.data.get(fullKey);
 
       if (!item) {
-        return 0;
+        return Promise.resolve(0);
       }
 
       item.expiry = Date.now() + seconds * 1000;
-      return 1;
+      return Promise.resolve(1);
     } catch (error) {
       this.stats.errors++;
-      return 0;
+      return Promise.resolve(0);
     }
   }
 
   /**
    * 获取剩余过期时间
    */
-  async ttl(key: string): Promise<number> {
+  ttl(key: string): Promise<number> {
     try {
       const fullKey = this.getFullKey(key);
       const item = this.data.get(fullKey);
 
       if (!item) {
-        return -2;
+        return Promise.resolve(this.TTL_KEY_NOT_EXIST);
       }
 
       if (!item.expiry) {
-        return -1;
+        return Promise.resolve(this.TTL_NO_EXPIRY);
       }
 
       const remaining = Math.floor((item.expiry - Date.now()) / 1000);
-      return remaining > 0 ? remaining : -2;
+      return Promise.resolve(remaining > 0 ? remaining : this.TTL_KEY_NOT_EXIST);
     } catch (error) {
       this.stats.errors++;
-      return -2;
+      return Promise.resolve(this.TTL_KEY_NOT_EXIST);
     }
   }
 
@@ -242,7 +248,7 @@ export class TestCacheService {
   /**
    * 健康检查
    */
-  async healthCheck(): Promise<{
+  healthCheck(): Promise<{
     status: 'healthy' | 'degraded' | 'down';
     details: {
       stats: TestCacheStats;
@@ -250,22 +256,22 @@ export class TestCacheService {
       memoryUsage: number;
     };
   }> {
-    return {
+    return Promise.resolve({
       status: 'healthy',
       details: {
         stats: this.getStats(),
         redisConnected: true,
         memoryUsage: this.data.size,
       },
-    };
+    });
   }
 
   /**
    * 清空所有缓存
    */
-  async flushall(): Promise<string> {
+  flushall(): Promise<string> {
     this.data.clear();
-    return 'OK';
+    return Promise.resolve('OK');
   }
 
   /**

@@ -10,12 +10,13 @@
  * @version 1.0 - 2025-10-04
  */
 
+;
+;
+import {AlertCircle} from 'lucide-react';
 import React, { useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAgentStore } from '@/store/agentStore';
-import { useSessionStore } from '@/store/sessionStore';
+import { useChatStore } from '@/store/chatStore';
 import { ChatContainer } from '@/components/chat/ChatContainer';
-import { AlertCircle } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import type { WorkspaceType } from '@/types';
 
@@ -88,15 +89,17 @@ export const AgentWorkspace: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // 获取智能体信息
-  const currentAgent = useAgentStore((state) =>
-    agentId ? state.getAgentById(agentId) : null,
-  );
-  const setCurrentAgent = useAgentStore((state) => state.setCurrentAgent);
+  // 获取智能体信息和会话管理
+  const {
+    agents,
+    currentAgent,
+    setCurrentAgent,
+    switchToSession,
+    createNewSession,
+  } = useChatStore();
 
-  // 会话管理
-  const switchToSession = useSessionStore((state) => state.switchToSession);
-  const createNewSession = useSessionStore((state) => state.createNewSession);
+  // 如果有agentId，从agents列表中查找
+  const foundAgent = agentId ? agents.find((agent: any) => agent.id === agentId) : currentAgent;
 
   // 处理智能体变化
   useEffect(() => {
@@ -105,28 +108,28 @@ export const AgentWorkspace: React.FC = () => {
       return;
     }
 
-    if (!currentAgent) {
+    if (!foundAgent) {
       // 智能体未找到，等待加载或显示错误
       return;
     }
 
     // 设置当前智能体到全局状态
-    setCurrentAgent(currentAgent);
+    setCurrentAgent(foundAgent);
 
     // 处理会话参数
     const sessionId = searchParams.get('session');
     const createNew = searchParams.get('new') === 'true';
 
-    if (sessionId && agentId) {
+    if (sessionId) {
       // 切换到指定会话
-      switchToSession(agentId, sessionId);
-    } else if (createNew && agentId) {
+      switchToSession(sessionId);
+    } else if (createNew) {
       // 创建新会话
-      createNewSession(agentId);
+      createNewSession();
     }
     // 否则使用默认会话（最近的会话）
 
-  }, [agentId, currentAgent, setCurrentAgent, searchParams, navigate, switchToSession, createNewSession]);
+  }, [agentId, foundAgent, setCurrentAgent, searchParams, navigate, switchToSession, createNewSession]);
 
   // 加载中状态
   if (!agentId) {
@@ -134,25 +137,25 @@ export const AgentWorkspace: React.FC = () => {
   }
 
   // 智能体未找到
-  if (!currentAgent) {
+  if (!foundAgent) {
     return <AgentNotFound agentId={agentId} />;
   }
 
   // 根据工作区类型渲染对应的工作区
-  const workspaceType: WorkspaceType = currentAgent.workspaceType || 'chat';
+  const workspaceType: WorkspaceType = foundAgent.workspaceType || 'chat';
 
   switch (workspaceType) {
     case 'product-preview':
       return (
         <Suspense fallback={<LoadingSpinner />}>
-          <ProductPreviewWorkspace agent={currentAgent} />
+          <ProductPreviewWorkspace agent={foundAgent} />
         </Suspense>
       );
 
     case 'voice-call':
       return (
         <Suspense fallback={<LoadingSpinner />}>
-          <VoiceCallWorkspace agent={currentAgent} />
+          <VoiceCallWorkspace agent={foundAgent} />
         </Suspense>
       );
 

@@ -1,3 +1,5 @@
+;
+import { Keyboard } from 'lucide-react';
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useKeyboardManager, appShortcuts, useKeyboardHelp } from "../useKeyboardManager";
@@ -9,8 +11,20 @@ vi.mock("@/store/chatStore");
 vi.mock("@/store/uiStore");
 
 describe("useKeyboardManager", () => {
-  let mockChatStore: any;
-  let mockUIStore: any;
+  let mockChatStore: {
+    getState: ReturnType<typeof vi.fn>;
+    createNewSession: ReturnType<typeof vi.fn>;
+    deleteSession: ReturnType<typeof vi.fn>;
+    switchToSession: ReturnType<typeof vi.fn>;
+    initializeAgentSessions: ReturnType<typeof vi.fn>;
+    setAgentSelectorOpen?: ReturnType<typeof vi.fn>;
+  };
+  let mockUIStore: {
+    getState: ReturnType<typeof vi.fn>;
+    setSidebarOpen: ReturnType<typeof vi.fn>;
+    setAgentSelectorOpen: ReturnType<typeof vi.fn>;
+    sidebarOpen?: boolean;
+  };
 
   beforeEach(() => {
     // Reset mocks
@@ -32,8 +46,8 @@ describe("useKeyboardManager", () => {
       setAgentSelectorOpen: vi.fn(),
     };
 
-    const mockUseChatStore = useChatStore as any;
-    const mockUseUIStore = useUIStore as any;
+    const mockUseChatStore = useChatStore as ReturnType<typeof vi.fn>;
+    const mockUseUIStore = useUIStore as ReturnType<typeof vi.fn>;
 
     mockUseChatStore.mockReturnValue(mockChatStore);
     mockUseUIStore.mockReturnValue(mockUIStore);

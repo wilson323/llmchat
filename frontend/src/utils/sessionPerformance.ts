@@ -106,7 +106,9 @@ class SessionPerformanceMonitor {
     const endTime = performance.now();
     metric.renderEndTime = endTime;
     metric.renderDuration = endTime - metric.renderStartTime;
-    metric.error = error;
+    if (error !== undefined) {
+      metric.error = error;
+    }
 
     try {
       performance.mark(`session-switch-end-${sessionId}`);

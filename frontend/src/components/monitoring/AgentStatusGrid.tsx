@@ -1,19 +1,29 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {Activity, AlertCircle, CheckCircle, Clock, Eye, RefreshCw, TrendingDown, TrendingUp, XCircle, Zap} from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import {
-  Activity,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  Eye,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
+;
+;
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { AgentHealthStatus } from '@/services/slaApi';
@@ -60,7 +70,7 @@ export function AgentStatusGrid({
   onViewDetails,
   onToggleAgent,
 }: AgentStatusGridProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState('grid');
 
   const getPerformanceGrade = (responseTime: number, successRate: number) => {
     if (responseTime < 500 && successRate >= 99) {

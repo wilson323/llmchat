@@ -114,20 +114,34 @@ export function getPool(): Pool {
 export async function initDB(): Promise<void> {
   logger.info('[initDB] 开始初始化数据库...');
 
-  const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
-  logger.info('[initDB] 配置文件加载成功');
+  // 优先使用环境变量直接配置，避免依赖配置文件
+  const rawPg: PostgresConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'password',
+    database: process.env.DB_NAME || 'postgres',
+    ssl: process.env.DB_SSL === 'true'
+  };
 
-  // 替换配置中的环境变量占位符
-  const cfg = deepReplaceEnvVariables(rawCfg);
-  const rawPg = cfg.database?.postgres;
-
-  if (!rawPg) {
-    logger.error('[initDB] 数据库配置缺失');
-    throw new Error('DATABASE_CONFIG_MISSING');
+  // 如果环境变量中的用户名或密码是默认值，尝试读取配置文件作为后备
+  if (rawPg.user === 'postgres' || rawPg.password === 'password') {
+    logger.info('[initDB] 尝试从配置文件加载数据库配置...');
+    try {
+      const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
+      const cfg = deepReplaceEnvVariables(rawCfg);
+      const configPg = cfg.database?.postgres;
+      if (configPg) {
+        Object.assign(rawPg, configPg);
+        logger.info('[initDB] 配置文件加载成功');
+      }
+    } catch (error) {
+      logger.warn('[initDB] 配置文件加载失败，使用环境变量', { error });
+    }
   }
 
   const pg = normalizePostgresConfig(rawPg);
-  logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}`);
+  logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}, User: ${pg.user}`);
 
   // 先连接到 postgres 默认数据库，检查并创建目标数据库
   logger.info('[initDB] 连接到 postgres 默认数据库...');
@@ -138,10 +152,18 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: 'postgres', // 先连接到默认数据库
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
+    connectionTimeoutMillis: 5000,  // 5秒连接超时
+    query_timeout: 5000,  // 5秒查询超时
   });
 
   try {
-    const client = await tempPool.connect();
+    logger.info('[initDB] 尝试连接到 postgres 数据库（5秒超时）...');
+    const client = await Promise.race([
+      tempPool.connect(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('连接超时')), 5000)
+      )
+    ]);
     logger.info('[initDB] 成功连接到 postgres 数据库');
 
     try {
@@ -187,7 +209,8 @@ export async function initDB(): Promise<void> {
     max: 50,                          // 连接池最大50个连接（支持1000并发）
     min: 5,                           // 最小保持5个连接
     idleTimeoutMillis: 30_000,        // 30秒空闲超时
-    connectionTimeoutMillis: 10_000,  // 10秒连接超时
+    connectionTimeoutMillis: 5000,   // 5秒连接超时
+    query_timeout: 5000,             // 5秒查询超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
   });
 

@@ -4,7 +4,8 @@
  * 提供基础的懒加载和预加载功能，避免复杂的类型问题
  */
 
-import { lazy, ComponentType } from 'react';
+import { lazy } from 'react';
+import type React from 'react';
 
 // 简化的组件加载配置
 export interface SimpleLazyConfig {
@@ -18,7 +19,7 @@ export interface SimpleLazyConfig {
 
 // 已注册的组件
 const registeredComponents = new Map<string, {
-  importFn:() => Promise<{ default: ComponentType<any> }>;
+  importFn:() => Promise<{ default: React.ComponentType<any> }>;
   config: SimpleLazyConfig;
   loaded?: boolean;
 }>();
@@ -32,7 +33,7 @@ export class SimpleCodeSplitting {
    */
   static registerComponent(
     name: string,
-    importFn: () => Promise<{ default: ComponentType<any> }>,
+    importFn: () => Promise<{ default: React.ComponentType<any> }>,
     config: SimpleLazyConfig = {},
   ): void {
     registeredComponents.set(name, {
@@ -52,7 +53,7 @@ export class SimpleCodeSplitting {
   static createLazyComponent<T = any>(
     name: string,
     _config?: SimpleLazyConfig, // 暂时未使用配置
-  ): ComponentType<T> {
+  ): React.ComponentType<T> {
     const registration = registeredComponents.get(name);
     if (!registration) {
       throw new Error(`组件 ${name} 未注册`);
@@ -66,7 +67,7 @@ export class SimpleCodeSplitting {
       registration.loaded = true;
     }
 
-    return LazyComponent as ComponentType<T>;
+    return LazyComponent as React.ComponentType<T>;
   }
 
   /**

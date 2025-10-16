@@ -12,7 +12,7 @@ export interface IconButtonProps extends Omit<ButtonProps, 'size' | 'variant'> {
 }
 
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, variant = 'ghost', radius = 'md', ...props }, ref) => {
+  ({ className, variant = 'ghost', radius = 'md', ...props }: IconButtonProps, ref) => {
     const isGlass = variant === 'glass';
     const baseGlass =
       'bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-md border border-white/30 hover:from-white/25 hover:to-white/10 text-foreground shadow-xl hover:shadow-2xl';

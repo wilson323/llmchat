@@ -10,6 +10,9 @@ import {
   globalErrorHandler,
   defaultHybridStorageConfig,
 } from '@/services/HybridStorageService';
+;
+;
+;
 import { CacheStrategy } from '@/types/hybrid-storage';
 import { useEffect, useState } from 'react';
 
@@ -34,7 +37,8 @@ export async function initializeHybridStorage() {
           ...defaultHybridStorageConfig.cache!.indexedDB,
         },
       },
-      sync: defaultHybridStorageConfig.sync,
+      // 使用条件属性展开满足 exactOptionalPropertyTypes
+      ...(defaultHybridStorageConfig.sync && { sync: defaultHybridStorageConfig.sync }),
     });
 
     // 初始化存储管理器
@@ -81,7 +85,7 @@ export async function initializeHybridStorage() {
 export function useHybridStorage() {
   const store = useHybridChatStore();
   const [isInitialized, setIsInitialized] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [healthStatus, setHealthStatus] = useState(null);
 
   useEffect(() => {
     // 初始化存储
@@ -207,7 +211,7 @@ export class SessionManager {
     try {
       const searchQuery = {
         text: query,
-        agentId,
+        ...(agentId && { agentId }),
         limit: 20,
         sortBy: 'updatedAt' as const,
         sortOrder: 'desc' as const,

@@ -1,20 +1,32 @@
+;
+;
+;
+;
+import { Bot, Camera, ChevronDown, PhoneCall } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
-import { ChevronDown, Bot, Camera, PhoneCall } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { useChatStore } from '@/store/chatStore';
+// 使用拆分的store架构
+import useAgentStore from '@/store/agentStore';
+import useUIStore from '@/store/uiStore';
 import { useAgents } from '@/hooks/useAgents';
 import { useI18n } from '@/i18n';
 import { PRODUCT_PREVIEW_AGENT_ID, VOICE_CALL_AGENT_ID } from '@/constants/agents';
+import type { Agent } from '@/types';
 
 export const AgentSelector: React.FC = () => {
+  const agentStore = useAgentStore();
   const {
     agents,
     currentAgent,
-    agentSelectorOpen,
     setCurrentAgent,
+  } = agentStore;
+
+  const uiStore = useUIStore();
+  const {
+    agentSelectorOpen,
     setAgentSelectorOpen,
-  } = useChatStore();
+  } = uiStore;
 
   const { fetchAgents, loading } = useAgents();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,7 +39,7 @@ export const AgentSelector: React.FC = () => {
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setAgentSelectorOpen(false);
       }
@@ -35,12 +47,14 @@ export const AgentSelector: React.FC = () => {
 
     if (agentSelectorOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      return (): void => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
     }
     return undefined;
   }, [agentSelectorOpen, setAgentSelectorOpen]);
 
-  const handleAgentSelect = (agent: any) => {
+  const handleAgentSelect = (agent: Agent) => {
     // 使用路由导航到智能体工作区
     navigate(`/chat/${agent.id}`);
     setCurrentAgent(agent);
@@ -150,7 +164,7 @@ export const AgentSelector: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-2">
-                  {agents.map((agent) => (
+                  {agents.map((agent: Agent) => (
                     <Button
                       key={agent.id}
                       onClick={() => handleAgentSelect(agent)}
@@ -195,7 +209,7 @@ export const AgentSelector: React.FC = () => {
                         {/* 能力标签 */}
                         {agent.capabilities && agent.capabilities.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {agent.capabilities.slice(0, 3).map((capability) => (
+                            {agent.capabilities.slice(0, 3).map((capability: string) => (
                               <span key={capability}
                                 className="inline-block px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700
                                   text-gray-600 dark:text-gray-400 rounded">

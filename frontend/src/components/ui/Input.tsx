@@ -7,8 +7,8 @@ export function Input({
   id,
   name,
   ...rest
-}: React.ComponentProps<'input'>) {
-  const reactId = React.useId();
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  const reactId = crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
   const fallbackId = React.useMemo(
     () => `input-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`,
     [reactId],

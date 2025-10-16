@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 
 export default function LazyComponent1() {
-  const [loadTime, setLoadTime] = useState<string>('');
+  const [loadTime, setLoadTime] = useState('');
 
   useEffect(() => {
     setLoadTime(new Date().toLocaleTimeString());

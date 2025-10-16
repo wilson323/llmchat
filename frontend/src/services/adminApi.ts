@@ -1,3 +1,6 @@
+;
+;
+;
 import { api } from './api';
 
 export interface SystemInfo {
@@ -22,7 +25,13 @@ export async function getSystemInfo(): Promise<SystemInfo> {
 
 export async function getLogsPage(params?: GetLogsParams): Promise<LogsPage> {
   const { data } = await api.get<{ data: LogItem[]; total: number; page: number; pageSize: number }>('/admin/logs', { params });
-  return { data: data.data, total: (data as any).total, page: (data as any).page, pageSize: (data as any).pageSize };
+
+  return {
+    data: data.data,
+    total: data.total,
+    page: data.page,
+    pageSize: data.pageSize,
+  };
 }
 
 export async function getLogs(params?: GetLogsParams): Promise<LogItem[]> {
@@ -47,11 +56,11 @@ export async function updateUser(payload: { id: number; role?: string; status?: 
 }
 
 export async function resetUserPassword(payload: { id: number; newPassword?: string }): Promise<{ ok: boolean; newPassword: string }> {
-  const { data } = await api.post('/admin/users/reset-password', payload);
+  const { data } = await api.post<{ ok: boolean; newPassword: string }>('/admin/users/reset-password', payload);
   return data;
 }
 
 export async function exportLogsCsv(params?: GetLogsParams): Promise<string> {
-  const { data } = await api.get('/admin/logs/export', { params, responseType: 'text' });
-  return data as string;
+  const { data } = await api.get<string>('/admin/logs/export', { params, responseType: 'text' });
+  return data;
 }

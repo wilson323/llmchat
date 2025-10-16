@@ -33,23 +33,26 @@ export const mapHistorySummaryToSession = (
 
 const mapHistoryMessageToChatMessage = (message: FastGPTChatHistoryMessage): ChatMessage => {
   if (message.role === 'assistant') {
+    const id = message.dataId || message.id;
     return {
       AI: message.content,
-      id: message.dataId || message.id,
-      feedback: message.feedback ?? null,
+      ...(id && { id }),
+      ...(message.feedback !== undefined && { feedback: message.feedback }),
     };
   }
 
   if (message.role === 'system') {
+    const id = message.dataId || message.id;
     return {
       AI: message.content,
-      id: message.dataId || message.id,
+      ...(id && { id }),
     };
   }
 
+  const humanId = message.dataId || message.id;
   return {
     HUMAN: message.content,
-    id: message.dataId || message.id,
+    ...(humanId && { id: humanId }),
   };
 };
 

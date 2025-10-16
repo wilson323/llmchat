@@ -3,9 +3,15 @@
  */
 
 'use client';
+;
+;
+;
+import { Eye, EyeOff, X } from 'lucide-react';
 import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Eye, EyeOff } from 'lucide-react';
+;
+;
+;
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/i18n';
@@ -69,7 +75,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
           className="bg-background rounded-2xl p-6 w-full max-w-md border border-border/50 shadow-2xl"
         >
           <div className="flex items-center justify-between mb-6">
@@ -93,7 +99,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.current ? 'text' : 'password'}
                   value={formData.currentPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, currentPassword: e.target.value }))}
                   placeholder={t('请输入当前密码')}
                   required
                 />
@@ -102,7 +108,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                   variant="ghost"
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(prev => ({ ...prev, current: !prev.current }))}
+                  onClick={() => setShowPassword((prev) => ({ ...prev, current: !prev.current }))}
                 >
                   {showPassword.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -117,7 +123,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.new ? 'text' : 'password'}
                   value={formData.newPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, newPassword: e.target.value }))}
                   placeholder={t('请输入新密码（至少6位）')}
                   required
                 />
@@ -126,7 +132,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                   variant="ghost"
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(prev => ({ ...prev, new: !prev.new }))}
+                  onClick={() => setShowPassword((prev) => ({ ...prev, new: !prev.new }))}
                 >
                   {showPassword.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -141,7 +147,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.confirm ? 'text' : 'password'}
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder={t('请再次输入新密码')}
                   required
                 />
@@ -150,7 +156,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                   variant="ghost"
                   size="icon"
                   className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(prev => ({ ...prev, confirm: !prev.confirm }))}
+                  onClick={() => setShowPassword((prev) => ({ ...prev, confirm: !prev.confirm }))}
                 >
                   {showPassword.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>

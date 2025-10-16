@@ -3,6 +3,8 @@
  * 负责监控和优化前端资源使用
  */
 
+;
+import { Monitor } from 'lucide-react';
 import React from 'react';
 
 // 内存使用监控

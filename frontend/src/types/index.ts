@@ -1,4 +1,3 @@
-import type { JsonValue } from '@llmchat/shared-types';
 
 /**
  * 工作区类型
@@ -110,47 +109,15 @@ export type InteractiveData =
   | { type: 'userSelect'; origin?: 'init' | 'chat'; params: InteractiveSelectParams }
   | { type: 'userInput'; origin?: 'init' | 'chat'; params: InteractiveInputParams };
 
-export interface ReasoningStep {
-  id: string;
-  index: number; // 添加index用于排序
-  order: number;
-  content: string;
-  text: string; // 添加text字段
-  title?: string;
-  status?: 'pending' | 'running' | 'completed' | 'error';
-  raw?: any;
-}
+// 重新导出共享类型
+import type { ReasoningStep, ReasoningStepUpdate, JsonValue, FastGPTEvent } from '@llmchat/shared-types';
+export type { ReasoningStep, ReasoningStepUpdate, JsonValue, FastGPTEvent };
 
 export interface ReasoningState {
-  steps: ReasoningStep[];
+  steps: import('@llmchat/shared-types').ReasoningStep[];
   totalSteps?: number;
   finished?: boolean;
   lastUpdatedAt?: number;
-}
-
-export interface ReasoningStepUpdate {
-  index?: number; // index可选
-  content: string;
-  text?: string; // text可选
-  order?: number;
-  totalSteps?: number;
-  title?: string;
-  status?: 'pending' | 'running' | 'completed' | 'error';
-  raw?: any;
-  finished?: boolean;
-}
-
-export interface FastGPTEvent {
-  id: string;
-  name: string;
-  label: string;
-  summary?: string;
-  detail?: string;
-  level: 'info' | 'success' | 'warning' | 'error';
-  payload: any;
-  timestamp: number;
-  groupId?: string;
-  stage?: 'start' | 'update' | 'complete';
 }
 
 export interface FastGPTChatHistorySummary {

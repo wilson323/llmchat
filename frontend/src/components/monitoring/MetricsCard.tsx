@@ -1,16 +1,16 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {Activity, AlertTriangle, BarChart3, CheckCircle, Shield, TrendingDown, TrendingUp, Zap} from 'lucide-react';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import {
-  Activity,
-  AlertTriangle,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown,
-  Zap,
-  Shield,
-  BarChart3,
-} from 'lucide-react';
 
 interface MetricsCardProps {
   title: string;
@@ -80,7 +80,7 @@ export function MetricsCard({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => {
+      onKeyDown={onClick ? (e: any) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onClick();
@@ -193,7 +193,7 @@ export function UptimeCard({ uptime, loading }: { uptime: number; loading?: bool
       status={uptime >= 99.9 ? 'success' : uptime >= 99 ? 'warning' : 'error'}
       icon={<Shield className="h-5 w-5 text-success" />}
       description="过去30天系统运行时间"
-      loading={loading}
+      {...(loading !== undefined && { loading })}
     />
   );
 }
@@ -210,7 +210,7 @@ export function ResponseTimeCard({ responseTime, loading }: {
       status={responseTime.avg < 500 ? 'success' : responseTime.avg < 1000 ? 'warning' : 'error'}
       icon={<Zap className="h-5 w-5 text-info" />}
       description={`P95: ${responseTime.p95}ms`}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
     />
   );
 }
@@ -227,7 +227,7 @@ export function ErrorRateCard({ errorRate, loading }: {
       status={errorRate.total < 1 ? 'success' : errorRate.total < 5 ? 'warning' : 'error'}
       icon={<AlertTriangle className="h-5 w-5 text-warning" />}
       description={`服务器错误: ${errorRate.serverErrors}%`}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
     />
   );
 }
@@ -242,7 +242,7 @@ export function RequestCountCard({ requestCount, loading }: {
       value={requestCount.total}
       icon={<BarChart3 className="h-5 w-5 text-brand" />}
       description={`成功: ${requestCount.success.toLocaleString()}`}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
       change={{
         value: 12.5,
         type: 'increase',
@@ -267,7 +267,7 @@ export function ActiveAgentsCard({ activeAgents, totalAgents, loading }: {
       status={percentage >= 90 ? 'success' : percentage >= 70 ? 'warning' : 'error'}
       icon={<Activity className="h-5 w-5 text-info" />}
       description={`${percentage.toFixed(1)}% 在线率`}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
     />
   );
 }

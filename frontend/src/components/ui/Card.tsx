@@ -35,8 +35,15 @@ const CardComponent: React.FC<CardProps> = ({ children, className = '', title })
   );
 };
 
+// Create proper type for the Card with subcomponents
+interface CardWithSubComponents extends React.FC<CardProps> {
+  Header: React.FC<CardHeaderProps>;
+  Title: React.FC<CardTitleProps>;
+  Content: React.FC<CardContentProps>;
+}
+
 // Attach subcomponents to main component
-const Card = CardComponent as CardComponent;
+const Card = CardComponent as CardWithSubComponents;
 Card.Header = CardHeader;
 Card.Title = CardTitle;
 Card.Content = CardContent;

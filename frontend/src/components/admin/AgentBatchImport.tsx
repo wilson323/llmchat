@@ -8,8 +8,12 @@
  * - 错误处理
  */
 
-import { useState } from 'react';
-import { Upload, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+;
+;
+;
+;
+import { AlertCircle, CheckCircle, Upload, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
 import type { AgentConfig } from '@/types';
 import { showConfirmDialog } from '@/utils/confirmDialog';
 
@@ -18,7 +22,22 @@ interface ImportResult {
   failed: Array<{ agent: Partial<AgentConfig>; error: string }>;
 }
 
-export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentConfig>) => Promise<void> }) {
+// 导入数据的临时类型定义
+interface ImportAgentData {
+  name: string;
+  provider: string;
+  endpoint: string;
+  model: string;
+  description?: string;
+  apiKey?: string;
+  appId?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  isActive?: boolean;
+}
+
+export function AgentBatchImport({ onImport }: { onImport: (agents: AgentConfig[]) => Promise<void> }) {
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
@@ -76,7 +95,7 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
     }
   };
 
-  const validateAgent = (agent: any) => {
+  const validateAgent = (agent: ImportAgentData) => {
     if (!agent.name) {
       throw new Error('缺少name字段');
     }
@@ -157,7 +176,7 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
                 成功验证 {result.success.length} 个智能体
               </div>
               <ul className="text-sm space-y-1 text-green-600 dark:text-green-300">
-                {result.success.map((agent, i) => (
+                {result.success.map((agent: AgentConfig, i: number) => (
                   <li key={i}>✓ {agent.name}</li>
                 ))}
               </ul>
@@ -171,7 +190,7 @@ export function AgentBatchImport({ onImport }: { onImport: (agents: Array<AgentC
                 验证失败 {result.failed.length} 个智能体
               </div>
               <ul className="text-sm space-y-2 text-red-600 dark:text-red-300">
-                {result.failed.map((item, i) => (
+                {result.failed.map((item: { agent: Partial<AgentConfig>; error: string }, i: number) => (
                   <li key={i}>
                     <strong>{item.agent.name || '未命名'}</strong>: {item.error}
                   </li>

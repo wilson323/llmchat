@@ -6,7 +6,7 @@
 import request from 'supertest';
 import express from 'express';
 import { createTestApp, setupTestDatabase, cleanupTestDatabase } from '../testUtils';
-import { QueueManager } from '../../services/QueueManager';
+import QueueManager from '../../services/QueueManager';
 import { QueueOperationsService } from '../../services/QueueOperationsService';
 import { QueueStatsService } from '../../services/QueueStatsService';
 import { QueueHealthService } from '../../services/QueueHealthService';

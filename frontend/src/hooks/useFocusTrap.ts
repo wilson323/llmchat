@@ -52,7 +52,7 @@ export const useFocusTrap = ({
   };
 
   // 处理Tab键循环
-  const handleTabKey = (event: KeyboardEvent) => {
+  const handleTabKey = (event: KeyboardEvent): void => {
     if (!container) {
       return;
     }
@@ -85,7 +85,7 @@ export const useFocusTrap = ({
   };
 
   // 处理Escape键
-  const handleEscapeKey = (event: KeyboardEvent) => {
+  const handleEscapeKey = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && onEscape) {
       event.preventDefault();
       onEscape();
@@ -93,7 +93,7 @@ export const useFocusTrap = ({
   };
 
   // 处理键盘事件
-  const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = (event: KeyboardEvent): void => {
     if (!enabled) {
       return;
     }
@@ -109,7 +109,7 @@ export const useFocusTrap = ({
   };
 
   // 捕获焦点
-  const trapFocus = () => {
+  const trapFocus = (): void => {
     if (!container || !enabled) {
       return;
     }
@@ -135,7 +135,7 @@ export const useFocusTrap = ({
   };
 
   // 释放焦点
-  const releaseFocus = () => {
+  const releaseFocus = (): void => {
     // 移除键盘事件监听
     document.removeEventListener('keydown', handleKeyDown, true);
 

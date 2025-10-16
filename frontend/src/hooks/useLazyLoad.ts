@@ -9,7 +9,7 @@
  * 5. Memory leak prevention
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
 
 interface LazyLoadOptions {
@@ -31,7 +31,7 @@ interface LazyLoadResult<T> {
 /**
  * Hook for lazy loading components with Intersection Observer
  */
-export function useLazyLoad<T = any>(
+export function useLazyLoad<T = unknown>(
   importFn: () => Promise<{ default: React.ComponentType<T> }>,
   options: LazyLoadOptions = {}
 ): LazyLoadResult<T> {
@@ -66,7 +66,7 @@ export function useLazyLoad<T = any>(
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup function
-  const cleanup = useCallback(() => {
+  const cleanup = useCallback((): void => {
     if (observerRef.current) {
       observerRef.current.disconnect();
       observerRef.current = null;
@@ -87,7 +87,7 @@ export function useLazyLoad<T = any>(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setState(prev => ({ ...prev, isVisible: true }));
+            setState((prev) => ({ ...prev, isVisible: true }));
           }
         });
       },
@@ -111,12 +111,12 @@ export function useLazyLoad<T = any>(
     if (state.isVisible && !state.component && !state.loading && !state.error) {
       let mounted = true;
 
-      setState(prev => ({ ...prev, loading: true, error: null }));
+      setState((prev) => ({ ...prev, loading: true, error: null }));
 
       // Set timeout
       timeoutRef.current = setTimeout(() => {
         if (mounted) {
-          setState(prev => ({
+          setState((prev) => ({
             ...prev,
             loading: false,
             error: new Error(`Component loading timeout after ${timeout}ms`),
@@ -128,7 +128,7 @@ export function useLazyLoad<T = any>(
         .then((module) => {
           if (mounted) {
             if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current as NodeJS.Timeout);
+              clearTimeout(timeoutRef.current);
             }
             setState({
               component: module.default,
@@ -142,7 +142,7 @@ export function useLazyLoad<T = any>(
         .catch((error) => {
           if (mounted) {
             if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current as NodeJS.Timeout);
+              clearTimeout(timeoutRef.current);
             }
             setState({
               component: null,
@@ -158,6 +158,7 @@ export function useLazyLoad<T = any>(
         mounted = false;
       };
     }
+    return undefined;
   }, [
     state.isVisible,
     state.component,
@@ -169,9 +170,9 @@ export function useLazyLoad<T = any>(
   ]);
 
   // Retry mechanism
-  const retry = useCallback(() => {
+  const retry = useCallback((): void => {
     if (state.retryCount < retryLimit) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         loading: false,
         error: null,
@@ -179,7 +180,7 @@ export function useLazyLoad<T = any>(
       }));
 
       retryTimeoutRef.current = setTimeout(() => {
-        setState(prev => ({ ...prev, isVisible: true }));
+        setState((prev) => ({ ...prev, isVisible: true }));
       }, retryDelay);
     }
   }, [state.retryCount, retryLimit, retryDelay]);
@@ -215,9 +216,9 @@ export function useLazyLoadImage(
   const [retryCount, setRetryCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
-  let imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const { retryLimit = 3, retryDelay = 1000 } = options;
+  const { retryLimit = 3 } = options;
 
   const ref = useCallback((node: HTMLElement | null) => {
     if (node) {
@@ -239,9 +240,9 @@ export function useLazyLoadImage(
     }
   }, [options.rootMargin, options.threshold]);
 
-  const retry = useCallback(() => {
+  const retry = useCallback((): void => {
     if (retryCount < retryLimit && imgRef.current) {
-      setRetryCount(prev => prev + 1);
+      setRetryCount((prev) => prev + 1);
       setError(false);
       setLoaded(false);
 
@@ -249,20 +250,20 @@ export function useLazyLoadImage(
         if (imgRef.current) {
           imgRef.current.src = src;
         }
-      }, retryDelay * retryCount);
+      }, 1000 * retryCount);
     }
-  }, [src, retryCount, retryLimit, retryDelay]);
+  }, [src, retryCount, retryLimit]);
 
   useEffect(() => {
     if (isVisible && imgRef.current && !loaded && !error) {
       const img = imgRef.current;
 
-      img.onload = () => {
+      img.onload = (): void => {
         setLoaded(true);
         setError(false);
       };
 
-      img.onerror = () => {
+      img.onerror = (): void => {
         setError(true);
         retry();
       };
@@ -298,7 +299,7 @@ export function useLazyLoadData<T>(
   refetch: () => void;
   isValidating: boolean;
 } {
-  const { cacheKey, cacheTime = 300000, retryLimit = 3, retryDelay = 1000 } = options;
+  const { cacheKey, cacheTime = 300000 } = options;
 
   const [state, setState] = useState<{
     data: T | null;
@@ -317,8 +318,8 @@ export function useLazyLoadData<T>(
   // Cache implementation
   const cacheRef = useRef<Map<string, { data: T; timestamp: number }>>(new Map());
 
-  const fetchData = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null, isValidating: true }));
+  const fetchData = useCallback(async (): Promise<void> => {
+    setState((prev) => ({ ...prev, loading: true, error: null, isValidating: true }));
 
     try {
       const data = await fetchFn();
@@ -351,7 +352,7 @@ export function useLazyLoadData<T>(
     }
   }, [fetchFn, cacheKey, state.retryCount]);
 
-  const refetch = useCallback(() => {
+  const refetch = useCallback((): void => {
     // Clear cache if exists
     if (cacheKey) {
       cacheRef.current.delete(cacheKey);
@@ -394,13 +395,13 @@ export function useLazyLoadData<T>(
  * Hook for preloading critical resources
  */
 export function usePreloadResources(): {
-  preload: (resources: Array<string | (() => Promise<any>)>) => Promise<void>;
-  isPreloaded: (resource: string | (() => any)) => boolean;
+  preload: (resources: Array<string | (() => Promise<unknown>)>) => Promise<void>;
+  isPreloaded: (resource: string | (() => unknown)) => boolean;
   preloaded: Set<string>;
 } {
   const [preloaded, setPreloaded] = useState<Set<string>>(new Set());
 
-  const preload = useCallback(async (resources: Array<string | (() => Promise<any>)>) => {
+  const preload = useCallback(async (resources: Array<string | (() => Promise<unknown>)>) => {
     const results = await Promise.allSettled(
       resources.map(resource => {
         if (typeof resource === 'string') {
@@ -418,14 +419,15 @@ export function usePreloadResources(): {
       })
     );
 
-    const newlyPreloaded = resources.filter((_, index) =>
-      results[index].status === 'fulfilled' && results[index].value
-    );
+    const newlyPreloaded = resources.filter((_, index) => {
+      const result = results[index];
+      return result && result.status === 'fulfilled' && (result as PromiseFulfilledResult<boolean>).value === true;
+    });
 
-    setPreloaded(prev => new Set([...Array.from(prev), ...newlyPreloaded.map(r => typeof r === 'string' ? r : r.toString())]));
+    setPreloaded((prev) => new Set([...Array.from(prev), ...newlyPreloaded.map(r => typeof r === 'string' ? r : r.toString())]));
   }, []);
 
-  const isPreloaded = useCallback((resource: string | (() => any)) => {
+  const isPreloaded = useCallback((resource: string | (() => unknown)) => {
     return preloaded.has(typeof resource === 'string' ? resource : resource.toString());
   }, [preloaded]);
 

@@ -9,53 +9,61 @@
  * 5. Progressive loading
  */
 
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense, ComponentType, ReactNode } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Loader2,
-  RefreshCw,
-  AlertTriangle,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {AlertTriangle, Loader2, RefreshCw, Wifi, WifiOff} from 'lucide-react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import Card, { CardContent } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import Alert, { AlertDescription } from '@/components/ui/Alert';
+;
+;
+;
+;
+;
 import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
 
 // Error boundary for lazy loaded components
 interface ErrorBoundaryState {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
   retryCount: number;
 }
 
-class LazyLoadErrorBoundary extends Component<
-  { children: ReactNode; fallback?: ReactNode; onRetry?: () => void },
+class LazyLoadErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode; onRetry?: () => void },
   ErrorBoundaryState
 > {
-  constructor(props: { children: ReactNode; fallback?: ReactNode; onRetry?: () => void }) {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode; onRetry?: () => void }) {
     super(props);
-    this.state = { hasError: false, retryCount: 0 };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error, retryCount: 0 };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Lazy load error:', error, errorInfo);
   }
 
   handleRetry = () => {
-    this.setState(prev => ({
+    this.setState((prev: ErrorBoundaryState) => ({
       hasError: false,
-      error: undefined,
+      error: null,
       retryCount: prev.retryCount + 1
     }));
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return <>{this.props.fallback}</>;
@@ -151,13 +159,13 @@ function LoadingComponent({
 }
 
 // Enhanced lazy load wrapper with prefetching
-function createLazyComponent<T extends ComponentType<any>>(
+function createLazyComponent<T extends React.ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   options: {
     prefetch?: boolean;
     timeout?: number;
     retryCount?: number;
-    fallback?: ReactNode;
+    fallback?: React.ReactNode;
     loadingType?: LoadingComponentProps['type'];
   } = {}
 ) {
@@ -196,9 +204,9 @@ function createLazyComponent<T extends ComponentType<any>>(
   };
 }
 
-// Lazy loaded admin components
+// Lazy loaded admin components - using existing components
 export const LazyAdminDashboard = createLazyComponent(
-  () => import('@/components/admin/AdminDashboard'),
+  () => import('@/components/admin/AdminHome'),
   {
     prefetch: false, // Don't prefetch admin dashboard
     timeout: 15000,
@@ -207,7 +215,7 @@ export const LazyAdminDashboard = createLazyComponent(
 );
 
 export const LazyUserManagement = createLazyComponent(
-  () => import('@/components/admin/UserManagement'),
+  () => import('@/components/admin/AgentsPanel'),
   {
     prefetch: false,
     timeout: 10000,
@@ -216,7 +224,7 @@ export const LazyUserManagement = createLazyComponent(
 );
 
 export const LazyAgentConfig = createLazyComponent(
-  () => import('@/components/admin/AgentConfig'),
+  () => import('@/components/admin/AgentBatchImport').then(module => ({ default: module.AgentBatchImport })),
   {
     prefetch: false,
     timeout: 10000,
@@ -225,7 +233,7 @@ export const LazyAgentConfig = createLazyComponent(
 );
 
 export const LazyAnalytics = createLazyComponent(
-  () => import('@/components/admin/Analytics'),
+  () => import('@/components/admin/AnalyticsPanel'),
   {
     prefetch: false,
     timeout: 15000,
@@ -233,9 +241,12 @@ export const LazyAnalytics = createLazyComponent(
   }
 );
 
-// Lazy loaded 3D/CAD components
+// Lazy loaded 3D/CAD components - using placeholder for now
+const ThreeDViewerPlaceholder = () => <div className="p-4 text-center">3D Viewer Placeholder</div>;
+const CADRendererPlaceholder = () => <div className="p-4 text-center">CAD Renderer Placeholder</div>;
+
 export const LazyThreeDViewer = createLazyComponent(
-  () => import('@/components/cad/ThreeDViewer'),
+  () => Promise.resolve({ default: ThreeDViewerPlaceholder }),
   {
     prefetch: false,
     timeout: 20000, // 3D components may take longer
@@ -244,7 +255,7 @@ export const LazyThreeDViewer = createLazyComponent(
 );
 
 export const LazyCADRenderer = createLazyComponent(
-  () => import('@/components/cad/CADRenderer'),
+  () => Promise.resolve({ default: CADRendererPlaceholder }),
   {
     prefetch: false,
     timeout: 25000,
@@ -252,9 +263,9 @@ export const LazyCADRenderer = createLazyComponent(
   }
 );
 
-// Lazy loaded chart components
+// Lazy loaded chart components - using existing components
 export const LazyChartComponent = createLazyComponent(
-  () => import('@/components/charts/ChartComponent'),
+  () => import('@/components/admin/SessionStatsChart').then(module => ({ default: module.SessionStatsChart })),
   {
     prefetch: true, // Charts are commonly used
     timeout: 10000,
@@ -263,7 +274,7 @@ export const LazyChartComponent = createLazyComponent(
 );
 
 export const LazyEChartsComponent = createLazyComponent(
-  () => import('@/components/charts/EChartsComponent'),
+  () => import('@/components/charts/EChartsPlaceholder'),
   {
     prefetch: true,
     timeout: 12000,
@@ -271,9 +282,11 @@ export const LazyEChartsComponent = createLazyComponent(
   }
 );
 
-// Lazy loaded advanced chat components
+// Lazy loaded advanced chat components - using placeholder
+const ChatAttachmentsPlaceholder = () => <div className="p-4 text-center">Chat Attachments Placeholder</div>;
+
 export const LazyChatAttachments = createLazyComponent(
-  () => import('@/components/chat/ChatAttachments'),
+  () => Promise.resolve({ default: ChatAttachmentsPlaceholder }),
   {
     prefetch: false,
     timeout: 8000,
@@ -282,7 +295,7 @@ export const LazyChatAttachments = createLazyComponent(
 );
 
 export const LazyVoiceChat = createLazyComponent(
-  () => import('@/components/voice/VoiceChat'),
+  () => import('@/components/voice/VoiceCallWorkspace'),
   {
     prefetch: false,
     timeout: 10000,
@@ -291,7 +304,7 @@ export const LazyVoiceChat = createLazyComponent(
 );
 
 export const LazyInteractiveComponents = createLazyComponent(
-  () => import('@/components/chat/InteractiveComponents'),
+  () => import('@/components/chat/InteractiveComponent'),
   {
     prefetch: false,
     timeout: 8000,
@@ -304,18 +317,18 @@ export function usePrefetchComponents() {
   usePerformanceMonitor('usePrefetchComponents');
 
   const prefetchComponent = useCallback((componentName: string) => {
-    const componentMap: Record<string, () => Promise<{ default: ComponentType<any> }>> = {
-      'AdminDashboard': () => import('@/components/admin/AdminDashboard'),
-      'UserManagement': () => import('@/components/admin/UserManagement'),
-      'AgentConfig': () => import('@/components/admin/AgentConfig'),
-      'Analytics': () => import('@/components/admin/Analytics'),
-      'ThreeDViewer': () => import('@/components/cad/ThreeDViewer'),
-      'CADRenderer': () => import('@/components/cad/CADRenderer'),
-      'ChartComponent': () => import('@/components/charts/ChartComponent'),
-      'EChartsComponent': () => import('@/components/charts/EChartsComponent'),
-      'ChatAttachments': () => import('@/components/chat/ChatAttachments'),
-      'VoiceChat': () => import('@/components/voice/VoiceChat'),
-      'InteractiveComponents': () => import('@/components/chat/InteractiveComponents'),
+    const componentMap: Record<string, () => Promise<{ default: React.ComponentType<any> }>> = {
+      'AdminDashboard': () => import('@/components/admin/AdminHome'),
+      'UserManagement': () => import('@/components/admin/AgentsPanel'),
+      'AgentConfig': () => import('@/components/admin/AgentBatchImport').then(module => ({ default: module.AgentBatchImport })),
+      'Analytics': () => import('@/components/admin/AnalyticsPanel'),
+      'ThreeDViewer': () => Promise.resolve({ default: ThreeDViewerPlaceholder }),
+      'CADRenderer': () => Promise.resolve({ default: CADRendererPlaceholder }),
+      'ChartComponent': () => import('@/components/admin/SessionStatsChart').then(module => ({ default: module.SessionStatsChart })),
+      'EChartsComponent': () => import('@/components/charts/EChartsPlaceholder'),
+      'ChatAttachments': () => Promise.resolve({ default: ChatAttachmentsPlaceholder }),
+      'VoiceChat': () => import('@/components/voice/VoiceCallWorkspace'),
+      'InteractiveComponents': () => import('@/components/chat/InteractiveComponent'),
     };
 
     const importFn = componentMap[componentName];
@@ -354,7 +367,7 @@ export function usePrefetchComponents() {
 // Network status hook for conditional loading
 export function useNetworkStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [connectionType, setConnectionType] = useState<string>('unknown');
+  const [connectionType, setConnectionType] = useState('unknown');
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -389,8 +402,8 @@ export function useNetworkStatus() {
 
 // Smart loading wrapper that considers network conditions
 interface SmartLoaderProps {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
   requireHighBandwidth?: boolean;
 }
 

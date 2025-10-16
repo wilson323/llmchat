@@ -2,8 +2,17 @@
  * Toast 通知组件
  */
 
+;
+;
+;
+;
+;
+;
+import {AlertCircle, CheckCircle, Info, X, XCircle} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
+;
+;
+;
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -15,7 +24,7 @@ export interface ToastProps {
 }
 
 const icons = {
-  success: CheckCircle2,
+  success: CheckCircle,
   error: XCircle,
   warning: AlertCircle,
   info: Info,
@@ -154,7 +163,7 @@ export const ToastContainer: React.FC = () => {
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map((toast, index) => (
+      {toasts.map((toast: any, index: any) => (
         <Toast key={index} {...toast} />
       ))}
     </div>

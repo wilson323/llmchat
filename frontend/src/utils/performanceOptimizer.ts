@@ -57,11 +57,87 @@ export class MemoryMonitor {
     return this.measurements.reduce((sum, val) => sum + val, 0) / this.measurements.length;
   }
 
-  addMemoryObserver(callback: () => void) {
+  addMemoryObserver(_callback: () => void): () => void {
     // Implementation for memory observation
     console.log('Memory observer added');
+    // Return cleanup function
+    return () => {
+      console.log('Memory observer removed');
+    };
+  }
+
+  startMonitoring() {
+    console.log('[Memory Monitor] Started monitoring');
+    this.startMeasurement();
+  }
+
+  stopMonitoring() {
+    console.log('[Memory Monitor] Stopped monitoring');
+  }
+
+  getMemoryStats() {
+    const current = this.getCurrentUsage();
+    return {
+      current: current.heapUsed,
+      average: this.getAverageUsage(),
+      peak: Math.max(...this.measurements, current.heapUsed),
+      trend: 'stable'
+    };
   }
 }
+
+// Component performance monitor
+export const componentMonitor = {
+  startMonitoring(componentName: string) {
+    console.log(`[Component Monitor] Started monitoring: ${componentName}`);
+  },
+
+  recordRender(componentName: string) {
+    console.log(`[Component Monitor] Render recorded: ${componentName}`);
+  },
+
+  stopMonitoring(componentName: string) {
+    console.log(`[Component Monitor] Stopped monitoring: ${componentName}`);
+  },
+
+  getAllStats() {
+    return {
+      PerformanceMonitor: {
+        renders: 1,
+        averageRenderTime: 0,
+        isMounted: true
+      }
+    };
+  }
+};
+
+// Request monitor for API calls
+export const requestMonitor = {
+  startRequest(requestId: string, url: string) {
+    console.log(`[Request Monitor] Started: ${requestId} - ${url}`);
+  },
+
+  endRequest(requestId: string, method: string, status: number) {
+    console.log(`[Request Monitor] Ended: ${requestId} - ${method} - ${status}`);
+  },
+
+  completeRequest(requestId: string, duration: number) {
+    console.log(`[Request Monitor] Completed: ${requestId} - ${duration}ms`);
+  },
+
+  failRequest(requestId: string, error: string) {
+    console.log(`[Request Monitor] Failed: ${requestId} - ${error}`);
+  },
+
+  getRequestStats() {
+    return {
+      totalRequests: 0,
+      averageDuration: 0,
+      slowestRequests: [],
+      activeRequests: 0
+    };
+  }
+};
 
 export const memoryMonitor = new MemoryMonitor();
 

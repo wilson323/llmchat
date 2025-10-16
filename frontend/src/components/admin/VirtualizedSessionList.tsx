@@ -4,18 +4,24 @@
  */
 
 'use client';
+;
+;
+;
+;
+;
+;
+import { Download, Eye, MessageSquare, RefreshCw, Search, Trash2 } from 'lucide-react';
 import React, { useState, memo } from 'react';
 import { VirtualScroll } from '@/components/ui/VirtualScroll';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  Search,
-  Eye,
-  Trash2,
-  Download,
-  MessageSquare,
-  RefreshCw,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
 import { useCallback } from 'react';
 import { useI18n } from '@/i18n';
 
@@ -203,7 +209,7 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索会话标题...')}
             value={searchQuery}
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearch(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -242,7 +248,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
   onSearch: _onSearch,
   className = '',
   height = 600,
-}) {
+}: VirtualizedSessionListProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -253,7 +259,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
     }
 
     const query = searchQuery.toLowerCase();
-    return sessions.filter(session =>
+    return sessions.filter((session: Session) =>
       session.title.toLowerCase().includes(query) ||
       session.agentName?.toLowerCase().includes(query),
     );
@@ -261,15 +267,19 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
 
   // 计算总消息数
   const totalMessages = React.useMemo(() => {
-    return filteredSessions.reduce((sum, session) => sum + session.messageCount, 0);
+    return filteredSessions.reduce((sum: number, session: Session) => sum + session.messageCount, 0);
   }, [filteredSessions]);
 
   // 估算会话行高度
-  const estimateSessionHeight = useCallback((session: Session) => {
+  const estimateSessionHeight = useCallback((session: unknown, _index: number) => {
+    if (!session || typeof session !== 'object') {
+      return 70;
+    }
+    const sessionObj = session as Session;
     let height = 70; // 基础高度
 
     // 根据标题长度估算
-    const titleLength = session.title.length;
+    const titleLength = sessionObj.title?.length || 0;
     if (titleLength > 30) {
       height += 10;
     }
@@ -296,17 +306,17 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
       <VirtualScroll
         items={filteredSessions}
         height={height}
-        itemKey={(session, index) => session.id || index.toString()}
+        itemKey={(session: any, index: number) => session?.id || index.toString()}
         itemHeight={estimateSessionHeight}
-        renderItem={(item) => (
+        renderItem={(item: any) => (
           <SessionRow
-            item={{ ...item, height: item.height || 70 }}
-            onView={onView}
-            onDelete={onDelete}
-            onExport={onExport}
+            item={{ ...item, data: item.data, height: item.height || 70 }}
+            {...(onView && { onView })}
+            {...(onDelete && { onDelete })}
+            {...(onExport && { onExport })}
           />
         )}
-        onEndReached={onLoadMore}
+        {...(onLoadMore && { onEndReached: onLoadMore })}
         hasMore={hasMore}
         loading={loading}
         loadingComponent={

@@ -3,7 +3,8 @@
  * 替代catch (error: any)的模式
  */
 
-import type { EnhancedError } from '@llmchat/shared-types';
+import { BaseError, createErrorFromUnknown } from '@/types/errors';
+import type { ApiError } from '@/types';
 
 /**
  * 类型守卫：检查是否为Error对象
@@ -13,15 +14,10 @@ export function isError(error: unknown): error is Error {
 }
 
 /**
- * 类型守卫：检查是否为EnhancedError
+ * 类型守卫：检查是否为BaseError
  */
-export function isEnhancedError(error: unknown): error is EnhancedError {
-  return typeof error === 'object' &&
-         error !== null &&
-         'name' in error &&
-         'message' in error &&
-         typeof (error as any).name === 'string' &&
-         typeof (error as any).message === 'string';
+export function isBaseError(error: unknown): error is BaseError {
+  return error instanceof BaseError;
 }
 
 /**
@@ -48,7 +44,7 @@ export function safeStringify(value: unknown): string {
 }
 
 /**
- * 将unknown错误转换为EnhancedError
+ * 将unknown错误转换为BaseError
  */
 export function toEnhancedError(
   error: unknown,
@@ -57,43 +53,8 @@ export function toEnhancedError(
     requestId?: string;
     userId?: string;
   } = {}
-): EnhancedError {
-  if (isEnhancedError(error)) {
-    return error;
-  }
-
-  if (isError(error)) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      category: 'internal',
-      severity: 'medium',
-      timestamp: new Date().toISOString(),
-      ...context
-    } as EnhancedError;
-  }
-
-  if (typeof error === 'string') {
-    return {
-      name: 'StringError',
-      message: error,
-      category: 'internal',
-      severity: 'medium',
-      timestamp: new Date().toISOString(),
-      ...context
-    } as EnhancedError;
-  }
-
-  return {
-    name: 'UnknownError',
-    message: 'An unknown error occurred',
-    details: error as any, // 这里使用any是因为无法确定结构
-    category: 'internal',
-    severity: 'medium',
-    timestamp: new Date().toISOString(),
-    ...context
-  } as EnhancedError;
+): BaseError {
+  return createErrorFromUnknown(error, context);
 }
 
 /**
@@ -107,7 +68,7 @@ export function safeErrorHandler<T>(
     requestId?: string;
     userId?: string;
   }
-): { error: EnhancedError; fallback: T } {
+): { error: BaseError; fallback: T } {
   const enhancedError = toEnhancedError(error, context);
   return {
     error: enhancedError,
@@ -122,7 +83,7 @@ export class ExpressErrorHandler {
   /**
    * 获取错误状态码
    */
-  static getStatusCode(error: EnhancedError): number {
+  static getStatusCode(error: BaseError): number {
     switch (error.category) {
       case 'authentication':
         return 401;
@@ -131,8 +92,15 @@ export class ExpressErrorHandler {
       case 'validation':
         return 400;
       case 'network':
-      case 'external':
+        return 503;
+      case 'external_service':
         return 502;
+      case 'resource':
+        return 404;
+      case 'business_logic':
+        return 422;
+      case 'system':
+        return 500;
       default:
         return 500;
     }
@@ -141,42 +109,23 @@ export class ExpressErrorHandler {
   /**
    * 获取用户友好的错误消息
    */
-  static getUserMessage(error: EnhancedError): string {
-    switch (error.category) {
-      case 'authentication':
-        return '身份验证失败';
-      case 'authorization':
-        return '权限不足';
-      case 'validation':
-        return '输入数据不正确';
-      case 'network':
-        return '网络连接异常';
-      case 'external':
-        return '外部服务异常';
-      default:
-        return error.message || '服务器内部错误';
-    }
+  static getUserMessage(error: BaseError): string {
+    return error.getUserMessage();
   }
 
   /**
    * 标准化错误响应
    */
   static createErrorResponse(
-    error: EnhancedError,
+    error: BaseError,
     requestId?: string
-  ): {
-    code: string | number;
-    message: string;
-    data: null;
-    timestamp: string;
-    requestId?: string;
-  } {
-    return {
-      code: error.code || this.getStatusCode(error),
-      message: this.getUserMessage(error),
-      data: null,
-      timestamp: error.timestamp || new Date().toISOString(),
-      ...(requestId && { requestId })
-    };
+  ): ApiError {
+    const response = error.toApiError();
+
+    if (requestId) {
+      response.requestId = requestId;
+    }
+
+    return response;
   }
 }

@@ -2,8 +2,9 @@
  * 语言切换器组件
  */
 
-import { useTranslation } from 'react-i18next';
+;
 import { Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();

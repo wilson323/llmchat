@@ -1,3 +1,4 @@
+;
 import React, { useState, useEffect } from 'react';
 import { useKeyboardManager, useKeyboardHelp, appShortcuts } from '@/hooks/useKeyboardManager';
 import { Dialog } from './Dialog';
@@ -46,11 +47,11 @@ export const KeyboardShortcutsHelp: React.FC = () => {
         initialFocus="close"
         >
         <div className="space-y-4 max-h-96 overflow-y-auto">
-          {getHelpContent().map((section, sectionIndex) => (
+          {getHelpContent().map((section: any, sectionIndex: number) => (
             <div key={sectionIndex}>
               <h3 className="font-medium text-foreground mb-2">{section.category}</h3>
               <div className="space-y-1">
-                {section.shortcuts.map((shortcut, shortcutIndex) => (
+                {section.shortcuts.map((shortcut: any, shortcutIndex: number) => (
                   <div
                     key={shortcutIndex}
                     className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50"

@@ -1,3 +1,5 @@
+;
+import { Keyboard } from 'lucide-react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useKeyboardManager } from '@/hooks/useKeyboardManager';

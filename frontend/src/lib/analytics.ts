@@ -8,31 +8,14 @@
  * - 用户属性管理
  */
 
+;
 import { addBreadcrumb } from './sentry';
+import type { SafeEventParams, SafeUserProperties, SafeAnalyticsConfig } from '@/types/global';
 
-/**
- * 事件参数类型
- */
-interface EventParams {
-  [key: string]: string | number | boolean | undefined;
-}
-
-/**
- * 用户属性类型
- */
-interface UserProperties {
-  id?: string;
-  role?: string;
-  [key: string]: string | number | boolean | undefined;
-}
-
-/**
- * Analytics配置
- */
-interface AnalyticsConfig {
-  enabled: boolean;
-  debug: boolean;
-}
+// 使用安全类型别名
+type EventParams = SafeEventParams;
+type UserProperties = SafeUserProperties;
+type AnalyticsConfig = SafeAnalyticsConfig;
 
 class Analytics {
   private config: AnalyticsConfig = {
@@ -147,7 +130,8 @@ class Analytics {
     }
 
     if (window.gtag) {
-      window.gtag('set', 'user_properties', properties);
+      // 类型安全的gtag调用
+      window.gtag('set', 'user_properties', properties as Record<string, any>);
     }
 
     if (this.config.debug) {
@@ -164,6 +148,7 @@ class Analytics {
     }
 
     if (window.gtag) {
+      // 类型安全的gtag调用
       window.gtag('config', 'GA_MEASUREMENT_ID', {
         user_id: userId,
       });
@@ -183,7 +168,11 @@ class Analytics {
     }
 
     const startTime = performance.now();
-    sessionStorage.setItem(`timing_${eventName}`, startTime.toString());
+    try {
+      sessionStorage.setItem(`timing_${eventName}`, startTime.toString());
+    } catch (error) {
+      console.warn('无法写入sessionStorage:', error);
+    }
   }
 
   /**
@@ -194,15 +183,31 @@ class Analytics {
       return;
     }
 
-    const startTimeStr = sessionStorage.getItem(`timing_${eventName}`);
+    let startTimeStr: string | null = null;
+    try {
+      startTimeStr = sessionStorage.getItem(`timing_${eventName}`);
+    } catch (error) {
+      console.warn('无法读取sessionStorage:', error);
+      return;
+    }
+
     if (!startTimeStr) {
       return;
     }
 
     const startTime = parseFloat(startTimeStr);
+    if (isNaN(startTime)) {
+      console.warn('无效的开始时间:', startTimeStr);
+      return;
+    }
+
     const duration = Math.round(performance.now() - startTime);
 
-    sessionStorage.removeItem(`timing_${eventName}`);
+    try {
+      sessionStorage.removeItem(`timing_${eventName}`);
+    } catch (error) {
+      console.warn('无法删除sessionStorage项:', error);
+    }
 
     this.trackEvent(eventName, {
       ...params,
@@ -216,24 +221,29 @@ class Analytics {
   private _sendEvent(eventName: string, params?: EventParams) {
     // Google Analytics
     if (window.gtag) {
-      window.gtag('event', eventName, params);
+      // 类型安全的gtag调用
+      window.gtag('event', eventName, params as Record<string, any>);
     }
 
     // 自定义分析后端（可选）
     if (import.meta.env.VITE_ANALYTICS_ENDPOINT) {
-      fetch(import.meta.env.VITE_ANALYTICS_ENDPOINT, {
+      const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
+      const payload = {
+        event: eventName,
+        params: params || {},
+        timestamp: new Date().toISOString(),
+        session_id: this._getSessionId(),
+      };
+
+      fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          event: eventName,
-          params,
-          timestamp: new Date().toISOString(),
-          session_id: this._getSessionId(),
-        }),
-      }).catch((error) => {
-        console.error('发送分析事件失败:', error);
+        body: JSON.stringify(payload),
+      }).catch((error: Error | unknown) => {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error('发送分析事件失败:', errorMsg);
       });
     }
   }
@@ -242,11 +252,21 @@ class Analytics {
    * 获取会话ID
    */
   private _getSessionId(): string {
-    let sessionId = sessionStorage.getItem('analytics_session_id');
+    let sessionId: string | null = null;
+
+    try {
+      sessionId = sessionStorage.getItem('analytics_session_id');
+    } catch (error) {
+      console.warn('无法读取sessionStorage中的会话ID:', error);
+    }
 
     if (!sessionId) {
       sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-      sessionStorage.setItem('analytics_session_id', sessionId);
+      try {
+        sessionStorage.setItem('analytics_session_id', sessionId);
+      } catch (error) {
+        console.warn('无法写入sessionStorage中的会话ID:', error);
+      }
     }
 
     return sessionId;

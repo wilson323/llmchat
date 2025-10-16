@@ -1,7 +1,10 @@
+;
 import React, { useEffect, useRef, useMemo } from 'react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
-import { useChatStore } from '@/store/chatStore';
+// 使用拆分的store架构
+import messageStore from '@/store/messageStore';
+import agentStore from '@/store/agentStore';
 import { useI18n } from '@/i18n';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import {
@@ -11,8 +14,8 @@ import {
 interface VirtualizedMessageListProps {
   messages: ChatMessage[];
   isStreaming?: boolean;
-  onInteractiveSelect?: (value: any) => void;
-  onInteractiveFormSubmit?: (values: any) => void;
+  onInteractiveSelect?: (value: string | { origin: 'init'; key?: string; value: string }) => void;
+  onInteractiveFormSubmit?: (values: Record<string, unknown> | { origin: 'init'; values: Record<string, unknown> }) => void;
   onRetryMessage?: (messageId: string) => void;
 }
 
@@ -80,10 +83,11 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
   // 🚀 性能监控
   usePerformanceMonitor('VirtualizedMessageList');
 
-  const { currentAgent, streamingStatus } = useChatStore();
+  const currentAgent = agentStore((state: any) => state.currentAgent);
+  const streamingStatus = messageStore((state: any) => state.streamingStatus);
   const { t } = useI18n();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastMessageRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
+  const lastMessageRef = useRef(null);
 
   // 记录消息数量变化时的内存使用
   useEffect(() => {
@@ -97,7 +101,10 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
     const height = typeof window !== 'undefined' ? window.innerHeight - 200 : 600;
 
     return {
-      itemHeight: (index: number) => estimateMessageHeight(messages[index]),
+      itemHeight: (index: number) => {
+        const message = messages[index];
+        return message ? estimateMessageHeight(message) : 80;
+      },
       containerHeight: height,
       itemCount: messages.length,
       overscan: Math.min(5, Math.max(3, Math.floor(height / 100))), // 动态调整overscan
@@ -138,6 +145,8 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
         <div style={{ height: totalHeight, position: 'relative' }}>
           {virtualItems.map((virtualItem) => {
             const message = messages[virtualItem.index];
+            if (!message) return null;
+
             const isLastMessage = virtualItem.index === messages.length - 1;
             const isAssistantMessage = message.AI !== undefined;
 
@@ -159,13 +168,13 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
                   isStreaming={
                     isStreaming && isLastMessage && isAssistantMessage
                   }
-                  currentAgent={currentAgent ?? undefined}
-                  streamingStatus={streamingStatus ?? undefined}
-                  onInteractiveSelect={onInteractiveSelect}
-                  onInteractiveFormSubmit={onInteractiveFormSubmit}
-                  onRetry={
-                    message.id ? () => onRetryMessage?.(message.id!) : undefined
-                  }
+                  {...(currentAgent && { currentAgent })}
+                  {...(streamingStatus && { streamingStatus })}
+                  {...(onInteractiveSelect && { onInteractiveSelect })}
+                  {...(onInteractiveFormSubmit && { onInteractiveFormSubmit })}
+                  {...(message.id && onRetryMessage && {
+                    onRetry: () => onRetryMessage(message.id!)
+                  })}
                 />
 
                 {/* 最后一个消息的占位元素 */}
@@ -178,7 +187,7 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
                 )}
               </div>
             );
-          })}
+          }).filter(Boolean)}
         </div>
 
         {/* 流式状态指示器 */}

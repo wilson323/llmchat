@@ -101,18 +101,10 @@ class DatabaseOptimizer {
     try {
       logger.info('🚀 初始化数据库性能优化器');
 
-      // 启动连接池监控
-      if (this.config.enablePoolMonitoring) {
-        connectionPoolOptimizer.startMonitoring();
-        logger.info('✅ 连接池监控已启动');
-      }
-
       // 设置慢查询阈值
       databasePerformanceMonitor.setSlowQueryThreshold(this.config.slowQueryThreshold);
 
-      // 预热连接池
-      await connectionPoolOptimizer.warmupPool(5);
-
+      // 基本初始化完成（不依赖数据库连接池）
       this.isInitialized = true;
       logger.info('✅ 数据库性能优化器初始化完成');
 
@@ -145,24 +137,28 @@ class DatabaseOptimizer {
         }
       }
 
-      // 查询分析
+      // 查询分析（只有在数据库可用时才执行）
       if (this.shouldAnalyzeQuery(query)) {
-        const pool = getPool();
-        const optimizer = getQueryOptimizer(pool);
-        const analysis = await optimizer.analyzeQuery(query, params);
+        try {
+          const pool = getPool();
+          const optimizer = getQueryOptimizer(pool);
+          const analysis = await optimizer.analyzeQuery(query, params);
 
-        result.queryOptimization = {
-          originalQuery: query,
-          optimizedQuery: optimizer.optimizeQuery(query).optimized,
-        };
+          result.queryOptimization = {
+            originalQuery: query,
+            optimizedQuery: optimizer.optimizeQuery(query).optimized,
+          };
 
-        result.suggestions = analysis.suggestions.map(s => s.description);
+          result.suggestions = analysis.suggestions.map(s => s.description);
 
-        // 如果启用自动优化，应用优化建议
-        if (this.config.autoOptimizeQueries && analysis.suggestions.length > 0) {
-          const optimized = optimizer.optimizeQuery(query);
-          query = optimized.optimized;
-          result.queryOptimization!.optimizedQuery = query;
+          // 如果启用自动优化，应用优化建议
+          if (this.config.autoOptimizeQueries && analysis.suggestions.length > 0) {
+            const optimized = optimizer.optimizeQuery(query);
+            query = optimized.optimized;
+            result.queryOptimization!.optimizedQuery = query;
+          }
+        } catch (dbError) {
+          logger.warn('数据库查询分析失败，跳过优化', { query, error: dbError instanceof Error ? dbError.message : String(dbError) });
         }
       }
 

@@ -7,7 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CircuitBreakerManager, CircuitBreakerConfig, CircuitState } from './CircuitBreakerService';
 import { MultiDimensionRateLimiter, RateLimitConfig } from './RateLimitService';
 import { RetryService, RetryConfig, FallbackConfig, RequestDeduplicationConfig } from './RetryService';
-import { MonitoringService } from './MonitoringService';
+import MonitoringService from './MonitoringService';
 import logger from '@/utils/logger';
 
 export interface ProtectionConfig {

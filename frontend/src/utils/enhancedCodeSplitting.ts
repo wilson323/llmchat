@@ -4,7 +4,8 @@
  * 提供更精细化的代码分割策略，包括组件级别的懒加载和预加载
  */
 
-import { lazy, ComponentType } from 'react';
+import { lazy } from 'react';
+import type React from 'react';
 import { LazyLoader } from '@/utils/lazyLoader';
 
 // 组件加载状态
@@ -26,9 +27,9 @@ export interface LazyComponentConfig {
   /** 重试次数 */
   retryCount?: number;
   /** 自定义加载组件 */
-  fallback?: ComponentType;
+  fallback?: React.ComponentType;
   /** 自定义错误组件 */
-  errorFallback?: ComponentType<{ error?: Error; onRetry: () => void }>;
+  errorFallback?: React.ComponentType<{ error?: Error; onRetry: () => void }>;
   /** 优先级（用于预加载排序） */
   priority?: number;
 }
@@ -36,7 +37,7 @@ export interface LazyComponentConfig {
 // 组件加载结果
 export interface ComponentLoadResult<T = any> {
   state: ComponentLoadState;
-  component?: ComponentType<T>;
+  component?: React.ComponentType<T>;
   error?: Error;
   retry: () => void;
   preload: () => Promise<void>;
@@ -44,10 +45,10 @@ export interface ComponentLoadResult<T = any> {
 
 // 预注册的懒加载组件
 const registeredComponents = new Map<string, {
-  importFn:() => Promise<{ default: ComponentType<any> }>;
+  importFn:() => Promise<{ default: React.ComponentType<any> }>;
   config: LazyComponentConfig;
   loaded?: boolean;
-  loadPromise?: Promise<ComponentType<any>>;
+  loadPromise?: Promise<React.ComponentType<any>>;
 }>();
 
 /**
@@ -59,7 +60,7 @@ export class EnhancedCodeSplitting {
    */
   static registerComponent(
     name: string,
-    importFn: () => Promise<{ default: ComponentType<any> }>,
+    importFn: () => Promise<{ default: React.ComponentType<any> }>,
     config: LazyComponentConfig = {},
   ): void {
     registeredComponents.set(name, {
@@ -81,16 +82,21 @@ export class EnhancedCodeSplitting {
   static createLazyComponent<T = any>(
     name: string,
     _config?: LazyComponentConfig,
-  ): ComponentType<T> {
+  ): React.ComponentType<T> {
     const registration = registeredComponents.get(name);
     if (!registration) {
-      throw new Error(`组件 ${name} 未注册`);
+      console.warn(`⚠️ 组件 ${name} 未注册，尝试自动注册...`);
+      // 如果组件未注册，尝试使用默认配置自动注册
+      // 这是为了解决初始化顺序问题
+      return lazy(() => {
+        throw new Error(`组件 ${name} 未注册且无法自动加载。请确保在 App 组件初始化时已调用 initializeComponentRegistry()`);
+      }) as React.ComponentType<T>;
     }
 
     // 使用React.lazy创建懒加载组件
     const LazyComponent = lazy(registration.importFn);
 
-    return LazyComponent as ComponentType<T>;
+    return LazyComponent as React.ComponentType<T>;
   }
 
   /**
@@ -184,7 +190,7 @@ export class EnhancedCodeSplitting {
       console.log(`✅ 组件预加载成功: ${name}`);
     } catch (error) {
       console.warn(`❌ 组件预加载失败: ${name}`, error);
-      registration.loadPromise = undefined;
+      delete registration.loadPromise;
     }
   }
 
@@ -341,13 +347,13 @@ return 'loading';
       const registration = registeredComponents.get(name);
       if (registration) {
         registration.loaded = false;
-        registration.loadPromise = undefined;
+        delete registration.loadPromise;
       }
     } else {
       LazyLoader.clearCache();
       registeredComponents.forEach(registration => {
         registration.loaded = false;
-        registration.loadPromise = undefined;
+        delete registration.loadPromise;
       });
     }
   }

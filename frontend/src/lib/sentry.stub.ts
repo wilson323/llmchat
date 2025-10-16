@@ -7,22 +7,22 @@
  * - 开发环境可选依赖
  */
 
-import type { ReactNode } from 'react';
-
-export const initSentry = async () => {
+export const initSentry = async (): Promise<void> => {
   console.info('ℹ️  Sentry未配置，错误追踪功能禁用（开发模式）');
 };
 
-export const captureException = (error: any) => {
+export const captureException = (error: Error | unknown): void => {
   console.error('❌ [Sentry Stub] 错误:', error);
 };
 
-export const captureMessage = (message: string, level?: string) => {
+export const captureMessage = (message: string, level?: string): void => {
   console.log(`📝 [Sentry Stub] ${level || 'info'}: ${message}`);
 };
 
-export const setUser = (user: any) => {
+export const setUser = (user: { id?: string; email?: string; name?: string } | null): void => {
   console.debug('👤 [Sentry Stub] 用户:', user);
 };
 
-export const ErrorBoundary = ({ children }: { children: ReactNode }) => children;
+export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return React.createElement(React.Fragment, null, children);
+};

@@ -74,7 +74,8 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         operation: hit ? 'read_hit' : 'read_miss',
         tier,
         success: true,
-        dataSize,
+        // 使用条件属性展开满足 exactOptionalPropertyTypes
+        ...(dataSize !== undefined && { dataSize }),
         timestamp: Date.now(),
       };
 
@@ -96,7 +97,8 @@ export class PerformanceMonitor implements IPerformanceMonitor {
         operation,
         duration,
         success,
-        dataSize,
+        // 使用条件属性展开满足 exactOptionalPropertyTypes
+        ...(dataSize !== undefined && { dataSize }),
         timestamp: Date.now(),
       };
 
@@ -438,7 +440,31 @@ export class PerformanceMonitor implements IPerformanceMonitor {
     };
   }
 
-  private async calculateCacheMetrics(): Promise<any> {
+  private async calculateCacheMetrics(): Promise<{
+    memoryUsage: {
+      total: number;
+      used: number;
+      free: number;
+      percentage: number;
+    };
+    indexedDBUsage: {
+      total: number;
+      used: number;
+      free: number;
+      percentage: number;
+    };
+    cacheEntries: {
+      hot: number;
+      warm: number;
+      cold: number;
+      total: number;
+    };
+    performance: {
+      hitRate: number;
+      averageResponseTime: number;
+      evictionRate: number;
+    };
+  }> {
     // 这里应该从缓存管理器获取实际数据
     // 简化实现，返回估算值
     return {
@@ -498,7 +524,31 @@ export class PerformanceMonitor implements IPerformanceMonitor {
   private async generateOptimizationSuggestions(
     storage: StorageMetrics,
     sync: SyncMetrics,
-    cache: any,
+    cache: {
+      memoryUsage: {
+        total: number;
+        used: number;
+        free: number;
+        percentage: number;
+      };
+      indexedDBUsage: {
+        total: number;
+        used: number;
+        free: number;
+        percentage: number;
+      };
+      cacheEntries: {
+        hot: number;
+        warm: number;
+        cold: number;
+        total: number;
+      };
+      performance: {
+        hitRate: number;
+        averageResponseTime: number;
+        evictionRate: number;
+      };
+    },
   ): Promise<OptimizationSuggestion[]> {
     const suggestions: OptimizationSuggestion[] = [];
 

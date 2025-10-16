@@ -3,7 +3,7 @@
  */
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/i18n';
 import { getLogsPage, exportLogsCsv, type LogItem } from '@/services/adminApi';
 import { Button } from '@/components/ui/Button';
@@ -13,15 +13,15 @@ function LogsPanel() {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [level, setLevel] = useState<''|'INFO'|'WARN'|'ERROR'>('');
-  const [start, setStart] = useState<string>('');
-  const [end, setEnd] = useState<string>('');
-  const [page, setPage] = useState<number>(1);
+  const [level, setLevel] = useState<'' | 'INFO' | 'WARN' | 'ERROR'>('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [page, setPage] = useState(1);
   const pageSize = 20;
-  const [total, setTotal] = useState<number>(0);
+  const [total, setTotal] = useState(0);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const fetchData = async (p = page) => {
+  const fetchData = useCallback(async (p: number = page) => {
     try {
       setLoading(true);
       const params: { page: number; pageSize: number; level?: 'INFO' | 'WARN' | 'ERROR'; start?: string; end?: string } = { page: p, pageSize };
@@ -37,11 +37,11 @@ function LogsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [level, start, end, page]);
 
   useEffect(() => {
     fetchData(1); setPage(1);
-  }, [level, start, end]);
+  }, [level, start, end, fetchData]);
 
   const onExport = async () => {
     try {
@@ -69,7 +69,7 @@ function LogsPanel() {
                 id="log-level-select"
                 name="log-level-select"
                 value={level}
-                onChange={e=>setLevel(e.target.value as any)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>)=>setLevel(e.target.value as '' | 'INFO' | 'WARN' | 'ERROR')}
                 className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
               >
                 <option value="">{t('全部')}</option>
@@ -85,7 +85,7 @@ function LogsPanel() {
                 name="log-start-time"
                 type="datetime-local"
                 value={start}
-                onChange={e=>setStart(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>)=>setStart(e.target.value)}
                 className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
               />
             </div>
@@ -96,7 +96,7 @@ function LogsPanel() {
                 name="log-end-time"
                 type="datetime-local"
                 value={end}
-                onChange={e=>setEnd(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>)=>setEnd(e.target.value)}
                 className="h-9 px-2 rounded-md bg-muted/30 border border-border/30"
               />
             </div>
@@ -130,7 +130,7 @@ function LogsPanel() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {logs.map(l => (
+                  {logs.map((l: LogItem) => (
                     <tr key={l.id}>
                       <td className="py-2">{new Date(l.timestamp).toLocaleString()}</td>
                       <td className="py-2"><span className={`px-2 py-0.5 rounded-full text-xs ${l.level === 'ERROR' ? 'bg-red-100 text-red-700' : l.level === 'WARN' ? 'bg-yellow-100 text-yellow-800' : 'bg-sky-100 text-sky-700'}`}>{l.level}</span></td>

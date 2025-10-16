@@ -1,16 +1,19 @@
+;
+;
+import { Keyboard, Menu } from 'lucide-react';
 import React, { useState } from 'react';
-import { Menu, Keyboard } from 'lucide-react';
+;
 import { IconButton } from '@/components/ui/IconButton';
 import { AgentSelector } from './agents/AgentSelector';
 import { ThemeToggle } from './theme/ThemeToggle';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
-import { useChatStore } from '@/store/chatStore';
+import { useUIStore } from '@/store/uiStore';
 import { useI18n } from '@/i18n';
 import { useResponsive } from '@/hooks/useResponsive';
 import { KeyboardHelpPanel } from './KeyboardHelpPanel';
 
 export const Header: React.FC = () => {
-  const { sidebarOpen, setSidebarOpen } = useChatStore();
+  const { sidebarOpen, setSidebarOpen } = useUIStore.getState();
   const { t } = useI18n();
   const { isMobile } = useResponsive();
   const [isHelpOpen, setIsHelpOpen] = useState(false);

@@ -1,18 +1,17 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import { Calendar, Check, Clock, Edit3, MessageSquare, Plus, Search, Sparkles, Trash2, X } from 'lucide-react';
 import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import {
-  MessageSquare,
-  Plus,
-  Trash2,
-  Edit3,
-  Check,
-  X,
-  Search,
-  Calendar,
-  Clock,
-  Sparkles,
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { useChatStore } from '@/store/chatStore';
@@ -41,11 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     sidebarOpen,
     setSidebarOpen,
     createNewSession,
-    deleteSession,
-    renameSession,
-    setSessionMessages,
-    updateSessionTitleIntelligently,
-  } = useChatStore();
+  } = useChatStore.getState();
   const { t, locale } = useI18n();
   const { isMobile, isTablet } = useResponsive();
   const navigate = useNavigate();
@@ -73,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     const sessions = agentSessions[currentAgent.id] ?? [];
 
     // 按最后访问时间排序，最近访问的在前面
-    return sessions.sort((a, b) => {
+    return sessions.sort((a: ChatSession, b: ChatSession) => {
       const aTime = a.lastAccessedAt ?? a.updatedAt;
       const bTime = b.lastAccessedAt ?? b.updatedAt;
       return new Date(bTime).getTime() - new Date(aTime).getTime();
@@ -88,9 +83,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
   const [sessionPendingDelete, setSessionPendingDelete] = useState<ChatSession | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null);
-  const [switchingSuccess, setSwitchingSuccess] = useState<boolean>(false);
-  const [switchingError, setSwitchingError] = useState<boolean>(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [switchingSuccess, setSwitchingSuccess] = useState(false);
+  const [switchingError, setSwitchingError] = useState(false);
+  const sidebarRef = useRef(null);
 
   // 使用防抖搜索
   const { searchQuery, debouncedQuery, setSearchQuery, isDebouncing } = useDebouncedSearch('', 300);
@@ -143,6 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
         chatService.getHistoryDetail(currentAgent.id, session.id)
           .then(detail => {
             const mapped = mapHistoryDetailToMessages(detail);
+            const { setSessionMessages } = useChatStore.getState();
             setSessionMessages(session.id, mapped);
           })
           .catch(error => {
@@ -175,6 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
   const handleSaveEdit = () => {
     if (editingId && editTitle.trim()) {
+      const { renameSession, updateSessionTitleIntelligently } = useChatStore.getState();
       renameSession(editingId, editTitle.trim());
 
       // 在保存后触发智能标题优化（异步，不阻塞UI）
@@ -193,6 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
 
   const handleSmartTitleOptimization = (sessionId: string) => {
     // 触发智能标题优化
+    const { updateSessionTitleIntelligently } = useChatStore.getState();
     updateSessionTitleIntelligently(sessionId);
   };
 
@@ -216,6 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     setIsDeleting(true);
     try {
       await chatService.deleteHistory(currentAgent.id, sessionPendingDelete.id);
+      const { deleteSession } = useChatStore.getState();
       deleteSession(sessionPendingDelete.id);
       toast({ type: 'success', title: t('对话已删除') });
     } catch (error) {
@@ -306,24 +305,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
     }
 
     const query = debouncedQuery.toLowerCase();
-    return sessionsToDisplay.filter(session =>
+    return sessionsToDisplay.filter((session: ChatSession) =>
       session.title.toLowerCase().includes(query),
     );
   }, [sessionsToDisplay, debouncedQuery]);
 
   const groupedSessions = useMemo(() => ({
-    today: filteredSessions.filter(s => isToday(s.updatedAt)),
-    yesterday: filteredSessions.filter(s => isYesterday(s.updatedAt)),
-    thisWeek: filteredSessions.filter(s => isThisWeek(s.updatedAt) && !isToday(s.updatedAt) && !isYesterday(s.updatedAt)),
-    older: filteredSessions.filter(s => !isThisWeek(s.updatedAt)),
+    today: filteredSessions.filter((s: ChatSession) => isToday(s.updatedAt)),
+    yesterday: filteredSessions.filter((s: ChatSession) => isYesterday(s.updatedAt)),
+    thisWeek: filteredSessions.filter((s: ChatSession) => isThisWeek(s.updatedAt) && !isToday(s.updatedAt) && !isYesterday(s.updatedAt)),
+    older: filteredSessions.filter((s: ChatSession) => !isThisWeek(s.updatedAt)),
   }), [filteredSessions]);
 
   const SessionGroup: React.FC<{ title: string; sessions: ChatSession[]; icon?: React.ReactNode }> = ({
     title,
-    sessions: groupSessions,
+    sessions,
     icon,
   }) => {
-    if (groupSessions.length === 0) {
+    if (sessions.length === 0) {
       return null;
     }
 
@@ -334,7 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ className = '' }) => {
           {title}
         </div>
         <div className="space-y-1">
-          {groupSessions.map((session) => (
+          {sessions.map((session: ChatSession) => (
             <div
               key={session.id}
               className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
@@ -407,7 +406,7 @@ handleCancelEdit();
                     }`}
                   >
                     <IconButton
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         handleStartEdit(session);
                       }}
@@ -419,7 +418,7 @@ handleCancelEdit();
                       <Edit3 className="h-3 w-3" />
                     </IconButton>
                     <IconButton
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         handleSmartTitleOptimization(session.id);
                       }}
@@ -431,7 +430,7 @@ handleCancelEdit();
                       <Sparkles className="h-3 w-3" />
                     </IconButton>
                     <IconButton
-                      onClick={(e) => requestDeleteSession(session, e)}
+                      onClick={(e: React.MouseEvent) => requestDeleteSession(session, e)}
                       variant="destructive"
                       radius="md"
                       title="删除会话"
@@ -510,7 +509,7 @@ handleCancelEdit();
               type="text"
               placeholder={t('搜索对话...')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               className={`w-full ${isMobile ? 'pl-9 pr-3 py-1.5 text-sm' : 'pl-10 pr-4 py-2'} rounded-xl border border-input bg-background text-foreground placeholder-muted-foreground focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus:border-transparent`}
               aria-label={t('搜索对话')}
             />

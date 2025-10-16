@@ -108,8 +108,8 @@ export function createChatProxyServiceWithMockHTTP(
 /**
  * 模拟网络超时错误
  */
-export function createTimeoutError(message: string = 'timeout of 1000ms exceeded') {
-  const error = new Error(message) as any;
+export function createTimeoutError(message: string = 'timeout of 1000ms exceeded'): Error & { code: string } {
+  const error = new Error(message) as Error & { code: string };
   error.code = 'ECONNABORTED';
   return error;
 }
@@ -117,8 +117,8 @@ export function createTimeoutError(message: string = 'timeout of 1000ms exceeded
 /**
  * 模拟网络连接错误
  */
-export function createNetworkError(message: string = 'getaddrinfo ENOTFOUND test.com') {
-  const error = new Error(message) as any;
+export function createNetworkError(message: string = 'getaddrinfo ENOTFOUND test.com'): Error & { code: string } {
+  const error = new Error(message) as Error & { code: string };
   error.code = 'ENOTFOUND';
   return error;
 }
@@ -126,7 +126,12 @@ export function createNetworkError(message: string = 'getaddrinfo ENOTFOUND test
 /**
  * 模拟 HTTP 错误响应
  */
-export function createHTTPErrorResponse(status: number, statusText: string, data: any = {}) {
+export function createHTTPErrorResponse(status: number, statusText: string, data: unknown = {}): {
+  status: number;
+  statusText: string;
+  data: unknown;
+  headers: Record<string, string>;
+} {
   return {
     status,
     statusText,
@@ -138,7 +143,12 @@ export function createHTTPErrorResponse(status: number, statusText: string, data
 /**
  * 创建原始的HTTP响应（不经过ChatProxy格式化）
  */
-export function createRawHTTPResponse(data: any, status: number = 200) {
+export function createRawHTTPResponse(data: unknown, status: number = 200): {
+  status: number;
+  statusText: string;
+  data: unknown;
+  headers: Record<string, string>;
+} {
   return {
     status,
     statusText: 'OK',
@@ -150,7 +160,12 @@ export function createRawHTTPResponse(data: any, status: number = 200) {
 /**
  * 创建无效的HTTP响应
  */
-export function createInvalidHTTPResponse(invalidData: any, status: number = 200) {
+export function createInvalidHTTPResponse(invalidData: unknown, status: number = 200): {
+  status: number;
+  statusText: string;
+  data: unknown;
+  headers: Record<string, string>;
+} {
   return {
     status,
     statusText: 'OK',
@@ -162,29 +177,34 @@ export function createInvalidHTTPResponse(invalidData: any, status: number = 200
 /**
  * 模拟成功的 HTTP 响应
  */
-export function createSuccessResponse(data: any, status: number = 200) {
+export function createSuccessResponse(data: unknown, status: number = 200): {
+  status: number;
+  statusText: string;
+  data: unknown;
+  headers: Record<string, string>;
+} {
   // 确保响应包含ChatProxyService期望的结构
   const responseData = {
-    id: data.id || 'chat-test-id',
-    object: data.object || 'chat.completion',
-    created: data.created || Date.now(),
-    model: data.model || 'test-model',
-    choices: data.choices || [
+    id: (data as any)?.id || 'chat-test-id',
+    object: (data as any)?.object || 'chat.completion',
+    created: (data as any)?.created || Date.now(),
+    model: (data as any)?.model || 'test-model',
+    choices: (data as any)?.choices || [
       {
         index: 0,
         message: {
           role: 'assistant',
-          content: data.content || 'Test response',
+          content: (data as any)?.content || 'Test response',
         },
         finish_reason: 'stop',
       }
     ],
-    usage: data.usage || {
+    usage: (data as any)?.usage || {
       prompt_tokens: 10,
       completion_tokens: 5,
       total_tokens: 15,
     },
-    ...data,
+    ...(data && typeof data === 'object' ? data : {}),
   };
 
   return {
@@ -198,7 +218,7 @@ export function createSuccessResponse(data: any, status: number = 200) {
 /**
  * 验证错误消息包含预期内容
  */
-export function expectErrorMessageContains(error: any, expectedMessage: string) {
+export function expectErrorMessageContains(error: Error, expectedMessage: string): void {
   expect(error.message).toContain(expectedMessage);
 }
 

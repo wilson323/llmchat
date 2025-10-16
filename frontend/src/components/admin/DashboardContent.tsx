@@ -7,8 +7,28 @@
 import { memo } from 'react';
 import Card from '@/components/ui/Card';
 
+// Analytics数据的简化类型定义
+interface DashboardAnalytics {
+  filters: {
+    startDate: string;
+    endDate: string;
+    agentId: string;
+  };
+  setDateFilter: (dates: { startDate: string; endDate: string }) => void;
+  setAgentId: (id: string) => void;
+  refresh: () => Promise<void>;
+  series: null | unknown;
+  seriesLoading: boolean;
+  seriesError: string | null;
+  comparison: null | unknown;
+  comparisonLoading: boolean;
+  comparisonError: string | null;
+  agents: unknown[];
+  agentsLoading: boolean;
+}
+
 // 简化的数据卡片组件
-function ConversationsTrendCard({ analytics: _analytics }: { analytics: any }) {
+function ConversationsTrendCard({ analytics: _analytics }: { analytics: DashboardAnalytics }) {
   return (
     <Card>
       <Card.Content>
@@ -22,7 +42,7 @@ function ConversationsTrendCard({ analytics: _analytics }: { analytics: any }) {
   );
 }
 
-function AgentComparisonCard({ analytics: _analytics }: { analytics: any }) {
+function AgentComparisonCard({ analytics: _analytics }: { analytics: DashboardAnalytics }) {
   return (
     <Card>
       <Card.Content>
@@ -50,7 +70,7 @@ function DashboardHeatmapCard() {
   );
 }
 
-function ConversationSummaryCard({ analytics: _analytics }: { analytics: any }) {
+function ConversationSummaryCard({ analytics: _analytics }: { analytics: DashboardAnalytics }) {
   return (
     <Card>
       <Card.Content>
@@ -87,7 +107,7 @@ function ServerParamsCard() {
   );
 }
 
-function useDashboardConversationAnalytics() {
+function useDashboardConversationAnalytics(): DashboardAnalytics {
   // 简化的分析数据，实际应该从API获取
   return {
     filters: { startDate: '', endDate: '', agentId: '' },

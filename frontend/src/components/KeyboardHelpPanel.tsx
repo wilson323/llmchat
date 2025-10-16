@@ -49,13 +49,13 @@ export const KeyboardHelpPanel: React.FC<KeyboardHelpPanelProps> = ({
 
         <div className="overflow-y-auto max-h-[60vh]">
           <div className="p-4 space-y-6">
-            {helpContent.map((section) => (
+            {helpContent.map((section: any) => (
               <div key={section.category}>
                 <h3 className="font-medium text-foreground mb-2">
                   {section.category}
                 </h3>
                 <div className="space-y-2">
-                  {section.shortcuts.map((shortcut, index) => (
+                  {section.shortcuts.map((shortcut: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between py-2 px-3 bg-muted rounded"

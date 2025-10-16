@@ -1,5 +1,15 @@
+;
+;
+;
+;
+;
+;
+;
+import {AlertCircle, Bot, CheckCircle, Circle, Database, Workflow} from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { Bot, Database, Workflow, CheckCircle, Circle, AlertCircle } from 'lucide-react';
+;
+;
+;
 import { Agent, StreamStatus } from '@/types';
 import { debugLog } from '@/lib/debug';
 import { useI18n } from '@/i18n';
@@ -21,8 +31,8 @@ export const FastGPTStatusIndicator: React.FC<FastGPTStatusIndicatorProps> = ({
   agent,
   moduleHistory,
 }) => {
-  const [knowledgeStatus, setKnowledgeStatus] = useState<'ready' | 'loading' | 'error'>('loading');
-  const [contextStatus, setContextStatus] = useState<'active' | 'inactive'>('inactive');
+  const [knowledgeStatus, setKnowledgeStatus] = useState('loading');
+  const [contextStatus, setContextStatus] = useState('inactive');
   const { t } = useI18n();
 
   // 检查 FastGPT 特有状态

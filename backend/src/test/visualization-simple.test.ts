@@ -5,9 +5,9 @@
 import VisualizationConfigService from '../services/VisualizationConfigService';
 import VisualizationDataService from '../services/VisualizationDataService';
 import { VisualizationController } from '../controllers/VisualizationController';
-import { QueueManager } from '../services/QueueManager';
-import { MonitoringService } from '../services/MonitoringService';
-import { RedisConnectionPool } from '../utils/redisConnectionPool';
+import QueueManager from '../services/QueueManager';
+import MonitoringService from '../services/MonitoringService';
+import RedisConnectionPool from '../utils/redisConnectionPool';
 
 describe('Visualization System Simple Tests', () => {
   let configService: VisualizationConfigService;

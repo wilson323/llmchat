@@ -4,6 +4,8 @@
  * 这是一个简单的逻辑测试，验证快捷键管理器的核心功能
  */
 
+;
+import { Keyboard } from 'lucide-react';
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardManager, useKeyboardHelp, KeyboardShortcut } from '@/hooks/useKeyboardManager';

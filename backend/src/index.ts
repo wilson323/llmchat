@@ -57,12 +57,13 @@ import queueRouter from "./routes/queue"; // 消息队列管理路由
 import { initializeVisualizationRoutes, default as visualizationRouter } from "./routes/visualizationRoutes";
 
 // 工具
-import { logger } from "./utils/logger";
+import logger from "./utils/logger";
 import { initCacheService } from "./services/CacheService";
 import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
 import { initQueueService, shutdownQueueService } from "./services/initQueueService";
 import QueueManager from "./services/QueueManager";
+import { QueueManagerConfig } from "./types/queue";
 import MonitoringService from "./services/MonitoringService";
 import VisualizationController from "./controllers/VisualizationController";
 
@@ -72,11 +73,11 @@ let visualizationController: VisualizationController | null = null;
 const app: express.Express = express();
 const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? 0 : 3001);
 
-// 创建服务实例
-const agentConfigService = new AgentConfigService();
-
 // 声明 server 变量（必须在使用前声明）
 let server: ReturnType<typeof app.listen>;
+
+// 延迟创建服务实例，避免在模块导入时阻塞
+let agentConfigService: AgentConfigService | null = null;
 
 // 定时任务相关
 let dailyCleanupInterval: NodeJS.Timeout | null = null;
@@ -170,11 +171,8 @@ app.use(requestLogger);
 // 性能监控
 app.use(performanceMiddleware);
 
-// 数据库性能监控
+// 数据库性能监控（注意：数据库优化中间件将在数据库初始化后添加）
 app.use(databasePerformanceMonitorMiddleware);
-
-// 数据库优化中间件
-app.use(databaseOptimizationMiddleware);
 
 // CSRF Token 获取端点（必须在 CSRF 保护之前）
 app.get("/api/csrf-token", getCsrfToken);
@@ -239,18 +237,22 @@ function startScheduledTasks(): void {
 
     setTimeout(() => {
       // 执行每日清理任务
-      agentConfigService.dailyCleanupTask().catch((error: unknown) => {
-        logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
-      });
+      if (agentConfigService) {
+        agentConfigService.dailyCleanupTask().catch((error: unknown) => {
+          logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
+        });
+      }
 
       // 设置每天执行一次的间隔任务
       if (dailyCleanupInterval) {
         clearInterval(dailyCleanupInterval);
       }
       dailyCleanupInterval = setInterval(() => {
-        agentConfigService.dailyCleanupTask().catch((error: unknown) => {
-          logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
-        });
+        if (agentConfigService) {
+          agentConfigService.dailyCleanupTask().catch((error: unknown) => {
+            logger.error("[ScheduledTasks] 每日清理任务执行失败", { error });
+          });
+        }
       }, 24 * 60 * 60 * 1000); // 每24小时执行一次
 
       logger.info(
@@ -276,11 +278,46 @@ async function initializeVisualizationSystem(): Promise<void> {
       return;
     }
 
-    // 获取QueueManager实例
-    const queueManager = QueueManager.getInstance();
+    // 创建QueueManager配置
+    const queueManagerConfig: QueueManagerConfig = {
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '3019'),
+        ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
+        ...(process.env.REDIS_DB && { db: parseInt(process.env.REDIS_DB) }),
+        ...(process.env.REDIS_KEY_PREFIX && { keyPrefix: process.env.REDIS_KEY_PREFIX })
+      },
+      defaultConcurrency: 5,
+      stalledInterval: 30000,
+      maxStalledCount: 3,
+      enableMetrics: true,
+      enableEvents: true,
+      metricsInterval: 60000
+    };
+
+    // 获取QueueManager实例（传递配置）
+    const queueManager = QueueManager.getInstance(queueManagerConfig);
+
+    await initializeVisualizationSystemWithQueueManager(queueManager);
+  } catch (error) {
+    logger.error("可视化系统初始化失败:", error);
+    throw error;
+  }
+}
+
+// 使用已初始化的QueueManager初始化可视化系统
+async function initializeVisualizationSystemWithQueueManager(queueManager: QueueManager): Promise<void> {
+  try {
+    // 检查环境变量是否启用可视化
+    const visualizationEnabled = process.env.VISUALIZATION_ENABLED !== 'false';
+
+    if (!visualizationEnabled) {
+      logger.info("可视化系统已禁用 (VISUALIZATION_ENABLED=false)");
+      return;
+    }
 
     // 获取MonitoringService实例
-    const monitoringService = MonitoringService.getInstance();
+    const monitoringService = MonitoringService.getInstance(queueManager);
 
     // 获取Redis连接池
     const connectionPool = queueManager.getConnectionPool();
@@ -321,16 +358,55 @@ async function startServer() {
     await initializeDatabaseOptimization();
     logger.info("✅ 数据库优化器已初始化");
 
-    // 初始化队列服务
-    await initQueueService();
-    logger.info("✅ 队列服务已初始化");
+    // 现在数据库已初始化，可以安全添加数据库优化中间件
+    app.use(databaseOptimizationMiddleware);
+    logger.info("✅ 数据库优化中间件已添加");
 
-    // 初始化可视化系统（如果启用）
+    // 初始化队列服务（可选）
+    await initQueueService();
+    // initQueueService现在会处理自己的错误，不会抛出异常
+
+    // 🔧 初始化 AgentConfigService（必须在数据库初始化后）
+    agentConfigService = new AgentConfigService();
+    logger.info("✅ AgentConfigService 已初始化");
+
+    // 获取QueueManager实例（传递配置）
+    let queueManager: QueueManager | null = null;
     try {
-      await initializeVisualizationSystem();
-      logger.info("✅ 可视化系统已初始化");
+      const queueManagerConfig: QueueManagerConfig = {
+        redis: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '3019'),
+          ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
+          ...(process.env.REDIS_DB && { db: parseInt(process.env.REDIS_DB) }),
+          ...(process.env.REDIS_KEY_PREFIX && { keyPrefix: process.env.REDIS_KEY_PREFIX })
+        },
+        defaultConcurrency: 5,
+        stalledInterval: 30000,
+        maxStalledCount: 3,
+        enableMetrics: true,
+        enableEvents: true,
+        metricsInterval: 60000
+      };
+
+      queueManager = QueueManager.getInstance(queueManagerConfig);
+      logger.info("✅ QueueManager实例已获取");
     } catch (error) {
-      logger.warn("⚠️ 可视化系统初始化失败:", error);
+      logger.warn("⚠️ QueueManager初始化失败，将以降级模式运行:", error);
+      logger.info("📝 提示: 队列服务对核心功能不是必需的，应用可以正常运行");
+    }
+
+    // 初始化可视化系统（可选）
+    try {
+      if (queueManager) {
+        await initializeVisualizationSystemWithQueueManager(queueManager);
+        logger.info("✅ 可视化系统已初始化");
+      } else {
+        logger.warn("⚠️ 跳过可视化系统初始化（QueueManager未初始化）");
+      }
+    } catch (error) {
+      logger.warn("⚠️ 可视化系统初始化失败，将以降级模式运行:", error);
+      logger.info("📝 提示: 可视化系统对核心功能不是必需的，应用可以正常运行");
     }
 
     server = app.listen(PORT, () => {

@@ -12,9 +12,9 @@ import fs from 'fs';
 
 // 尝试多个可能的 .env 文件路径
 const envCandidates = [
-  path.resolve(process.cwd(), 'backend/.env'),
   path.resolve(process.cwd(), '.env'),
-  path.resolve(__dirname, '../.env'),
+  path.resolve(process.cwd(), 'backend/.env'),
+  path.resolve(process.cwd(), 'src/.env'),
 ];
 
 let loaded = false;

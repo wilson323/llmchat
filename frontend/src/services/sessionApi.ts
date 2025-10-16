@@ -1,3 +1,6 @@
+;
+;
+;
 import { api } from './api';
 
 // 会话管理相关类型定义
@@ -164,7 +167,7 @@ export async function batchRemoveTags(sessionIds: string[], tags: string[]): Pro
 }
 
 export async function exportSession(sessionId: string, format: 'json' | 'csv' | 'txt' = 'json'): Promise<string> {
-  const { data } = await api.get(`/admin/sessions/${sessionId}/export`, {
+  const { data } = await api.get<string>(`/admin/sessions/${sessionId}/export`, {
     params: { format },
     responseType: 'text',
   });
@@ -172,7 +175,7 @@ export async function exportSession(sessionId: string, format: 'json' | 'csv' | 
 }
 
 export async function exportSessions(params: SessionListParams & { format: 'json' | 'csv' | 'xlsx' }): Promise<string> {
-  const { data } = await api.get('/admin/sessions/export', {
+  const { data } = await api.get<string>('/admin/sessions/export', {
     params,
     responseType: 'text',
   });

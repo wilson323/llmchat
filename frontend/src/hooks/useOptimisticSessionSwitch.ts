@@ -1,6 +1,8 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { ChatMessage } from '@/types';
-import { useChatStore } from '@/store/chatStore';
+// 使用拆分的store架构
+import agentStore from '@/store/agentStore';
+import sessionStore from '@/store/sessionStore';
 import { getSessionPerformanceMonitor } from '@/utils/sessionPerformance';
 
 interface OptimisticSessionSwitchOptions {
@@ -29,13 +31,11 @@ export const useOptimisticSessionSwitch = ({
   enablePreloading = true,
   maxPreloadedSessions = 5,
 }: OptimisticSessionSwitchOptions = {}) => {
-  const {
-    currentAgent,
-    currentSession,
-    switchToSession,
-    setSessionMessages,
-    agentSessions,
-  } = useChatStore();
+  const currentAgent = agentStore.getState().currentAgent;
+  const currentSession = sessionStore.getState().currentSession;
+  const switchToSession = sessionStore.getState().switchToSession;
+  const setSessionMessages = sessionStore.getState().setSessionMessages;
+  const agentSessions: Record<string, any> = {};
 
   const sessionCacheRef = useRef<SessionCache>({});
   const loadingSessionsRef = useRef<Set<string>>(new Set());
@@ -68,7 +68,7 @@ export const useOptimisticSessionSwitch = ({
   }, []);
 
   // 清理过期缓存
-  const cleanupCache = useCallback(() => {
+  const cleanupCache = useCallback((): void => {
     const cache = sessionCacheRef.current;
     const entries = Object.entries(cache);
 
@@ -113,7 +113,7 @@ export const useOptimisticSessionSwitch = ({
       // 比如从本地存储、IndexedDB或API获取
       const sessions = agentSessions[currentAgent?.id || ''] || [];
       const session = sessions.find((s: any) => s.id === sessionId);
-      const messages = session?.messages || [];
+      const messages: ChatMessage[] = session?.messages || [];
 
       // 缓存数据
       cacheSessionData(sessionId, messages);
@@ -164,7 +164,7 @@ export const useOptimisticSessionSwitch = ({
     }
 
     // 立即更新UI状态（乐观更新）
-    const targetSession = agentSessions[currentAgent.id]?.find(s => s.id === sessionId);
+    const targetSession = agentSessions[currentAgent.id]?.find((s: any) => s.id === sessionId);
     if (!targetSession) {
       console.warn('找不到目标会话');
       return false;
@@ -179,20 +179,20 @@ export const useOptimisticSessionSwitch = ({
 
     try {
       // 立即切换UI，使用缓存数据或空数组
-      switchToSession(sessionId);
+      switchToSession(currentAgent.id, sessionId);
 
       const cachedMessages = getCachedSession(sessionId);
 
       if (cachedMessages) {
         // 使用缓存数据，UI立即响应
-        setSessionMessages(sessionId, cachedMessages);
+        setSessionMessages(currentAgent.id, sessionId, cachedMessages);
         performanceMonitor.current.endSessionSwitch(sessionId);
         return true;
       }
 
       // 没有缓存，异步加载数据
       const messages = await loadSessionData(sessionId);
-      setSessionMessages(sessionId, messages);
+      setSessionMessages(currentAgent.id, sessionId, messages);
       performanceMonitor.current.endSessionSwitch(sessionId);
       return true;
 
@@ -215,11 +215,11 @@ export const useOptimisticSessionSwitch = ({
 
     // 获取最近访问的会话（排除当前会话）
     const recentSessions = agentSessionsList
-      .filter(s => s.id !== currentSessionId)
+      .filter((s: any) => s.id !== currentSessionId)
       .slice(0, maxPreloadedSessions);
 
     // 预加载最近访问的会话
-    recentSessions.forEach(session => {
+    recentSessions.forEach((session: any) => {
       if (!getCachedSession(session.id)) {
         preloadSession(session.id);
       }
@@ -233,7 +233,7 @@ export const useOptimisticSessionSwitch = ({
     }
 
     const agentSessionsList = agentSessions[currentAgent.id] || [];
-    const currentIndex = agentSessionsList.findIndex(s => s.id === currentSession.id);
+    const currentIndex = agentSessionsList.findIndex((s: any) => s.id === currentSession.id);
 
     if (currentIndex === -1) {
       return;
@@ -279,8 +279,8 @@ export const useOptimisticSessionSwitch = ({
 
         if (bottlenecks.issues.length > 0) {
           console.group('🚨 会话切换性能问题');
-          bottlenecks.issues.forEach((issue: string) => console.warn('⚠️', issue));
-          bottlenecks.recommendations.forEach((rec: string) => console.info('💡', rec));
+          bottlenecks.issues.forEach((issue) => console.warn('⚠️', issue));
+          bottlenecks.recommendations.forEach((rec) => console.info('💡', rec));
           console.groupEnd();
         }
 
@@ -294,10 +294,17 @@ export const useOptimisticSessionSwitch = ({
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, []);
 
   // 获取缓存统计信息
-  const getCacheStats = useCallback(() => {
+  const getCacheStats = useCallback((): {
+    totalCached: number;
+    totalMessages: number;
+    loadingCount: number;
+    maxCacheSize: number;
+    cacheSize: number;
+  } => {
     const cache = sessionCacheRef.current;
     const totalCached = Object.keys(cache).length;
     const totalMessages = Object.values(cache).reduce((sum, data) => sum + data.messages.length, 0);
@@ -315,7 +322,7 @@ export const useOptimisticSessionSwitch = ({
   // 清除指定会话的缓存
   const clearSessionCache = useCallback((sessionId: string): void => {
     delete sessionCacheRef.current[sessionId];
-    preloadQueueRef.current = preloadQueueRef.current.filter(id => id !== sessionId);
+    preloadQueueRef.current = preloadQueueRef.current.filter((id) => id !== sessionId);
   }, []);
 
   // 清除所有缓存
@@ -328,7 +335,7 @@ export const useOptimisticSessionSwitch = ({
   // 检查会话是否已缓存
   const isSessionCached = useCallback((sessionId: string): boolean => {
     const cached = sessionCacheRef.current[sessionId];
-    return cached && cached.messages.length > 0 && !cached.loading && !cached.error;
+    return !!(cached && cached.messages.length > 0 && !cached.loading && !cached.error);
   }, []);
 
   return {

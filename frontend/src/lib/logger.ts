@@ -198,13 +198,13 @@ class Logger {
     // 只有warn和error级别才发送到Sentry
     if (level === LogLevel.ERROR && error) {
       Sentry.captureException(error, {
-        extra: sanitized,
-        level: 'error',
+        ...(sanitized && { extra: sanitized }),
+        level: 'error' as const,
       });
     } else if (level === LogLevel.WARN || level === LogLevel.ERROR) {
       Sentry.captureMessage(message, {
-        level: level === LogLevel.ERROR ? 'error' : 'warning',
-        extra: sanitized,
+        level: (level === LogLevel.ERROR ? 'error' : 'warning') as 'error' | 'warning',
+        ...(sanitized && { extra: sanitized }),
       });
     }
   }

@@ -506,7 +506,7 @@ export class CacheManager implements ICacheManager {
 
   private extractAgentIdFromKey(key: string): string | null {
     const match = key.match(/session:([^:]+)/);
-    return match ? match[1] : null;
+    return match && match[1] ? match[1] : null;
   }
 
   private async getAgentSessionKeys(agentId: string, limit: number): Promise<string[]> {
@@ -567,7 +567,7 @@ export class CacheManager implements ICacheManager {
 
   private extractTimestampFromKey(key: string): number {
     const match = key.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 0;
+    return match && match[1] ? parseInt(match[1], 10) : 0;
   }
 
   private async executePreload(key: string): Promise<void> {

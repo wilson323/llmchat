@@ -1,3 +1,4 @@
+;
 import { FastGPTEvent } from '@/types';
 import { getNormalizedEventKey, isReasoningEvent, isChunkLikeEvent } from './fastgptEvents';
 import type {
@@ -329,7 +330,7 @@ const buildToolResponseInfo = (response: unknown): ToolResponseInfo => {
 
   if (textBlocks.length > 0) {
     return {
-      summary: truncateText(textBlocks[0].replace(/\s+/g, ' ').trim(), 100),
+      summary: truncateText(textBlocks[0]!.replace(/\s+/g, ' ').trim(), 100),
       detail: textBlocks.slice(1, 3).map((item: string) => truncateText(item.replace(/\s+/g, ' ').trim(), 80)).join('\n') || undefined,
       payload: parsedResponse,
       isError: false,
@@ -356,7 +357,7 @@ const buildToolResponseInfo = (response: unknown): ToolResponseInfo => {
   };
 };
 
-const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: JsonValue): FastGPTEvent | null => {
+const normalizeToolEvent = (_eventName: string, normalizedKey: string, payload: JsonValue): FastGPTEvent | null => {
   const tool = safeGetObject(payload, 'tool');
   if (!tool || typeof safeGetProperty(tool, 'id') !== 'string') {
     return null;
@@ -394,22 +395,20 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: J
   };
 
   const baseEvent: FastGPTEvent = {
-    id: `tool-${toolId}`,
-    groupId: `tool-${toolId}`,
-    name: eventName,
+    type: 'tool',
     label,
     level: 'info',
     summary: paramsInfo.summary ?? '工具调用中',
-    detail: paramsInfo.detail,
     payload: basePayload,
-    timestamp: Date.now(),
-    stage: 'update',
+    timestamp: String(Date.now()),
   };
 
   if (TOOL_START_EVENTS.has(normalizedKey)) {
-    baseEvent.stage = 'start';
-    baseEvent.summary = paramsInfo.summary ? `调用中 · ${paramsInfo.summary}` : '工具调用中';
-    return baseEvent;
+    return {
+      ...baseEvent,
+      type: 'start',
+      summary: paramsInfo.summary ? `调用中 · ${paramsInfo.summary}` : '工具调用中',
+    };
   }
 
   if (TOOL_UPDATE_EVENTS.has(normalizedKey)) {
@@ -422,17 +421,20 @@ const normalizeToolEvent = (eventName: string, normalizedKey: string, payload: J
   if (TOOL_COMPLETE_EVENTS.has(normalizedKey)) {
     const toolResponse = safeGetProperty(tool, 'response') ?? safeGetProperty(payload, 'response');
     const responseInfo = buildToolResponseInfo(toolResponse);
-    baseEvent.stage = 'complete';
-    baseEvent.level = responseInfo.isError ? 'error' : 'success';
-    baseEvent.summary = responseInfo.summary ?? (responseInfo.isError ? '工具调用失败' : '工具调用完成');
-    baseEvent.detail = responseInfo.detail ?? baseEvent.detail;
-    baseEvent.payload = {
-      ...basePayload,
-      response: responseInfo.payload,
-      rawResponsePreview: typeof toolResponse === 'string' ? truncateText(toolResponse.replace(/\s+/g, ' ').trim(), 400) : undefined,
+    return {
+      type: 'complete',
+      level: responseInfo.isError ? 'error' : 'success',
+      label: baseEvent.label,
+      summary: responseInfo.summary ?? (responseInfo.isError ? '工具调用失败' : '工具调用完成'),
+      payload: {
+        ...basePayload,
+        response: responseInfo.payload ?? null,
+        ...(typeof toolResponse === 'string' && {
+          rawResponsePreview: truncateText(toolResponse.replace(/\s+/g, ' ').trim(), 400)
+        }),
+      } as JsonValue,
+      timestamp: String(Date.now()),
     };
-    toolEventStates.delete(toolId);
-    return baseEvent;
   }
 
   return baseEvent;
@@ -633,7 +635,7 @@ const IGNORED_EVENTS = new Set(
     .concat(getNormalizedEventKey('reasoning')),
 );
 
-const generateEventId = (key: string) => `${key}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+// const generateEventId = (key: string) => `${key}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
 export const normalizeFastGPTEvent = (eventName: string, payload: JsonValue): FastGPTEvent | null => {
   if (!eventName) {
@@ -661,14 +663,12 @@ export const normalizeFastGPTEvent = (eventName: string, payload: JsonValue): Fa
   }
 
   return {
-    id: generateEventId(key || 'event'),
-    name: eventName,
+    type: key as any, // 临时类型转换，因为 FastGPTStreamEventType 可能不包含所有事件类型
     label,
-    summary: summary ?? undefined,
-    detail: typeof payload === 'string' ? payload : undefined,
-    level,
+    ...(summary && { summary }),
     payload,
-    timestamp: Date.now(),
+    timestamp: String(Date.now()),
+    level,
   };
 };
 

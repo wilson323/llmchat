@@ -1,20 +1,32 @@
 'use client';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import { Bot, Calendar, Clock, Copy, Download, FileText, MessageCircle, MessageSquare, RefreshCw, Tag, User, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X,
-  Download,
-  User,
-  Bot,
-  Calendar,
-  MessageSquare,
-  Tag,
-  RefreshCw,
-  Copy,
-  FileText,
-  MessageCircle,
-  Clock,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';
@@ -42,14 +54,14 @@ export function SessionDetailModal({
   const { t } = useI18n();
 
   const [messages, setMessages] = useState<SessionMessage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [messagesLoading, setMessagesLoading] = useState(false);
-  const [messagePage, setMessagePage] = useState(1);
-  const [messagePageSize] = useState(50);
-  const [totalMessages, setTotalMessages] = useState(0);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [tempTitle, setTempTitle] = useState('');
-  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [messagesLoading, setMessagesLoading] = useState<boolean>(false);
+  const [messagePage, setMessagePage] = useState<number>(1);
+  const [messagePageSize] = useState<number>(50);
+  const [totalMessages, setTotalMessages] = useState<number>(0);
+  const [editingTitle, setEditingTitle] = useState<boolean>(false);
+  const [tempTitle, setTempTitle] = useState<string>('');
+  const [showExportOptions, setShowExportOptions] = useState<boolean>(false);
 
   // 加载会话消息
   const loadMessages = async (page: number = 1) => {
@@ -63,7 +75,7 @@ export function SessionDetailModal({
       if (page === 1) {
         setMessages(response.messages);
       } else {
-        setMessages(prev => [...prev, ...response.messages]);
+        setMessages((prev: SessionMessage[]) => [...prev, ...response.messages]);
       }
       setTotalMessages(response.total);
       setMessagePage(page);
@@ -180,7 +192,7 @@ export function SessionDetailModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* 头部 */}
             <div className="flex items-center justify-between p-6 border-b border-border">
@@ -191,8 +203,8 @@ export function SessionDetailModal({
                       <input
                         type="text"
                         value={tempTitle}
-                        onChange={(e) => setTempTitle(e.target.value)}
-                        onKeyDown={(e) => {
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTempTitle(e.target.value)}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                           if (e.key === 'Enter') {
 updateSessionTitle();
 }
@@ -344,7 +356,7 @@ updateSessionTitle();
                 {/* 标签 */}
                 {session.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {session.tags.map((tag, index) => (
+                    {session.tags.map((tag: string, index: number) => (
                       <span
                         key={index}
                         className="inline-flex items-center px-2 py-1 text-xs bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded"
@@ -371,7 +383,7 @@ updateSessionTitle();
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {messages.map((message, index) => (
+                    {messages.map((message: SessionMessage, index: number) => (
                       <motion.div
                         key={message.id || index}
                         initial={{ opacity: 0, y: 10 }}

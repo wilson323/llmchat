@@ -6,7 +6,7 @@
 import request from 'supertest';
 import express from 'express';
 import { createTestApp, setupTestDatabase, cleanupTestDatabase } from '../testUtils';
-import { QueueManager } from '../../services/QueueManager';
+import QueueManager from '../../services/QueueManager';
 import { AuthServiceV2 } from '../../services/AuthServiceV2';
 import Redis from 'ioredis';
 import { EventEmitter } from 'events';

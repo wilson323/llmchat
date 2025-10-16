@@ -1,12 +1,11 @@
 'use client';
+;
+;
+;
+;
+import { Loader2, Plus, Tag, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  X,
-  Tag,
-  Plus,
-  Loader2,
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/i18n';
@@ -57,7 +56,7 @@ export function BatchTagModal({
 
   // 移除标签
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    setTags((tags: string[]) => tags.filter((tag: string) => tag !== tagToRemove));
   };
 
   // 处理输入框回车
@@ -118,7 +117,7 @@ export function BatchTagModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* 头部 */}
             <div className="flex items-center justify-between p-6 border-b border-border">
@@ -162,7 +161,7 @@ export function BatchTagModal({
                 <Input
                   placeholder={t('输入标签名称')}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
                   onKeyDown={handleInputKeyDown}
                   disabled={loading}
                 />
@@ -182,7 +181,7 @@ export function BatchTagModal({
                     {operation === 'add' ? t('要添加的标签') : t('要移除的标签')}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {tags.map((tag, index) => (
+                    {tags.map((tag: string, index: number) => (
                       <motion.div
                         key={index}
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -214,14 +213,14 @@ export function BatchTagModal({
               <div className="space-y-2">
                 <div className="text-sm font-medium">{t('常用标签')}</div>
                 <div className="flex flex-wrap gap-2">
-                  {['重要', '待处理', '已完成', '需要跟进', '客户支持', '技术问题', '产品反馈'].map((suggestion) => (
+                  {(['重要', '待处理', '已完成', '需要跟进', '客户支持', '技术问题', '产品反馈'] as const).map((suggestion: string) => (
                     <Button
                       key={suggestion}
                       variant="outline"
                       size="sm"
                       onClick={() => {
                         if (!tags.includes(suggestion)) {
-                          setTags([...tags, suggestion]);
+                          setTags((tags: string[]) => [...tags, suggestion]);
                         }
                       }}
                       disabled={tags.includes(suggestion) || loading}

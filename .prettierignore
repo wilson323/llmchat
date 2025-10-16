@@ -1,63 +1,50 @@
-# 依赖目录
-node_modules/
-.pnp/
-.pnp.js
+# Prettier 排除配置
 
-# 构建输出
+# 构建产物
 dist/
 build/
-coverage/
-.nyc_output/
+backend/dist/
+frontend/dist/
+shared-types/dist/
+*.tsbuildinfo
 
-# 测试相关
-coverage/
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts
-
-# 日志文件
-logs/
-*.log
-
-# 临时文件
-.tmp/
-.temp/
-*.tmp
-
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# IDE配置
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# 环境配置文件
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# 锁文件（保持原格式）
+# 依赖
+node_modules/
 pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
-# Git相关
-.git/
-.gitignore
+# 测试报告
+playwright-report/
+test-results/
+coverage/
 
-# 文档生成文件
-docs/build/
+# 日志
+logs/
+*.log
 
-# 缓存文件
+# 缓存
 .cache/
+.eslintcache
 .parcel-cache/
 
-# 其他工具生成的文件
+# 临时文件
+tmp/
+temp/
+
+# 配置文件
 *.min.js
-*.bundle.js
+*.min.css
+
+# 生成的文件
+public/
+static/
+
+# IDE
+.vscode/
+.idea/
+
+# Markdown临时报告
+*_COMPLETION_REPORT.md
+*_SUMMARY*.md
+*_REPORT*.md

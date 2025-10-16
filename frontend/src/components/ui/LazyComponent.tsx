@@ -4,8 +4,14 @@
  * 提供统一的懒加载组件接口，支持加载状态、错误处理、重试等功能
  */
 
+;
+;
+;
+;
+;
+import {AlertCircle, RefreshCw} from 'lucide-react';
 import React, { Suspense, ComponentType, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+;
 
 // 懒加载组件配置
 interface LazyComponentConfig {
@@ -32,6 +38,7 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number }> = ({ delay = 200
       const timer = setTimeout(() => setShowLoading(true), delay);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [delay]);
 
   if (!showLoading) {
@@ -129,41 +136,41 @@ export function LazyComponent<P extends object = {}>({
   > {
     constructor(props: { children: ReactNode; onRetry: () => void }) {
       super(props);
-      this.state = { hasError: false, error: undefined, retryCount: 0 };
+      this.state = { hasError: false, retryCount: 0 };
     }
 
     static getDerivedStateFromError(error: Error) {
       return { hasError: true, error, retryCount: 0 };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
       console.error('LazyComponent错误边界捕获:', error, errorInfo);
     }
 
-    componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
+    override componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
       // 如果props改变，重置错误状态
       if (prevProps.children !== this.props.children) {
-        this.setState({ hasError: false, error: undefined });
+        this.setState({ hasError: false });
       }
     }
 
     handleRetry = () => {
       const { retryCount } = this.state;
-      if (retryCount < retryCount) {
+      const maxRetries = 3; // 设置最大重试次数
+      if (retryCount < maxRetries) {
         this.setState(prev => ({
           hasError: false,
-          error: undefined,
           retryCount: prev.retryCount + 1,
         }));
         this.props.onRetry();
       }
     };
 
-    render() {
+    override render() {
       if (this.state.hasError) {
         return (
           <ErrorFallback
-            error={this.state.error}
+            {...(this.state.error && { error: this.state.error })}
             onRetry={this.handleRetry}
             retryCount={this.state.retryCount}
           />

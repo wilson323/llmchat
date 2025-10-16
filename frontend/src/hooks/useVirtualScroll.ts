@@ -26,8 +26,8 @@ export function useVirtualScroll({
   itemCount,
   overscan = 5,
 }: VirtualScrollOptions): VirtualScrollResult {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scrollTopRef = useRef(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollTopRef = useRef<number>(0);
 
   // 计算项目高度
   const getItemHeight = (index: number) => {
@@ -104,7 +104,7 @@ export function useVirtualScroll({
   }, [positionMap, containerHeight, itemCount, overscan]);
 
   // 滚动到指定索引
-  const scrollToIndex = (index: number) => {
+  const scrollToIndex = (index: number): void => {
     if (!containerRef.current) {
       return;
     }
@@ -116,7 +116,7 @@ export function useVirtualScroll({
   };
 
   // 滚动到顶部
-  const scrollToTop = () => {
+  const scrollToTop = (): void => {
     if (!containerRef.current) {
       return;
     }
@@ -130,7 +130,7 @@ export function useVirtualScroll({
       return;
     }
 
-    const handleScroll = () => {
+    const handleScroll = (): void => {
       scrollTopRef.current = container.scrollTop;
     };
 

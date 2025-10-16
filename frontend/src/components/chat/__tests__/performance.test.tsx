@@ -21,7 +21,6 @@ vi.mock("@/i18n", () => ({
 const generateMessages = (count: number): ChatMessage[] => {
   return Array.from({ length: count }, (_, i) => ({
     id: `msg-${i}`,
-    AI: undefined,
     HUMAN: `Test message ${i}`,
     timestamp: Date.now() + i,
   }));

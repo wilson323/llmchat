@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
  * @returns 防抖后的值
  */
 export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -29,7 +29,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param delay 延迟时间（毫秒）
  * @returns 防抖后的回调函数
  */
-export function useDebouncedCallback<T extends(...args: any[]) => void>(
+export function useDebouncedCallback<T extends(...args: unknown[]) => void>(
   callback: T,
   delay: number,
 ): T {
@@ -100,7 +100,7 @@ export function useCachedSearch<T, R>(
   searchFn: (query: T) => Promise<R[]>,
   cacheSize: number = 10,
 ) {
-  const cache = useRef<Map<string, { results: R[]; timestamp: number }>>(new Map());
+  const cache = useRef(new Map<string, { results: R[]; timestamp: number }>());
   const [loading, setLoading] = useState(false);
 
   const search = async (query: T): Promise<R[]> => {

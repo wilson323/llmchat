@@ -4,8 +4,14 @@
  * 提供基础的懒加载功能，避免复杂的类型问题
  */
 
+;
+;
+;
+;
+import {AlertCircle, Loader2, RefreshCw} from 'lucide-react';
 import React, { Suspense, ComponentType, ReactNode, PropsWithRef } from 'react';
-import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+;
+;
 
 // 简化的懒加载配置
 export interface SimpleLazyConfig {
@@ -31,10 +37,12 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boo
       const timer = setTimeout(() => setShowLoading(true), delay);
       return () => clearTimeout(timer);
     }
+    // 返回空函数以满足所有代码路径返回值的要求
+    return () => {};
   }, [delay]);
 
   if (!showLoading) {
-    return null;
+    return <div></div>;
   }
 
   return (
@@ -135,20 +143,20 @@ export function SimpleLazyComponent<P extends object = {}>({
   > {
     constructor(props: { children: ReactNode; onRetry: () => void }) {
       super(props);
-      this.state = { hasError: false, error: undefined, retryCount: 0 };
+      this.state = { hasError: false, retryCount: 0 };
     }
 
     static getDerivedStateFromError(error: Error) {
       return { hasError: true, error, retryCount: 0 };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
       console.error('SimpleLazyComponent错误边界捕获:', error, errorInfo);
     }
 
-    componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
+    override componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
       if (prevProps.children !== this.props.children) {
-        this.setState({ hasError: false, error: undefined, retryCount: 0 });
+        this.setState({ hasError: false, retryCount: 0 });
       }
     }
 
@@ -157,22 +165,22 @@ export function SimpleLazyComponent<P extends object = {}>({
       if (retryCount < 3) {
         this.setState(prev => ({
           hasError: false,
-          error: undefined,
           retryCount: prev.retryCount + 1,
         }));
         this.props.onRetry();
       }
     };
 
-    render() {
+    override render() {
       if (this.state.hasError) {
-        return (
-          <ErrorFallback
-            error={this.state.error}
-            onRetry={this.handleRetry}
-            retryCount={this.state.retryCount}
-          />
-        );
+        // 使用展开运算符条件性地传递error属性，避免显式传递undefined
+        const errorProps = {
+          onRetry: this.handleRetry,
+          retryCount: this.state.retryCount,
+          ...(this.state.error && { error: this.state.error }),
+        };
+
+        return <ErrorFallback {...errorProps} />;
       }
 
       return this.props.children;

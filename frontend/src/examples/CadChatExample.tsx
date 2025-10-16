@@ -4,6 +4,8 @@
  * 展示如何在实际聊天界面中集成 CAD 编辑器
  */
 
+;
+;
 import React, { useState } from 'react';
 import { CadChatIntegration } from '@/components/cad/CadChatIntegration';
 import { CadQuickActions } from '@/components/cad/CadQuickActions';

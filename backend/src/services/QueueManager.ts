@@ -126,12 +126,39 @@ export class QueueManager extends EventEmitter {
 
   public static getInstance(config?: QueueManagerConfig): QueueManager {
     if (!QueueManager.instance) {
+      // 如果没有提供配置，使用默认配置
       if (!config) {
-        throw new Error('QueueManager config is required for first initialization');
+        config = QueueManager.createDefaultConfig();
       }
       QueueManager.instance = new QueueManager(config);
     }
     return QueueManager.instance;
+  }
+
+  private static createDefaultConfig(): QueueManagerConfig {
+    return {
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '3019'),
+        ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
+        db: parseInt(process.env.REDIS_DB || '0'),
+        keyPrefix: process.env.REDIS_KEY_PREFIX || 'llmchat:queue:'
+      },
+      defaultConcurrency: 5,
+      stalledInterval: 30000,
+      maxStalledCount: 3,
+      enableMetrics: true,
+      enableEvents: true,
+      metricsInterval: 60000,
+      memoryOptimization: {
+        enabled: true,
+        autoOptimization: true,
+        threshold: 75,
+        intervalMs: 30000,
+        maxHeapSizeMB: 1024,
+        maxRSSSizeMB: 2048
+      }
+    };
   }
 
   private setupEventListeners(): void {
@@ -209,6 +236,13 @@ export class QueueManager extends EventEmitter {
       logger.info('QueueManager: Memory optimization service stopped');
       this.emit('memory:service:stopped');
     });
+  }
+
+  /**
+   * 获取内存优化服务实例（提供给MonitoringService使用）
+   */
+  public getMemoryOptimizationService(): MemoryOptimizationService | undefined {
+    return this.memoryOptimizationService;
   }
 
   private initializeDefaultQueues(): void {
@@ -1581,13 +1615,7 @@ export class QueueManager extends EventEmitter {
     };
   }
 
-  /**
-   * 获取内存优化服务实例
-   */
-  public getMemoryOptimizationService(): MemoryOptimizationService | undefined {
-    return this.memoryOptimizationService;
-  }
-
+  
   /**
    * 获取Redis连接池实例
    */

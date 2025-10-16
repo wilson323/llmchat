@@ -6,7 +6,7 @@
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
 import { QueueJob, QueueOptions, JobStatus, BackoffStrategy } from '@/types/queue';
-import { RedisConnectionPool } from '@/utils/redisConnectionPool';
+import RedisConnectionPool from '@/utils/redisConnectionPool';
 
 export interface BatchOperation {
   type: 'add' | 'remove' | 'retry' | 'update';

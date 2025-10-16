@@ -1,3 +1,6 @@
+;
+;
+import { Monitor, User } from 'lucide-react';
 import { renderHook, act } from "@testing-library/react";
 import { useChat } from "../useChat";
 import { chatService } from "@/services/api";
@@ -26,8 +29,8 @@ vi.mock("@/lib/logger", () => ({
 // Mock performance monitor
 vi.mock("@/utils/performanceMonitor", () => ({
   perfMonitor: {
-    measureAsync: vi.fn((_name: string, fn: () => any) => fn()),
-    measure: vi.fn((_name: string, fn: () => any) => fn()),
+    measureAsync: vi.fn((_name: string, fn: () => unknown) => fn()),
+    measure: vi.fn((_name: string, fn: () => unknown) => fn()),
     getStats: vi.fn(),
   },
 }));
@@ -67,11 +70,11 @@ import { useMessageStore } from "@/store/messageStore";
 import { useSessionStore } from "@/store/sessionStore";
 
 // Type assertions for mocked stores
-const mockedMessageStore = useMessageStore as any;
-const mockedSessionStore = useSessionStore as any;
+const mockedMessageStore = useMessageStore as ReturnType<typeof useMessageStore>;
+const mockedSessionStore = useSessionStore as ReturnType<typeof useSessionStore>;
 
 // Type assertions for mocked chatService
-const mockedChatService = chatService as any;
+const mockedChatService = chatService as typeof chatService;
 
 describe("useChat", () => {
   beforeEach(() => {

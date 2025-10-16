@@ -4,11 +4,11 @@
  * 集成文件上传、3D 查看器和操作界面
  */
 
+import {Download, FileText, Info, Layers} from 'lucide-react';
 import React, { useState } from 'react';
 import { CadUpload } from './CadUpload';
 import { CadViewer } from './CadViewer';
 import type { CadFileInfo, DxfEntity } from '@llmchat/shared-types';
-import { FileText, Download, Info, Layers } from 'lucide-react';
 import axios from 'axios';
 
 interface CadPanelProps {
@@ -18,9 +18,9 @@ interface CadPanelProps {
 export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
   const [fileInfo, setFileInfo] = useState<CadFileInfo | null>(null);
   const [entities, setEntities] = useState<DxfEntity[]>([]);
-  const [summary, setSummary] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'viewer' | 'info' | 'layers'>('viewer');
+  const [summary, setSummary] = useState('');
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('viewer');
 
   const handleUploadSuccess = (uploadedFileInfo: CadFileInfo, uploadedSummary: string) => {
     setFileInfo(uploadedFileInfo);
@@ -30,7 +30,7 @@ export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
     // 加载实体数据
     axios
       .get(`/api/cad/${uploadedFileInfo.id}`)
-      .then((response) => {
+      .then((response: any) => {
         if (response.data.code === 'SUCCESS') {
           setEntities(response.data.data.entities);
           if (onFileLoaded) {
@@ -38,7 +38,7 @@ export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
           }
         }
       })
-      .catch((err) => {
+      .catch((err: Error | any) => {
         console.error('加载 CAD 实体失败', err);
         setError('加载 CAD 实体失败');
       });
@@ -197,9 +197,9 @@ export const CadPanel: React.FC<CadPanelProps> = ({ onFileLoaded }) => {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
                   <h3 className="font-semibold text-lg mb-3">图层列表</h3>
                   <div className="space-y-2">
-                    {fileInfo.layers.map((layer) => {
+                    {fileInfo.layers.map((layer: string) => {
                       const layerEntityCount = entities.filter(
-                        (e) => e.layer === layer,
+                        (e: DxfEntity) => e.layer === layer,
                       ).length;
                       return (
                         <div

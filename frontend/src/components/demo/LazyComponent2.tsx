@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 
 export default function LazyComponent2() {
-  const [loadTime, setLoadTime] = useState<string>('');
+  const [loadTime, setLoadTime] = useState('');
   const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {

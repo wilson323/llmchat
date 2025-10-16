@@ -5,8 +5,8 @@
 
 import logger from '@/utils/logger';
 import { EventEmitter } from 'events';
-import { MemoryOptimizationService } from '@/services/MemoryOptimizationService';
-import { QueueManager } from '@/services/QueueManager';
+import MemoryOptimizationService from '@/services/MemoryOptimizationService';
+import QueueManager from '@/services/QueueManager';
 
 export interface MonitoringConfig {
   // 监控开关
@@ -721,35 +721,42 @@ export class MonitoringService extends EventEmitter {
    * 设置事件监听器
    */
   private setupEventListeners(): void {
-    // 监听内存告警
-    if (this.memoryOptimizationService) {
-      this.memoryOptimizationService.on('alert:memory-threshold', (data) => {
-        this.createCustomAlert({
-          ruleId: 'memory-optimization',
-          ruleName: '内存优化告警',
-          severity: data.level === 'critical' ? 'critical' : 'warning',
-          metric: 'memory.heapUsedPercentage',
-          value: data.stats.heapUsedPercentage,
-          threshold: data.stats.heapUsedPercentage,
-          message: `内存使用率告警: ${data.alerts.join(', ')}`,
-          tags: { source: 'memory-optimization', ...data.stats }
-        });
-      });
+    try {
+      // 延迟设置事件监听器，确保QueueManager已完全初始化
+      setTimeout(() => {
+        this.setupEventListenersInternal();
+      }, 100);
+    } catch (error) {
+      logger.error('MonitoringService: 设置事件监听器失败', error);
     }
+  }
 
-    // 监听队列管理器事件
-    this.queueManager.on('memory:alert', (data) => {
-      this.createCustomAlert({
-        ruleId: 'queue-memory',
-        ruleName: '队列内存告警',
-        severity: data.level === 'critical' ? 'critical' : 'warning',
-        metric: 'memory.heapUsedPercentage',
-        value: data.stats.heapUsedPercentage,
-        threshold: 80,
-        message: `队列内存告警: ${data.alerts.join(', ')}`,
-        tags: { source: 'queue-manager', ...data.stats }
-      });
-    });
+  /**
+   * 内部事件监听器设置
+   */
+  private setupEventListenersInternal(): void {
+    try {
+      // 监听内存告警
+      if (this.memoryOptimizationService && typeof this.memoryOptimizationService.on === 'function') {
+        this.memoryOptimizationService.on('alert:memory-threshold', (data) => {
+          this.createCustomAlert({
+            ruleId: 'memory-optimization',
+            ruleName: '内存优化告警',
+            severity: data.level === 'critical' ? 'critical' : 'warning',
+            metric: 'memory.heapUsedPercentage',
+            value: data.stats.heapUsedPercentage,
+            threshold: data.stats.heapUsedPercentage,
+            message: `内存使用率告警: ${data.alerts.join(', ')}`,
+            tags: { source: 'memory-optimization', ...data.stats }
+          });
+        });
+        logger.info('MonitoringService: MemoryOptimizationService事件监听器设置成功');
+      } else {
+        logger.warn('MonitoringService: MemoryOptimizationService不可用，跳过内存优化事件监听');
+      }
+    } catch (error) {
+      logger.error('MonitoringService: 设置事件监听器失败', error);
+    }
   }
 
   /**

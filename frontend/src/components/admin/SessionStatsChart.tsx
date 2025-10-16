@@ -342,7 +342,7 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
         className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
       >
         <ReactECharts
-          option={dateChartOption}
+          option={dateChartOption as any}
           style={{ height: '300px' }}
           theme={chartTheme}
           notMerge={true}

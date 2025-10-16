@@ -28,12 +28,27 @@ const getUsers = async (): Promise<AdminUser[]> => {
 const createUser = async (userData: Partial<AdminUser> & { password?: string }): Promise<AdminUser> => {
   // 模拟API调用
   const { password, ...userWithoutPassword } = userData;
-  return userWithoutPassword as AdminUser;
+  // 创建完整的用户对象，确保必需字段存在
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    username: userWithoutPassword.username || '',
+    email: userWithoutPassword.email || `${userWithoutPassword.username}@example.com`,
+    status: userWithoutPassword.status || 'active',
+    createdAt: new Date().toISOString(),
+    ...userWithoutPassword
+  };
 };
 
 const updateUser = async (_id: string, userData: Partial<AdminUser>): Promise<AdminUser> => {
   // 模拟API调用
-  return userData as AdminUser;
+  return {
+    id: _id,
+    username: userData.username || '',
+    email: userData.email || '',
+    status: userData.status || 'active',
+    createdAt: userData.createdAt || new Date().toISOString(),
+    ...userData
+  };
 };
 
 const resetUserPassword = async (_id: string): Promise<{ newPassword: string }> => {
@@ -44,7 +59,7 @@ const resetUserPassword = async (_id: string): Promise<{ newPassword: string }> 
 export default memo(function UsersManagement() {
   const { t } = useI18n();
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
@@ -71,9 +86,18 @@ return;
               const password = window.prompt(t('请输入初始密码（至少6位）')) ?? '';
               try {
                 const u = await createUser({ username, password });
-                setUsers((prev)=>[u, ...prev]);
-              } catch (e:any) {
- toast.error(e?.response?.data?.message || t('创建失败'));
+                setUsers((prev) => [u, ...prev]);
+              } catch (e: unknown) {
+                let errorMessage = t('创建失败');
+                if (e instanceof Error) {
+                  errorMessage = e.message;
+                } else if (e && typeof e === 'object' && 'response' in e) {
+                  const errorResponse = (e as { response?: { data?: { message?: string } } }).response;
+                  if (errorResponse?.data?.message) {
+                    errorMessage = errorResponse.data.message;
+                  }
+                }
+                toast.error(errorMessage);
 }
             }}>{t('新增用户')}</Button>
           </div>
@@ -93,7 +117,7 @@ return;
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {users.map(u => (
+                  {users.map((u: AdminUser) => (
                     <tr key={u.id}>
                       <td className="py-2">{u.id}</td>
                       <td className="py-2">{u.username}</td>
@@ -106,7 +130,7 @@ return;
                           <Button variant="ghost" onClick={async ()=>{
                             const next = u.status === 'active' ? 'inactive' : 'active';
                             const nu = await updateUser(u.id, { status: next });
-                            setUsers(prev=> prev.map(x=> x.id === u.id ? nu : x));
+                            setUsers((prev) => prev.map((x) => x.id === u.id ? nu : x));
                           }}>{u.status === 'active' ? t('禁用') : t('启用')}</Button>
                           <Button variant="ghost" onClick={async ()=>{
                             const ret = await resetUserPassword(u.id);

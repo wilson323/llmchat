@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 interface A11yAnnouncerProps {
   message?: string;
@@ -15,7 +15,7 @@ export const A11yAnnouncer: React.FC<A11yAnnouncerProps> = ({
   politeness = 'polite',
   timeout = 0,
 }) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (message) {
@@ -27,7 +27,7 @@ export const A11yAnnouncer: React.FC<A11yAnnouncerProps> = ({
       // 如果设置了超时，在指定时间后清空消息
       if (timeout > 0) {
         timeoutRef.current = setTimeout(() => {
-          timeoutRef.current = undefined;
+          timeoutRef.current = null;
         }, timeout);
       }
     }

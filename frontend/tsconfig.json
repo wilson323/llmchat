@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    // 目标和模块设置
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -11,13 +12,37 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+
+    // 类型检查设置 - 严格模式
     "strict": true,
-    "exactOptionalPropertyTypes": false,
+    "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "allowUmdGlobalAccess": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+
+    // 性能优化设置
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true,
+
+    // 编译器优化
+    "skipDefaultLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // 路径映射
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
@@ -28,11 +53,21 @@
       "@/types/*": ["types/*"],
       "@/utils/*": ["utils/*"],
       "@/styles/*": ["styles/*"],
-      "@llmchat/shared-types": ["../../shared-types/src/index.ts"],
-      "@llmchat/shared-types/*": ["../../shared-types/src/*"]
+      "@llmchat/shared-types": ["../../shared-types/dist/index.d.ts"],
+      "@llmchat/shared-types/*": ["../../shared-types/dist/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/lucide-react-declarations.d.ts"],
+  "typeRoots": ["./src/types", "./node_modules/@types"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ],
   "references": [
     { "path": "./tsconfig.node.json" },
     { "path": "../shared-types/tsconfig.json" }

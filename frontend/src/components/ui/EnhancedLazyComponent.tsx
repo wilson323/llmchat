@@ -4,14 +4,21 @@
  * 提供更强大的懒加载功能，包括预加载、错误处理、加载状态等
  */
 
-import React, { Suspense, ComponentType, ReactNode, useEffect, useCallback } from 'react';
-import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+;
+;
+;
+;
+import {AlertCircle, Loader2, RefreshCw} from 'lucide-react';
+import React, { Suspense, useEffect, useCallback } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+;
+;
 import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
 
 // 增强懒加载组件配置
 export interface EnhancedLazyComponentConfig {
   /** 自定义加载组件 */
-  fallback?: ComponentType | ReactNode;
+  fallback?: ComponentType<any> | ReactNode;
   /** 自定义错误组件 */
   errorFallback?: ComponentType<{ error?: Error; onRetry: () => void; retryCount: number }>;
   /** 预加载策略 */
@@ -36,7 +43,7 @@ export interface EnhancedLazyComponentConfig {
 const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boolean }> = ({
   delay = 200,
   showProgress = false,
-}) => {
+}: { delay?: number; showProgress?: boolean }) => {
   const [showLoading, setShowLoading] = React.useState(delay === 0);
   const [progress, setProgress] = React.useState(0);
 
@@ -45,6 +52,7 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boo
       const timer = setTimeout(() => setShowLoading(true), delay);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [delay]);
 
   React.useEffect(() => {
@@ -60,6 +68,7 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boo
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [showProgress, showLoading]);
 
   if (!showLoading) {
@@ -113,7 +122,7 @@ const DefaultErrorFallback: ComponentType<{
   error?: Error;
   onRetry: () => void;
   retryCount: number;
-}> = ({ error, onRetry, retryCount }) => {
+}> = ({ error, onRetry, retryCount }: { error?: Error; onRetry: () => void; retryCount: number }) => {
   const [isRetrying, setIsRetrying] = React.useState(false);
 
   const handleRetry = useCallback(async () => {
@@ -190,7 +199,7 @@ export function EnhancedLazyComponent<P extends object = {}>({
   } = config;
 
   const [retryCount, _setRetryCount] = React.useState(0);
-  const [loadStartTime, setLoadStartTime] = React.useState<number>(0);
+  const [loadStartTime, setLoadStartTime] = React.useState(0);
   const [minLoadElapsed, setMinLoadElapsed] = React.useState(false);
 
   // 注册组件（如果尚未注册）
@@ -217,7 +226,6 @@ export function EnhancedLazyComponent<P extends object = {}>({
     EnhancedCodeSplitting.clearComponentCache(componentName);
   }, [componentName]);
 
-
   // 最小加载时间处理
   useEffect(() => {
     if (loadStartTime > 0 && !minLoadElapsed) {
@@ -227,6 +235,7 @@ export function EnhancedLazyComponent<P extends object = {}>({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loadStartTime, minLoadElapsed, minLoadingTime]);
 
   // 错误边界组件
@@ -236,41 +245,41 @@ export function EnhancedLazyComponent<P extends object = {}>({
   > {
     constructor(props: { children: ReactNode; onRetry: () => void }) {
       super(props);
-      this.state = { hasError: false, error: undefined, retryCount: 0 };
+      this.state = { hasError: false, retryCount: 0 };
     }
 
     static getDerivedStateFromError(error: Error) {
       return { hasError: true, error, retryCount: 0 };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
       console.error('EnhancedLazyComponent错误边界捕获:', error, errorInfo);
     }
 
-    componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
+    override componentDidUpdate(prevProps: { children: ReactNode; onRetry: () => void }) {
       // 当props改变时重置错误状态
       if (prevProps.children !== this.props.children) {
-        this.setState({ hasError: false, error: undefined, retryCount: 0 });
+        this.setState({ hasError: false, retryCount: 0 });
       }
     }
 
     handleRetry = () => {
       const { retryCount } = this.state;
-      if (retryCount < retryCount) {
+      const maxRetries = 3; // 设置最大重试次数
+      if (retryCount < maxRetries) {
         this.setState(prev => ({
           hasError: false,
-          error: undefined,
           retryCount: prev.retryCount + 1,
         }));
         this.props.onRetry();
       }
     };
 
-    render() {
+    override render() {
       if (this.state.hasError) {
         return (
           <ErrorFallback
-            error={this.state.error}
+            {...(this.state.error && { error: this.state.error })}
             onRetry={this.handleRetry}
             retryCount={this.state.retryCount}
           />

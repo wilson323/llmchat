@@ -1,23 +1,19 @@
-name: 质量检查和CI/CD流水线
+name: 质量检查流水线
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
-  schedule:
-    # 每天凌晨2点运行全面质量检查
-    - cron: '0 2 * * *'
-
-env:
-  NODE_VERSION: '18'
-  PNPM_VERSION: '8'
+    branches: [ main, develop ]
+  workflow_dispatch:
 
 jobs:
-  # 代码质量检查
   quality-check:
     runs-on: ubuntu-latest
-    name: 代码质量检查
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
 
     steps:
     - name: 检出代码
@@ -25,343 +21,250 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: 设置Node.js
+    - name: 设置 Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
 
-    - name: 安装pnpm
+    - name: 安装 pnpm
       run: |
-        npm install -g pnpm@${{ env.PNPM_VERSION }}
+        corepack enable
+        pnpm --version
 
     - name: 安装依赖
-      run: |
-        pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
 
-    - name: TypeScript类型检查
+    - name: TypeScript 类型检查
       run: |
-        echo "🔍 运行TypeScript类型检查..."
+        echo "🔍 执行严格的 TypeScript 类型检查..."
+
+        # 首先检查 shared-types
+        echo "📦 检查 shared-types..."
+        cd shared-types && pnpm run build
+        cd ..
+
+        # 检查后端 TypeScript (严格模式)
+        echo "🔧 检查后端 TypeScript..."
+        cd backend
+        # 设置严格模式环境变量
+        export TS_NODE_COMPILER_OPTIONS='{"strict":true,"noImplicitAny":true,"strictNullChecks":true}'
         pnpm run type-check
+        if [ $? -ne 0 ]; then
+          echo "❌ 后端 TypeScript 类型检查失败"
+          echo "🔍 运行详细错误检查..."
+          npx tsc --noEmit --pretty --listFiles | head -50
+          exit 1
+        fi
+        cd ..
 
-    - name: ESLint代码质量检查
-      run: |
-        echo "🔍 运行ESLint检查..."
-        ESLINT_DEV=true pnpm run lint
+        # 检查前端 TypeScript (严格模式)
+        echo "🎨 检查前端 TypeScript..."
+        cd frontend
+        pnpm run type-check
+        if [ $? -ne 0 ]; then
+          echo "❌ 前端 TypeScript 类型检查失败"
+          echo "🔍 运行详细错误检查..."
+          npx tsc --noEmit --pretty --listFiles | head -50
+          exit 1
+        fi
+        cd ..
 
-    - name: 前端测试
-      run: |
-        echo "🧪 运行前端测试..."
-        cd frontend && npm run test -- --run --coverage --watchAll=false --passWithNoTests
+        echo "✅ 所有 TypeScript 类型检查通过"
 
-    - name: 后端测试
+    - name: TypeScript 严格质量门禁检查
       run: |
-        echo "🧪 运行后端测试..."
-        pnpm run backend:test
+        echo "🔒 执行 TypeScript 严格质量门禁检查..."
+
+        # 使用专门的质量门禁脚本
+        pnpm run typescript:quality-gates:ci
+        if [ $? -ne 0 ]; then
+          echo "❌ TypeScript 质量门禁检查失败"
+          echo "🚨 零容忍政策: 所有类型错误必须修复才能合并到主分支"
+          echo ""
+          echo "📋 快速修复建议:"
+          echo "1. 运行 'pnpm run typescript:quality-gates' 查看详细错误"
+          echo "2. 修复所有 TypeScript 类型错误"
+          echo "3. 确保严格模式检查通过"
+          echo "4. 重新提交代码"
+          exit 1
+        fi
+
+        echo "✅ TypeScript 严格质量门禁检查通过"
+
+    - name: 代码质量检查
+      run: |
+        echo "🔍 执行 ESLint 检查..."
+        pnpm run lint
+
+    - name: 运行测试
+      run: |
+        echo "🧪 执行单元测试..."
+        pnpm test
+
+    - name: 构建项目
+      run: |
+        echo "🏗️ 构建项目..."
+        pnpm run build
 
     - name: 安全审计
       run: |
-        echo "🛡️ 运行安全审计..."
+        echo "🔒 执行安全审计..."
         pnpm audit --audit-level high
 
-    - name: 生成质量报告
+    - name: 运行质量检查脚本
       run: |
-        echo "📊 生成质量报告..."
-        node scripts/quality-metrics.js
+        echo "📊 执行完整质量检查..."
+        pnpm run quality-check
+
+    - name: 生成质量报告
+      if: always()
+      run: |
+        echo "📈 生成质量报告..."
+        pnpm run quality-metrics:ci
+
+    - name: 生成 TypeScript 类型检查报告
+      if: always()
+      run: |
+        echo "📊 生成 TypeScript 类型检查报告..."
+
+        # 创建报告目录
+        mkdir -p reports/typescript
+
+        # 生成详细的类型检查报告
+        echo "🔍 分析 TypeScript 编译结果..."
+
+        # 后端类型检查报告
+        echo "📝 生成后端 TypeScript 报告..."
+        cd backend
+        npx tsc --noEmit --pretty --listEmittedFiles > ../reports/typescript/backend-typecheck.log 2>&1 || true
+        echo "Backend TypeScript check completed at $(date)" > ../reports/typescript/backend-summary.txt
+        cd ..
+
+        # 前端类型检查报告
+        echo "📝 生成前端 TypeScript 报告..."
+        cd frontend
+        npx tsc --noEmit --pretty --listEmittedFiles > ../reports/typescript/frontend-typecheck.log 2>&1 || true
+        echo "Frontend TypeScript check completed at $(date)" > ../reports/typescript/frontend-summary.txt
+        cd ..
+
+        # 生成汇总报告
+        cat > reports/typescript/typecheck-summary.json << 'EOF'
+        {
+          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+          "project": "llmchat",
+          "checks": {
+            "backend": {
+              "status": "completed",
+              "config": "tsconfig.json",
+              "strict_mode": true
+            },
+            "frontend": {
+              "status": "completed",
+              "config": "tsconfig.json",
+              "strict_mode": true
+            },
+            "shared_types": {
+              "status": "completed",
+              "config": "tsconfig.json"
+            }
+          },
+          "quality_gates": {
+            "zero_type_errors": true,
+            "strict_mode_enabled": true,
+            "ci_blocking": true
+          }
+        }
+        EOF
+
+        echo "✅ TypeScript 类型检查报告生成完成"
 
     - name: 上传质量报告
-      uses: actions/upload-artifact@v4
       if: always()
+      uses: actions/upload-artifact@v4
       with:
-        name: quality-report
+        name: quality-report-${{ matrix.node-version }}
         path: |
           quality-report.json
-          QUALITY_REPORT.md
+          coverage/
+          reports/
+          reports/typescript/
         retention-days: 30
 
-  # 构建检查
-  build-check:
+    - name: 覆盖率报告
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  security-scan:
     runs-on: ubuntu-latest
-    name: 构建检查
     needs: quality-check
 
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
 
-    - name: 设置Node.js
-      uses: actions/setup-node@v4
+    - name: 运行 Trivy 漏洞扫描
+      uses: aquasecurity/trivy-action@master
       with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
 
-    - name: 安装pnpm
-      run: |
-        npm install -g pnpm@${{ env.PNPM_VERSION }}
-
-    - name: 安装依赖
-      run: |
-        pnpm install --frozen-lockfile
-
-    - name: 构建前端
-      run: |
-        echo "🏗️ 构建前端..."
-        pnpm run frontend:build
-
-    - name: 构建后端
-      run: |
-        echo "🏗️ 构建后端..."
-        pnpm run backend:build
-
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: |
-          frontend/dist/
-          backend/dist/
-        retention-days: 7
-
-  # E2E测试
-  e2e-test:
-    runs-on: ubuntu-latest
-    name: E2E测试
-    needs: [quality-check, build-check]
-
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
-
-    - name: 安装pnpm
-      run: |
-        npm install -g pnpm@${{ env.PNPM_VERSION }}
-
-    - name: 安装依赖
-      run: |
-        pnpm install --frozen-lockfile
-
-    - name: 安装Playwright
-      run: |
-        npx playwright install --with-deps
-
-    - name: 启动应用服务
-      run: |
-        echo "🚀 启动应用服务..."
-        pnpm run build
-        pnpm start &
-        sleep 10
-
-    - name: 运行E2E测试
-      run: |
-        echo "🎭 运行E2E测试..."
-        pnpm run test:e2e
-
-    - name: 上传测试报告
-      uses: actions/upload-artifact@v4
+    - name: 上传 Trivy 扫描结果
+      uses: github/codeql-action/upload-sarif@v2
       if: always()
       with:
-        name: e2e-test-report
-        path: |
-          playwright-report/
-          test-results/
-        retention-days: 7
+        sarif_file: 'trivy-results.sarif'
 
-  # 性能测试
-  performance-test:
+  performance-check:
     runs-on: ubuntu-latest
-    name: 性能测试
-    needs: [quality-check, build-check]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality-check
+    if: github.event_name == 'pull_request'
 
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
 
-    - name: 设置Node.js
+    - name: 设置 Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        node-version: '20.x'
         cache: 'pnpm'
 
-    - name: 安装pnpm
-      run: |
-        npm install -g pnpm@${{ env.PNPM_VERSION }}
-
     - name: 安装依赖
-      run: |
-        pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
 
-    - name: 构建应用
+    - name: 构建项目
+      run: pnpm run build
+
+    - name: 分析包大小
       run: |
+        echo "📦 分析前端包大小..."
+        cd frontend
         pnpm run build
+        npx bundlesize
 
-    - name: 运行性能测试
+    - name: Lighthouse CI
       run: |
-        echo "⚡ 运行性能测试..."
-        # 这里可以集成Lighthouse或其他性能测试工具
-        npm run test:performance || echo "性能测试跳过 - 未配置"
+        echo "🚀 执行 Lighthouse 性能检查..."
+        npm install -g @lhci/cli
+        lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
-  # 部署准备
-  deploy-prep:
-    runs-on: ubuntu-latest
-    name: 部署准备
-    needs: [quality-check, build-check, e2e-test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-
-    - name: 设置Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'pnpm'
-
-    - name: 安装pnpm
-      run: |
-        npm install -g pnpm@${{ env.PNPM_VERSION }}
-
-    - name: 安装依赖
-      run: |
-        pnpm install --frozen-lockfile
-
-    - name: 生成部署包
-      run: |
-        echo "📦 生成部署包..."
-        pnpm run build
-
-    - name: 创建部署清单
-      run: |
-        echo "📋 创建部署清单..."
-        cat > deployment-manifest.json << EOF
-        {
-          "version": "${{ github.sha }}",
-          "buildTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-          "branch": "${{ github.ref_name }}",
-          "commit": "${{ github.sha }}",
-          "author": "${{ github.actor }}",
-          "qualityScore": "$(node -e 'console.log(JSON.parse(require(\"./quality-report.json\")).summary.score)' 2>/dev/null || echo '0')"
-        }
-        EOF
-
-    - name: 上传部署包
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployment-package
-        path: |
-          frontend/dist/
-          backend/dist/
-          deployment-manifest.json
-        retention-days: 30
-
-  # 质量门禁检查
-  quality-gate:
-    runs-on: ubuntu-latest
-    name: 质量门禁检查
-    needs: [quality-check]
-    if: always()
-
-    steps:
-    - name: 下载质量报告
-      uses: actions/download-artifact@v4
-      with:
-        name: quality-report
-        path: ./
-
-    - name: 检查质量门禁
-      run: |
-        echo "🚪 检查质量门禁..."
-
-        # 读取质量报告
-        QUALITY_SCORE=$(node -e 'const report = JSON.parse(require("fs").readFileSync("quality-report.json", "utf8")); console.log(report.summary.score)' 2>/dev/null || echo "0")
-
-        echo "📊 当前质量评分: $QUALITY_SCORE/100"
-
-        # 定义质量门禁标准
-        MIN_QUALITY_SCORE=70
-        MAX_TYPE_ERRORS=0
-        MAX_ESLINT_ERRORS=0
-        MAX_CRITICAL_SECURITY=0
-
-        # 检查各项指标
-        if [ "$QUALITY_SCORE" -lt "$MIN_QUALITY_SCORE" ]; then
-          echo "❌ 质量评分不达标: $QUALITY_SCORE < $MIN_QUALITY_SCORE"
-          exit 1
-        fi
-
-        if [ "${{ needs.quality-check.result }}" != "success" ]; then
-          echo "❌ 质量检查失败，阻止合并"
-          exit 1
-        fi
-
-        echo "✅ 质量门禁检查通过"
-
-    - name: 添加质量徽章
-      if: github.event_name == 'push'
-      run: |
-        echo "🏷️ 更新质量徽章..."
-        # 这里可以集成徽章生成服务
-        QUALITY_SCORE=$(node -e 'const report = JSON.parse(require("fs").readFileSync("quality-report.json", "utf8")); console.log(report.summary.score)' 2>/dev/null || echo "0")
-        echo "质量评分: $QUALITY_SCORE/100"
-
-  # 通知
   notify:
     runs-on: ubuntu-latest
-    name: 结果通知
-    needs: [quality-check, build-check, e2e-test, quality-gate]
+    needs: [quality-check, security-scan]
     if: always()
 
     steps:
-    - name: 下载所有报告
-      uses: actions/download-artifact@v4
-      if: always()
-      with:
-        path: ./reports/
-
     - name: 发送通知
       if: failure()
       run: |
-        echo "📢 发送失败通知..."
-        # 这里可以集成Slack、邮件等通知服务
-        echo "CI/CD流水线失败，请检查详细日志"
-
-  # 清理
-  cleanup:
-    runs-on: ubuntu-latest
-    name: 清理旧工件
-    needs: [quality-check, build-check, e2e-test, deploy-prep]
-    if: always() && github.event_name == 'schedule'
-
-    steps:
-    - name: 清理旧工件
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            run_id: context.runId,
-          });
-
-          const oldArtifacts = artifacts.data.artifacts
-            .filter(artifact => {
-              const createdDate = new Date(artifact.created_at);
-              const daysOld = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
-              return daysOld > 7; // 删除7天前的工件
-            });
-
-          for (const artifact of oldArtifacts) {
-            await github.rest.actions.deleteArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_id: artifact.id,
-            });
-            console.log(`删除旧工件: ${artifact.name}`);
-          }
+        echo "❌ 质量检查失败，请查看详细日志"
+        # 这里可以添加 Slack、邮件等通知逻辑

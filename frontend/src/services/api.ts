@@ -1,3 +1,9 @@
+;
+;
+;
+;
+;
+;
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/components/ui/Toast';
@@ -68,7 +74,12 @@ async function blobToBase64(blob: Blob): Promise<string> {
       const result = reader.result;
       if (typeof result === 'string') {
         const base64 = result.includes(',') ? result.split(',')[1] : result;
-        resolve(base64);
+        // 使用类型守卫确保 base64 不是 undefined
+        if (base64 === undefined) {
+          reject(new Error(translate('无法读取文件内容')));
+        } else {
+          resolve(base64);
+        }
       } else {
         reject(new Error(translate('无法读取文件内容')));
       }
@@ -78,10 +89,10 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: any) => {
   // 🚀 性能监控：记录请求开始时间
   const requestId = `${config.method?.toUpperCase()}-${config.url}-${Date.now()}`;
-  requestMonitor.startRequest(requestId);
+  requestMonitor.startRequest(requestId, config.url || '');
 
   // 添加请求ID到header
   config.headers = config.headers || {};
@@ -95,7 +106,7 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => {
+  (response: any) => {
     // 🚀 性能监控：记录请求完成
     const requestId = response.config.headers?.['X-Request-ID'] as string;
     if (requestId) {
@@ -103,7 +114,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  (error: Error | any) => {
     // 🚀 性能监控：记录请求失败
     const requestId = error.config?.headers?.['X-Request-ID'] as string;
     if (requestId) {
@@ -200,7 +211,14 @@ const parseSSEEventBlock = (rawBlock: string): SSEParsedEvent | null => {
     return null;
   }
 
-  return { event, data, id, retry };
+  const result: SSEParsedEvent = { event, data };
+  if (id !== undefined) {
+    result.id = id;
+  }
+  if (retry !== undefined) {
+    result.retry = retry;
+  }
+  return result;
 };
 
 const extractReasoningPayload = (payload: Record<string, unknown> | string | null): string | null => {
@@ -287,10 +305,18 @@ const dispatchSSEEvent = (callbacks: SSECallbacks, incomingEvent: string, payloa
     const statusData: FastGPTStatusData = {
       type: 'flowNodeStatus',
       status: mappedStatus,
-      message: payloadObj.message as string | undefined,
-      moduleId: payloadObj.id as string | undefined,
       moduleName: (payloadObj.name || payloadObj.moduleName || payloadObj.id || translate('未知模块')) as string,
     };
+
+    // 只有当message存在时才添加
+    if (payloadObj.message !== undefined) {
+      statusData.message = payloadObj.message as string;
+    }
+
+    // 只有当moduleId存在时才添加
+    if (payloadObj.id !== undefined) {
+      statusData.moduleId = payloadObj.id as string;
+    }
     onStatus?.(statusData);
     onEvent?.(resolvedEvent || 'flowNodeStatus', payload);
     return;
@@ -547,7 +573,7 @@ export const chatService = {
     };
 
     const authToken = useAuthStore.getState().token;
-    const response = await fetch('/api/chat/completions', {
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -555,8 +581,14 @@ export const chatService = {
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(payload),
-      signal,
-    });
+    };
+
+    // 只有当signal存在时才添加
+    if (signal !== undefined) {
+      fetchOptions.signal = signal;
+    }
+
+    const response = await fetch('/api/chat/completions', fetchOptions);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -576,14 +608,26 @@ export const chatService = {
       throw new Error(`Stream request failed: ${response.status} ${errorText}`);
     }
 
-    await consumeChatSSEStream(response, {
-      onChunk,
-      onStatus,
-      onInteractive,
-      onChatId,
-      onReasoning,
-      onEvent,
-    });
+    const sseCallbacks: SSECallbacks = { onChunk };
+
+    // 只有当回调函数存在时才添加
+    if (onStatus !== undefined) {
+      sseCallbacks.onStatus = onStatus;
+    }
+    if (onInteractive !== undefined) {
+      sseCallbacks.onInteractive = onInteractive;
+    }
+    if (onChatId !== undefined) {
+      sseCallbacks.onChatId = onChatId;
+    }
+    if (onReasoning !== undefined) {
+      sseCallbacks.onReasoning = onReasoning;
+    }
+    if (onEvent !== undefined) {
+      sseCallbacks.onEvent = onEvent;
+    }
+
+    await consumeChatSSEStream(response, sseCallbacks);
   },
 
   async init(agentId: string, chatId?: string): Promise<any> {
@@ -610,14 +654,20 @@ export const chatService = {
     }
 
     const authToken = useAuthStore.getState().token;
-    const response = await fetch(`/api/chat/init?${search.toString()}`, {
+    const fetchOptions: RequestInit = {
       method: 'GET',
       headers: {
         Accept: 'text/event-stream',
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
-      signal: opts?.signal,
-    });
+    };
+
+    // 只有当signal存在时才添加
+    if (opts?.signal !== undefined) {
+      fetchOptions.signal = opts.signal;
+    }
+
+    const response = await fetch(`/api/chat/init?${search.toString()}`, fetchOptions);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -756,14 +806,26 @@ export const chatService = {
       throw new Error(`Retry stream request failed: ${response.status} ${errorText}`);
     }
 
-    await consumeChatSSEStream(response, {
-      onChunk,
-      onStatus,
-      onInteractive,
-      onChatId,
-      onReasoning,
-      onEvent,
-    });
+    const retrySseCallbacks: SSECallbacks = { onChunk };
+
+    // 只有当回调函数存在时才添加
+    if (onStatus !== undefined) {
+      retrySseCallbacks.onStatus = onStatus;
+    }
+    if (onInteractive !== undefined) {
+      retrySseCallbacks.onInteractive = onInteractive;
+    }
+    if (onChatId !== undefined) {
+      retrySseCallbacks.onChatId = onChatId;
+    }
+    if (onReasoning !== undefined) {
+      retrySseCallbacks.onReasoning = onReasoning;
+    }
+    if (onEvent !== undefined) {
+      retrySseCallbacks.onEvent = onEvent;
+    }
+
+    await consumeChatSSEStream(response, retrySseCallbacks);
   },
 
 };

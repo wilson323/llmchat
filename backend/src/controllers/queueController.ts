@@ -10,10 +10,13 @@ import { QueueConfig, QueueOptions, MessagePriority, QueueStatus } from '@/types
 import { ValidationError, ResourceError } from '@/types/errors';
 
 export class QueueController {
-  private queueManager: QueueManager;
+  private queueManager: QueueManager | null = null;
 
-  constructor() {
-    this.queueManager = QueueManager.getInstance();
+  private getQueueManager(): QueueManager {
+    if (!this.queueManager) {
+      this.queueManager = QueueManager.getInstance();
+    }
+    return this.queueManager;
   }
 
   /**
@@ -30,7 +33,7 @@ export class QueueController {
         const queueData: any = { name: queueName };
 
         if (includeStats === 'true') {
-          const stats = await this.queueManager.getQueueStats(queueName);
+          const stats = await this.getQueueManager().getQueueStats(queueName);
           queueData.stats = stats;
         }
 
@@ -66,7 +69,7 @@ export class QueueController {
         return;
       }
 
-      const stats = await this.queueManager.getQueueStats(queueName);
+      const stats = await this.getQueueManager().getQueueStats(queueName);
       if (!stats) {
         res.status(404).json({
           success: false,
@@ -77,7 +80,7 @@ export class QueueController {
 
       // 获取队列中的任务
       const { status, limit = 20 } = req.query;
-      const jobs = await this.queueManager.getQueueJobs(
+      const jobs = await this.getQueueManager().getQueueJobs(
         queueName,
         status as any,
         Number(limit)
@@ -123,7 +126,7 @@ export class QueueController {
         delayOnFail: true
       };
 
-      this.queueManager.createQueue(queueConfig);
+      this.getQueueManager().createQueue(queueConfig);
 
       res.status(201).json({
         success: true,
@@ -152,7 +155,7 @@ export class QueueController {
         return;
       }
 
-      await this.queueManager.pauseQueue(queueName);
+      await this.getQueueManager().pauseQueue(queueName);
 
       res.json({
         success: true,
@@ -180,7 +183,7 @@ export class QueueController {
         return;
       }
 
-      await this.queueManager.resumeQueue(queueName);
+      await this.getQueueManager().resumeQueue(queueName);
 
       res.json({
         success: true,
@@ -227,7 +230,7 @@ export class QueueController {
         deadLetterQueue: options.deadLetterQueue
       };
 
-      const jobId = await this.queueManager.addJob(queueName, type, data, queueOptions);
+      const jobId = await this.getQueueManager().addJob(queueName, type, data, queueOptions);
 
       res.status(201).json({
         success: true,
@@ -261,7 +264,7 @@ export class QueueController {
         return;
       }
 
-      const job = await this.queueManager.getJob(queueName, jobId);
+      const job = await this.getQueueManager().getJob(queueName, jobId);
       if (!job) {
         res.status(404).json({
           success: false,
@@ -296,7 +299,7 @@ export class QueueController {
         return;
       }
 
-      const removed = await this.queueManager.removeJob(queueName, jobId);
+      const removed = await this.getQueueManager().removeJob(queueName, jobId);
       if (!removed) {
         res.status(404).json({
           success: false,
@@ -331,7 +334,7 @@ export class QueueController {
         return;
       }
 
-      const retried = await this.queueManager.retryJob(queueName, jobId);
+      const retried = await this.getQueueManager().retryJob(queueName, jobId);
       if (!retried) {
         res.status(404).json({
           success: false,
@@ -375,13 +378,13 @@ export class QueueController {
         jobs.map(async (job: any) => {
           switch (operation) {
             case 'add':
-              return await this.queueManager.addJob(queueName, job.type, job.data, job.options);
+              return await this.getQueueManager().addJob(queueName, job.type, job.data, job.options);
 
             case 'remove':
-              return await this.queueManager.removeJob(queueName, job.jobId);
+              return await this.getQueueManager().removeJob(queueName, job.jobId);
 
             case 'retry':
-              return await this.queueManager.retryJob(queueName, job.jobId);
+              return await this.getQueueManager().retryJob(queueName, job.jobId);
 
             default:
               throw new ValidationError({ message: `Invalid operation: ${operation}` });
@@ -452,7 +455,7 @@ export class QueueController {
         return;
       }
 
-      const stats = await this.queueManager.getQueueStats(queueName);
+      const stats = await this.getQueueManager().getQueueStats(queueName);
       if (!stats) {
         res.status(404).json({
           success: false,
@@ -462,7 +465,7 @@ export class QueueController {
       }
 
       // 获取额外的统计信息
-      const queueJobs = await this.queueManager.getQueueJobs(queueName, undefined, 10);
+      const queueJobs = await this.getQueueManager().getQueueJobs(queueName, undefined, 10);
       const recentJobs = queueJobs.slice(0, 5).map(job => ({
         id: job.id,
         name: job.name,
@@ -492,7 +495,7 @@ export class QueueController {
    */
   public async getHealthStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const health = await this.queueManager.healthCheck();
+      const health = await this.getQueueManager().healthCheck();
 
       const status = {
         overall: health.healthy ? 'healthy' : 'unhealthy',
@@ -529,7 +532,7 @@ export class QueueController {
         return;
       }
 
-      const stats = await this.queueManager.getQueueStats(queueName);
+      const stats = await this.getQueueManager().getQueueStats(queueName);
       if (!stats) {
         res.status(404).json({
           success: false,

@@ -1,3 +1,4 @@
+;
 import { api } from './api';
 
 // SLA监控相关类型定义

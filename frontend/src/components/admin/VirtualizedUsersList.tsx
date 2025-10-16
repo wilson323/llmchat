@@ -4,19 +4,19 @@
  */
 
 'use client';
+;
+;
+;
+;
+;
+;
+;
+;
+import { Edit, Filter, RefreshCw, Search, Shield, ShieldAlert, Trash2, User } from 'lucide-react';
 import React, { useState, memo, useCallback } from 'react';
 import { VirtualScroll } from '@/components/ui/VirtualScroll';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  Search,
-  Edit,
-  Trash2,
-  ShieldCheck,
-  ShieldAlert,
-  RefreshCw,
-  Filter,
-} from 'lucide-react';
 import { useI18n } from '@/i18n';
 
 // 用户类型定义
@@ -113,7 +113,7 @@ const UserRow = memo(function UserRow({
               ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
           }`}>
-            {user.status === 'active' && <ShieldCheck className="w-3 h-3 inline mr-1" />}
+            {user.status === 'active' && <Shield className="w-3 h-3 inline mr-1" />}
             {user.status === 'inactive' && <ShieldAlert className="w-3 h-3 inline mr-1" />}
             {t(user.status)}
           </div>
@@ -142,7 +142,11 @@ const UserRow = memo(function UserRow({
               user.status === 'active' ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'
             }`}
           >
-            {user.status === 'active' ? <ShieldAlert className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+            {user.status === 'active' ? (
+              <ShieldAlert className="w-4 h-4" />
+            ) : (
+              <Shield className="w-4 h-4" />
+            )}
           </Button>
           <Button
             variant="ghost"
@@ -184,7 +188,7 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索用户名或邮箱...')}
             value={searchQuery}
-            onChange={(e) => onSearch?.(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearch?.(e.target.value)}
             className="pl-10"
           />
         </div>
@@ -221,7 +225,7 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
   onSearch: _onSearch,
   className = '',
   height = 600,
-}) {
+}: VirtualizedUsersListProps) {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -232,18 +236,22 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
     }
 
     const query = searchQuery.toLowerCase();
-    return users.filter(user =>
+    return users.filter((user: User) =>
       user.username.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query),
     );
   }, [users, searchQuery]);
 
   // 估算用户行高度
-  const estimateUserHeight = useCallback((user: User) => {
+  const estimateUserHeight = useCallback((user: unknown, _index: number) => {
+    if (!user || typeof user !== 'object') {
+      return 60;
+    }
+    const userObj = user as User;
     let height = 60; // 基础高度
 
     // 根据用户名长度估算
-    const usernameLength = user.username.length;
+    const usernameLength = userObj.username?.length || 0;
     if (usernameLength > 20) {
       height += 10;
     }
@@ -266,17 +274,17 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
       <VirtualScroll
         items={filteredUsers}
         height={height}
-        itemKey={(user, index) => user.id || index.toString()}
+        itemKey={(user: any, index: number) => user?.id || index.toString()}
         itemHeight={estimateUserHeight}
-        renderItem={(item) => (
+        renderItem={(item: any) => (
           <UserRow
-            item={{ ...item, height: item.height || 60 }}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onToggleStatus={onToggleStatus}
+            item={{ ...item, data: item.data, height: item.height || 60 }}
+            {...(onEdit && { onEdit })}
+            {...(onDelete && { onDelete })}
+            {...(onToggleStatus && { onToggleStatus })}
           />
         )}
-        onEndReached={onLoadMore}
+        {...(onLoadMore && { onEndReached: onLoadMore })}
         hasMore={hasMore}
         loading={loading}
         loadingComponent={

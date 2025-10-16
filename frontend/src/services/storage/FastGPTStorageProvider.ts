@@ -3,6 +3,7 @@
  * 与FastGPT API交互，获取和同步对话数据
  */
 
+;
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery } from '@/types/hybrid-storage';
 import { FastGPTChatHistorySummary, FastGPTChatHistoryDetail } from '@/types';
 
@@ -461,7 +462,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.config.apiKey}`,
           },
-          body: data ? JSON.stringify(data) : undefined,
+          body: data ? JSON.stringify(data) : null,
           signal: AbortSignal.timeout(this.config.timeout || 30000),
         });
 
@@ -494,7 +495,7 @@ export class FastGPTStorageProvider implements IStorageProvider {
     // 从key中提取chatId
     // 假设key格式为: session:{agentId}:{chatId} 或 chatId本身
     const parts = key.split(':');
-    return parts.length > 1 ? parts[parts.length - 1] : key;
+    return parts.length > 1 ? (parts[parts.length - 1] || null) : key;
   }
 
   private generateKeyFromChatId(chatId: string): string {

@@ -1,6 +1,13 @@
+;
+;
+;
+;
+;
+;
+;
+import {Camera, Loader2, RefreshCcw, Sparkles, Upload} from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Upload, Sparkles, RefreshCcw, Loader2 } from 'lucide-react';
-import { Agent, ChatMessage } from '@/types';
+import { Agent, ChatMessage, ChatSession } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
@@ -69,10 +76,10 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
   const sceneCanvasRef = useRef<HTMLDivElement>(null);
   const [sceneImagePreview, setSceneImagePreview] = useState<string>('');
   const [productImagePreview, setProductImagePreview] = useState<string>('');
-  const [productQuery, setProductQuery] = useState('');
-  const [personalization, setPersonalization] = useState('');
+  const [productQuery, setProductQuery] = useState<string>('');
+  const [personalization, setPersonalization] = useState<string>('');
   const [boundingBox, setBoundingBox] = useState<BoundingBox | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const [generatedImage, setGeneratedImage] = useState<string>('');
   const [interaction, setInteraction] = useState<InteractionState>({ type: 'idle' });
 
@@ -336,9 +343,9 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
       sessionId = latestSession.id;
       const payload = {
         sceneImage: sceneImagePreview,
-        productImage: productImagePreview || undefined,
+        ...(productImagePreview && { productImage: productImagePreview }),
         productQuery: productQuery.trim(),
-        personalization: personalization.trim() || undefined,
+        ...(personalization.trim() && { personalization: personalization.trim() }),
         boundingBox,
       };
       const response = await productPreviewService.generatePreview(payload);
@@ -384,7 +391,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
         },
       ];
 
-      updateSession(currentAgent.id, sessionId, (session) => ({
+      updateSession(currentAgent.id, sessionId, (session: ChatSession) => ({
         ...session,
         title: sessionTitle,
         metadata,
@@ -547,7 +554,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                 <Input
                   placeholder="请输入产品名称、型号或SKU，例如：松木简约餐桌"
                   value={productQuery}
-                  onChange={(event) => setProductQuery(event.target.value)}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setProductQuery(event.target.value)}
                 />
               </div>
 
@@ -557,7 +564,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                   className="w-full min-h-[120px] resize-none rounded-lg border border-border bg-transparent px-3 py-2 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-brand/40"
                   placeholder="填写颜色、材质、搭配建议等，如：希望与原有浅灰沙发协调，强调温暖灯光氛围"
                   value={personalization}
-                  onChange={(event) => setPersonalization(event.target.value)}
+                  onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setPersonalization(event.target.value)}
                 />
               </div>
 

@@ -3,6 +3,9 @@
  * 提供持久化的本地存储，支持复杂查询和索引
  */
 
+;
+;
+;
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery, CacheEntry, DataTemperature, SyncStatus } from '@/types/hybrid-storage';
 
 interface IndexedDBSchema {
@@ -125,9 +128,14 @@ export class IndexedDBStorageProvider implements IStorageProvider {
     const store = db.createObjectStore(this.storeName, { keyPath: 'key' });
 
     // 创建索引
-    const indexes = this.schema.stores[this.storeName].indexes || [];
+    const storeConfig = this.schema.stores[this.storeName];
+    const indexes = storeConfig?.indexes || [];
     indexes.forEach(index => {
-      store.createIndex(index.name, index.keyPath, { unique: index.unique });
+      if (index.unique !== undefined) {
+        store.createIndex(index.name, index.keyPath, { unique: index.unique });
+      } else {
+        store.createIndex(index.name, index.keyPath);
+      }
     });
   }
 
@@ -211,7 +219,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
         lastAccessed: now,
         accessCount: 1,
         temperature: DataTemperature.WARM,
-        expiresAt: options.expiresAt,
+        ...(options.expiresAt && { expiresAt: options.expiresAt }),
         size: serializedSize,
         storageTier: this.tier,
         syncStatus: SyncStatus.SYNCED,
@@ -311,7 +319,7 @@ export class IndexedDBStorageProvider implements IStorageProvider {
         lastAccessed: now,
         accessCount: 1,
         temperature: DataTemperature.WARM,
-        expiresAt: entry.options?.expiresAt,
+        ...(entry.options?.expiresAt && { expiresAt: entry.options.expiresAt }),
         size: serializedSize,
         storageTier: this.tier,
         syncStatus: SyncStatus.SYNCED,

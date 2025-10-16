@@ -1,3 +1,4 @@
+;
 import { api } from './api';
 import type { ApiSuccessPayload } from '@/types/dynamic';
 

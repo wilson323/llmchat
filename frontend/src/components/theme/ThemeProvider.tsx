@@ -33,7 +33,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   const { preferences, updatePreferences } = useChatStore();
   const [theme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [autoUpdateInterval, setAutoUpdateInterval] =
-    useState<NodeJS.Timeout | null>(null);
+    useState<ReturnType<typeof setInterval> | null>(null);
 
   const userPreference = preferences.theme.userPreference;
   const isAutoMode = userPreference === 'auto';
@@ -75,7 +75,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     }
   };
 
-  const updateTheme = (preference: ThemeMode) => {
+  const parseTime = (timeStr: string): number => {
+    const parts = timeStr.split(':').map((s: string) => Number(s));
+    const hours = parts[0] ?? 0;
+    const minutes = parts[1] ?? 0;
+    return hours * 60 + minutes;
+  };
+
+  const updateTheme = (preference: ThemeMode): void => {
     if (preference === 'auto') {
       const now = new Date();
       const hour = now.getHours();
@@ -91,26 +98,21 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       const isDarkTime = currentTime >= darkStart || currentTime < lightStart;
       setCurrentTheme(isDarkTime ? 'dark' : 'light');
     } else {
-      setCurrentTheme(preference);
+      setCurrentTheme(preference as 'light' | 'dark');
     }
-  };
-
-  const parseTime = (timeStr: string): number => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
   };
 
   const toggleTheme = () => {
     const themes: ThemeMode[] = ['light', 'dark', 'auto'];
-    const currentIndex = themes.indexOf(userPreference);
-    const nextTheme = themes[(currentIndex + 1) % themes.length];
+    const currentIndex = Math.max(0, themes.indexOf(userPreference));
+    const nextTheme = themes[(currentIndex + 1) % themes.length] as ThemeMode;
 
     updatePreferences({
       theme: {
         ...preferences.theme,
         userPreference: nextTheme,
         isAutoMode: nextTheme === 'auto',
-        mode: nextTheme === 'auto' ? preferences.theme.mode : nextTheme,
+        mode: nextTheme === 'auto' ? (preferences.theme.mode || 'light') : nextTheme,
       },
     });
   };
@@ -121,7 +123,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         ...preferences.theme,
         userPreference: newTheme,
         isAutoMode: newTheme === 'auto',
-        mode: newTheme === 'auto' ? preferences.theme.mode : newTheme,
+        mode: newTheme === 'auto' ? (preferences.theme.mode || 'light') : newTheme,
       },
     });
   };
@@ -135,8 +137,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   return (
     <ThemeContext.Provider
-      value={{ theme, userPreference, toggleTheme, setTheme, isAutoMode }}
-      >
+      value={{
+        theme,
+        userPreference,
+        toggleTheme,
+        setTheme,
+        isAutoMode
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

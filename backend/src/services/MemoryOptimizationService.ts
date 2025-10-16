@@ -6,7 +6,7 @@
 import logger from '@/utils/logger';
 import { MemoryMonitor, MemoryStats, MemoryOptimizationResult } from '@/utils/memoryMonitor';
 import { EventEmitter } from 'events';
-import { RedisConnectionPool } from '@/utils/redisConnectionPool';
+import RedisConnectionPool from '@/utils/redisConnectionPool';
 
 export interface MemoryOptimizationConfig {
   // 监控配置

@@ -26,7 +26,7 @@ export const useCadHistory = (
 ) => {
   const { maxHistorySize = 50, onHistoryChange } = options;
 
-  const [entities, setEntities] = useState<DxfEntity[]>(initialEntities);
+  const [entities, setEntities] = useState(initialEntities);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const historyRef = useRef<CadHistoryEntry[]>([]);
 
@@ -54,7 +54,7 @@ export const useCadHistory = (
     if (historyRef.current.length > maxHistorySize) {
       historyRef.current.shift();
     } else {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev: number) => prev + 1);
     }
 
     setEntities(newEntities);
@@ -71,6 +71,9 @@ export const useCadHistory = (
 
     const newIndex = currentIndex - 1;
     const entry = historyRef.current[newIndex];
+    if (!entry) {
+      return false;
+    }
 
     setCurrentIndex(newIndex);
     setEntities(JSON.parse(JSON.stringify(entry.entities)));
@@ -87,6 +90,9 @@ export const useCadHistory = (
 
     const newIndex = currentIndex + 1;
     const entry = historyRef.current[newIndex];
+    if (!entry) {
+      return false;
+    }
 
     setCurrentIndex(newIndex);
     setEntities(JSON.parse(JSON.stringify(entry.entities)));
@@ -97,7 +103,7 @@ export const useCadHistory = (
 
   // 获取历史记录
   const getHistory = useCallback(() => {
-    return historyRef.current.map((entry, index) => ({
+    return historyRef.current.map((entry: CadHistoryEntry, index: number) => ({
       ...entry,
       isCurrent: index === currentIndex,
     }));
@@ -110,6 +116,10 @@ export const useCadHistory = (
     }
 
     const entry = historyRef.current[index];
+    if (!entry) {
+      return false;
+    }
+
     setCurrentIndex(index);
     setEntities(JSON.parse(JSON.stringify(entry.entities)));
 

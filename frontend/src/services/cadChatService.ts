@@ -79,8 +79,9 @@ export class CadChatService {
       const functionRegex = /\[Function Call: (\w+)\]\s*({[\s\S]*?})/;
       const match = message.match(functionRegex);
 
-      if (match) {
-        const [, functionName, paramsJson] = match;
+      if (match && match[1] && match[2]) {
+        const functionName = match[1];
+        const paramsJson = match[2];
         const params = JSON.parse(paramsJson);
         return { function: functionName, params };
       }
@@ -89,7 +90,7 @@ export class CadChatService {
       const jsonRegex = /```json\s*({[\s\S]*?})\s*```/;
       const jsonMatch = message.match(jsonRegex);
 
-      if (jsonMatch) {
+      if (jsonMatch && jsonMatch[1]) {
         const data = JSON.parse(jsonMatch[1]);
         if (data.function && data.params) {
           return { function: data.function, params: data.params };

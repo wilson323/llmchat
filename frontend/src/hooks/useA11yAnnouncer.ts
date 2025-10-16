@@ -3,7 +3,7 @@
  * 提供统一的方法来播报状态变化、错误信息和导航事件
  */
 export const useA11yAnnouncer = () => {
-  const announceMessage = (message: string, politeness: 'polite' | 'assertive' = 'polite') => {
+  const announceMessage = (message: string, politeness: 'polite' | 'assertive' = 'polite'): void => {
     const announcer = document.getElementById(
       politeness === 'assertive' ? 'error-announcer' : 'navigation-announcer',
     );
@@ -18,7 +18,7 @@ export const useA11yAnnouncer = () => {
     }
   };
 
-  const announceStreamingStatus = (moduleName: string, status: string) => {
+  const announceStreamingStatus = (moduleName: string, status: string): void => {
     const announcer = document.getElementById('streaming-status-announcer');
     if (announcer) {
       const statusText = status === 'running'
@@ -33,27 +33,27 @@ export const useA11yAnnouncer = () => {
     }
   };
 
-  const announceNavigation = (action: string, target: string) => {
+  const announceNavigation = (action: string, target: string): void => {
     announceMessage(`${action}${target}`);
   };
 
-  const announceError = (error: string) => {
+  const announceError = (error: string): void => {
     announceMessage(`错误：${error}`, 'assertive');
   };
 
-  const announceSuccess = (message: string) => {
+  const announceSuccess = (message: string): void => {
     announceMessage(`成功：${message}`);
   };
 
-  const announceNewMessage = (isUser: boolean) => {
+  const announceNewMessage = (isUser: boolean): void => {
     announceMessage(isUser ? '收到用户消息' : '收到AI回复');
   };
 
-  const announceSessionChange = (sessionTitle: string) => {
+  const announceSessionChange = (sessionTitle: string): void => {
     announceMessage(`切换到会话：${sessionTitle}`);
   };
 
-  const announceAgentChange = (agentName: string) => {
+  const announceAgentChange = (agentName: string): void => {
     announceMessage(`切换到智能体：${agentName}`);
   };
 

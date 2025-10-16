@@ -9,7 +9,7 @@
  * 5. User interaction performance measurement
  */
 
-import React, { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 import { performance } from 'perf_hooks';
 
 interface BenchmarkResult {
@@ -56,7 +56,6 @@ interface DependencyInfo {
  */
 class PerformanceBenchmark {
   private results: BenchmarkResult[] = [];
-  private observers: PerformanceObserver[] = [];
 
   /**
    * Run a performance benchmark on a function
@@ -119,10 +118,10 @@ class PerformanceBenchmark {
     const standardDeviation = Math.sqrt(variance);
 
     // Calculate memory usage
-    const memoryUsage = memoryTracking && memorySnapshots.length > 0 ? {
+    const memoryUsage: MemoryInfo | undefined = memoryTracking && memorySnapshots.length > 0 ? {
       usedJSHeapSize: memorySnapshots.reduce((sum, mem) => sum + mem.usedJSHeapSize, 0) / memorySnapshots.length,
       totalJSHeapSize: memorySnapshots.reduce((sum, mem) => sum + mem.totalJSHeapSize, 0) / memorySnapshots.length,
-      jsHeapSizeLimit: memorySnapshots[0].jsHeapSizeLimit
+      jsHeapSizeLimit: memorySnapshots[0]!.jsHeapSizeLimit
     } : undefined;
 
     const result: BenchmarkResult = {
@@ -133,7 +132,7 @@ class PerformanceBenchmark {
       minTime,
       maxTime,
       standardDeviation,
-      memoryUsage,
+      ...(memoryUsage && { memoryUsage }),
       timestamp: Date.now()
     };
 

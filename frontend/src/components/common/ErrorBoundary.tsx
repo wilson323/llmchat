@@ -2,8 +2,13 @@
  * 错误边界组件
  */
 
+;
+;
+;
+import {AlertTriangle, RefreshCw} from 'lucide-react';
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+;
+;
 
 interface Props {
   children: ReactNode;
@@ -34,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({
       error,
@@ -50,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
     });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
