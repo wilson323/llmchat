@@ -1,0 +1,59 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    # 第一阶段：预热
+    - duration: 60
+      arrivalRate: 10
+      name: "预热阶段 (10 req/s)"
+    # 第二阶段：持续负载
+    - duration: 120
+      arrivalRate: 50
+      name: "持续负载 (50 req/s)"
+    # 第三阶段：峰值负载
+    - duration: 60
+      arrivalRate: 100
+      name: "峰值负载 (100 req/s)"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  # 性能目标
+  ensure:
+    maxErrorRate: 1                 # 最大错误率 1%
+    p95: 100                        # P95响应时间 < 100ms
+    p99: 200                        # P99响应时间 < 200ms
+
+scenarios:
+  # 场景1: 健康检查 (30%流量)
+  - name: "API健康检查"
+    weight: 30
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+          
+  # 场景2: 获取智能体列表 (50%流量)
+  - name: "获取智能体列表"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/agents"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          
+  # 场景3: 聊天请求 (20%流量)
+  - name: "聊天请求"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/chat/completions"
+          json:
+            agentId: "fastgpt-default"
+            message: "测试消息"
+            stream: false
+          expect:
+            - statusCode:
+                - 200
+                - 401  # 未认证也可接受
+
