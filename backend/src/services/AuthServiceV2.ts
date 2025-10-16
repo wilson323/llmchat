@@ -488,7 +488,7 @@ export class AuthServiceV2 {
   private async findUserByUsername(username: string): Promise<DbUser | null> {
     const result = await withClient(async (client) => {
       const { rows } = await client.query<DbUser>(
-        `SELECT id, username, email, password_hash, role, status, 
+        `SELECT id, username, password_hash, role, status, 
                 failed_login_attempts, locked_until, last_login_at
          FROM users 
          WHERE username = $1 
@@ -503,7 +503,7 @@ export class AuthServiceV2 {
   private async findUserById(userId: string): Promise<DbUser | null> {
     const result = await withClient(async (client) => {
       const { rows } = await client.query<DbUser>(
-        `SELECT id, username, email, password_hash, role, status, 
+        `SELECT id, username, password_hash, role, status, 
                 failed_login_attempts, locked_until, last_login_at
          FROM users 
          WHERE id = $1 

@@ -67,10 +67,11 @@ export default defineConfig({
   ],
 
   // 本地开发服务器（测试前自动启动）
-  webServer: process.env.CI ? undefined : {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-  },
+  // ✅ 临时禁用，手动启动服务后运行测试
+  // webServer: process.env.CI ? undefined : {
+  //   command: 'npm run dev',
+  //   url: 'http://localhost:3000',
+  //   timeout: 120 * 1000,
+  //   reuseExistingServer: !process.env.CI,
+  // },
 });
