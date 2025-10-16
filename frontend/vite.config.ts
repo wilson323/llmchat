@@ -45,10 +45,10 @@ export default defineConfig({
     // 强制使用内存文件系统，避免WSL2文件系统问题
     emptyOutDir: true,
 
-    // 依赖优化 - 禁用避免解析问题
+    // 依赖优化 - 正确处理CommonJS模块
     commonjsOptions: {
-      include: [],
-      transformMixedEsModules: false
+      include: [/node_modules/],
+      transformMixedEsModules: true
     },
   },
 
