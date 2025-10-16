@@ -1,218 +1,271 @@
 /**
  * 性能基准测试
  * 
- * 用于测试系统在优化后的性能表现
- * 记录关键指标：响应时间、吞吐量、成功率
+ * 测试主要API端点的性能指标：
+ * - 平均响应时间
+ * - P95响应时间
+ * - P99响应时间
+ * - 成功率
+ * - 吞吐量（req/s）
  */
 
 import axios, { AxiosRequestConfig } from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 
+// 基准测试结果接口
 interface BenchmarkResult {
   test: string;
+  totalRequests: number;
+  successCount: number;
+  failureCount: number;
   avgResponseTime: number;
+  p50ResponseTime: number;
   p95ResponseTime: number;
   p99ResponseTime: number;
   successRate: number;
   throughput: number;
-  totalRequests: number;
-  failedRequests: number;
+  totalTime: number;
 }
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+// 配置
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3001';
+const OUTPUT_DIR = path.join(__dirname, '../..', 'docs/performance-reports');
+
+// 确保输出目录存在
+if (!fs.existsSync(OUTPUT_DIR)) {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+}
 
 /**
- * 运行单个端点的基准测试
+ * 对单个端点进行基准测试
  */
 async function benchmarkEndpoint(
-  method: string,
+  method: 'GET' | 'POST',
   path: string,
   requests: number,
   data?: any,
   headers?: Record<string, string>
 ): Promise<BenchmarkResult> {
-  console.log(`\n📊 测试 ${method} ${path} (${requests}个请求)...`);
+  console.log(`\n🔄 测试: ${method} ${path} (${requests}次请求)`);
   
   const startTime = Date.now();
   const durations: number[] = [];
   let successCount = 0;
-  let failedCount = 0;
-  
+  let failureCount = 0;
+
   for (let i = 0; i < requests; i++) {
     const reqStart = Date.now();
     try {
       const config: AxiosRequestConfig = {
-        method: method.toLowerCase() as any,
+        method,
         url: `${BASE_URL}${path}`,
-        data,
-        headers,
         timeout: 30000, // 30秒超时
+        validateStatus: () => true, // 接受所有状态码
+        ...(headers && { headers }),
+        ...(data && { data }),
       };
-      
-      await axios(config);
-      successCount++;
-      durations.push(Date.now() - reqStart);
-    } catch (err: any) {
-      failedCount++;
-      durations.push(Date.now() - reqStart);
-      
-      // 只显示第一个错误，避免刷屏
-      if (failedCount === 1) {
-        console.error(`❌ 请求失败: ${err.message}`);
+
+      const response = await axios(config);
+      const duration = Date.now() - reqStart;
+      durations.push(duration);
+
+      if (response.status >= 200 && response.status < 400) {
+        successCount++;
+      } else {
+        failureCount++;
       }
-    }
-    
-    // 每100个请求显示进度
-    if ((i + 1) % 100 === 0) {
-      console.log(`   进度: ${i + 1}/${requests} (${Math.round((i + 1) / requests * 100)}%)`);
+
+      // 显示进度
+      if ((i + 1) % Math.max(1, Math.floor(requests / 10)) === 0) {
+        process.stdout.write(`\r  进度: ${i + 1}/${requests} (${Math.round(((i + 1) / requests) * 100)}%)`);
+      }
+    } catch (err) {
+      const duration = Date.now() - reqStart;
+      durations.push(duration);
+      failureCount++;
     }
   }
-  
+
+  console.log(); // 换行
+
   const totalTime = Date.now() - startTime;
   durations.sort((a, b) => a - b);
-  
-  const result: BenchmarkResult = {
+
+  const p50Index = Math.floor(durations.length * 0.50);
+  const p95Index = Math.floor(durations.length * 0.95);
+  const p99Index = Math.floor(durations.length * 0.99);
+
+  return {
     test: `${method} ${path}`,
-    avgResponseTime: Math.round(durations.reduce((a, b) => a + b, 0) / durations.length),
-    p95ResponseTime: durations[Math.floor(durations.length * 0.95)] || 0,
-    p99ResponseTime: durations[Math.floor(durations.length * 0.99)] || 0,
-    successRate: Math.round((successCount / requests) * 100) / 100,
-    throughput: Math.round((requests / (totalTime / 1000)) * 100) / 100,
     totalRequests: requests,
-    failedRequests: failedCount,
+    successCount,
+    failureCount,
+    avgResponseTime: durations.reduce((a, b) => a + b, 0) / durations.length,
+    p50ResponseTime: durations[p50Index] || 0,
+    p95ResponseTime: durations[p95Index] || 0,
+    p99ResponseTime: durations[p99Index] || 0,
+    successRate: successCount / requests,
+    throughput: requests / (totalTime / 1000),
+    totalTime,
   };
-  
-  console.log(`✅ 完成: 平均 ${result.avgResponseTime}ms, P95 ${result.p95ResponseTime}ms, 成功率 ${(result.successRate * 100).toFixed(1)}%`);
-  
-  return result;
 }
 
 /**
  * 生成性能报告
  */
 function generateReport(results: BenchmarkResult[]): void {
-  console.log('\n\n╔══════════════════════════════════════════════════════════════════╗');
-  console.log('║           性能基准测试报告 - 日志优化后                          ║');
-  console.log('╚══════════════════════════════════════════════════════════════════╝\n');
-  
-  console.log('测试时间:', new Date().toISOString());
-  console.log('目标服务:', BASE_URL);
-  console.log('\n');
-  
-  // 表格头部
-  console.log('┌─────────────────────────────┬──────┬──────┬──────┬─────────┬──────────┐');
-  console.log('│ 端点                        │ 平均 │  P95 │  P99 │ 成功率  │ 吞吐量   │');
-  console.log('├─────────────────────────────┼──────┼──────┼──────┼─────────┼──────────┤');
-  
-  // 数据行
+  console.log('\n' + '='.repeat(80));
+  console.log('📊 性能基准测试报告');
+  console.log('='.repeat(80));
+
+  console.log('\n测试环境:');
+  console.log(`  • 基础URL: ${BASE_URL}`);
+  console.log(`  • 测试时间: ${new Date().toISOString()}`);
+
+  console.log('\n\n性能指标:');
+  console.log('─'.repeat(80));
+  console.log('%-40s %8s %8s %8s %8s %10s', '测试', 'Avg(ms)', 'P95(ms)', 'P99(ms)', '成功率', '吞吐量');
+  console.log('─'.repeat(80));
+
   results.forEach(result => {
-    const endpoint = result.test.padEnd(27);
-    const avg = `${result.avgResponseTime}ms`.padStart(6);
-    const p95 = `${result.p95ResponseTime}ms`.padStart(6);
-    const p99 = `${result.p99ResponseTime}ms`.padStart(6);
-    const success = `${(result.successRate * 100).toFixed(1)}%`.padStart(7);
-    const throughput = `${result.throughput}/s`.padStart(8);
-    
-    console.log(`│ ${endpoint} │ ${avg} │ ${p95} │ ${p99} │ ${success} │ ${throughput} │`);
+    console.log(
+      '%-40s %8.2f %8.2f %8.2f %7.1f%% %8.2f/s',
+      result.test.substring(0, 40),
+      result.avgResponseTime,
+      result.p95ResponseTime,
+      result.p99ResponseTime,
+      result.successRate * 100,
+      result.throughput
+    );
   });
-  
-  console.log('└─────────────────────────────┴──────┴──────┴──────┴─────────┴──────────┘');
-  
-  // 统计摘要
+
+  console.log('─'.repeat(80));
+
+  // 计算总体统计
   const totalRequests = results.reduce((sum, r) => sum + r.totalRequests, 0);
-  const totalFailed = results.reduce((sum, r) => sum + r.failedRequests, 0);
-  const avgThroughput = results.reduce((sum, r) => sum + r.throughput, 0) / results.length;
-  
-  console.log('\n📊 测试摘要:');
-  console.log(`   总请求数: ${totalRequests}`);
-  console.log(`   失败请求: ${totalFailed} (${(totalFailed / totalRequests * 100).toFixed(2)}%)`);
-  console.log(`   平均吞吐量: ${avgThroughput.toFixed(2)} req/s`);
-  
-  // 性能验收标准检查
-  console.log('\n✅ 性能验收标准检查:');
-  
-  const p95Target = 50; // 目标P95 < 50ms
-  const p99Target = 100; // 目标P99 < 100ms
-  const successTarget = 0.95; // 目标成功率 > 95%
-  
-  results.forEach(result => {
-    const p95Pass = result.p95ResponseTime < p95Target ? '✅' : '❌';
-    const p99Pass = result.p99ResponseTime < p99Target ? '✅' : '❌';
-    const successPass = result.successRate >= successTarget ? '✅' : '❌';
-    
-    console.log(`\n   ${result.test}:`);
-    console.log(`   ${p95Pass} P95 < 50ms: ${result.p95ResponseTime}ms`);
-    console.log(`   ${p99Pass} P99 < 100ms: ${result.p99ResponseTime}ms`);
-    console.log(`   ${successPass} 成功率 > 95%: ${(result.successRate * 100).toFixed(1)}%`);
-  });
-  
-  console.log('\n');
+  const totalSuccesses = results.reduce((sum, r) => sum + r.successCount, 0);
+  const avgResponseTime = results.reduce((sum, r) => sum + r.avgResponseTime, 0) / results.length;
+  const overallSuccessRate = totalSuccesses / totalRequests;
+
+  console.log('\n总体统计:');
+  console.log(`  • 总请求数: ${totalRequests}`);
+  console.log(`  • 成功率: ${(overallSuccessRate * 100).toFixed(2)}%`);
+  console.log(`  • 平均响应时间: ${avgResponseTime.toFixed(2)}ms`);
+
+  // 保存JSON格式报告
+  const reportData = {
+    timestamp: new Date().toISOString(),
+    baseUrl: BASE_URL,
+    results,
+    summary: {
+      totalRequests,
+      totalSuccesses,
+      avgResponseTime,
+      overallSuccessRate,
+    },
+  };
+
+  const outputPath = path.join(OUTPUT_DIR, `benchmark-${Date.now()}.json`);
+  fs.writeFileSync(outputPath, JSON.stringify(reportData, null, 2));
+  console.log(`\n✅ 报告已保存: ${outputPath}`);
 }
 
 /**
  * 主测试函数
  */
 async function runBenchmark() {
-  console.log('🚀 启动性能基准测试...\n');
-  console.log('目标: 验证日志优化后的性能提升');
-  console.log('预期: HTTP响应时间P95 < 50ms, P99 < 100ms\n');
-  
+  console.log('🚀 LLMChat 性能基准测试');
+  console.log('━'.repeat(80));
+
   const results: BenchmarkResult[] = [];
-  
+
   try {
-    // 测试1: 健康检查（轻量级）
+    // 测试1: 健康检查（轻量级端点）
     results.push(await benchmarkEndpoint('GET', '/health', 1000));
-    
-    // 等待1秒，避免过载
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 测试2: Agents列表（中等负载）
+
+    // 测试2: Agents列表（中等复杂度）
     results.push(await benchmarkEndpoint('GET', '/api/agents', 500));
-    
-    // 等待1秒
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 测试3: 登录（带数据POST）
+
+    // 测试3: 认证登录（数据库操作）
     results.push(await benchmarkEndpoint('POST', '/api/auth/login', 100, {
       username: 'admin',
-      password: 'admin123'
+      password: 'admin123',
     }));
-    
+
+    // 测试4: CSRF Token获取
+    results.push(await benchmarkEndpoint('GET', '/api/csrf-token', 500));
+
     // 生成报告
     generateReport(results);
-    
-    // 保存到文件
-    const reportPath = 'reports/performance-benchmark-' + Date.now() + '.json';
-    const fs = require('fs');
-    const path = require('path');
-    
-    // 确保目录存在
-    const dir = path.dirname(reportPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+
+    // 性能验收标准检查
+    console.log('\n' + '='.repeat(80));
+    console.log('✅ 验收标准检查');
+    console.log('='.repeat(80));
+
+    const healthResult = results.find(r => r.test.includes('/health'));
+    const agentsResult = results.find(r => r.test.includes('/api/agents'));
+
+    let passed = 0;
+    let failed = 0;
+
+    // 标准1: P95响应时间 < 50ms
+    if (healthResult && healthResult.p95ResponseTime < 50) {
+      console.log('✅ P95响应时间 < 50ms:', healthResult.p95ResponseTime.toFixed(2), 'ms');
+      passed++;
+    } else {
+      console.log('❌ P95响应时间 >= 50ms:', healthResult?.p95ResponseTime.toFixed(2), 'ms');
+      failed++;
     }
-    
-    fs.writeFileSync(
-      reportPath,
-      JSON.stringify({
-        timestamp: new Date().toISOString(),
-        baseUrl: BASE_URL,
-        results,
-        summary: {
-          totalRequests: results.reduce((sum, r) => sum + r.totalRequests, 0),
-          totalFailed: results.reduce((sum, r) => sum + r.failedRequests, 0),
-          avgThroughput: results.reduce((sum, r) => sum + r.throughput, 0) / results.length,
-        }
-      }, null, 2)
-    );
-    
-    console.log(`\n📁 报告已保存: ${reportPath}\n`);
-    
-  } catch (error: any) {
-    console.error('\n❌ 基准测试失败:', error.message);
+
+    // 标准2: P99响应时间 < 100ms
+    if (healthResult && healthResult.p99ResponseTime < 100) {
+      console.log('✅ P99响应时间 < 100ms:', healthResult.p99ResponseTime.toFixed(2), 'ms');
+      passed++;
+    } else {
+      console.log('❌ P99响应时间 >= 100ms:', healthResult?.p99ResponseTime.toFixed(2), 'ms');
+      failed++;
+    }
+
+    // 标准3: 成功率 > 99%
+    const overallSuccessRate = results.reduce((sum, r) => sum + r.successCount, 0) / results.reduce((sum, r) => sum + r.totalRequests, 0);
+    if (overallSuccessRate > 0.99) {
+      console.log('✅ 成功率 > 99%:', (overallSuccessRate * 100).toFixed(2), '%');
+      passed++;
+    } else {
+      console.log('❌ 成功率 <= 99%:', (overallSuccessRate * 100).toFixed(2), '%');
+      failed++;
+    }
+
+    // 标准4: 吞吐量 > 100 req/s
+    if (agentsResult && agentsResult.throughput > 100) {
+      console.log('✅ 吞吐量 > 100 req/s:', agentsResult.throughput.toFixed(2), 'req/s');
+      passed++;
+    } else {
+      console.log('❌ 吞吐量 <= 100 req/s:', agentsResult?.throughput.toFixed(2), 'req/s');
+      failed++;
+    }
+
+    console.log('─'.repeat(80));
+    console.log(`总计: ${passed}/${passed + failed} 通过`);
+    console.log('='.repeat(80));
+
+  } catch (error) {
+    console.error('\n❌ 基准测试失败:', error);
     process.exit(1);
   }
 }
 
-// 运行测试
-runBenchmark().catch(console.error);
+// 运行基准测试
+if (require.main === module) {
+  runBenchmark().then(() => {
+    console.log('\n✅ 基准测试完成');
+    process.exit(0);
+  }).catch(err => {
+    console.error('\n❌ 基准测试失败:', err);
+    process.exit(1);
+  });
+}
 
+export { runBenchmark, benchmarkEndpoint };

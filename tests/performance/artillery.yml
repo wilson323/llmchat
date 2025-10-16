@@ -1,59 +1,103 @@
+# Artillery压力测试配置
+# LLMChat后端性能压力测试
+
 config:
   target: "http://localhost:3001"
   phases:
-    # 第一阶段：预热
+    # 阶段1: 预热（60秒，10 req/s）
     - duration: 60
       arrivalRate: 10
-      name: "预热阶段 (10 req/s)"
-    # 第二阶段：持续负载
+      name: "预热阶段"
+      
+    # 阶段2: 持续负载（120秒，50 req/s）
     - duration: 120
       arrivalRate: 50
-      name: "持续负载 (50 req/s)"
-    # 第三阶段：峰值负载
+      name: "持续负载"
+      
+    # 阶段3: 峰值负载（60秒，100 req/s）
     - duration: 60
       arrivalRate: 100
-      name: "峰值负载 (100 req/s)"
+      name: "峰值负载"
+      
+    # 阶段4: 降压（30秒，20 req/s）
+    - duration: 30
+      arrivalRate: 20
+      name: "降压阶段"
+  
+  # 默认请求头
   defaults:
     headers:
       Content-Type: "application/json"
+      User-Agent: "Artillery-LoadTest/1.0"
+  
   # 性能目标
   ensure:
-    maxErrorRate: 1                 # 最大错误率 1%
-    p95: 100                        # P95响应时间 < 100ms
-    p99: 200                        # P99响应时间 < 200ms
+    maxErrorRate: 1          # 最大错误率1%
+    p95: 100                  # P95响应时间<100ms
+    p99: 200                  # P99响应时间<200ms
 
 scenarios:
-  # 场景1: 健康检查 (30%流量)
-  - name: "API健康检查"
+  # 场景1: 健康检查（30%流量）
+  - name: "健康检查"
     weight: 30
     flow:
       - get:
           url: "/health"
           expect:
             - statusCode: 200
-          
-  # 场景2: 获取智能体列表 (50%流量)
+            - contentType: json
+            - hasProperty: status
+
+  # 场景2: 获取智能体列表（40%流量）
   - name: "获取智能体列表"
-    weight: 50
+    weight: 40
     flow:
       - get:
           url: "/api/agents"
           expect:
             - statusCode: 200
             - contentType: json
-          
-  # 场景3: 聊天请求 (20%流量)
-  - name: "聊天请求"
+
+  # 场景3: 认证登录（20%流量）
+  - name: "用户认证"
     weight: 20
     flow:
+      # Step 1: 登录
       - post:
-          url: "/api/chat/completions"
+          url: "/api/auth/login"
           json:
-            agentId: "fastgpt-default"
-            message: "测试消息"
-            stream: false
+            username: "admin"
+            password: "admin123"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
           expect:
-            - statusCode:
-                - 200
-                - 401  # 未认证也可接受
+            - statusCode: 200
+      
+      # Step 2: 使用token获取数据
+      - get:
+          url: "/api/agents"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
 
+  # 场景4: CSRF Token获取（10%流量）
+  - name: "CSRF Token"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/csrf-token"
+          expect:
+            - statusCode: 200
+
+# 插件配置
+plugins:
+  # 期望结果
+  expect: {}
+  
+  # 指标发布（可选）
+  # statsd:
+  #   host: "localhost"
+  #   port: 8125
+  #   prefix: "artillery.llmchat"
