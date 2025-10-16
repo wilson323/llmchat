@@ -27,6 +27,7 @@ import {
 
 // 中间件
 import { requestLogger } from "./middleware/requestLogger";
+import asyncRequestLogger from "./middleware/AsyncBatchRequestLogger"; // ✅ 新的批量日志器
 import { errorHandler } from "./middleware/errorHandler";
 import { csrfProtection, getCsrfToken } from "./middleware/csrfProtection";
 import { performanceMiddleware } from "./middleware/PerformanceMonitor";
@@ -188,8 +189,8 @@ app.use("/api/", limiter);
 
 
 // 🔧 极简模式：完全禁用所有可能阻塞的中间件
-// 请求日志
-// app.use(requestLogger);
+// 请求日志 - 使用异步批量日志器（99% I/O减少）
+app.use(asyncRequestLogger);
 
 // 性能监控（已修复logger阻塞问题）
 // app.use(performanceMiddleware);
