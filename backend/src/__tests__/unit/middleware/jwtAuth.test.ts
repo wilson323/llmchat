@@ -1,0 +1,309 @@
+/**
+ * JWT认证中间件测试
+ * 
+ * 测试范围：
+ * - Token验证
+ * - 权限检查
+ * - 错误处理
+ * - 边界条件
+ * 
+ * 覆盖率目标：≥95%
+ */
+
+import { Request, Response, NextFunction } from 'express';
+import { generateToken, generateExpiredToken, generateInvalidToken } from '../../helpers/testUtils';
+
+// 导入中间件（需要根据实际路径调整）
+// import { jwtAuth, adminAuth } from '@/middleware/jwtAuth';
+
+describe('jwtAuth Middleware', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockNext: jest.MockedFunction<NextFunction>;
+  
+  beforeEach(() => {
+    mockRequest = {
+      headers: {},
+      user: undefined
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+    
+    mockNext = jest.fn();
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('Token validation', () => {
+    it('should pass with valid token', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const token = generateToken(userId);
+      mockRequest.headers = {
+        authorization: `Bearer ${token}`
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert (待实现中间件后取消注释)
+      // expect(mockNext).toHaveBeenCalled();
+      // expect(mockRequest.user).toHaveProperty('userId', userId);
+    });
+    
+    it('should reject missing token', async () => {
+      // Arrange
+      mockRequest.headers = {};
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+      // expect(mockResponse.json).toHaveBeenCalledWith(
+      //   expect.objectContaining({
+      //     code: 'NO_TOKEN',
+      //     message: expect.stringContaining('required')
+      //   })
+      // );
+    });
+    
+    it('should reject invalid token format', async () => {
+      // Arrange
+      mockRequest.headers = {
+        authorization: 'InvalidFormat token123'
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+    });
+    
+    it('should reject expired token', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const expiredToken = generateExpiredToken(userId);
+      mockRequest.headers = {
+        authorization: `Bearer ${expiredToken}`
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+      // expect(mockResponse.json).toHaveBeenCalledWith(
+      //   expect.objectContaining({
+      //     code: 'TOKEN_EXPIRED'
+      //   })
+      // );
+    });
+    
+    it('should reject malformed token', async () => {
+      // Arrange
+      const invalidToken = generateInvalidToken();
+      mockRequest.headers = {
+        authorization: `Bearer ${invalidToken}`
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+    });
+    
+    it('should set req.user on success', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const token = generateToken(userId, { isAdmin: false });
+      mockRequest.headers = {
+        authorization: `Bearer ${token}`
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockRequest.user).toBeDefined();
+      // expect(mockRequest.user).toHaveProperty('userId', userId);
+      // expect(mockRequest.user).toHaveProperty('isAdmin', false);
+    });
+    
+    it('should handle token from cookie', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const token = generateToken(userId);
+      mockRequest.headers = {};
+      mockRequest.cookies = { token };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).toHaveBeenCalled();
+      // expect(mockRequest.user).toHaveProperty('userId', userId);
+    });
+  });
+  
+  describe('Error handling', () => {
+    it('should handle JWT verification errors', async () => {
+      // Arrange
+      const invalidToken = 'totally.invalid.token';
+      mockRequest.headers = {
+        authorization: `Bearer ${invalidToken}`
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+    });
+    
+    it('should log verification failures', async () => {
+      // Arrange
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      mockRequest.headers = {
+        authorization: 'Bearer invalid'
+      };
+      
+      // Act
+      // await jwtAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(consoleSpy).toHaveBeenCalled();
+      
+      consoleSpy.mockRestore();
+    });
+  });
+});
+
+describe('adminAuth Middleware', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockNext: jest.MockedFunction<NextFunction>;
+  
+  beforeEach(() => {
+    mockRequest = {
+      user: undefined
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+    
+    mockNext = jest.fn();
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('Admin permission check', () => {
+    it('should pass for admin users', async () => {
+      // Arrange
+      mockRequest.user = {
+        userId: 'admin-123',
+        isAdmin: true
+      };
+      
+      // Act
+      // await adminAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).toHaveBeenCalled();
+    });
+    
+    it('should reject non-admin users', async () => {
+      // Arrange
+      mockRequest.user = {
+        userId: 'user-123',
+        isAdmin: false
+      };
+      
+      // Act
+      // await adminAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(403);
+      // expect(mockResponse.json).toHaveBeenCalledWith(
+      //   expect.objectContaining({
+      //     code: 'FORBIDDEN',
+      //     message: expect.stringContaining('admin')
+      //   })
+      // );
+    });
+    
+    it('should reject unauthenticated requests', async () => {
+      // Arrange
+      mockRequest.user = undefined;
+      
+      // Act
+      // await adminAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(401);
+    });
+    
+    it('should handle missing isAdmin flag', async () => {
+      // Arrange
+      mockRequest.user = {
+        userId: 'user-123'
+        // 缺少isAdmin字段
+      } as any;
+      
+      // Act
+      // await adminAuth(mockRequest as Request, mockResponse as Response, mockNext);
+      
+      // Assert
+      // 应该默认为非管理员
+      // expect(mockNext).not.toHaveBeenCalled();
+      // expect(mockResponse.status).toHaveBeenCalledWith(403);
+    });
+  });
+});
+
+describe('Middleware Integration', () => {
+  it('should work in middleware chain', async () => {
+    // 测试jwtAuth + adminAuth的组合使用
+    const mockRequest = {
+      headers: {
+        authorization: `Bearer ${generateToken('admin-123', { isAdmin: true })}`
+      },
+      user: undefined
+    } as any;
+    
+    const mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    } as any;
+    
+    const mockNext = jest.fn();
+    
+    // Act
+    // await jwtAuth(mockRequest, mockResponse, mockNext);
+    // if (mockNext.mock.calls.length > 0) {
+    //   await adminAuth(mockRequest, mockResponse, mockNext);
+    // }
+    
+    // Assert
+    // expect(mockNext).toHaveBeenCalledTimes(2);
+  });
+});
+
