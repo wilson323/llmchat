@@ -204,12 +204,12 @@ app.use(asyncRequestLogger);
 app.get("/api/csrf-token", getCsrfToken);
 
 // CSRF 保护（排除 GET/健康检查/登录）
-// app.use(
-//   csrfProtection({
-//     ignoreMethods: ["GET", "HEAD", "OPTIONS"],
-//     ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
-//   })
-// );
+app.use(
+  csrfProtection({
+    ignoreMethods: ["GET", "HEAD", "OPTIONS"],
+    ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
+  })
+);
 
 
 // 路由注册
