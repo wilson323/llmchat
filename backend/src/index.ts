@@ -67,6 +67,27 @@ import { QueueManagerConfig } from "./types/queue";
 import MonitoringService from "./services/MonitoringService";
 import VisualizationController from "./controllers/VisualizationController";
 
+// ===== 全局错误处理器（必须在所有代码之前） =====
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('未处理的Promise拒绝', {
+    reason: reason?.message || reason,
+    stack: reason?.stack,
+    promise: String(promise),
+  });
+  // 不退出进程，让服务继续运行（降级模式）
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('未捕获的异常', {
+    message: error.message,
+    stack: error.stack,
+  });
+  // 严重错误才退出
+  if (error.message?.includes('FATAL') || error.message?.includes('MODULE_NOT_FOUND')) {
+    process.exit(1);
+  }
+});
+
 // 可视化系统变量
 let visualizationController: VisualizationController | null = null;
 

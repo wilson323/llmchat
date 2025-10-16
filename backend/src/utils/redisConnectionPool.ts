@@ -76,14 +76,18 @@ export class RedisConnectionPool extends EventEmitter {
       enableOfflineQueue: true,
       maxRetriesPerRequest: 3,
       retryDelayOnFailover: 100,
-      lazyConnect: false,
+      lazyConnect: true, // 修改为延迟连接，避免构造函数中阻塞
       keepAlive: 30000,
       connectTimeout: 10000,
       commandTimeout: 5000,
       ...config
     };
 
-    this.initializePool();
+    // 异步初始化，避免阻塞构造函数
+    this.initializePool().catch((error) => {
+      logger.error('RedisConnectionPool: 初始化失败，将以降级模式运行', error);
+      // 不抛出错误，允许服务继续启动
+    });
     this.startMaintenance();
   }
 
