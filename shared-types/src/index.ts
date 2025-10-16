@@ -115,6 +115,25 @@ export interface ApiSuccessResponse<T extends JsonValue = JsonValue> {
 export type ApiResponsePayload<T extends JsonValue = JsonValue> = ApiSuccessResponse<T>;
 
 /**
+ * 通用API响应类型（包含成功和失败情况）
+ */
+export type APIResponse<T extends JsonValue = JsonValue> =
+  | ApiSuccessResponse<T>
+  | {
+      code: string;
+      message: string;
+      error?: string;
+      data?: T;
+      timestamp: string;
+      requestId?: string;
+    };
+
+/**
+ * 导出EnhancedError类型以供前端使用
+ */
+export type { EnhancedError } from './enhanced-types';
+
+/**
  * 外部服务通用响应
  */
 export interface ExternalServiceResponse {
@@ -204,6 +223,20 @@ export interface ReasoningStepUpdate {
 }
 
 /**
+ * 推理步骤
+ */
+export interface ReasoningStep {
+  id: string;
+  index: number;
+  order: number;
+  content: string;
+  title?: string;
+  text: string;
+  status: 'error' | 'pending' | 'running' | 'completed';
+  raw?: JsonValue;
+}
+
+/**
  * 解析后的推理更新
  */
 export interface ParsedReasoningUpdate {
@@ -227,7 +260,8 @@ export type FastGPTStreamEventType =
   | 'workflowDuration'
   | 'reasoning'
   | 'step'
-  | 'chunk';
+  | 'chunk'
+  | 'tool';
 
 /**
  * FastGPT事件元数据
