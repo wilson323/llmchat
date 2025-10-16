@@ -24,6 +24,7 @@ import {
   sentryTracingHandler,
   sentryErrorHandler,
 } from "./utils/sentry";
+import { initSentryOptimized } from "./config/sentryOptimized"; // ✅ 优化版Sentry
 
 // 中间件
 import { requestLogger } from "./middleware/requestLogger";
@@ -105,12 +106,13 @@ let agentConfigService: AgentConfigService | null = null;
 let dailyCleanupInterval: NodeJS.Timeout | null = null;
 
 // 初始化Sentry（必须在所有中间件之前）
-initSentry(app);
+// initSentry(app); // ❌ 替换为优化版本
+initSentryOptimized(app); // ✅ 使用优化版Sentry（异步、批量、采样）
 
 // Sentry请求处理器（必须在所有路由之前）
-// 🔧 临时禁用Sentry，排查阻塞问题
-// app.use(sentryRequestHandler());
-// app.use(sentryTracingHandler());
+// ✅ 启用Sentry中间件（已优化为异步模式）
+app.use(sentryRequestHandler());
+app.use(sentryTracingHandler());
 
 // 安全头部配置
 const isProduction = process.env.NODE_ENV === "production";
@@ -239,8 +241,8 @@ app.use((req, res) => {
 });
 
 // Sentry错误处理器（必须在其他错误处理器之前）
-// 🔧 临时禁用Sentry，排查阻塞问题
-// app.use(sentryErrorHandler());
+// ✅ 启用Sentry错误处理（已优化为异步模式）
+app.use(sentryErrorHandler());
 
 // 全局错误处理
 app.use(errorHandler);
