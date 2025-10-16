@@ -6,11 +6,14 @@ import { createEnhancedLazyComponent } from '@/components/ui/EnhancedLazyCompone
 import { initializeComponentRegistry, preloadCriticalComponents } from '@/utils/componentRegistry';
 import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
 import { preloadService } from '@/services/preloadService';
-import CodeSplittingMonitor from '@/components/dev/CodeSplittingMonitor';
+// import CodeSplittingMonitor from '@/components/dev/CodeSplittingMonitor'; // 已禁用
 
 // ========================================
 // 增强版代码分割：懒加载组件
 // ========================================
+
+// 确保组件注册表已初始化
+initializeComponentRegistry();
 
 // 主要页面懒加载 - 使用增强版懒加载
 const ChatApp = createEnhancedLazyComponent(
@@ -59,17 +62,17 @@ const AdminHome = createEnhancedLazyComponent(
   },
 );
 
-// 按需加载的功能组件
-const PerformanceDashboard = createEnhancedLazyComponent(
-  'PerformanceDashboard',
-  () => import('@/components/monitoring/PerformanceDashboard'),
-  {
-    priority: 3,
-    preloadStrategy: 'idle',
-    showProgress: false,
-    delay: 500,
-  },
-);
+// 按需加载的功能组件 - 性能监控已禁用（减少资源占用）
+// const PerformanceDashboard = createEnhancedLazyComponent(
+//   'PerformanceDashboard',
+//   () => import('@/components/monitoring/PerformanceDashboard'),
+//   {
+//     priority: 3,
+//     preloadStrategy: 'idle',
+//     showProgress: false,
+//     delay: 500,
+//   },
+// );
 
 // 加载占位组件
 const LoadingSpinner = () => (
@@ -95,12 +98,12 @@ class ErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // eslint-disable-next-line no-console
     console.error('错误边界捕获:', error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
@@ -147,19 +150,16 @@ function LoginPageWrapper() {
 function App() {
   // 初始化增强版代码分割系统
   useEffect(() => {
-    // 1. 初始化组件注册表
-    initializeComponentRegistry();
-
-    // 2. 设置智能预加载
+    // 1. 设置智能预加载（组件注册表已在模块加载时初始化）
     EnhancedCodeSplitting.setupSmartPreloading();
     EnhancedCodeSplitting.setupBehavioralPreloading();
 
-    // 3. 预加载关键组件
+    // 2. 预加载关键组件
     preloadCriticalComponents().catch(error => {
       console.warn('关键组件预加载失败:', error);
     });
 
-    // 4. 初始化原有预加载服务
+    // 3. 初始化原有预加载服务
     preloadService.init().catch(error => {
       console.warn('预加载服务初始化失败:', error);
     });
@@ -202,11 +202,11 @@ function App() {
           {/* 全局通知 */}
           <Toaster />
 
-          {/* 性能监控仪表板 */}
-          <PerformanceDashboard />
+          {/* 性能监控仪表板 - 已禁用（生产环境减少资源占用） */}
+          {/* <PerformanceDashboard /> */}
 
-          {/* 代码分割监控（仅开发环境） */}
-          <CodeSplittingMonitor />
+          {/* 代码分割监控（仅开发环境） - 已禁用 */}
+          {/* <CodeSplittingMonitor /> */}
         </Router>
       </ThemeProvider>
     </ErrorBoundary>

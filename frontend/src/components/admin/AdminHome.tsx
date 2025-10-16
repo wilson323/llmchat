@@ -10,7 +10,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
+import useAuthStore from '@/store/authStore';
 import { logoutApi } from '@/services/authApi';
 import { useI18n } from '@/i18n';
 
@@ -25,7 +25,7 @@ import DocumentsPanel from './DocumentsPanel';
 import SettingsPanel from './SettingsPanel';
 import LogsPanel from './LogsPanel';
 import AgentsPanel from './AgentsPanel';
-import { SLADashboard } from '../monitoring/SLADashboard';
+// import { SLADashboard } from '../monitoring/SLADashboard'; // 已禁用 - 生产环境减少资源占用
 import { ChangePasswordDialog } from '../auth/ChangePasswordDialog';
 
 export default function AdminHome() {
@@ -34,8 +34,7 @@ export default function AdminHome() {
   const [activeItem, setActiveItem] = useState('dashboard');
   const [showChangePwd, setShowChangePwd] = useState(false);
   const { t } = useI18n();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const { user, logout } = useAuthStore.getState();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -61,7 +60,7 @@ export default function AdminHome() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         username={user?.username ?? ''}
         activeItem={activeItem}
-        onChangeActive={(id) => navigate(`/home/${id}`)}
+        onChangeActive={(id: string) => navigate(`/home/${id}`)}
         onLogout={onLogout}
         onChangePassword={() => setShowChangePwd(true)}
       />
@@ -88,7 +87,13 @@ export default function AdminHome() {
           {activeItem === 'settings' && <SettingsPanel />}
           {activeItem === 'logs' && <LogsPanel />}
           {activeItem === 'agents' && <AgentsPanel />}
-          {activeItem === 'monitoring' && <SLADashboard />}
+          {/* {activeItem === 'monitoring' && <SLADashboard />} */}
+          {activeItem === 'monitoring' && (
+            <div className="p-8 text-center text-muted-foreground">
+              <p>高级监控功能已禁用（减少资源占用）</p>
+              <p className="text-sm mt-2">基础健康检查和错误日志仍然可用</p>
+            </div>
+          )}
         </main>
       </div>
 
