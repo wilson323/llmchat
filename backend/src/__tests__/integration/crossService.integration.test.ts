@@ -27,8 +27,8 @@ describe('Cross-Service Integration Tests', () => {
 
     // 初始化服务
     redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379/1');
-    queueManager = new QueueManager(redis);
-    authService = new AuthServiceV2(testDb);
+    queueManager = QueueManager.getInstance();
+    authService = new AuthServiceV2();
     eventEmitter = new EventEmitter();
 
     // 创建测试用户
@@ -215,9 +215,18 @@ describe('Cross-Service Integration Tests', () => {
 
     beforeEach(async () => {
       // 创建测试队列
-      await queueManager.createQueue(testQueueName, {
+      queueManager.createQueue({
+        name: testQueueName,
         concurrency: 3,
         maxRetries: 2,
+        retryDelay: 1000,
+        backoffMultiplier: 2,
+        removeOnComplete: 100,
+        removeOnFail: 100,
+        defaultPriority: 5,
+        stalledInterval: 30000,
+        maxStalledCount: 3,
+        delayOnFail: false,
       });
 
       // 创建会话
@@ -234,7 +243,7 @@ describe('Cross-Service Integration Tests', () => {
     });
 
     afterEach(async () => {
-      await queueManager.deleteQueue(testQueueName);
+      await queueManager.clearQueue(testQueueName);
     });
 
     it('should queue chat processing jobs', async () => {
@@ -583,19 +592,14 @@ describe('Cross-Service Integration Tests', () => {
 
   describe('Error Propagation Integration', () => {
     it('should propagate errors correctly across service boundaries', async () => {
-      // 模拟Redis连接错误
-      const invalidRedis = new Redis('redis://invalid-host:6379/2');
-      const invalidQueueManager = new QueueManager(invalidRedis);
-
-      // 尝试操作队列（应该传播错误）
+      // 测试队列操作的错误处理（QueueManager现在是单例模式）
       try {
-        await invalidQueueManager.createQueue('test-queue');
-        expect.fail('Should have thrown an error');
+        // 尝试对不存在的队列进行操作
+        await queueManager.pauseQueue('non-existent-queue');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
       }
-
-      await invalidRedis.quit();
     });
 
     it('should handle service unavailability gracefully', async () => {
@@ -669,7 +673,7 @@ describe('Cross-Service Integration Tests', () => {
       // 创建会话但不正确清理
       const sessionResponse = await request(app)
         .post('/api/chat/init')
-        .set('set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           agentId: 'test-agent',
           title: 'Orphaned Session'

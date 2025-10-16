@@ -26,6 +26,7 @@ interface BenchmarkResult {
   max: number;
   standardDeviation: number;
   throughput: number;
+  successRate: number;
 }
 
 describe('Database Performance Benchmarking', () => {
@@ -107,7 +108,7 @@ describe('Database Performance Benchmarking', () => {
         const startTime = Date.now();
 
         try {
-          const client = testDbEnv.getTestPool().connect();
+          const client = await testDbEnv.getTestPool().connect();
           await client.query('SELECT pg_sleep(0.1)'); // 短暂等待
           client.release();
 
@@ -269,8 +270,8 @@ describe('Database Performance Benchmarking', () => {
       }
 
       // 验证批量插入的效率随批量大小递增
-      expect(results[1].throughput).toBeGreaterThan(results[0].throughput); // 50条 > 10条
-      expect(results[2].throughput).toBeGreaterThan(results[1].throughput); // 100条 > 50条
+      expect(results[1]!.throughput).toBeGreaterThan(results[0]!.throughput); // 50条 > 10条
+      expect(results[2]!.throughput).toBeGreaterThan(results[1]!.throughput); // 100条 > 50条
     });
 
     it('should perform queries efficiently', async () => {
@@ -624,11 +625,11 @@ function calculateBenchmarkResult(operation: string, metrics: PerformanceMetrics
 
   const sorted = [...durations].sort((a, b) => a - b);
   const mean = durations.reduce((sum, d) => sum + d, 0) / durations.length;
-  const median = sorted[Math.floor(sorted.length / 2)];
-  const p95 = sorted[Math.floor(sorted.length * 0.95)];
-  const p99 = sorted[Math.floor(sorted.length * 0.99)];
-  const min = sorted[0];
-  const max = sorted[sorted.length - 1];
+  const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+  const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+  const p99 = sorted[Math.floor(sorted.length * 0.99)] ?? 0;
+  const min = sorted[0] ?? 0;
+  const max = sorted[sorted.length - 1] ?? 0;
 
   // 计算标准差
   const variance = durations.reduce((sum, d) => sum + Math.pow(d - mean, 2), 0) / durations.length;
@@ -650,5 +651,5 @@ function calculateBenchmarkResult(operation: string, metrics: PerformanceMetrics
     standardDeviation: Math.round(standardDeviation),
     throughput: Math.round(throughput * 100) / 100,
     successRate: (successfulMetrics.length / metrics.length) * 100,
-  } as BenchmarkResult & { successRate: number };
+  };
 }
