@@ -26,7 +26,6 @@
     "noPropertyAccessFromIndexSignature": false,
     "allowUmdGlobalAccess": true,
     "allowJs": false,
-    "skipLibCheck": true,
 
     // 性能优化设置
     "incremental": true,
