@@ -1,4 +1,4 @@
-# LLMChat 任务清单 - 2025-10-16
+﻿# LLMChat 任务清单 - 2025-10-16
 
 ## 📊 项目当前状态
 
@@ -52,6 +52,49 @@
 
 ---
 
+
+
+##  Provider Fallback机制说明
+
+### 智能体提供商容错策略
+
+**适用任务**: 所有与Provider集成相关的任务（T017-T020, T019b）
+
+**Fallback Logic详细流程**:
+1. **主提供商重试**: 最多3次，指数退避（1s, 2s, 4s）
+2. **失败记录**: 记录失败到MetricsService和日志
+3. **备用切换**: 如配置了备用提供商，自动切换并重试
+4. **最终失败**: 所有提供商失败返回503和PROVIDER_UNAVAILABLE错误码
+5. **管理员通知**: 失败率>10%时触发告警
+
+**实现位置**:
+- backend/src/services/ChatProxyService.ts
+- backend/src/providers/BaseProvider.ts
+
+**测试要求**:
+- 单元测试: 覆盖所有重试场景
+- 集成测试: 模拟提供商故障
+- 性能测试: 验证fallback不影响正常响应时间
+
+**错误处理**:
+`	ypescript
+try {
+  return await primaryProvider.sendMessage(options);
+} catch (error) {
+  logger.error('Primary provider failed', { error, provider: primary });
+  
+  if (fallbackProvider) {
+    try {
+      return await fallbackProvider.sendMessage(options);
+    } catch (fallbackError) {
+      logger.error('Fallback provider also failed', { fallbackError });
+      throw new ApiError(503, 'PROVIDER_UNAVAILABLE', '所有智能体提供商暂时不可用');
+    }
+  }
+  
+  throw error;
+}
+`
 ### P1级任务：功能完整性（重要功能）- 20个任务
 
 #### 会话管理增强
