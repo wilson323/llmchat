@@ -62,6 +62,7 @@ class DatabasePerformanceMonitor {
   private completedQueries: DatabasePerformanceMetrics[] = [];
   private maxCompletedQueries = 1000; // 最多保存1000条完成的查询记录
   private slowQueryThreshold = 1000; // 1秒
+  private slowQueryQueue: DatabasePerformanceMetrics[] = []; // ✅ 慢查询队列
   private stats: PerformanceStats = {
     totalQueries: 0,
     slowQueries: 0,
@@ -103,11 +104,7 @@ class DatabasePerformanceMonitor {
       this.stats.queriesByType[metrics.queryType] = (this.stats.queriesByType[metrics.queryType] || 0) + 1;
     }
 
-    logger.debug('开始监控数据库查询', {
-      requestId,
-      queryType: metrics.queryType,
-      query: query?.substring(0, 100) + (query && query.length > 100 ? '...' : ''),
-    });
+    // ✅ 移除高频debug日志，使用定时统计替代
 
     return metrics;
   }
@@ -142,17 +139,28 @@ class DatabasePerformanceMonitor {
       this.completedQueries.shift();
     }
 
-    // 记录慢查询
+    // ✅ 异步批量记录慢查询
     if (metrics.isSlowQuery) {
-      logger.warn('检测到慢查询', {
-        requestId,
-        duration: `${metrics.duration.toFixed(2)}ms`,
-        query: metrics.query,
-        rowCount,
+      setImmediate(() => {
+        this.slowQueryQueue.push(metrics);
+        
+        // 批量记录（10条慢查询批量写入）
+        if (this.slowQueryQueue.length >= 10) {
+          logger.warn('慢查询批次', {
+            count: this.slowQueryQueue.length,
+            queries: this.slowQueryQueue.map(m => ({
+              requestId: m.requestId,
+              duration: `${m.duration?.toFixed(2)}ms`,
+              query: m.query?.substring(0, 100),
+              rowCount: m.rowCount,
+            })),
+          });
+          this.slowQueryQueue = [];
+        }
       });
     }
 
-    // 记录错误
+    // 记录错误（保留，因为错误频率低）
     if (error) {
       this.stats.errorCount++;
       logger.error('数据库查询错误', {
@@ -162,12 +170,7 @@ class DatabasePerformanceMonitor {
       });
     }
 
-    logger.debug('数据库查询完成', {
-      requestId,
-      duration: `${metrics.duration.toFixed(2)}ms`,
-      isSlow: metrics.isSlowQuery,
-      rowCount,
-    });
+    // ✅ 移除高频debug日志
 
     return metrics;
   }

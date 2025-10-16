@@ -284,8 +284,9 @@ export class PerformanceMonitor {
     );
     
     const removedCount = beforeCount - this.performanceData.length;
-    if (removedCount > 0) {
-      logger.debug(`PerformanceMonitor: 清理旧数据 ${removedCount} 条，剩余 ${this.performanceData.length} 条`);
+    // ✅ 只有清理了超过100条才记录，避免频繁日志
+    if (removedCount > 100) {
+      logger.info(`PerformanceMonitor: 清理旧数据 ${removedCount} 条，剩余 ${this.performanceData.length} 条`);
     }
   }
 

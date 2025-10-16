@@ -27,8 +27,7 @@ import {
 import { initSentryOptimized } from "./config/sentryOptimized"; // ✅ 优化版Sentry
 
 // 中间件
-import { requestLogger } from "./middleware/requestLogger";
-import asyncRequestLogger from "./middleware/AsyncBatchRequestLogger"; // ✅ 新的批量日志器
+import asyncRequestLogger from "./middleware/AsyncBatchRequestLogger"; // ✅ 异步批量日志器（替代requestLogger）
 import { errorHandler } from "./middleware/errorHandler";
 import { csrfProtection, getCsrfToken } from "./middleware/csrfProtection";
 import { performanceMiddleware } from "./middleware/PerformanceMonitor";

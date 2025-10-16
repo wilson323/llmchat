@@ -1,3 +1,18 @@
+/**
+ * 异步批量请求日志器
+ * 
+ * 性能优势：
+ * - 日志收集不阻塞HTTP响应
+ * - 批量写入降低I/O频率99%
+ * - 内存队列，快速读写
+ * 
+ * 使用方式：
+ * ```typescript
+ * import { asyncRequestLogger } from '@/middleware/AsyncBatchRequestLogger';
+ * app.use(asyncRequestLogger);
+ * ```
+ */
+
 import { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 
@@ -17,18 +32,7 @@ interface LogEntry {
 }
 
 /**
- * 异步批量请求日志器
- * 
- * 性能优势：
- * - 日志收集不阻塞HTTP响应
- * - 批量写入降低I/O频率99%
- * - 内存队列，快速读写
- * 
- * 使用方式：
- * ```typescript
- * import { asyncRequestLogger } from '@/middleware/AsyncBatchRequestLogger';
- * app.use(asyncRequestLogger);
- * ```
+ * 异步批量请求日志器类
  */
 export class AsyncBatchRequestLogger {
   private logQueue: LogEntry[] = [];
@@ -97,7 +101,7 @@ export class AsyncBatchRequestLogger {
       try {
         const batch = this.logQueue.splice(0, this.batchSize);
         
-        // 检查batch不为空
+        // ✅ 检查batch是否为空
         if (batch.length === 0) {
           return;
         }
@@ -111,7 +115,7 @@ export class AsyncBatchRequestLogger {
           },
           summary: {
             totalRequests: batch.length,
-            avgDuration: batch.reduce((sum, log) => sum + log.duration, 0) / batch.length,
+            avgDuration: Math.round(batch.reduce((sum, log) => sum + log.duration, 0) / batch.length),
             errorCount: batch.filter(log => log.statusCode >= 400).length,
             methods: this.countBy(batch, 'method'),
           },
@@ -175,4 +179,3 @@ export const asyncRequestLogger = asyncBatchRequestLogger.middleware;
 
 // 默认导出
 export default asyncRequestLogger;
-
