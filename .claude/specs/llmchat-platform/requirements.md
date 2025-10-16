@@ -672,8 +672,77 @@ LOG_LEVEL=info
 **维护者**: LLMChat 开发团队
 
 
+##  术语表
+
+> **完整术语定义**: 详见 [术语表](terminology.md)
+
+### 核心术语（中英对照）
+- **Agent / 智能体**: AI对话服务提供者的抽象表示
+- **Provider / 提供商**: AI服务的实际提供方（FastGPT、OpenAI等）
+- **Session / 会话**: 用户与智能体的一次对话上下文
+- **Message / 消息**: 会话中的单条对话内容
+- **Stream / 流式**: Server-Sent Events实时推送响应
+
+### 代码规范
+- **代码中**: 统一使用英文术语（Agent, Provider, Session等）
+- **注释中**: 可使用中文注释辅助说明
+- **文档中**: 首次出现使用"术语(Term)"格式，后续可单独使用中文
+
+### 状态术语
+- **pending**: 待处理
+- **active**: 活跃/启用
+- **inactive**: 不活跃/禁用
+- **error**: 错误状态
+- **done**: 完成
+
+
 
 ---
+
+##  实施阶段定义
+
+### Phase 1: Foundation & Type Safety (1周)
+**目标**: 建立项目基础，解决类型安全问题
+**范围**: 
+- 项目设置和配置（T001-T003）
+- TypeScript严格模式修复（T004-T005）
+**交付物**: 零TypeScript错误，项目可编译
+
+### Phase 2: Database & Backend Core (1周)
+**目标**: 建立数据层和认证系统
+**范围**: 数据库迁移（T006-T007）、认证系统（T008-T012）
+**交付物**: 用户可注册/登录，数据库运行
+
+### Phase 2.5: Infrastructure Setup (3天)
+**目标**: 建立缓存、日志、监控基础设施
+**范围**: Redis缓存（T005b）、日志框架（T005c）、监控指标（T040b）
+**交付物**: 生产级基础设施就绪
+
+### Phase 3: Agent Management (1周)
+**目标**: 实现多智能体管理和健康监控
+**范围**: 智能体配置（T013-T016）、提供商集成（T017-T020, T019b）
+**交付物**: 支持FastGPT、OpenAI、Anthropic、Dify四个提供商
+
+### Phase 4: Chat System (1周)
+**目标**: 实现完整的聊天系统
+**范围**: 消息处理（T021-T024）、流式响应（T025）、会话管理（T026-T028）
+**交付物**: 用户可以与智能体聊天，支持流式响应
+
+### Phase 5: Frontend Core (1.5周)
+**目标**: 实现前端核心功能
+**范围**: 状态管理（T029-T031）、API服务（T032-T034）、UI组件（T035-T038）
+**交付物**: 完整的用户界面，可用的聊天应用
+
+### Phase 6: Admin Dashboard (1周)
+**目标**: 实现管理后台
+**范围**: 后端管理API（T039-T041）、前端管理界面（T042-T044, T046）
+**交付物**: 管理员可以管理智能体和查看系统指标
+
+### Phase 7: Testing & QA (持续)
+**目标**: 建立测试框架，确保质量
+**范围**: 测试环境配置（T045）、所有模块的单元/集成测试
+**交付物**: 测试覆盖率80%，所有测试通过
+
 
 ##  性能指标量化标准
 
@@ -700,3 +769,66 @@ LOG_LEVEL=info
 - **服务可用性**: 99.9% (每月停机<43.2分钟)
 - **数据持久性**: 100% (零数据丢失)
 - **故障恢复**: <5分钟
+
+
+##  安全规范
+
+### JWT Token规范
+- **算法**: HS256（对称加密）
+- **过期时间**: 1小时（accessToken）
+- **刷新机制**: 7天有效期（refreshToken）
+- **Payload结构**:
+  ```json
+  {
+    "userId": "uuid",
+    "email": "user@example.com",
+    "role": "user" | "admin",
+    "iat": 1234567890,
+    "exp": 1234571490
+  }
+  ```
+- **密钥管理**: 通过JWT_SECRET环境变量，最小长度32字符
+
+> **技术实现细节**: 完整的JWT配置参数详见 [技术规范详细说明](technical-details.md#1-认证与安全)
+
+
+##  技术选型标准
+
+### 主流技术框架定义
+- **GitHub Stars > 10,000**
+- **最近一年有活跃维护**（有commit记录）
+- **有完善的文档和社区支持**
+- **生产环境成熟案例 > 100**
+  
+### 当前技术栈认证
+- React 18  (200k+ stars, Meta维护)
+- TypeScript  (90k+ stars, Microsoft维护)
+- Express  (60k+ stars, OpenJS基金会)
+- PostgreSQL  (企业级数据库，20+年历史)
+- Redis  (60k+ stars, Redis Ltd维护)
+- Zustand  (40k+ stars, 现代状态管理)
+- Tailwind CSS  (70k+ stars, 主流CSS框架)
+
+
+##  变更日志规范
+
+遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 格式：
+
+### 版本管理
+- **语义化版本号**: MAJOR.MINOR.PATCH
+  - MAJOR: 不兼容的API变更
+  - MINOR: 向下兼容的功能新增
+  - PATCH: 向下兼容的问题修复
+
+### 变更分类
+- **Added**: 新增功能
+- **Changed**: 现有功能变更
+- **Deprecated**: 即将废弃的功能
+- **Removed**: 已移除的功能
+- **Fixed**: 问题修复
+- **Security**: 安全相关修复
+
+### 自动化
+- 使用 Conventional Commits 自动生成
+- 每次发布前更新 CHANGELOG.md
+- Git tag与版本号对应

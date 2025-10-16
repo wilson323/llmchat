@@ -173,6 +173,25 @@
 - [ ] **T042**: 语音输入支持（Web Speech API）
 - [ ] **T043**: 文件上传增强（支持更多格式）
 - [ ] **T044**: Markdown渲染增强（数学公式、图表）
+
+- [ ] **T044b: Create Error Resolution Feature** [Ref: US-014]
+  - **Files**: backend/src/controllers/AdminErrorController.ts, frontend/src/components/admin/ErrorResolution.tsx
+  - **Priority**: P1
+  - **Estimated Time**: 80 minutes
+  - **Dependencies**: T044
+  - **Acceptance**: Admin can mark errors as resolved and add notes
+  - **Details**:
+    - Backend:
+      - POST /api/admin/error-logs/:id/resolve endpoint
+      - PUT /api/admin/error-logs/:id/notes endpoint
+      - Add resolved_at, resolved_by, resolution_notes fields
+    - Frontend:
+      - Resolve button on each error log
+      - Resolution notes textarea
+      - Show resolution status in table
+      - Filter by resolved/unresolved
+    - Write integration tests
+
 - [ ] **T045**: 会话归档功能（归档旧会话）
 
 ---
