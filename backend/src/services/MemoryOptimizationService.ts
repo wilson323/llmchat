@@ -95,23 +95,23 @@ export class MemoryOptimizationService extends EventEmitter {
     super();
 
     this.config = {
-      // 默认配置
-      monitoringEnabled: true,
-      monitoringIntervalMs: 30000,     // 30秒
+      // 默认配置（已优化阈值避免死循环）
+      monitoringEnabled: process.env.MEMORY_OPTIMIZATION_ENABLED !== 'false',
+      monitoringIntervalMs: 60000,     // 60秒（降低频率）
       historyRetentionMinutes: 60,     // 保留1小时历史
-      autoOptimizationEnabled: true,
-      optimizationThreshold: 75,       // 75%堆内存使用率触发优化
-      optimizationIntervalMs: 60000,   // 1分钟检查一次
-      expiredDataCleanupMs: 300000,    // 5分钟清理一次
-      maxHistorySize: 1000,
-      batchCleanupSize: 100,
-      maxHeapSizeMB: 1024,              // 1GB
-      maxRSSSizeMB: 2048,               // 2GB
+      autoOptimizationEnabled: process.env.MEMORY_OPTIMIZATION_ENABLED !== 'false',
+      optimizationThreshold: 95,       // 95%堆内存使用率触发优化（提高阈值避免频繁触发）
+      optimizationIntervalMs: 300000,  // 5分钟检查一次（降低频率）
+      expiredDataCleanupMs: 600000,    // 10分钟清理一次
+      maxHistorySize: 500,             // 减少历史记录大小
+      batchCleanupSize: 50,            // 减少批处理大小
+      maxHeapSizeMB: 2048,             // 2GB（提高限制）
+      maxRSSSizeMB: 4096,              // 4GB（提高限制）
       alertThresholds: {
-        heapUsageWarning: 70,
-        heapUsageCritical: 85,
-        rssWarning: 512,
-        rssCritical: 1024
+        heapUsageWarning: 85,          // 提高警告阈值
+        heapUsageCritical: 95,         // 提高关键阈值
+        rssWarning: 1024,              // 1GB
+        rssCritical: 2048              // 2GB
       },
       ...config
     };
