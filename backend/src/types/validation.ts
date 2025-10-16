@@ -140,3 +140,17 @@ export interface ExistsResult {
   exists: boolean;
 }
 
+/**
+ * 用户登录失败尝试查询结果
+ */
+export interface FailedLoginAttemptsResult {
+  failed_login_attempts: number;
+}
+
+/**
+ * 数据库操作结果（UPDATE/INSERT/DELETE）
+ */
+export interface DbOperationResult {
+  rowCount: number;
+}
+
