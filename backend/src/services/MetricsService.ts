@@ -14,22 +14,22 @@ import logger from '@/utils/logger';
 
 export class MetricsService {
   private static instance: MetricsService | null = null;
-  private registry: Registry;
+  private readonly registry: Registry;
 
   // HTTP指标
-  private httpRequestDuration: Histogram<string>;
-  private httpRequestTotal: Counter<string>;
-  private activeConnections: Gauge<string>;
+  private readonly httpRequestDuration: Histogram<string>;
+  private readonly httpRequestTotal: Counter<string>;
+  private readonly activeConnections: Gauge<string>;
 
   // 业务指标
-  private agentRequestTotal: Counter<string>;
-  private messagesSentTotal: Counter<string>;
-  private messagesSentDuration: Histogram<string>;
-  private agentErrorsTotal: Counter<string>;
+  private readonly agentRequestTotal: Counter<string>;
+  private readonly messagesSentTotal: Counter<string>;
+  private readonly messagesSentDuration: Histogram<string>;
+  private readonly agentErrorsTotal: Counter<string>;
 
   // 系统指标
-  private systemMemoryUsage: Gauge<string>;
-  private systemCpuUsage: Gauge<string>;
+  private readonly systemMemoryUsage: Gauge<string>;
+  private readonly systemCpuUsage: Gauge<string>;
 
   private constructor() {
     // 创建独立的Registry

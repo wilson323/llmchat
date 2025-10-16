@@ -335,7 +335,7 @@ export class ChatSessionService {
    * @param limit - 返回结果数量限制
    * @returns 搜索结果（按相关性排序）
    */
-  async searchSessions(userId: number, query: string, limit: number = 20): Promise<ChatSession[]> {
+  async searchSessions(userId: number, query: string, limit = 20): Promise<ChatSession[]> {
     if (!query || query.trim().length === 0) {
       return [];
     }

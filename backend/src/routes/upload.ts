@@ -9,7 +9,8 @@
  * - GET /api/upload/:filename/info - 获取文件信息
  */
 
-import express, { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { uploadSingle, uploadMultiple, uploadDir } from '@/middleware/fileUpload';
@@ -129,7 +130,7 @@ router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request,
  */
 router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filename = req.params.filename;
+    const {filename} = req.params;
     if (!filename) {
       return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
     }
@@ -186,7 +187,7 @@ router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Respo
  */
 router.delete('/:filename', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const filename = req.params.filename;
+    const {filename} = req.params;
     if (!filename) {
       return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
     }

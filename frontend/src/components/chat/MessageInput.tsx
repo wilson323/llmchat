@@ -262,6 +262,7 @@ export const MessageInput: React.FC<ChatInputProps> = ({
         <div className="flex-1 relative">
           <textarea
             id="message-input-textarea"
+            data-testid="chat-input"
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}

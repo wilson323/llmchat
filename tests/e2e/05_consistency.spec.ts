@@ -22,11 +22,16 @@ test.describe('T024: 数据一致性测试', () => {
     
     if (adminResponse.ok()) {
       const result = await adminResponse.json();
-      adminToken = result.data.token;
+      adminToken = result.data?.token || '';
     }
 
-    // 创建多个测试用户
+    // 创建多个测试用户（添加延迟避免速率限制）
     for (let i = 0; i < 3; i++) {
+      // ✅ 添加延迟避免429错误
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
       const user = {
         username: `consistency_user_${i}_${Date.now()}`,
         password: 'Test123!@#',
@@ -39,8 +44,17 @@ test.describe('T024: 数据一致性测试', () => {
 
       if (response.ok()) {
         const result = await response.json();
-        userTokens.push(result.data.token);
+        if (result.data?.token) {
+          userTokens.push(result.data.token);
+        }
+      } else {
+        console.warn(`Failed to register user ${i}:`, response.status());
       }
+    }
+
+    // ✅ 确保至少有一个测试用户
+    if (userTokens.length === 0) {
+      console.warn('Warning: No test users created, some tests may fail');
     }
   });
 

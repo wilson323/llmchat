@@ -73,6 +73,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   name="username"
+                  data-testid="username-input"
                   value={username}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                   placeholder={t('输入用户名')}
@@ -88,6 +89,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                 <EyeOff className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   name="password"
+                  data-testid="password-input"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
@@ -107,6 +109,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
 
             <Button
               type="submit"
+              data-testid="login-submit-button"
               disabled={isLoading}
               className="w-full h-12 rounded-xl bg-gradient-to-r from-[var(--brand)] to-[var(--brand)]/90 hover:from-[var(--brand)]/90 hover:to-[var(--brand)]/80 text-white font-semibold shadow-lg"
             >

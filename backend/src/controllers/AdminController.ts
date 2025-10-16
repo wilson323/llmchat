@@ -1108,10 +1108,32 @@ export async function getAdminStats(
     const now = new Date();
     const todayStart = startOfDay(now);
 
+    // 定义统计结果接口
+    interface UserStatsResult {
+      total: number;
+      active: number;
+      admins: number;
+    }
+
+    interface SessionStatsResult {
+      total: number;
+      today: number;
+    }
+
+    interface AgentStatsResult {
+      total: number;
+      active: number;
+    }
+
+    interface MessageStatsResult {
+      total: number;
+      today: number;
+    }
+
     // 获取统计数据
     const stats = await withClient(async (client) => {
       // 用户统计
-      const usersResult = await client.query(`
+      const usersResult = await client.query<UserStatsResult>(`
         SELECT 
           COUNT(*)::int AS total,
           COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
@@ -1120,7 +1142,7 @@ export async function getAdminStats(
       `);
 
       // 会话统计
-      const sessionsResult = await client.query(`
+      const sessionsResult = await client.query<SessionStatsResult>(`
         SELECT 
           COUNT(*)::int AS total,
           COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
@@ -1128,7 +1150,7 @@ export async function getAdminStats(
       `, [todayStart]);
 
       // 智能体统计
-      const agentsResult = await client.query(`
+      const agentsResult = await client.query<AgentStatsResult>(`
         SELECT 
           COUNT(*)::int AS total,
           COUNT(CASE WHEN is_active = true THEN 1 END)::int AS active
@@ -1136,7 +1158,7 @@ export async function getAdminStats(
       `);
 
       // 消息统计
-      const messagesResult = await client.query(`
+      const messagesResult = await client.query<MessageStatsResult>(`
         SELECT 
           COUNT(*)::int AS total,
           COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
@@ -1144,10 +1166,10 @@ export async function getAdminStats(
       `, [todayStart]);
 
       return {
-        users: usersResult.rows[0] || { total: 0, active: 0, admins: 0 },
-        sessions: sessionsResult.rows[0] || { total: 0, today: 0 },
-        agents: agentsResult.rows[0] || { total: 0, active: 0 },
-        messages: messagesResult.rows[0] || { total: 0, today: 0 },
+        users: usersResult.rows[0] ?? { total: 0, active: 0, admins: 0 },
+        sessions: sessionsResult.rows[0] ?? { total: 0, today: 0 },
+        agents: agentsResult.rows[0] ?? { total: 0, active: 0 },
+        messages: messagesResult.rows[0] ?? { total: 0, today: 0 },
       };
     });
 
@@ -1219,21 +1241,24 @@ export async function getAdminMetrics(
       const queryTime = Date.now() - startTime;
 
       // 获取活动连接数
-      const connectionsResult = await client.query(`
+      interface ConnectionCountResult {
+        active_connections: number;
+      }
+      const connectionsResult = await client.query<ConnectionCountResult>(`
         SELECT COUNT(*)::int AS active_connections
         FROM pg_stat_activity
         WHERE state = 'active'
       `);
 
       return {
-        activeConnections: connectionsResult.rows[0]?.active_connections || 0,
+        activeConnections: connectionsResult.rows[0]?.active_connections ?? 0,
         queryTime,
       };
     });
 
     const metrics = {
       system: {
-        cpuUsage: load[0] || 0,
+        cpuUsage: load[0] ?? 0,
         memoryUsage: Math.round((memUsed / memTotal) * 100),
         uptime: Math.floor(process.uptime()),
       },

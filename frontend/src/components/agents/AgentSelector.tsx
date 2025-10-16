@@ -167,6 +167,7 @@ export const AgentSelector: React.FC = () => {
                   {agents.map((agent: Agent) => (
                     <Button
                       key={agent.id}
+                      data-testid="agent-card"
                       onClick={() => handleAgentSelect(agent)}
                       variant="ghost"
                       size="md"

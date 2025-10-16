@@ -7,7 +7,7 @@
  * - 活动连接数
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import MetricsService from '@/services/MetricsService';
 
 /**
@@ -56,7 +56,7 @@ export function metricsMiddleware() {
  */
 function getRoutePath(req: Request): string {
   // 使用matched route（如果存在）
-  if (req.route && req.route.path) {
+  if (req.route?.path) {
     const baseUrl = req.baseUrl || '';
     return `${baseUrl}${req.route.path}`;
   }
@@ -84,7 +84,7 @@ export function recordAgentUsage(
   agentId: string,
   userId: string,
   startTime: number,
-  success: boolean = true
+  success = true
 ): void {
   const metricsService = MetricsService;
   const duration = Date.now() - startTime;

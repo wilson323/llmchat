@@ -4,8 +4,8 @@
  * 提供/metrics端点供Prometheus抓取指标
  */
 
-import { Router, Request, Response } from 'express';
-import type { Router as ExpressRouter } from 'express';
+import { Router } from 'express';
+import type { Router as ExpressRouter , Request, Response } from 'express';
 import MetricsService from '@/services/MetricsService';
 import logger from '@/utils/logger';
 

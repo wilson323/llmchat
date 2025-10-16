@@ -3,8 +3,10 @@
  * 提供会话CRUD、搜索等API
  */
 
-import express, { Request, Response, NextFunction } from 'express';
-import { chatSessionService, CreateSessionParams } from '@/services/ChatSessionService';
+import type { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { CreateSessionParams } from '@/services/ChatSessionService';
+import { chatSessionService } from '@/services/ChatSessionService';
 import { authenticateJWT } from '@/middleware/jwtAuth';
 import logger from '@/utils/logger';
 
