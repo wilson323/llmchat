@@ -1,0 +1,618 @@
+/**
+ * ChatController 单元测试
+ * 
+ * 测试范围：
+ * - 发送消息
+ * - 获取消息历史
+ * - 创建会话
+ * - 切换智能体
+ * - 流式响应
+ * 
+ * 覆盖率目标：≥90%
+ */
+
+import { Request, Response } from 'express';
+import { ChatController } from '@/controllers/ChatController';
+import { ChatService } from '@/services/ChatService';
+import { createTestUser, createTestSession, createTestMessage, generateToken } from '../../helpers/testUtils';
+
+// Mock ChatService
+jest.mock('@/services/ChatService');
+
+describe('ChatController', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockChatService: jest.Mocked<ChatService>;
+  let chatController: ChatController;
+  
+  beforeEach(() => {
+    mockRequest = {
+      body: {},
+      params: {},
+      query: {},
+      headers: {},
+      user: undefined
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+      setHeader: jest.fn().mockReturnThis(),
+      write: jest.fn().mockReturnThis(),
+      end: jest.fn().mockReturnThis()
+    };
+    
+    mockChatService = new ChatService() as jest.Mocked<ChatService>;
+    chatController = new ChatController();
+    (chatController as any).chatService = mockChatService;
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('sendMessage', () => {
+    it('should send message successfully', async () => {
+      // Arrange
+      const testUser = await createTestUser();
+      const testSession = createTestSession({ userId: testUser.id });
+      
+      mockRequest.user = { userId: testUser.id };
+      mockRequest.body = {
+        sessionId: testSession.id,
+        message: 'Hello, AI!',
+        agentId: 'default-agent'
+      };
+      
+      const mockResponse = {
+        id: 'msg-123',
+        role: 'assistant',
+        content: 'Hello! How can I help you?',
+        createdAt: new Date()
+      };
+      
+      mockChatService.sendMessage = jest.fn().mockResolvedValue(mockResponse);
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.sendMessage).toHaveBeenCalledWith({
+        sessionId: testSession.id,
+        message: 'Hello, AI!',
+        agentId: 'default-agent',
+        userId: testUser.id
+      });
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: expect.objectContaining({
+            content: 'Hello! How can I help you?'
+          })
+        })
+      );
+    });
+    
+    it('should validate message content', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: '', // 空消息
+        agentId: 'default-agent'
+      };
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'VALIDATION_ERROR',
+          message: expect.stringContaining('Message cannot be empty')
+        })
+      );
+    });
+    
+    it('should check authentication', async () => {
+      // Arrange
+      mockRequest.user = undefined; // 未认证
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: 'Hello',
+        agentId: 'default-agent'
+      };
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+    });
+    
+    it('should validate session exists', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'non-existent-session',
+        message: 'Hello',
+        agentId: 'default-agent'
+      };
+      
+      mockChatService.sendMessage = jest.fn().mockRejectedValue(
+        new Error('Session not found')
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SESSION_NOT_FOUND'
+        })
+      );
+    });
+    
+    it('should handle rate limiting', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: 'Hello',
+        agentId: 'default-agent'
+      };
+      
+      mockChatService.sendMessage = jest.fn().mockRejectedValue(
+        new Error('Rate limit exceeded')
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(429);
+    });
+    
+    it('should reject messages exceeding length limit', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: 'a'.repeat(10001), // 超长消息
+        agentId: 'default-agent'
+      };
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'MESSAGE_TOO_LONG'
+        })
+      );
+    });
+  });
+  
+  describe('getMessages', () => {
+    it('should return messages for valid session', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      const messages = [
+        createTestMessage({ sessionId: testSession.id, role: 'user' }),
+        createTestMessage({ sessionId: testSession.id, role: 'assistant' })
+      ];
+      
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.params = { sessionId: testSession.id };
+      mockRequest.query = {};
+      
+      mockChatService.getMessages = jest.fn().mockResolvedValue({
+        messages,
+        total: 2,
+        hasMore: false
+      });
+      
+      // Act
+      await chatController.getMessages(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.getMessages).toHaveBeenCalledWith(testSession.id, {});
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: expect.objectContaining({
+            messages: expect.arrayContaining([
+              expect.objectContaining({ role: 'user' }),
+              expect.objectContaining({ role: 'assistant' })
+            ])
+          })
+        })
+      );
+    });
+    
+    it('should paginate results', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.params = { sessionId: testSession.id };
+      mockRequest.query = { page: '2', pageSize: '20' };
+      
+      mockChatService.getMessages = jest.fn().mockResolvedValue({
+        messages: [],
+        total: 100,
+        hasMore: true
+      });
+      
+      // Act
+      await chatController.getMessages(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.getMessages).toHaveBeenCalledWith(
+        testSession.id,
+        { page: 2, pageSize: 20 }
+      );
+    });
+    
+    it('should filter by date range', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.params = { sessionId: testSession.id };
+      mockRequest.query = {
+        startDate: '2024-01-01',
+        endDate: '2024-12-31'
+      };
+      
+      mockChatService.getMessages = jest.fn().mockResolvedValue({
+        messages: [],
+        total: 0,
+        hasMore: false
+      });
+      
+      // Act
+      await chatController.getMessages(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.getMessages).toHaveBeenCalledWith(
+        testSession.id,
+        expect.objectContaining({
+          startDate: expect.any(Date),
+          endDate: expect.any(Date)
+        })
+      );
+    });
+    
+    it('should reject unauthorized access', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.params = { sessionId: 'other-user-session' };
+      
+      mockChatService.getMessages = jest.fn().mockRejectedValue(
+        new Error('Unauthorized access to session')
+      );
+      
+      // Act
+      await chatController.getMessages(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+    });
+  });
+  
+  describe('createSession', () => {
+    it('should create new session', async () => {
+      // Arrange
+      const testUser = await createTestUser();
+      mockRequest.user = { userId: testUser.id };
+      mockRequest.body = {
+        agentId: 'default-agent',
+        title: '新对话'
+      };
+      
+      const newSession = createTestSession({ userId: testUser.id });
+      mockChatService.createSession = jest.fn().mockResolvedValue(newSession);
+      
+      // Act
+      await chatController.createSession(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.createSession).toHaveBeenCalledWith({
+        userId: testUser.id,
+        agentId: 'default-agent',
+        title: '新对话'
+      });
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: expect.objectContaining({
+            id: newSession.id
+          })
+        })
+      );
+    });
+    
+    it('should use default agent if not specified', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = { title: '新对话' };
+      
+      mockChatService.createSession = jest.fn().mockResolvedValue(
+        createTestSession()
+      );
+      
+      // Act
+      await chatController.createSession(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.createSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentId: 'default-agent'
+        })
+      );
+    });
+  });
+  
+  describe('switchAgent', () => {
+    it('should switch to valid agent', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.params = { sessionId: testSession.id };
+      mockRequest.body = { agentId: 'new-agent' };
+      
+      mockChatService.switchAgent = jest.fn().mockResolvedValue({
+        success: true,
+        session: { ...testSession, agentId: 'new-agent' }
+      });
+      
+      // Act
+      await chatController.switchAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.switchAgent).toHaveBeenCalledWith(
+        testSession.id,
+        'new-agent'
+      );
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+    
+    it('should reject invalid agent', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.params = { sessionId: 'session-123' };
+      mockRequest.body = { agentId: 'invalid-agent' };
+      
+      mockChatService.switchAgent = jest.fn().mockRejectedValue(
+        new Error('Agent not found')
+      );
+      
+      // Act
+      await chatController.switchAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+    
+    it('should preserve conversation history', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.params = { sessionId: testSession.id };
+      mockRequest.body = { agentId: 'new-agent' };
+      
+      mockChatService.switchAgent = jest.fn().mockResolvedValue({
+        success: true,
+        session: testSession,
+        messagesCount: 10
+      });
+      
+      // Act
+      await chatController.switchAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      const response = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(response.data).toHaveProperty('messagesCount', 10);
+    });
+  });
+  
+  describe('Stream Response', () => {
+    it('should setup SSE headers correctly', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: 'Tell me a story',
+        stream: true
+      };
+      
+      mockChatService.sendMessageStream = jest.fn().mockImplementation(
+        async function* () {
+          yield { content: 'Once' };
+          yield { content: ' upon' };
+          yield { content: ' a time' };
+        }
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Connection', 'keep-alive');
+    });
+    
+    it('should stream chunks progressively', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: 'Test',
+        stream: true
+      };
+      
+      const chunks = ['Hello', ' World', '!'];
+      mockChatService.sendMessageStream = jest.fn().mockImplementation(
+        async function* () {
+          for (const chunk of chunks) {
+            yield { content: chunk };
+          }
+        }
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.write).toHaveBeenCalledTimes(chunks.length + 1); // +1 for end event
+    });
+  });
+  
+  describe('Edge Cases', () => {
+    it('should handle concurrent message sends', async () => {
+      // Arrange
+      const testSession = createTestSession();
+      mockRequest.user = { userId: testSession.userId };
+      mockRequest.body = {
+        sessionId: testSession.id,
+        message: 'Test',
+        agentId: 'default-agent'
+      };
+      
+      mockChatService.sendMessage = jest.fn()
+        .mockResolvedValue(createTestMessage());
+      
+      // Act: 模拟并发
+      const promises = Array(5).fill(null).map(() =>
+        chatController.sendMessage(
+          mockRequest as Request,
+          mockResponse as Response
+        )
+      );
+      
+      await Promise.all(promises);
+      
+      // Assert: 应该正确处理所有请求
+      expect(mockChatService.sendMessage).toHaveBeenCalledTimes(5);
+    });
+    
+    it('should handle special characters in messages', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: '<script>alert("XSS")</script>',
+        agentId: 'default-agent'
+      };
+      
+      mockChatService.sendMessage = jest.fn().mockResolvedValue(
+        createTestMessage()
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert: 应该被清理或转义
+      expect(mockResponse.status).toBe(200);
+      // XSS内容应该被清理
+    });
+    
+    it('should handle file attachments', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123' };
+      mockRequest.body = {
+        sessionId: 'session-123',
+        message: '分析这张图片',
+        agentId: 'default-agent',
+        attachments: [{
+          type: 'image',
+          url: 'http://example.com/image.jpg'
+        }]
+      };
+      
+      mockChatService.sendMessage = jest.fn().mockResolvedValue(
+        createTestMessage()
+      );
+      
+      // Act
+      await chatController.sendMessage(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockChatService.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attachments: expect.any(Array)
+        })
+      );
+    });
+  });
+});
+

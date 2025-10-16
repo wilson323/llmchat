@@ -38,7 +38,7 @@ export interface CacheStats {
  */
 export class SmartCacheService {
   private static instance: SmartCacheService | null = null;
-  private memoryCache: Map<string, { value: any; expiresAt: number }> = new Map();
+  private readonly memoryCache: Map<string, { value: any; expiresAt: number }> = new Map();
   private stats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -46,7 +46,7 @@ export class SmartCacheService {
     deletes: 0,
     hitRate: 0,
   };
-  private tagIndex: Map<string, Set<string>> = new Map();
+  private readonly tagIndex: Map<string, Set<string>> = new Map();
 
   private constructor() {
     // 定期清理过期的内存缓存（每分钟）
