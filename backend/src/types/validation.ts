@@ -98,3 +98,45 @@ export interface DifyConnectionValidation {
   appId?: string;
 }
 
+/**
+ * ==========================================
+ * 数据库查询结果类型定义
+ * ==========================================
+ */
+
+/**
+ * 用户查询结果
+ */
+export interface UserQueryResult {
+  id: string;
+  username: string;
+  role: 'user' | 'admin';
+  status: 'active' | 'inactive' | 'suspended';
+  created_at: Date;
+  updated_at: Date;
+}
+
+/**
+ * COUNT查询结果
+ */
+export interface CountResult {
+  count: number;
+}
+
+/**
+ * 日志查询结果
+ */
+export interface LogQueryResult {
+  id: string;
+  timestamp: Date;
+  level: 'INFO' | 'WARN' | 'ERROR';
+  message: string;
+}
+
+/**
+ * EXISTS查询结果
+ */
+export interface ExistsResult {
+  exists: boolean;
+}
+

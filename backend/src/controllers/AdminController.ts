@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types';
 import { safeLogger as logger } from '@/utils/logSanitizer';
 import { HTTP_STATUS } from '@/constants/httpStatus';
 import { TIME_CONSTANTS, TIME_UNITS } from '@/constants/intervals';
+import type { UserQueryResult, CountResult, LogQueryResult } from '@/types/validation';
 
 // 创建服务实例
 const configService = new AgentConfigService();
@@ -512,17 +513,10 @@ export class AdminController {
     try {
       await ensureAdminAuth(req);
       const data = await withClient(async (client) => {
-        const { rows } = await client.query(
+        const { rows } = await client.query<UserQueryResult>(
           'SELECT id, username, role, status, created_at, updated_at FROM users ORDER BY id DESC',
         );
-        return rows as Array<{
-          id: string;
-          username: string;
-          role: string;
-          status: string;
-          created_at: Date;
-          updated_at: Date;
-        }>;
+        return rows;
       });
       return res.json({ data });
     } catch (e: unknown) {
@@ -570,18 +564,18 @@ export class AdminController {
         : '';
 
       const pg = await withClient(async (client) => {
-        const { rows: totalRows } = await client.query(
+        const { rows: totalRows } = await client.query<CountResult>(
           `SELECT COUNT(*)::int AS count FROM logs ${where}`,
           params,
         );
-        const total = (totalRows[0] as { count: number })?.count ?? 0;
+        const total = totalRows[0]?.count ?? 0;
         const p = Math.max(1, parseInt(String(page), 10) ?? 1);
         const ps = Math.min(
           TIME_CONSTANTS.MAX_PAGE_SIZE,
           Math.max(1, parseInt(String(pageSize), 10) ?? TIME_CONSTANTS.DEFAULT_PAGE_SIZE),
         );
         const offset = (p - 1) * ps;
-        const { rows } = await client.query(
+        const { rows } = await client.query<LogQueryResult>(
           `SELECT id, timestamp, level, message FROM logs ${where} ORDER BY timestamp DESC LIMIT $${idx} OFFSET $${
             idx + 1
           }`,
@@ -632,16 +626,11 @@ export class AdminController {
         : '';
 
       const rows = await withClient(async (client) => {
-        const { rows } = await client.query(
+        const { rows } = await client.query<LogQueryResult>(
           `SELECT id, timestamp, level, message FROM logs ${where} ORDER BY timestamp DESC LIMIT 50000`,
           params,
         );
-        return rows as Array<{
-          id: number;
-          timestamp: string;
-          level: string;
-          message: string;
-        }>;
+        return rows;
       });
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -960,7 +949,7 @@ export class AdminController {
         // 使用安全哈希存储密码
         const { salt, hash } = hashPassword(password);
 
-        const { rows } = await client.query(
+        const { rows } = await client.query<UserQueryResult>(
           'INSERT INTO users(username, password_salt, password_hash, role, status) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, role, status, created_at, updated_at',
           [username, salt, hash, role, status],
         );
@@ -1015,7 +1004,7 @@ export class AdminController {
       )} WHERE id=$${idx} RETURNING id, username, role, status, created_at, updated_at`;
       params.push(id);
       const data = await withClient(async (client) => {
-        const { rows } = await client.query(sql, params);
+        const { rows } = await client.query<UserQueryResult>(sql, params);
         return rows[0];
       });
       return res.json({ data });
