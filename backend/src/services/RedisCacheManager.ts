@@ -12,8 +12,12 @@
 
 import Redis from 'ioredis';
 import { createHash } from 'crypto';
-import { compress, decompress } from 'lz4';
+import { gzipSync, gunzipSync } from 'zlib';
 import logger from '@/utils/logger';
+
+// 使用Node.js内置zlib替代lz4，避免原生模块编译问题
+const compress = (data: Buffer): Buffer => gzipSync(data);
+const decompress = (data: Buffer): Buffer => gunzipSync(data);
 
 // 缓存项接口
 export interface CacheItem<T = any> {
