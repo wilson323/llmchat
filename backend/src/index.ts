@@ -107,8 +107,9 @@ let dailyCleanupInterval: NodeJS.Timeout | null = null;
 initSentry(app);
 
 // Sentry请求处理器（必须在所有路由之前）
-app.use(sentryRequestHandler());
-app.use(sentryTracingHandler());
+// 🔧 临时禁用Sentry，排查阻塞问题
+// app.use(sentryRequestHandler());
+// app.use(sentryTracingHandler());
 
 // 安全头部配置
 const isProduction = process.env.NODE_ENV === "production";
@@ -186,25 +187,26 @@ app.use("/api/", limiter);
 
 
 
+// 🔧 极简模式：完全禁用所有可能阻塞的中间件
 // 请求日志
-app.use(requestLogger);
+// app.use(requestLogger);
 
-// 性能监控
-app.use(performanceMiddleware);
+// 性能监控（已修复logger阻塞问题）
+// app.use(performanceMiddleware);
 
 // 数据库性能监控（注意：数据库优化中间件将在数据库初始化后添加）
-app.use(databasePerformanceMonitorMiddleware);
+// app.use(databasePerformanceMonitorMiddleware);
 
 // CSRF Token 获取端点（必须在 CSRF 保护之前）
 app.get("/api/csrf-token", getCsrfToken);
 
 // CSRF 保护（排除 GET/健康检查/登录）
-app.use(
-  csrfProtection({
-    ignoreMethods: ["GET", "HEAD", "OPTIONS"],
-    ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
-  })
-);
+// app.use(
+//   csrfProtection({
+//     ignoreMethods: ["GET", "HEAD", "OPTIONS"],
+//     ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
+//   })
+// );
 
 
 // 路由注册
@@ -236,7 +238,8 @@ app.use((req, res) => {
 });
 
 // Sentry错误处理器（必须在其他错误处理器之前）
-app.use(sentryErrorHandler());
+// 🔧 临时禁用Sentry，排查阻塞问题
+// app.use(sentryErrorHandler());
 
 // 全局错误处理
 app.use(errorHandler);

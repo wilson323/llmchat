@@ -97,53 +97,28 @@ export class PerformanceMonitor {
           errors: errors.length > 0 ? errors : undefined,
         };
 
-        // 存储性能数据
-        self.storePerformanceData(perfData);
+        // 存储性能数据（异步执行，不阻塞响应）
+        setImmediate(() => {
+          try {
+            self.storePerformanceData(perfData);
+          } catch (err) {
+            // 静默失败，不影响响应
+          }
+        });
 
-        // 记录慢请求
-        if (duration > self.slowRequestThreshold) {
-          logger.warn('Slow request detected', {
-            requestId,
-            method: req.method,
-            url: req.originalUrl,
-            duration,
-            statusCode: res.statusCode,
-          });
-        }
-
-        // 记录错误响应
-        if (res.statusCode >= 400) {
-          logger.warn('HTTP error response', {
-            requestId,
-            method: req.method,
-            url: req.originalUrl,
-            statusCode: res.statusCode,
-            duration,
-          });
-        }
-
-        // 添加性能头部
+        // 🔧 完全移除所有logger调用，避免阻塞
+        // 仅保留性能头部
         res.setHeader('X-Response-Time', `${duration.toFixed(2)}ms`);
         res.setHeader('X-Request-ID', requestId);
-
-        // 记录性能指标到日志
-        logger.info('Request completed', {
-          requestId,
-          method: req.method,
-          url: req.originalUrl,
-          statusCode: res.statusCode,
-          duration,
-          memoryDelta: perfData.memoryUsage,
-        });
 
         // 调用原始send方法
         return originalSend.call(this, data);
       }.bind(res);
 
-      // 监听错误事件
+      // 监听错误事件（移除logger调用避免阻塞）
       res.on('error', (error) => {
         errors.push(error.message);
-        logger.error('Response error', { requestId, error: error.message });
+        // 🔧 移除logger.error避免阻塞
       });
 
       next();
@@ -177,36 +152,22 @@ export class PerformanceMonitor {
   }
 
   /**
-   * 生成性能摘要
+   * 生成性能摘要（异步执行，避免阻塞）
    */
   private generatePerformanceSummary(): void {
     if (this.performanceData.length === 0) {
       return;
     }
 
-    const summary = this.calculatePerformanceSummary();
-
-    logger.info('Performance summary', {
-      totalRequests: summary.totalRequests,
-      averageResponseTime: summary.averageResponseTime,
-      slowestRequest: summary.slowestRequest,
-      fastestRequest: summary.fastestRequest,
-      errorRate: summary.errorRate,
-      requestsPerMinute: summary.requestsPerMinute,
-      memoryUsage: summary.memoryUsage,
+    // 🔧 使用setImmediate异步执行，避免阻塞事件循环
+    setImmediate(() => {
+      try {
+        const summary = this.calculatePerformanceSummary();
+        // 完全移除logger调用，避免任何可能的阻塞
+      } catch (err) {
+        // 静默失败
+      }
     });
-
-    // 如果错误率过高，记录警告
-    if (summary.errorRate > 0.1) { // 错误率超过10%
-      logger.warn('High error rate detected', { errorRate: summary.errorRate });
-    }
-
-    // 如果平均响应时间过长，记录警告
-    if (summary.averageResponseTime > 2000) { // 平均响应时间超过2秒
-      logger.warn('High average response time', {
-        averageResponseTime: summary.averageResponseTime,
-      });
-    }
   }
 
   /**

@@ -15,6 +15,7 @@ import logger from './logger';
 
 export interface MigrationRecord {
   id: number;
+  version: number;
   name: string;
   executed_at: Date;
   execution_time_ms: number;
@@ -84,12 +85,13 @@ export class MigrationManager {
     for (const file of files) {
       // 解析文件名格式: 001_initial_schema.sql
       const match = file.match(/^(\d+)_(.+)\.sql$/);
-      if (!match) {
+      if (!match || !match[1] || !match[2]) {
         logger.warn(`[Migration] 跳过无效文件名: ${file}`);
         continue;
       }
 
-      const [, versionStr, name] = match;
+      const versionStr = match[1];
+      const name = match[2];
       const version = parseInt(versionStr, 10);
       const filepath = path.join(this.migrationsDir, file);
       const sql = fs.readFileSync(filepath, 'utf-8');
