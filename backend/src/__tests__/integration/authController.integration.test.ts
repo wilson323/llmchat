@@ -21,7 +21,7 @@ describe('AuthController Integration Tests', () => {
     app = createTestApp();
 
     // 初始化认证服务
-    authService = new AuthServiceV2(testDb);
+    authService = new AuthServiceV2();
 
     // 创建测试用户
     const hashedPassword = await bcrypt.hash('testpassword123', 10);

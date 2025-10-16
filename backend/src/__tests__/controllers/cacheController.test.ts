@@ -779,13 +779,26 @@ describe('CacheController', () => {
   describe('healthCheck', () => {
     test('应该执行健康检查', async () => {
       const mockStats = {
+        memoryItems: 200,
+        memorySize: 2048000,
+        redisConnected: true,
         connected: true,
-        totalRequests: 1000,
+        hits: 850,
+        misses: 150,
         hitRate: 85.5,
-        memoryUsage: 2048000
+        sets: 1000,
+        dels: 50,
+        errors: 0,
       };
 
-      mockCacheManager.healthCheck.mockResolvedValue(true);
+      mockCacheManager.healthCheck.mockResolvedValue({
+        status: 'healthy',
+        details: {
+          memoryCache: { items: 200, size: '2.0MB' },
+          redis: { connected: true, latency: 5 },
+          stats: mockStats,
+        },
+      } as any);
       mockCacheManager.getStats.mockReturnValue(mockStats);
 
       await cacheController.healthCheck(
@@ -807,12 +820,36 @@ describe('CacheController', () => {
     });
 
     test('健康检查失败时应该返回false', async () => {
-      mockCacheManager.healthCheck.mockResolvedValue(false);
+      mockCacheManager.healthCheck.mockResolvedValue({
+        status: 'down',
+        details: {
+          memoryCache: { items: 0, size: '0MB' },
+          redis: { connected: false },
+          stats: {
+            memoryItems: 0,
+            memorySize: 0,
+            redisConnected: false,
+            connected: false,
+            hits: 0,
+            misses: 0,
+            hitRate: 0,
+            sets: 0,
+            dels: 0,
+            errors: 10,
+          },
+        },
+      } as any);
       mockCacheManager.getStats.mockReturnValue({
+        memoryItems: 0,
+        memorySize: 0,
+        redisConnected: false,
         connected: false,
-        totalRequests: 0,
+        hits: 0,
+        misses: 0,
         hitRate: 0,
-        memoryUsage: 0
+        sets: 0,
+        dels: 0,
+        errors: 10,
       });
 
       await cacheController.healthCheck(

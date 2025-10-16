@@ -12,9 +12,9 @@ import RedisHealthService from '@/services/RedisHealthService';
 
 const router: RouterType = Router();
 
-// 初始化健康检查服务
-const dbHealthService = DatabaseHealthService.getInstance();
-const redisHealthService = RedisHealthService.getInstance();
+// ✅ 延迟实例化：仅在使用时获取实例，避免在路由加载时访问未初始化的数据库
+// const dbHealthService = DatabaseHealthService.getInstance();
+// const redisHealthService = RedisHealthService.getInstance();
 
 /**
  * 检查数据库健康状态
@@ -287,6 +287,7 @@ router.get('/performance', async (_req: Request, res: Response) => {
  */
 router.get('/database/pool', async (_req: Request, res: Response) => {
   try {
+    const dbHealthService = DatabaseHealthService.getInstance();
     const healthStatus = await dbHealthService.performHealthCheck();
 
     res.status(healthStatus.healthy ? 200 : 503).json({
@@ -325,6 +326,7 @@ router.get('/database/pool', async (_req: Request, res: Response) => {
  */
 router.get('/database/stats', async (_req: Request, res: Response) => {
   try {
+    const dbHealthService = DatabaseHealthService.getInstance();
     const poolStats = dbHealthService.getPoolStats();
     const performanceStats = dbHealthService.getPerformanceStats();
 
@@ -353,6 +355,7 @@ router.get('/database/stats', async (_req: Request, res: Response) => {
  */
 router.get('/redis', async (_req: Request, res: Response) => {
   try {
+    const redisHealthService = RedisHealthService.getInstance();
     const healthStatus = await redisHealthService.performHealthCheck();
 
     res.status(healthStatus.healthy ? 200 : 503).json({
@@ -381,6 +384,7 @@ router.get('/redis', async (_req: Request, res: Response) => {
  */
 router.get('/redis/ping', async (_req: Request, res: Response) => {
   try {
+    const redisHealthService = RedisHealthService.getInstance();
     const status = redisHealthService.getHealthStatus();
     
     res.json({

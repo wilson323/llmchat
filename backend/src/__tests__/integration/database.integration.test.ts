@@ -119,7 +119,7 @@ describe('Database Integration Tests', () => {
       const userId = await testDbEnv.withTransaction(async (client) => {
         // 创建用户
         const userResult = await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
           ['test@example.com', 'hashed_password', 'Test User']
         );
         const userId = userResult.rows[0].id;
@@ -141,7 +141,7 @@ describe('Database Integration Tests', () => {
       });
 
       expect(userId).toBeDefined();
-      await DatabaseAssertions.assertExists('users', 'email = $1', ['test@example.com']);
+      await DatabaseAssertions.assertExists('users', 'username = $1', ['test@example.com')]);
       await DatabaseAssertions.assertExists('chat_sessions', 'user_id = $1', [userId]);
       await DatabaseAssertions.assertExists('chat_messages', 'session_id IN (SELECT id FROM chat_sessions WHERE user_id = $1)', [userId]);
     });
@@ -151,7 +151,7 @@ describe('Database Integration Tests', () => {
         testDbEnv.withTransaction(async (client) => {
           const email = `user${index}@example.com`;
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
             [email, 'hashed_password', `User ${index}`]
           );
           return email;
@@ -162,7 +162,7 @@ describe('Database Integration Tests', () => {
       expect(results).toHaveLength(5);
 
       for (const email of results) {
-        await DatabaseAssertions.assertExists('users', 'email = $1', [email]);
+        await DatabaseAssertions.assertExists('users', 'username = $1'), [email]);
       }
 
       await DatabaseAssertions.assertCount('users', 5);
@@ -175,12 +175,12 @@ describe('Database Integration Tests', () => {
 
       await testDbEnv.withTransaction(async (client) => {
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4)',
-          [userData.email, userData.password_hash, userData.full_name, userData.role]
+          'INSERT INTO users (username, password_salt, password_hash, role, role) VALUES ($1, $2, $3, $4)',
+          [userData.email, userData.password_hash, userData.role, userData.role]
         );
       });
 
-      await DatabaseAssertions.assertExists('users', 'email = $1', [userData.email]);
+      await DatabaseAssertions.assertExists('users', 'username = $1'), [userData.email]);
     });
 
     it('should enforce unique email constraint', async () => {
@@ -189,7 +189,7 @@ describe('Database Integration Tests', () => {
       // 插入第一个用户
       await testDbEnv.withTransaction(async (client) => {
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
           [email, 'hashed_password', 'User 1']
         );
       });
@@ -198,7 +198,7 @@ describe('Database Integration Tests', () => {
       await expect(
         testDbEnv.withTransaction(async (client) => {
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
             [email, 'hashed_password', 'User 2']
           );
         })
@@ -220,7 +220,7 @@ describe('Database Integration Tests', () => {
     it('should update user data', async () => {
       const userId = await testDbEnv.withTransaction(async (client) => {
         const result = await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
           ['update@example.com', 'hashed_password', 'Original Name']
         );
         return result.rows[0].id;
@@ -228,7 +228,7 @@ describe('Database Integration Tests', () => {
 
       await testDbEnv.withTransaction(async (client) => {
         await client.query(
-          'UPDATE users SET full_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          'UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
           ['Updated Name', userId]
         );
       });
@@ -236,8 +236,8 @@ describe('Database Integration Tests', () => {
       const pool = testDbEnv.getTestPool();
       const client = await pool.connect();
       try {
-        const result = await client.query('SELECT full_name FROM users WHERE id = $1', [userId]);
-        expect(result.rows[0].full_name).toBe('Updated Name');
+        const result = await client.query('SELECT role FROM users WHERE id = $1', [userId]);
+        expect(result.rows[0].role).toBe('Updated Name');
       } finally {
         client.release();
       }
@@ -247,7 +247,7 @@ describe('Database Integration Tests', () => {
       const userId = await testDbEnv.withTransaction(async (client) => {
         // 创建用户
         const userResult = await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
           ['delete@example.com', 'hashed_password', 'User to Delete']
         );
         const userId = userResult.rows[0].id;
@@ -290,7 +290,7 @@ describe('Database Integration Tests', () => {
     beforeEach(async () => {
       userId = await testDbEnv.withTransaction(async (client) => {
         const result = await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
           ['session@example.com', 'hashed_password', 'Session User']
         );
         return result.rows[0].id;
@@ -378,12 +378,12 @@ describe('Database Integration Tests', () => {
         const promises = Array.from({ length: batchSize }, (_, index) => {
           const userData = TestDataFactory.createUser({
             email: `bulk${index}@example.com`,
-            full_name: `Bulk User ${index}`,
+            role: `Bulk User ${index}`,
           });
 
           return client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
-            [userData.email, userData.password_hash, userData.full_name]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
+            [userData.email, userData.password_hash, userData.role]
           );
         });
 
@@ -405,7 +405,7 @@ describe('Database Integration Tests', () => {
           // 写入操作
           const email = `concurrent${index}@example.com`;
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
             [email, 'hashed_password', `Concurrent User ${index}`]
           );
 
@@ -468,7 +468,7 @@ describe('Database Integration Tests', () => {
       // 插入第一个用户
       await testDbEnv.withTransaction(async (client) => {
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
           [email, 'hashed_password', 'User 1']
         );
       });
@@ -477,7 +477,7 @@ describe('Database Integration Tests', () => {
       await expect(
         testDbEnv.withTransaction(async (client) => {
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
             [email, 'hashed_password', 'User 2']
           );
         })

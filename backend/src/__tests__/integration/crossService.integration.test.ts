@@ -223,7 +223,7 @@ describe('Cross-Service Integration Tests', () => {
         backoffMultiplier: 2,
         removeOnComplete: 100,
         removeOnFail: 100,
-        defaultPriority: 5,
+        defaultPriority: 5 as import('../../types/queue').MessagePriority,
         stalledInterval: 30000,
         maxStalledCount: 3,
         delayOnFail: false,

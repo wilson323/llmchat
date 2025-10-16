@@ -10,6 +10,7 @@
  */
 
 import multer from 'multer';
+import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -166,19 +167,19 @@ export const upload = multer(uploadConfig);
  * 单文件上传中间件
  * 使用方式: router.post('/upload', uploadSingle, handler)
  */
-export const uploadSingle = upload.single('file');
+export const uploadSingle: express.RequestHandler = upload.single('file');
 
 /**
  * 多文件上传中间件（同一字段）
  * 使用方式: router.post('/upload', uploadMultiple, handler)
  */
-export const uploadMultiple = upload.array('files', 10);
+export const uploadMultiple: express.RequestHandler = upload.array('files', 10);
 
 /**
  * 多字段文件上传中间件
  * 使用方式: router.post('/upload', uploadFields, handler)
  */
-export const uploadFields = upload.fields([
+export const uploadFields: express.RequestHandler = upload.fields([
   { name: 'avatar', maxCount: 1 },
   { name: 'images', maxCount: 5 },
   { name: 'documents', maxCount: 5 },
@@ -188,12 +189,12 @@ export const uploadFields = upload.fields([
  * 任意文件上传中间件
  * 使用方式: router.post('/upload', uploadAny, handler)
  */
-export const uploadAny = upload.any();
+export const uploadAny: express.RequestHandler = upload.any();
 
 /**
  * CAD文件专用上传中间件
  */
-export const uploadCad = multer({
+const cadUploader = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -210,6 +211,8 @@ export const uploadCad = multer({
     files: 1,
   },
 }).single('cadFile');
+
+export const uploadCad: express.RequestHandler = cadUploader;
 
 /**
  * 导出常量

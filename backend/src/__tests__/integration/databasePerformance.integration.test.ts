@@ -52,7 +52,7 @@ describe('Database Performance Benchmarking', () => {
 
       // 预热连接池
       for (let i = 0; i < WARMUP_ITERATIONS; i++) {
-        const client = testDbEnv.getTestPool().connect();
+        const client = await testDbEnv.getTestPool().connect();
         await client.query('SELECT 1');
         client.release();
       }
@@ -62,7 +62,7 @@ describe('Database Performance Benchmarking', () => {
         const startTime = Date.now();
 
         try {
-          const client = testDbEnv.getTestPool().connect();
+          const client = await testDbEnv.getTestPool().connect();
           await client.query('SELECT 1');
           client.release();
 
@@ -156,8 +156,8 @@ describe('Database Performance Benchmarking', () => {
         const userData = TestDataFactory.createUser({ email: `warmup${i}@example.com` });
         await testDbEnv.withTransaction(async (client) => {
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
-            [userData.email, userData.password_hash, userData.full_name]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
+            [userData.email, userData.password_hash, userData.role]
           );
         });
       }
@@ -173,8 +173,8 @@ describe('Database Performance Benchmarking', () => {
           await testDbEnv.withTransaction(async (client) => {
             const userData = TestDataFactory.createUser({ email: `perf${i}@example.com` });
             await client.query(
-              'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
-              [userData.email, userData.password_hash, userData.full_name]
+              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
+              [userData.email, userData.password_hash, userData.role]
             );
           });
 
@@ -227,12 +227,12 @@ describe('Database Performance Benchmarking', () => {
               const promises = Array.from({ length: bulkSize }, (_, index) => {
                 const userData = TestDataFactory.createUser({
                   email: `bulk${bulkSize}_${i}_${index}@example.com`,
-                  full_name: `Bulk User ${bulkSize}_${i}_${index}`,
+                  role: `Bulk User ${bulkSize}_${i}_${index}`,
                 });
 
                 return client.query(
-                  'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
-                  [userData.email, userData.password_hash, userData.full_name]
+                  'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
+                  [userData.email, userData.password_hash, userData.role]
                 );
               });
 
@@ -281,12 +281,12 @@ describe('Database Performance Benchmarking', () => {
         const promises = Array.from({ length: TEST_USERS }, (_, index) => {
           const userData = TestDataFactory.createUser({
             email: `query${index}@example.com`,
-            full_name: `Query User ${index}`,
+            role: `Query User ${index}`,
           });
 
           return client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
-            [userData.email, userData.password_hash, userData.full_name]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
+            [userData.email, userData.password_hash, userData.role]
           );
         });
 
@@ -349,12 +349,12 @@ describe('Database Performance Benchmarking', () => {
         const promises = Array.from({ length: 100 }, (_, index) => {
           const userData = TestDataFactory.createUser({
             email: `update${index}@example.com`,
-            full_name: `Update User ${index}`,
+            role: `Update User ${index}`,
           });
 
           return client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
-            [userData.email, userData.password_hash, userData.full_name]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
+            [userData.email, userData.password_hash, userData.role]
           );
         });
 
@@ -372,7 +372,7 @@ describe('Database Performance Benchmarking', () => {
         try {
           await testDbEnv.withTransaction(async (client) => {
             await client.query(
-              'UPDATE users SET full_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+              'UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
               [`Updated User ${i}`, randomUserId]
             );
           });
@@ -423,7 +423,7 @@ describe('Database Performance Benchmarking', () => {
           await testDbEnv.withTransaction(async (client) => {
             // 第一层：创建用户
             const userResult = await client.query(
-              'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
+              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
               [`nested${i}@example.com`, 'hashed_password', `Nested User ${i}`]
             );
             const userId = userResult.rows[0].id;
@@ -486,7 +486,7 @@ describe('Database Performance Benchmarking', () => {
           await testDbEnv.withTransaction(async (client) => {
             // 插入一些数据
             await client.query(
-              'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
               [`rollback${i}@example.com`, 'hashed_password', `Rollback User ${i}`]
             );
 

@@ -212,13 +212,14 @@ describe('QueueManager Integration Tests', () => {
     const testQueueName = 'test-stats-queue';
 
     beforeEach(async () => {
-      await queueManager.createQueue(testQueueName, {
+      queueManager.createQueue(createQueueConfig(testQueueName, {
         concurrency: 3,
-      });
+      }));
     });
 
     afterEach(async () => {
-      await queueManager.deleteQueue(testQueueName);
+      // 清理测试队列（QueueManager没有delete方法，清理Redis数据即可）
+      await redis.del(`queue:${testQueueName}:*`);
     });
 
     it('should provide accurate queue statistics', async () => {
@@ -316,23 +317,23 @@ describe('QueueManager Integration Tests', () => {
     const testQueueName = 'test-health-queue';
 
     beforeEach(async () => {
-      await queueManager.createQueue(testQueueName, {
-        concurrency: 2,
-        maxRetries: 3,
-      });
+      queueManager.createQueue(createQueueConfig(testQueueName));
     });
 
     afterEach(async () => {
-      await queueManager.deleteQueue(testQueueName);
+      // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
     });
 
     it('should perform comprehensive health checks', async () => {
-      const healthStatus = await queueHealthService.performHealthCheck(testQueueName, {
-        concurrency: 2,
-        maxRetries: 3,
-        retryDelay: 1000,
-        visibilityTimeout: 30000,
-      });
+      const healthStatus = await queueHealthService.performHealthCheck(
+        testQueueName,
+        createQueueConfig(testQueueName, {
+          concurrency: 2,
+          maxRetries: 3,
+          retryDelay: 1000,
+          visibilityTimeout: 30000,
+        })
+      );
 
       expect(healthStatus).toBeTruthy();
       expect(healthStatus.queueName).toBe(testQueueName);
@@ -359,12 +360,13 @@ describe('QueueManager Integration Tests', () => {
         await queueOpsService.addJob(testQueueName, { index: i });
       }
 
-      const healthStatus = await queueHealthService.performHealthCheck(testQueueName, {
-        concurrency: 2,
-        maxRetries: 3,
-      }, {
-        maxQueueSize,
-      });
+      const healthStatus = await queueHealthService.performHealthCheck(
+        testQueueName,
+        createQueueConfig(testQueueName, {
+          concurrency: 2,
+          maxRetries: 3,
+        })
+      );
 
       expect(healthStatus.healthy).toBe(false);
       expect(healthStatus.status).toBe('unhealthy');
@@ -382,10 +384,7 @@ describe('QueueManager Integration Tests', () => {
       const staleTimestamp = Date.now() - (25 * 60 * 60 * 1000); // 25小时前
       await redis.zadd(`${testQueueName}:waiting`, staleTimestamp, jobId);
 
-      const healthStatus = await queueHealthService.performHealthCheck(testQueueName, {
-        concurrency: 2,
-        maxRetries: 3,
-      });
+      const healthStatus = await queueHealthService.performHealthCheck(testQueueName, createQueueConfig(testQueueName));
 
       expect(healthStatus.issues).toBeDefined();
       expect(healthStatus.issues!.some(issue =>
@@ -397,9 +396,7 @@ describe('QueueManager Integration Tests', () => {
       const queueNames = [testQueueName, `${testQueueName}-2`];
 
       // 创建第二个队列
-      await queueManager.createQueue(queueNames[1], {
-        concurrency: 1,
-      });
+      queueManager.createQueue(createQueueConfig(queueNames[1]));
 
       const batchHealthStatus = await queueHealthService.performBatchHealthCheck(queueNames, {
         [queueNames[0]]: { concurrency: 2 },
@@ -411,7 +408,7 @@ describe('QueueManager Integration Tests', () => {
       expect(Object.keys(batchHealthStatus)).toHaveLength(2);
 
       // 清理第二个队列
-      await queueManager.deleteQueue(queueNames[1]);
+      // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
     });
   });
 
@@ -419,23 +416,17 @@ describe('QueueManager Integration Tests', () => {
     const testQueueName = 'test-monitoring-queue';
 
     beforeEach(async () => {
-      await queueManager.createQueue(testQueueName, {
-        concurrency: 3,
-        maxRetries: 2,
-      });
+      queueManager.createQueue(createQueueConfig(testQueueName));
     });
 
     afterEach(async () => {
       await queueMonitoringService.stopMonitoring(testQueueName);
-      await queueManager.deleteQueue(testQueueName);
+      // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
     });
 
     it('should collect and monitor queue metrics', async () => {
       // 开始监控
-      queueMonitoringService.startMonitoring(testQueueName, {
-        concurrency: 3,
-        maxRetries: 2,
-      });
+      queueMonitoringService.startMonitoring(testQueueName, createQueueConfig(testQueueName));
 
       // 添加一些作业
       const jobIds = [];
@@ -445,10 +436,7 @@ describe('QueueManager Integration Tests', () => {
       }
 
       // 手动收集指标
-      const metrics = await queueMonitoringService.collectQueueMetrics(testQueueName, {
-        concurrency: 3,
-        maxRetries: 2,
-      });
+      const metrics = await queueMonitoringService.collectQueueMetrics(testQueueName, createQueueConfig(testQueueName));
 
       expect(metrics).toBeTruthy();
       expect(metrics.queueName).toBe(testQueueName);
@@ -487,10 +475,7 @@ describe('QueueManager Integration Tests', () => {
       }
 
       // 手动收集指标以触发告警
-      await queueMonitoringService.collectQueueMetrics(testQueueName, {
-        concurrency: 3,
-        maxRetries: 2,
-      });
+      await queueMonitoringService.collectQueueMetrics(testQueueName, createQueueConfig(testQueueName));
 
       const alerts = queueMonitoringService.getCurrentAlerts(testQueueName);
       expect(alerts.length).toBeGreaterThan(0);
@@ -502,18 +487,12 @@ describe('QueueManager Integration Tests', () => {
     });
 
     it('should maintain metrics history', async () => {
-      queueMonitoringService.startMonitoring(testQueueName, {
-        concurrency: 3,
-        maxRetries: 2,
-      });
+      queueMonitoringService.startMonitoring(testQueueName, createQueueConfig(testQueueName));
 
       // 多次收集指标
       for (let i = 0; i < 3; i++) {
         await queueOpsService.addJob(testQueueName, { iteration: i });
-        await queueMonitoringService.collectQueueMetrics(testQueueName, {
-          concurrency: 3,
-          maxRetries: 2,
-        });
+        await queueMonitoringService.collectQueueMetrics(testQueueName, createQueueConfig(testQueueName));
 
         // 短暂延迟以确保不同的时间戳
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -544,10 +523,10 @@ describe('QueueManager Integration Tests', () => {
     describe('GET /api/queue/stats/:queueName', () => {
       it('should return queue statistics', async () => {
         const queueName = 'test-api-stats';
-        await queueManager.createQueue(queueName);
+        queueManager.createQueue(createQueueConfig(queueName);
 
         // 添加测试作业
-        await queueOpsService.addJob(queueName, { test: true });
+        await queueOpsService.addJob(queueName));
 
         const response = await request(app)
           .get(`/api/queue/stats/${queueName}`)
@@ -562,14 +541,14 @@ describe('QueueManager Integration Tests', () => {
         expect(response.body.data).toHaveProperty('completed');
         expect(response.body.data).toHaveProperty('failed');
 
-        await queueManager.deleteQueue(queueName);
+        // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
       });
     });
 
     describe('GET /api/queue/health/:queueName', () => {
       it('should return queue health status', async () => {
         const queueName = 'test-api-health';
-        await queueManager.createQueue(queueName);
+        await queueManager.createQueue(createQueueConfig(queueName));
 
         const response = await request(app)
           .get(`/api/queue/health/${queueName}`)
@@ -583,14 +562,14 @@ describe('QueueManager Integration Tests', () => {
         expect(response.body.data).toHaveProperty('checks');
         expect(response.body.data).toHaveProperty('metrics');
 
-        await queueManager.deleteQueue(queueName);
+        // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
       });
     });
 
     describe('POST /api/queue/:queueName/pause', () => {
       it('should pause queue processing', async () => {
         const queueName = 'test-api-pause';
-        await queueManager.createQueue(queueName);
+        await queueManager.createQueue(createQueueConfig(queueName));
 
         const response = await request(app)
           .post(`/api/queue/${queueName}/pause`)
@@ -600,14 +579,14 @@ describe('QueueManager Integration Tests', () => {
         expect(response.body).toHaveProperty('success', true);
         expect(response.body.message).toContain('队列已暂停');
 
-        await queueManager.deleteQueue(queueName);
+        // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
       });
     });
 
     describe('POST /api/queue/:queueName/resume', () => {
       it('should resume queue processing', async () => {
         const queueName = 'test-api-resume';
-        await queueManager.createQueue(queueName);
+        await queueManager.createQueue(createQueueConfig(queueName));
 
         // 先暂停
         await request(app)
@@ -623,17 +602,17 @@ describe('QueueManager Integration Tests', () => {
         expect(response.body).toHaveProperty('success', true);
         expect(response.body.message).toContain('队列已恢复');
 
-        await queueManager.deleteQueue(queueName);
+        // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
       });
     });
 
     describe('POST /api/queue/:queueName/clear', () => {
       it('should clear queue', async () => {
         const queueName = 'test-api-clear';
-        await queueManager.createQueue(queueName);
+        queueManager.createQueue(createQueueConfig(queueName);
 
         // 添加作业
-        await queueOpsService.addJob(queueName, { test: true });
+        await queueOpsService.addJob(queueName));
         await queueOpsService.addJob(queueName, { test: true });
 
         // 清空队列
@@ -649,7 +628,7 @@ describe('QueueManager Integration Tests', () => {
         const stats = await queueStatsService.getQueueStats(queueName);
         expect(stats!.total).toBe(0);
 
-        await queueManager.deleteQueue(queueName);
+        // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
       });
     });
   });
@@ -686,10 +665,10 @@ describe('QueueManager Integration Tests', () => {
 
     it('should handle malformed job data', async () => {
       const queueName = 'test-malformed';
-      await queueManager.createQueue(queueName);
+      queueManager.createQueue(createQueueConfig(queueName);
 
       // 添加正常作业
-      const jobId = await queueOpsService.addJob(queueName, { valid: true });
+      const jobId = await queueOpsService.addJob(queueName));
 
       // 手动破坏作业数据
       await redis.hset(`${queueName}:jobs`, jobId, 'invalid json');
@@ -698,7 +677,7 @@ describe('QueueManager Integration Tests', () => {
       const job = await queueOpsService.getJob(queueName, jobId);
       expect(job).toBeNull();
 
-      await queueManager.deleteQueue(queueName);
+      // QueueManager没有delete方法，清理将在afterEach/afterAll中统一进行
     });
   });
 });

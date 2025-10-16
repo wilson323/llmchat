@@ -88,7 +88,7 @@ describe('Database Migration Integration Tests', () => {
           { name: 'id', type: 'uuid', nullable: 'NO' },
           { name: 'email', type: 'character varying', nullable: 'NO' },
           { name: 'password_hash', type: 'character varying', nullable: 'NO' },
-          { name: 'full_name', type: 'character varying', nullable: 'YES' },
+          { name: 'role', type: 'character varying', nullable: 'YES' },
           { name: 'role', type: 'character varying', nullable: 'YES' },
           { name: 'created_at', type: 'timestamp without time zone', nullable: 'YES' },
           { name: 'updated_at', type: 'timestamp without time zone', nullable: 'YES' },
@@ -117,7 +117,7 @@ describe('Database Migration Integration Tests', () => {
         // 尝试插入无效UUID应该失败
         await expect(
           client.query(
-            'INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)',
+            'INSERT INTO users (id, username, password_salt, password_hash) VALUES ($1, $2, $3)',
             ['invalid-uuid', 'test@example.com', 'hashed_password']
           )
         ).rejects.toThrow(/invalid input syntax for type uuid/i);
@@ -133,7 +133,7 @@ describe('Database Migration Integration Tests', () => {
       try {
         // 先创建用户
         const userResult = await client.query(
-          'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash) VALUES ($1, $2) RETURNING id',
           ['fk@example.com', 'hashed_password']
         );
         const userId = userResult.rows[0].id;
@@ -209,7 +209,7 @@ describe('Database Migration Integration Tests', () => {
         const beforeInsert = new Date();
 
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
           ['timestamp@example.com', 'hashed_password', 'Timestamp User']
         );
 
@@ -238,7 +238,7 @@ describe('Database Migration Integration Tests', () => {
         // 插入测试数据
         const testEmail = 'index@example.com';
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
           [testEmail, 'hashed_password', 'Index User']
         );
 
@@ -270,7 +270,7 @@ describe('Database Migration Integration Tests', () => {
 
         for (let i = 0; i < batchSize; i++) {
           await client.query(
-            'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
             [`user${i}@performance.com`, 'hashed_password', `Performance User ${i}`]
           );
 
@@ -314,7 +314,7 @@ describe('Database Migration Integration Tests', () => {
       try {
         // 创建用户
         const userResult = await client.query(
-          'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash) VALUES ($1, $2) RETURNING id',
           ['cascade@example.com', 'hashed_password']
         );
         const userId = userResult.rows[0].id;
@@ -367,7 +367,7 @@ describe('Database Migration Integration Tests', () => {
 
         // 创建正常的数据关系
         const userResult = await client.query(
-          'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id',
+          'INSERT INTO users (username, password_salt, password_hash) VALUES ($1, $2) RETURNING id',
           ['normal@example.com', 'hashed_password']
         );
         const userId = userResult.rows[0].id;
@@ -422,7 +422,7 @@ describe('Database Migration Integration Tests', () => {
 
         // 测试新列的使用
         await client.query(
-          'INSERT INTO users (email, password_hash, phone, avatar_url) VALUES ($1, $2, $3, $4)',
+          'INSERT INTO users (username, password_salt, password_hash, phone, avatar_url) VALUES ($1, $2, $3, $4)',
           ['schema@example.com', 'hashed_password', '+1234567890', 'https://example.com/avatar.jpg']
         );
 
@@ -441,14 +441,14 @@ describe('Database Migration Integration Tests', () => {
       try {
         // 使用原有的列创建记录（不使用新列）
         await client.query(
-          'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3)',
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
           ['compat@example.com', 'hashed_password', 'Compatibility User']
         );
 
         // 验证记录可以被正常查询
-        const result = await client.query('SELECT email, full_name FROM users WHERE email = $1', ['compat@example.com']);
+        const result = await client.query('SELECT email, role FROM users WHERE email = $1', ['compat@example.com']);
         expect(result.rows[0].email).toBe('compat@example.com');
-        expect(result.rows[0].full_name).toBe('Compatibility User');
+        expect(result.rows[0].role).toBe('Compatibility User');
 
         // 查询应该能处理NULL的新列
         const resultWithNewCols = await client.query('SELECT phone, avatar_url FROM users WHERE email = $1', ['compat@example.com']);

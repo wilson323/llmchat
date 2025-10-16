@@ -10,7 +10,7 @@ import {
   CacheManager,
   SyncManager,
   CacheStrategy
-} from '../../lib/HybridStorageService';
+} from '../../../../frontend/src/services/HybridStorageService';
 
 // Mock IndexedDB for testing environment
 const mockIndexedDB = {

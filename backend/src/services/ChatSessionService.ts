@@ -9,7 +9,7 @@
  * - 会话归档和软删除
  */
 
-import { pool } from '@/utils/db';
+import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
 
 /**
@@ -67,7 +67,7 @@ export class ChatSessionService {
     const { userId, agentId, title = '新对话', context, settings } = params;
 
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `INSERT INTO chat_sessions_enhanced 
          (user_id, agent_id, title, context, settings) 
          VALUES ($1, $2, $3, $4, $5) 
@@ -113,7 +113,7 @@ export class ChatSessionService {
            ORDER BY updated_at DESC`;
 
       const params = agentId ? [userId, agentId] : [userId];
-      const result = await pool.query(query, params);
+      const result = await getPool().query(query, params);
 
       return result.rows.map(row => this.mapRowToSession(row));
     } catch (err) {
@@ -135,7 +135,7 @@ export class ChatSessionService {
    */
   async getSession(sessionId: string, userId: number): Promise<ChatSession | null> {
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `SELECT * FROM chat_sessions_enhanced 
          WHERE id = $1 AND user_id = $2`,
         [sessionId, userId]
@@ -164,7 +164,7 @@ export class ChatSessionService {
    */
   async addMessage(sessionId: string, message: ChatMessage): Promise<void> {
     try {
-      await pool.query(
+      await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET messages = messages || $1::jsonb,
              message_count = message_count + 1,
@@ -200,7 +200,7 @@ export class ChatSessionService {
 
     try {
       const messagesJson = JSON.stringify(messages);
-      await pool.query(
+      await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET messages = messages || $1::jsonb,
              message_count = message_count + $2,
@@ -232,7 +232,7 @@ export class ChatSessionService {
    */
   async updateSessionTitle(sessionId: string, userId: number, title: string): Promise<void> {
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET title = $1 
          WHERE id = $2 AND user_id = $3
@@ -267,7 +267,7 @@ export class ChatSessionService {
    */
   async deleteSession(sessionId: string, userId: number): Promise<void> {
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET status = 'deleted' 
          WHERE id = $1 AND user_id = $2
@@ -301,7 +301,7 @@ export class ChatSessionService {
    */
   async archiveSession(sessionId: string, userId: number): Promise<void> {
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET status = 'archived' 
          WHERE id = $1 AND user_id = $2
@@ -341,7 +341,7 @@ export class ChatSessionService {
     }
 
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `SELECT *, 
          ts_rank(search_vector, plainto_tsquery('english', $2)) as rank
          FROM chat_sessions_enhanced
@@ -404,7 +404,7 @@ export class ChatSessionService {
     values.push(sessionId);
 
     try {
-      await pool.query(
+      await getPool().query(
         `UPDATE chat_sessions_enhanced 
          SET ${updates.join(', ')}
          WHERE id = $${paramIndex}`,
@@ -433,7 +433,7 @@ export class ChatSessionService {
     totalTokens: number;
   }> {
     try {
-      const result = await pool.query(
+      const result = await getPool().query(
         `SELECT 
            COUNT(*) as total_sessions,
            COUNT(*) FILTER (WHERE status = 'active') as active_sessions,

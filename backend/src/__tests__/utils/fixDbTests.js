@@ -24,7 +24,7 @@ function fixFile(filePath) {
     modified = true;
     return match.replace(/email/g, 'username')
                .replace(/password_hash/g, 'password_salt, password_hash')
-               .replace(/'[^']*@[^']*'/g, "'testuser-' + Date.now() + "'")
+               .replace(/'[^']*@[^']*'/g, () => `'testuser-${Date.now()}'`)
                .replace(/\('([^']*hashed_password[^']*)'\)/, "('testsalt'.repeat(8), '$1')");
   });
 

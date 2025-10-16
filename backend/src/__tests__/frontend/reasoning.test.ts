@@ -10,7 +10,7 @@ import {
   validatePayload,
   parseStreamChunk,
   detectStreamEnd
-} from '../../lib/reasoning';
+} from '../../../../frontend/src/lib/reasoning';
 
 // Mock console functions to reduce test noise
 const originalConsoleLog = console.log;

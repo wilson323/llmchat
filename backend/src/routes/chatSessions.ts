@@ -5,16 +5,16 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import { chatSessionService, CreateSessionParams } from '@/services/ChatSessionService';
-import { jwtAuth } from '@/middleware/jwtAuth';
+import { authenticateJWT } from '@/middleware/jwtAuth';
 import logger from '@/utils/logger';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 /**
  * 获取用户的所有会话
  * GET /api/chat-sessions?agentId=xxx
  */
-router.get('/', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -28,14 +28,14 @@ router.get('/', jwtAuth, async (req: Request, res: Response, next: NextFunction)
     const agentId = req.query.agentId as string | undefined;
     const sessions = await chatSessionService.getUserSessions(userId, agentId);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: sessions,
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -44,7 +44,7 @@ router.get('/', jwtAuth, async (req: Request, res: Response, next: NextFunction)
  * POST /api/chat-sessions
  * Body: { agentId: string, title?: string, context?: object, settings?: object }
  */
-router.post('/', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -75,14 +75,14 @@ router.post('/', jwtAuth, async (req: Request, res: Response, next: NextFunction
 
     const session = await chatSessionService.createSession(params);
 
-    res.status(201).json({
+    return res.status(201).json({
       code: 'CREATED',
       data: session,
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -90,7 +90,7 @@ router.post('/', jwtAuth, async (req: Request, res: Response, next: NextFunction
  * 获取单个会话详情
  * GET /api/chat-sessions/:id
  */
-router.get('/:id', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -102,6 +102,9 @@ router.get('/:id', jwtAuth, async (req: Request, res: Response, next: NextFuncti
     }
 
     const sessionId = req.params.id;
+    if (!sessionId) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Session ID required' });
+    }
     const session = await chatSessionService.getSession(sessionId, userId);
 
     if (!session) {
@@ -112,14 +115,14 @@ router.get('/:id', jwtAuth, async (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: session,
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -128,7 +131,7 @@ router.get('/:id', jwtAuth, async (req: Request, res: Response, next: NextFuncti
  * PATCH /api/chat-sessions/:id/title
  * Body: { title: string }
  */
-router.patch('/:id/title', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/title', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -140,6 +143,9 @@ router.patch('/:id/title', jwtAuth, async (req: Request, res: Response, next: Ne
     }
 
     const sessionId = req.params.id;
+    if (!sessionId) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Session ID required' });
+    }
     const { title } = req.body;
 
     if (!title) {
@@ -152,14 +158,14 @@ router.patch('/:id/title', jwtAuth, async (req: Request, res: Response, next: Ne
 
     await chatSessionService.updateSessionTitle(sessionId, userId, title);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: { sessionId, title, updated: true },
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -167,7 +173,7 @@ router.patch('/:id/title', jwtAuth, async (req: Request, res: Response, next: Ne
  * 删除会话（软删除）
  * DELETE /api/chat-sessions/:id
  */
-router.delete('/:id', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -179,16 +185,19 @@ router.delete('/:id', jwtAuth, async (req: Request, res: Response, next: NextFun
     }
 
     const sessionId = req.params.id;
+    if (!sessionId) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Session ID required' });
+    }
     await chatSessionService.deleteSession(sessionId, userId);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: { sessionId, deleted: true },
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -196,7 +205,7 @@ router.delete('/:id', jwtAuth, async (req: Request, res: Response, next: NextFun
  * 归档会话
  * POST /api/chat-sessions/:id/archive
  */
-router.post('/:id/archive', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/archive', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -208,16 +217,19 @@ router.post('/:id/archive', jwtAuth, async (req: Request, res: Response, next: N
     }
 
     const sessionId = req.params.id;
+    if (!sessionId) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Session ID required' });
+    }
     await chatSessionService.archiveSession(sessionId, userId);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: { sessionId, archived: true },
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -225,7 +237,7 @@ router.post('/:id/archive', jwtAuth, async (req: Request, res: Response, next: N
  * 搜索会话
  * GET /api/chat-sessions/search?q=keyword&limit=20
  */
-router.get('/search', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/search', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -249,14 +261,14 @@ router.get('/search', jwtAuth, async (req: Request, res: Response, next: NextFun
 
     const sessions = await chatSessionService.searchSessions(userId, query, limit);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: sessions,
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -264,7 +276,7 @@ router.get('/search', jwtAuth, async (req: Request, res: Response, next: NextFun
  * 获取会话统计
  * GET /api/chat-sessions/stats
  */
-router.get('/stats', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/stats', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -277,14 +289,14 @@ router.get('/stats', jwtAuth, async (req: Request, res: Response, next: NextFunc
 
     const stats = await chatSessionService.getSessionStats(userId);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: stats,
       requestId: (req as any).requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

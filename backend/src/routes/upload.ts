@@ -13,10 +13,10 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { uploadSingle, uploadMultiple, uploadDir } from '@/middleware/fileUpload';
-import { jwtAuth } from '@/middleware/jwtAuth';
+import { authenticateJWT } from '@/middleware/jwtAuth';
 import logger from '@/utils/logger';
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 /**
  * 单文件上传
@@ -25,7 +25,7 @@ const router = express.Router();
  * 请求：multipart/form-data，字段名：file
  * 响应：{ code, data: { filename, originalName, size, mimetype, path } }
  */
-router.post('/single', jwtAuth, uploadSingle, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/single', authenticateJWT(), uploadSingle, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -45,7 +45,7 @@ router.post('/single', jwtAuth, uploadSingle, async (req: Request, res: Response
       userId,
     });
 
-    res.json({
+    return res.json({
       code: 'OK',
       message: 'File uploaded successfully',
       data: {
@@ -65,7 +65,7 @@ router.post('/single', jwtAuth, uploadSingle, async (req: Request, res: Response
       error: (err as Error).message,
       userId: (req as any).user?.id,
     });
-    next(err);
+    return next(err);
   }
 });
 
@@ -76,7 +76,7 @@ router.post('/single', jwtAuth, uploadSingle, async (req: Request, res: Response
  * 请求：multipart/form-data，字段名：files
  * 响应：{ code, data: [{ filename, originalName, size, mimetype, path }] }
  */
-router.post('/multiple', jwtAuth, uploadMultiple, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
       return res.status(400).json({
@@ -95,7 +95,7 @@ router.post('/multiple', jwtAuth, uploadMultiple, async (req: Request, res: Resp
       userId,
     });
 
-    res.json({
+    return res.json({
       code: 'OK',
       message: `${files.length} files uploaded successfully`,
       data: files.map(file => ({
@@ -119,7 +119,7 @@ router.post('/multiple', jwtAuth, uploadMultiple, async (req: Request, res: Resp
       error: (err as Error).message,
       userId: (req as any).user?.id,
     });
-    next(err);
+    return next(err);
   }
 });
 
@@ -127,9 +127,12 @@ router.post('/multiple', jwtAuth, uploadMultiple, async (req: Request, res: Resp
  * 获取文件信息
  * GET /api/upload/:filename/info
  */
-router.get('/:filename/info', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filename = req.params.filename;
+    if (!filename) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
+    }
     const filePath = path.join(uploadDir, filename);
 
     // 安全检查：防止路径遍历攻击
@@ -155,7 +158,7 @@ router.get('/:filename/info', jwtAuth, async (req: Request, res: Response, next:
     const stats = fs.statSync(filePath);
     const ext = path.extname(filename);
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: {
         filename,
@@ -173,7 +176,7 @@ router.get('/:filename/info', jwtAuth, async (req: Request, res: Response, next:
       error: (err as Error).message,
       filename: req.params.filename,
     });
-    next(err);
+    return next(err);
   }
 });
 
@@ -181,9 +184,12 @@ router.get('/:filename/info', jwtAuth, async (req: Request, res: Response, next:
  * 删除文件
  * DELETE /api/upload/:filename
  */
-router.delete('/:filename', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:filename', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const filename = req.params.filename;
+    if (!filename) {
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
+    }
     const filePath = path.join(uploadDir, filename);
     const userId = (req as any).user?.id;
 
@@ -214,7 +220,7 @@ router.delete('/:filename', jwtAuth, async (req: Request, res: Response, next: N
       userId,
     });
 
-    res.json({
+    return res.json({
       code: 'OK',
       message: 'File deleted successfully',
       data: {
@@ -232,7 +238,7 @@ router.delete('/:filename', jwtAuth, async (req: Request, res: Response, next: N
       filename: req.params.filename,
       userId: (req as any).user?.id,
     });
-    next(err);
+    return next(err);
   }
 });
 
@@ -240,7 +246,7 @@ router.delete('/:filename', jwtAuth, async (req: Request, res: Response, next: N
  * 列出所有上传的文件
  * GET /api/upload/list
  */
-router.get('/list', jwtAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/list', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const files = fs.readdirSync(uploadDir);
     const fileInfos = files.map(filename => {
@@ -258,7 +264,7 @@ router.get('/list', jwtAuth, async (req: Request, res: Response, next: NextFunct
     // 按创建时间倒序排序
     fileInfos.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    res.json({
+    return res.json({
       code: 'OK',
       data: fileInfos,
       meta: {
@@ -272,7 +278,7 @@ router.get('/list', jwtAuth, async (req: Request, res: Response, next: NextFunct
     logger.error('Failed to list files', {
       error: (err as Error).message,
     });
-    next(err);
+    return next(err);
   }
 });
 
