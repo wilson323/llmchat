@@ -40,6 +40,62 @@
 
 ## 🎯 任务分类（45个任务）
 
+
+## Phase 2.5: Infrastructure Setup (P0)
+
+### 2.5.1 Cache & Performance
+
+- [ ] **T006a: Setup Redis Connection** [Ref: NFR-003]
+  - **Files**: backend/src/database/redis.ts
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: Redis connection pool with 10-50 connections
+  - **Details**:
+    - Configure Redis client with connection retry
+    - Create cache helper functions (get, set, del, flush)
+    - Add health check endpoint
+    - Write unit tests
+
+- [ ] **T006b: Implement Cache Middleware** [Ref: NFR-003]
+  - **Files**: backend/src/middleware/cacheMiddleware.ts
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T006a
+  - **Acceptance**: Agent list and status cached with 5-minute TTL
+  - **Details**:
+    - Cache GET /api/agents responses
+    - Cache GET /api/agents/:id/status responses
+    - Invalidate on POST /api/agents/reload
+    - Add cache hit/miss metrics
+
+### 2.5.2 Monitoring & Observability
+
+- [ ] **T006c: Setup Winston Logger** [Ref: NFR-006]
+  - **Files**: backend/src/utils/logger.ts
+  - **Priority**: P0
+  - **Estimated Time**: 35 minutes
+  - **Dependencies**: T001
+  - **Acceptance**: Structured logging with file rotation
+  - **Details**:
+    - Configure Winston with daily file rotation
+    - Log levels: error, warn, info, debug
+    - Separate error log file
+    - Sanitize sensitive data (passwords, tokens)
+    - Write unit tests
+
+- [ ] **T006d: Setup Prometheus Metrics** [Ref: NFR-005]
+  - **Files**: backend/src/middleware/metricsMiddleware.ts
+  - **Priority**: P0
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T040
+  - **Acceptance**: Prometheus metrics exported at /metrics
+  - **Details**:
+    - HTTP request duration histogram
+    - HTTP request counter by status code
+    - Active connections gauge
+    - Custom business metrics (messages sent, agents used)
+    - Integrate with MetricsService
 ### P0级任务：稳定性关键（必须完成）- 10个任务
 
 #### 认证与安全

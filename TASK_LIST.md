@@ -21,6 +21,40 @@
 ## 🎯 任务分类（45个任务）
 
 ### P0级任务：稳定性关键（必须完成）- 10个任务
+##  Phase 2.5: Infrastructure Setup（基础设施设置）
+
+### 2.5.1 缓存与性能
+
+- [ ] **T006a: Setup Redis Connection** [Ref: NFR-003]
+  - 配置Redis连接池（10-50连接）
+  - 实现缓存操作函数（get/set/del/flush）
+  - 添加健康检查端点
+  - 优先级: P0 | 时间: 30分钟
+
+- [ ] **T006b: Implement Cache Middleware** [Ref: NFR-003]
+  - 缓存智能体列表（TTL 5分钟）
+  - 缓存智能体状态（TTL 1分钟）
+  - 配置reload时缓存失效
+  - 添加缓存命中/未命中指标
+  - 优先级: P0 | 时间: 45分钟 | 依赖: T006a
+
+### 2.5.2 监控与可观测性
+
+- [ ] **T006c: Setup Winston Logger** [Ref: NFR-006]
+  - 配置Winston日志框架（每日轮转）
+  - 日志级别: error, warn, info, debug
+  - 独立的错误日志文件
+  - 敏感数据脱敏（密码、token）
+  - 优先级: P0 | 时间: 35分钟
+
+- [ ] **T006d: Setup Prometheus Metrics** [Ref: NFR-005]
+  - 导出/metrics端点
+  - HTTP请求duration直方图
+  - HTTP请求按状态码计数
+  - 活动连接数gauge
+  - 业务指标（消息发送、智能体使用）
+  - 优先级: P0 | 时间: 50分钟 | 依赖: T040
+
 
 #### 认证与安全
 - [ ] **T001**: 修复测试套件编译错误（agentController.integration.test.ts等）

@@ -60,5 +60,5 @@ async function quickTest() {
   }
 }
 
-runBenchmark();
+quickTest();
 
