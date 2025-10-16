@@ -138,7 +138,7 @@ export class EnvManager {
    * @param fallback 默认值
    * @returns 环境变量值或默认值
    */
-  public get(key: string, fallback: string = ''): string {
+  public get(key: string, fallback = ''): string {
     const value = this.config.get(key);
     return value ?? fallback;
   }
@@ -163,7 +163,7 @@ export class EnvManager {
    * @param fallback 默认值
    * @returns 整数值
    */
-  public getInt(key: string, fallback: number = 0): number {
+  public getInt(key: string, fallback = 0): number {
     const value = this.get(key);
     if (!value) {
       return fallback;
@@ -179,7 +179,7 @@ export class EnvManager {
    * @param fallback 默认值
    * @returns 布尔值
    */
-  public getBoolean(key: string, fallback: boolean = false): boolean {
+  public getBoolean(key: string, fallback = false): boolean {
     const value = this.get(key).toLowerCase();
     if (!value) {
       return fallback;

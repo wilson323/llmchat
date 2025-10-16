@@ -38,6 +38,7 @@ import {
   performDatabaseAutoOptimization
 } from "./middleware/databaseOptimization";
 import { databasePerformanceMonitorMiddleware } from "./middleware/databasePerformanceMonitor";
+import { metricsMiddleware } from "./middleware/metricsMiddleware";
 
 // 路由
 import agentsRouter from "./routes/agents";
@@ -53,6 +54,7 @@ import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
 import databasePerformanceRouter from "./routes/databasePerformance"; // 数据库性能管理路由
 import cacheRouter from "./routes/cache"; // 缓存管理路由
 import queueRouter from "./routes/queue"; // 消息队列管理路由
+import metricsRouter from "./routes/metrics"; // Prometheus metrics路由
 
 // 可视化路由
 import { initializeVisualizationRoutes, default as visualizationRouter } from "./routes/visualizationRoutes";
@@ -64,7 +66,7 @@ import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
 import { initQueueService, shutdownQueueService } from "./services/initQueueService";
 import QueueManager from "./services/QueueManager";
-import { QueueManagerConfig } from "./types/queue";
+import type { QueueManagerConfig } from "./types/queue";
 import MonitoringService from "./services/MonitoringService";
 import VisualizationController from "./controllers/VisualizationController";
 
@@ -190,6 +192,9 @@ app.use("/api/", limiter);
 
 
 // 🔧 极简模式：完全禁用所有可能阻塞的中间件
+// Prometheus metrics收集（在所有路由之前）
+app.use(metricsMiddleware());
+
 // 请求日志 - 使用异步批量日志器（99% I/O减少）
 app.use(asyncRequestLogger);
 
@@ -213,6 +218,7 @@ app.use(
 
 
 // 路由注册
+app.use("/metrics", metricsRouter); // Prometheus metrics端点
 app.use("/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/agents", agentsRouter);
