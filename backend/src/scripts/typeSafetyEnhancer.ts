@@ -33,10 +33,10 @@ interface EnhancementResult {
 }
 
 class TypeSafetyEnhancer {
-  private program: ts.Program;
-  private checker: ts.TypeChecker;
+  private readonly program: ts.Program;
+  private readonly checker: ts.TypeChecker;
   private issues: TypeSafetyIssue[] = [];
-  private dryRun: boolean = true;
+  private dryRun = true;
 
   constructor(configPath: string) {
     const config = ts.readConfigFile(configPath, ts.sys.readFile);
@@ -147,7 +147,7 @@ class TypeSafetyEnhancer {
    * Suggest replacement for 'any' type usage
    */
   private suggestAnyReplacement(node: ts.Node, sourceFile: ts.SourceFile): string {
-    const parent = node.parent;
+    const {parent} = node;
 
     if (!parent) {
       return 'Replace with specific type like string, number, or interface';

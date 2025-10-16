@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { AgentConfigService } from './AgentConfigService';
+import type { AgentConfigService } from './AgentConfigService';
 import logger from '@/utils/logger';
-import {
+import type {
   AgentConfig,
   ChatMessage,
   FastGPTChatHistoryDetail,

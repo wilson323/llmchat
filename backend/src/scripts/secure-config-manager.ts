@@ -38,8 +38,8 @@ interface BackupInfo {
 }
 
 class SecureConfigManager {
-  private options: SecureConfigOptions;
-  private backups: Map<string, BackupInfo> = new Map();
+  private readonly options: SecureConfigOptions;
+  private readonly backups: Map<string, BackupInfo> = new Map();
 
   constructor(options: Partial<SecureConfigOptions> = {}) {
     this.options = {

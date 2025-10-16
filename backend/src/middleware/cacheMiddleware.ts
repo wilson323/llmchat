@@ -4,7 +4,7 @@
  * 集成RedisCacheManager，提供自动缓存、响应缓存和缓存策略
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 import { RedisCacheManager, CacheStrategy } from '@/services/RedisCacheManager';
 
@@ -55,7 +55,7 @@ export interface CacheMiddlewareStats {
  */
 class CacheMiddlewareManager {
   private static instance: CacheMiddlewareManager;
-  private cacheManager: RedisCacheManager;
+  private readonly cacheManager: RedisCacheManager;
   private config: CacheMiddlewareConfig;
   private stats: CacheMiddlewareStats;
 
@@ -235,7 +235,7 @@ class CacheMiddlewareManager {
 
     if (cacheControl) {
       const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
-      if (maxAgeMatch && maxAgeMatch[1]) {
+      if (maxAgeMatch?.[1]) {
         return parseInt(maxAgeMatch[1], 10);
       }
     }
@@ -261,7 +261,7 @@ class CacheMiddlewareManager {
   private serializeResponse(res: Response): string | null {
     try {
       // 检查是否已有响应数据
-      const responseData = (res as any).responseData;
+      const {responseData} = (res as any);
       if (responseData) {
         return JSON.stringify(responseData);
       }

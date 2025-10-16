@@ -42,7 +42,7 @@ export interface BenchmarkReport {
 }
 
 export class PerformanceBenchmark {
-  private metrics: Map<string, BenchmarkMetric[]> = new Map();
+  private readonly metrics: Map<string, BenchmarkMetric[]> = new Map();
   private startTime: number = Date.now();
 
   /**

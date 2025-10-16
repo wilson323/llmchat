@@ -47,8 +47,8 @@ export class CircuitBreaker {
   private lastFailureTime?: Date;
   private lastSuccessTime?: Date;
   private nextAttempt = Date.now();
-  private metrics: CircuitBreakerMetrics;
-  private responseTimes: number[] = [];
+  private readonly metrics: CircuitBreakerMetrics;
+  private readonly responseTimes: number[] = [];
   private circuitOpenCount = 0;
 
   constructor(
@@ -308,7 +308,7 @@ export class CircuitBreaker {
  */
 export class CircuitBreakerManager {
   private static instance: CircuitBreakerManager;
-  private circuitBreakers: Map<string, CircuitBreaker> = new Map();
+  private readonly circuitBreakers: Map<string, CircuitBreaker> = new Map();
 
   private constructor() {}
 

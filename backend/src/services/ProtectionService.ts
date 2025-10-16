@@ -3,10 +3,13 @@
  * 统一管理熔断器、限流器、重试机制和监控
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { CircuitBreakerManager, CircuitBreakerConfig, CircuitState } from './CircuitBreakerService';
-import { MultiDimensionRateLimiter, RateLimitConfig } from './RateLimitService';
-import { RetryService, RetryConfig, FallbackConfig, RequestDeduplicationConfig } from './RetryService';
+import type { Request, Response, NextFunction } from 'express';
+import type { CircuitBreakerConfig} from './CircuitBreakerService';
+import { CircuitBreakerManager, CircuitState } from './CircuitBreakerService';
+import type { RateLimitConfig } from './RateLimitService';
+import { MultiDimensionRateLimiter } from './RateLimitService';
+import type { RetryConfig, FallbackConfig, RequestDeduplicationConfig } from './RetryService';
+import { RetryService } from './RetryService';
 import MonitoringService from './MonitoringService';
 import logger from '@/utils/logger';
 
@@ -60,9 +63,9 @@ export interface ProtectionMetrics {
 export class ProtectionService {
   public circuitBreakerManager: CircuitBreakerManager;
   public multiDimensionRateLimiter: MultiDimensionRateLimiter;
-  private retryService: RetryService;
+  private readonly retryService: RetryService;
   public monitoringService: MonitoringService;
-  private config: ProtectionConfig;
+  private readonly config: ProtectionConfig;
 
   constructor(config?: Partial<ProtectionConfig>) {
     this.config = this.mergeWithDefaultConfig(config);

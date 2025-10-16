@@ -64,11 +64,11 @@ export enum RetryStrategy {
  * 请求去重器
  */
 export class RequestDeduplicator {
-  private pendingRequests: Map<string, Promise<any>> = new Map();
-  private requestMetrics: Map<string, RequestMetrics> = new Map();
-  private cleanupInterval: NodeJS.Timeout;
+  private readonly pendingRequests: Map<string, Promise<any>> = new Map();
+  private readonly requestMetrics: Map<string, RequestMetrics> = new Map();
+  private readonly cleanupInterval: NodeJS.Timeout;
 
-  constructor(private config: RequestDeduplicationConfig) {
+  constructor(private readonly config: RequestDeduplicationConfig) {
     // 定期清理过期的去重记录
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
@@ -215,12 +215,12 @@ export class RequestDeduplicator {
  * 重试服务
  */
 export class RetryService {
-  private deduplicator: RequestDeduplicator;
-  private fallbackCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly deduplicator: RequestDeduplicator;
+  private readonly fallbackCache: Map<string, { data: any; timestamp: number }> = new Map();
 
   constructor(
-    private retryConfig: RetryConfig,
-    private fallbackConfig: FallbackConfig,
+    private readonly retryConfig: RetryConfig,
+    private readonly fallbackConfig: FallbackConfig,
     deduplicationConfig?: RequestDeduplicationConfig,
   ) {
     this.deduplicator = new RequestDeduplicator(

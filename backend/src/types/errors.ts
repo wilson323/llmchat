@@ -8,7 +8,7 @@
  * - 错误边界处理
  */
 
-import { JsonValue } from './dynamic';
+import type { JsonValue } from './dynamic';
 
 // ============================================================================
 // 错误基类和具体错误类型
@@ -850,7 +850,7 @@ export class SafeCast {
   /**
    * 安全转换为字符串
    */
-  static toString(value: unknown, defaultValue: string = ''): string {
+  static toString(value: unknown, defaultValue = ''): string {
     if (TypeGuard.isString(value)) {
       return value;
     }
@@ -863,7 +863,7 @@ export class SafeCast {
   /**
    * 安全转换为数字
    */
-  static toNumber(value: unknown, defaultValue: number = 0): number {
+  static toNumber(value: unknown, defaultValue = 0): number {
     if (TypeGuard.isNumber(value)) {
       return value;
     }
@@ -877,7 +877,7 @@ export class SafeCast {
   /**
    * 安全转换为布尔值
    */
-  static toBoolean(value: unknown, defaultValue: boolean = false): boolean {
+  static toBoolean(value: unknown, defaultValue = false): boolean {
     if (TypeGuard.isBoolean(value)) {
       return value;
     }

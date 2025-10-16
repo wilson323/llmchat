@@ -1,14 +1,15 @@
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
-import {
+import type {
   AuditLog,
   CreateAuditLogParams,
   AuditLogQuery,
   AuditLogQueryResult,
   AuditAction,
-  AuditStatus,
-  ResourceType,
+  ResourceType} from '@/types/audit';
+import {
+  AuditStatus
 } from '@/types/audit';
 import { SystemError } from '@/types/errors';
 
@@ -244,7 +245,7 @@ export class AuditService {
   /**
    * 获取最近的审计日志
    */
-  async getRecentLogs(limit: number = 100): Promise<AuditLog[]> {
+  async getRecentLogs(limit = 100): Promise<AuditLog[]> {
     const result = await this.query({
       limit,
       offset: 0,
@@ -321,7 +322,7 @@ export class AuditService {
    *
    * @param retentionDays 保留天数，默认90天
    */
-  async cleanupOldLogs(retentionDays: number = 90): Promise<number> {
+  async cleanupOldLogs(retentionDays = 90): Promise<number> {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);

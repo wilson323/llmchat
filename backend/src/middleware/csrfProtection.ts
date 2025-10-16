@@ -3,7 +3,7 @@
  * 使用 Double Submit Cookie 模式
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import logger from '@/utils/logger';
 

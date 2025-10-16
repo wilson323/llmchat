@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { AgentConfig, Agent, AgentStatus, AgentHealthStatus, JsonValue } from '@/types';
+import type { AgentConfig, Agent, AgentStatus, AgentHealthStatus, JsonValue } from '@/types';
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import {
@@ -11,7 +11,7 @@ import {
 import logger from '@/utils/logger';
 import { ResourceError, ValidationError } from '@/types/errors';
 
-type AgentSeed = {
+interface AgentSeed {
   id: string;
   name: string;
   description: string;
@@ -22,9 +22,9 @@ type AgentSeed = {
   capabilities?: string[];
   isActive?: boolean;
   features?: Partial<AgentConfig['features']>;
-};
+}
 
-type AgentDbRow = {
+interface AgentDbRow {
   id: string;
   name: string;
   description: string | null;
@@ -43,7 +43,7 @@ type AgentDbRow = {
   is_active: boolean;
   created_at: Date | string;
   updated_at: Date | string;
-};
+}
 
 export interface AgentMutationInput {
   id?: string;
@@ -68,9 +68,9 @@ export interface AgentMutationInput {
  * 负责加载、管理和验证智能体配置
  */
 export class AgentConfigService {
-  private configPath: string;
+  private readonly configPath: string;
   private agents: Map<string, AgentConfig> = new Map();
-  private lastLoadTime: number = 0;
+  private lastLoadTime = 0;
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
   private loadingPromise: Promise<AgentConfig[]> | null = null;
   private snapshotWriting = false;

@@ -1,4 +1,4 @@
-import { Application, Request, Response, RequestHandler } from "express";
+import type { Application, Request, Response, RequestHandler } from "express";
 import { loadOptionalModule } from "@/utils/loadOptionalModule";
 const swaggerOptions = {
   definition: {

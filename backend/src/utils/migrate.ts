@@ -3,7 +3,7 @@
  * 提供版本化的数据库schema管理,支持migrate up/down
  */
 
-import { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import fs from 'fs/promises';
 import path from 'path';
 import logger from '@/utils/logger';
@@ -23,8 +23,8 @@ export interface MigrationRecord {
 }
 
 export class MigrationManager {
-  private pool: Pool;
-  private migrationsDir: string;
+  private readonly pool: Pool;
+  private readonly migrationsDir: string;
 
   constructor(pool: Pool, migrationsDir?: string) {
     this.pool = pool;
@@ -200,7 +200,7 @@ export class MigrationManager {
   /**
    * 回滚最后一次迁移 (migrate down)
    */
-  async migrateDown(steps: number = 1): Promise<Migration[]> {
+  async migrateDown(steps = 1): Promise<Migration[]> {
     const client = await this.pool.connect();
     try {
       await this.ensureMigrationTable(client);

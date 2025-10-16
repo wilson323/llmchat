@@ -3,10 +3,11 @@
  * 提供队列操作、任务管理和监控的REST API
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import QueueManager from '@/services/QueueManager';
 import logger from '@/utils/logger';
-import { QueueConfig, QueueOptions, MessagePriority, QueueStatus } from '@/types/queue';
+import type { QueueConfig, QueueOptions} from '@/types/queue';
+import { MessagePriority, QueueStatus } from '@/types/queue';
 import { ValidationError, ResourceError } from '@/types/errors';
 
 export class QueueController {

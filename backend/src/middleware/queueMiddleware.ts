@@ -3,10 +3,11 @@
  * 提供HTTP请求到队列任务的转换，支持异步处理
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import QueueManager from '@/services/QueueManager';
 import logger from '@/utils/logger';
-import { QueueOptions, MessagePriority } from '@/types/queue';
+import type { QueueOptions} from '@/types/queue';
+import { MessagePriority } from '@/types/queue';
 
 export interface QueueMiddlewareConfig {
   queueName: string;
@@ -31,8 +32,8 @@ export interface QueueResponse {
 }
 
 class QueueMiddlewareManager {
-  private queueManager: QueueManager;
-  private pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map();
+  private readonly queueManager: QueueManager;
+  private readonly pendingRequests: Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }> = new Map();
 
   constructor() {
     this.queueManager = QueueManager.getInstance();

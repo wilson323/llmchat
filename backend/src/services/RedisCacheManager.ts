@@ -123,12 +123,12 @@ export enum CacheStrategy {
 export class RedisCacheManager {
   private static instance: RedisCacheManager | null = null;
   private redis: Redis | null = null;
-  private memoryCache = new Map<string, CacheItem>();
+  private readonly memoryCache = new Map<string, CacheItem>();
   private config: RedisCacheConfig;
   private stats: RedisCacheStats;
-  private lockPromises = new Map<string, Promise<any>>();
-  private prewarmedKeys = new Set<string>();
-  private protectionCache = new Map<string, any>();
+  private readonly lockPromises = new Map<string, Promise<any>>();
+  private readonly prewarmedKeys = new Set<string>();
+  private readonly protectionCache = new Map<string, any>();
 
   constructor(config: Partial<RedisCacheConfig> = {}) {
     this.config = {
@@ -630,7 +630,7 @@ export class RedisCacheManager {
    */
   async lock(
     key: string,
-    ttl: number = 30,
+    ttl = 30,
     options: { retry?: number; delay?: number } = {}
   ): Promise<boolean> {
     if (!this.config.enableLocks) {
@@ -783,7 +783,7 @@ export class RedisCacheManager {
   /**
    * 获取内存缓存详情
    */
-  getMemoryCacheItems(limit: number = 50): CacheItem[] {
+  getMemoryCacheItems(limit = 50): CacheItem[] {
     return Array.from(this.memoryCache.values())
       .sort((a, b) => b.lastAccessAt - a.lastAccessAt)
       .slice(0, limit);
@@ -1167,7 +1167,7 @@ ${this.generateRecommendations()}
   /**
    * 清空缓存
    */
-  async clear(pattern: string = '*'): Promise<number> {
+  async clear(pattern = '*'): Promise<number> {
     let deletedCount = 0;
 
     try {

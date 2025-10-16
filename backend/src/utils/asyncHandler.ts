@@ -3,7 +3,7 @@
  * 统一处理异步路由中的错误
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 
 export function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {

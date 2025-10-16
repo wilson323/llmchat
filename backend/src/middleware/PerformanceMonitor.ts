@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 import { performance } from 'perf_hooks';
 
@@ -52,11 +52,11 @@ export class PerformanceMonitor {
   private performanceData: PerformanceData[] = [];
   private readonly maxDataSize = 1000;           // ✅ 最多保留1000条（减少内存占用）
   private readonly dataRetentionHours = 1;       // ✅ 保留1小时
-  private maxDataPoints = 10000;                 // 保留最近10000个请求的数据（遗留配置）
-  private slowRequestThreshold = 5000;           // 超过5秒的请求被视为慢请求
-  private summaryInterval = 60000;               // 1分钟生成一次摘要
+  private readonly maxDataPoints = 10000;                 // 保留最近10000个请求的数据（遗留配置）
+  private readonly slowRequestThreshold = 5000;           // 超过5秒的请求被视为慢请求
+  private readonly summaryInterval = 60000;               // 1分钟生成一次摘要
   private lastSummaryTime = Date.now();
-  private cleanupInterval: NodeJS.Timeout;       // ✅ 定期清理定时器
+  private readonly cleanupInterval: NodeJS.Timeout;       // ✅ 定期清理定时器
 
   constructor() {
     // ✅ 启动定期清理（每分钟清理一次）
@@ -249,7 +249,7 @@ export class PerformanceMonitor {
   /**
    * 获取详细性能数据
    */
-  public getPerformanceData(limit: number = 100): PerformanceData[] {
+  public getPerformanceData(limit = 100): PerformanceData[] {
     return this.performanceData.slice(-limit);
   }
 
@@ -293,7 +293,7 @@ export class PerformanceMonitor {
   /**
    * 手动清除旧数据（兼容API）
    */
-  public clearOldData(olderThanHours: number = 24): void {
+  public clearOldData(olderThanHours = 24): void {
     const cutoffTime = Date.now() - (olderThanHours * 60 * 60 * 1000);
     const beforeCount = this.performanceData.length;
     

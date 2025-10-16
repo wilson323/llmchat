@@ -3,13 +3,14 @@
  * 专门处理队列的基本操作：添加、获取、删除作业
  */
 
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '@/utils/logger';
+import type {
+  QueueJob,
+  QueueOptions} from '@/types/queue';
 import {
   QueueConfig,
-  QueueJob,
-  QueueOptions,
   JobStatus,
   MessagePriority,
   QueueType,
@@ -18,7 +19,7 @@ import {
 } from '@/types/queue';
 
 export class QueueOperationsService {
-  private redis: Redis;
+  private readonly redis: Redis;
 
   constructor(redis: Redis) {
     this.redis = redis;
@@ -295,7 +296,7 @@ export class QueueOperationsService {
    */
   async acquireJob(queueName: string): Promise<QueueJob | null> {
     try {
-      const redis = this.redis;
+      const {redis} = this;
       const jobId = await redis.zrange(`${queueName}:waiting`, 0, 0);
 
       if (jobId.length === 0) {

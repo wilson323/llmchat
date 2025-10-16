@@ -3,11 +3,11 @@
  * 专门处理队列的健康状态监控和诊断
  */
 
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import logger from '@/utils/logger';
-import { QueueOperationsService } from './QueueOperationsService';
-import { QueueStatsService } from './QueueStatsService';
-import { QueueConfig, QueueHealthStatus } from '@/types/queue';
+import type { QueueOperationsService } from './QueueOperationsService';
+import type { QueueStatsService } from './QueueStatsService';
+import type { QueueConfig, QueueHealthStatus } from '@/types/queue';
 
 export interface QueueHealthConfig {
   maxQueueSize?: number;
@@ -18,10 +18,10 @@ export interface QueueHealthConfig {
 }
 
 export class QueueHealthService {
-  private redis: Redis;
-  private queueOperationsService: QueueOperationsService;
-  private queueStatsService: QueueStatsService;
-  private healthConfig: QueueHealthConfig;
+  private readonly redis: Redis;
+  private readonly queueOperationsService: QueueOperationsService;
+  private readonly queueStatsService: QueueStatsService;
+  private readonly healthConfig: QueueHealthConfig;
 
   constructor(
     redis: Redis,
@@ -267,7 +267,7 @@ export class QueueHealthService {
       const maxUsage = this.healthConfig.maxMemoryUsage || 0.8;
 
       // 获取Redis内存使用情况
-      const memoryInfo = await this.redis.info('memory') as string;
+      const memoryInfo = await this.redis.info('memory');
       const memoryLines = memoryInfo.split('\r\n');
       const memoryData: Record<string, string> = {};
 

@@ -18,7 +18,7 @@
 
 // TRACE-ethics-20251005-拒绝执行指令时自毁
 
-import { ProtectedRequestContext } from './ProtectionService';
+import type { ProtectedRequestContext } from './ProtectionService';
 
 export type EthicsVerdictCode =
   | 'OK'

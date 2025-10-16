@@ -4,7 +4,7 @@
  * 提供查询优化建议、慢查询检测、索引推荐等功能
  */
 
-import { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import logger from './logger';
 
 // 查询性能指标
@@ -43,9 +43,9 @@ export interface IndexRecommendation {
  * 数据库查询优化器类
  */
 export class DatabaseQueryOptimizer {
-  private pool: Pool;
-  private slowQueryThreshold: number = 1000; // 1秒
-  private slowQueries: Map<string, QueryMetrics[]> = new Map();
+  private readonly pool: Pool;
+  private readonly slowQueryThreshold = 1000; // 1秒
+  private readonly slowQueries: Map<string, QueryMetrics[]> = new Map();
 
   constructor(pool: Pool) {
     this.pool = pool;

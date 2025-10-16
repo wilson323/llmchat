@@ -79,8 +79,8 @@ const SESSION_PREFIX = 'auth:session:';          // Redis会话前缀
 
 export class AuthServiceV2 {
   private redis: Redis | null = null;
-  private tokenSecret: string;
-  private tokenTTL: number;
+  private readonly tokenSecret: string;
+  private readonly tokenTTL: number;
 
   constructor() {
     const envManager = EnvManager.getInstance();

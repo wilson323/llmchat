@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
 import { DifyInitService } from '@/services/DifyInitService';
-import { ApiError, AgentConfig } from '@/types';
+import type { ApiError, AgentConfig } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 import logger from '@/utils/logger';
 import { HTTP_STATUS } from '@/constants/httpStatus';
-import { JsonValue } from '@/types/dynamic';
+import type { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
 async function ensureAdminAuth(req: Request) {
@@ -49,11 +49,11 @@ function handleAdminAuthError(error: unknown, res: Response): boolean {
  * 智能体控制器
  */
 export class AgentController {
-  private agentService: AgentConfigService;
-  private chatService: ChatProxyService;
-  private chatInitService: ChatInitService;
-  private difyInitService: DifyInitService;
-  private createAgentSchema = Joi.object({
+  private readonly agentService: AgentConfigService;
+  private readonly chatService: ChatProxyService;
+  private readonly chatInitService: ChatInitService;
+  private readonly difyInitService: DifyInitService;
+  private readonly createAgentSchema = Joi.object({
     id: Joi.string().optional(),
     name: Joi.string().max(120).required(),
     description: Joi.string().allow('').default(''),
@@ -85,7 +85,7 @@ export class AgentController {
       }).optional(),
     }).optional(),
   });
-  private updateAgentSchema = Joi.object({
+  private readonly updateAgentSchema = Joi.object({
     name: Joi.string().max(120).optional(),
     description: Joi.string().allow('').optional(),
     provider: Joi.string().valid('fastgpt', 'openai', 'anthropic', 'dify', 'custom').optional(),
@@ -116,7 +116,7 @@ export class AgentController {
       }).optional(),
     }).optional(),
   });
-  private importSchema = Joi.object({
+  private readonly importSchema = Joi.object({
     agents: Joi.array().items(this.createAgentSchema).min(1).required(),
   });
 

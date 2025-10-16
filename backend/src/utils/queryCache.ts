@@ -73,9 +73,9 @@ export interface CacheStats {
  * 查询缓存类
  */
 export class QueryCache {
-  private cache = new Map<string, CacheItem>();
+  private readonly cache = new Map<string, CacheItem>();
   private config: CacheConfig;
-  private stats: CacheStats = {
+  private readonly stats: CacheStats = {
     totalItems: 0,
     totalSize: 0,
     hits: 0,
@@ -87,7 +87,7 @@ export class QueryCache {
     updatedItems: 0,
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
-  private tagIndex = new Map<string, Set<string>>(); // 标签到缓存键的索引
+  private readonly tagIndex = new Map<string, Set<string>>(); // 标签到缓存键的索引
 
   constructor(config: Partial<CacheConfig> = {}) {
     this.config = {
@@ -437,7 +437,7 @@ export class QueryCache {
   /**
    * 获取缓存项详情
    */
-  getCacheItems(limit: number = 100): CacheItem[] {
+  getCacheItems(limit = 100): CacheItem[] {
     return Array.from(this.cache.values())
       .sort((a, b) => b.lastAccessAt - a.lastAccessAt)
       .slice(0, limit);

@@ -3,20 +3,21 @@
  * 专门处理队列的统计信息和监控数据
  */
 
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import logger from '@/utils/logger';
-import {
+import type {
   QueueStats,
   QueueJob,
+  QueueType} from '@/types/queue';
+import {
   JobStatus,
   QueueStatus,
-  QueueType,
   MessagePriority,
   QUEUE_TYPES
 } from '@/types/queue';
 
 export class QueueStatsService {
-  private redis: Redis;
+  private readonly redis: Redis;
 
   constructor(redis: Redis) {
     this.redis = redis;

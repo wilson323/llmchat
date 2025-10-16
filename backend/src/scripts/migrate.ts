@@ -11,7 +11,8 @@
 import { Pool } from 'pg';
 import { readJsonc } from '../utils/config';
 import { createMigrationManager } from '../utils/migrate';
-import { PgConfig, normalizePostgresConfig } from '../utils/db';
+import type { PgConfig} from '../utils/db';
+import { normalizePostgresConfig } from '../utils/db';
 import { resolveEnvInJsonc } from '../utils/envResolver';
 import fs from 'fs';
 import path from 'path';

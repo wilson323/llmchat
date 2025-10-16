@@ -28,13 +28,13 @@ interface StreamLogEntry {
 }
 
 export class ChatLogService {
-  private enabled: boolean;
-  private logDir: string;
-  private recordNormal: boolean;
-  private recordStream: boolean;
-  private includeRaw: boolean;
-  private includeNormalized: boolean;
-  private observability = ObservabilityDispatcher.getInstance();
+  private readonly enabled: boolean;
+  private readonly logDir: string;
+  private readonly recordNormal: boolean;
+  private readonly recordStream: boolean;
+  private readonly includeRaw: boolean;
+  private readonly includeNormalized: boolean;
+  private readonly observability = ObservabilityDispatcher.getInstance();
 
   constructor() {
     const cfg = loadAppConfig();

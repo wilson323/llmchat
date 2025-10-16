@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'; // [L1]
+import type { Request, Response } from 'express'; // [L1]
 import logger from '@/utils/logger'; // [L2]
 import { AuthServiceV2 } from '@/services/AuthServiceV2'; // [L3]
 import { toEnhancedError, ExpressErrorHandler } from '@/utils/errorHandler'; // [L4]
@@ -9,7 +9,7 @@ import { toEnhancedError, ExpressErrorHandler } from '@/utils/errorHandler'; // 
  * 依赖：AuthServiceV2 提供认证业务逻辑；logger 提供审计日志。
  */ // [L9]
 export class AuthController { // [L10]
-  private authService: AuthServiceV2; // [L11]
+  private readonly authService: AuthServiceV2; // [L11]
 
   constructor() { // [L13]
     this.authService = new AuthServiceV2(); // [L14]

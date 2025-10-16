@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger, { logAudit } from '@/utils/logger';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';

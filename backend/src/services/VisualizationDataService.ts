@@ -3,9 +3,9 @@
  * 为可视化界面提供数据支持和实时更新
  */
 
-import QueueManager from '@/services/QueueManager';
-import MonitoringService from '@/services/MonitoringService';
-import RedisConnectionPool from '@/utils/redisConnectionPool';
+import type QueueManager from '@/services/QueueManager';
+import type MonitoringService from '@/services/MonitoringService';
+import type RedisConnectionPool from '@/utils/redisConnectionPool';
 import { EventEmitter } from 'events';
 
 export interface RealtimeDataUpdate {
@@ -71,13 +71,13 @@ export interface RedisStatsSnapshot {
 }
 
 class VisualizationDataService extends EventEmitter {
-  private queueManager: QueueManager;
-  private monitoringService: MonitoringService;
-  private connectionPool: RedisConnectionPool;
-  private dataHistory: Map<string, Array<any>>;
-  private maxHistorySize: number;
+  private readonly queueManager: QueueManager;
+  private readonly monitoringService: MonitoringService;
+  private readonly connectionPool: RedisConnectionPool;
+  private readonly dataHistory: Map<string, Array<any>>;
+  private readonly maxHistorySize: number;
   private updateInterval: NodeJS.Timeout | null;
-  private subscribers: Map<string, Set<(data: RealtimeDataUpdate) => void>>;
+  private readonly subscribers: Map<string, Set<(data: RealtimeDataUpdate) => void>>;
 
   constructor(
     queueManager: QueueManager,
@@ -110,7 +110,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 启动实时数据收集
    */
-  public startRealtimeCollection(intervalMs: number = 5000): void {
+  public startRealtimeCollection(intervalMs = 5000): void {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
     }
@@ -474,7 +474,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 获取颜色
    */
-  private getColorForIndex(index: number, alpha: number = 0.2): string {
+  private getColorForIndex(index: number, alpha = 0.2): string {
     const colors = [
       `rgba(59, 130, 246, ${alpha})`, // blue
       `rgba(16, 185, 129, ${alpha})`, // green

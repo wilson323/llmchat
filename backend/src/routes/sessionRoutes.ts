@@ -9,6 +9,19 @@ const sessionController = new SessionController();
  * 基础路径: /api/sessions
  */
 
+// 获取会话列表（基础版）
+router.get('/', (req, res) => {
+  res.json({
+    code: 200,
+    message: 'success',
+    data: {
+      sessions: [],
+      total: 0,
+      message: 'Please specify agentId to get sessions',
+    },
+  });
+});
+
 // 增强版会话列表 - 支持分页、过滤、排序
 router.get('/:agentId/enhanced', sessionController.listSessionsEnhanced);
 

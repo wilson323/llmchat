@@ -51,6 +51,8 @@ import auditRouter from "./routes/audit"; // 使用 default export
 import difySessionRouter from "./routes/difySession"; // 使用 default export
 import { productPreviewRoutes } from "./routes/productPreview"; // 使用 named export
 import sessionRouter from "./routes/sessionRoutes"; // 使用 default export
+import chatSessionsRouter from "./routes/chatSessions"; // ✅ T009: 通用会话持久化路由
+import uploadRouter from "./routes/upload"; // ✅ T011: 文件上传路由
 import databasePerformanceRouter from "./routes/databasePerformance"; // 数据库性能管理路由
 import cacheRouter from "./routes/cache"; // 缓存管理路由
 import queueRouter from "./routes/queue"; // 消息队列管理路由
@@ -228,7 +230,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/audit", auditRouter); // 审计日志接口
 app.use("/api/dify", difySessionRouter); // Dify会话管理接口
 app.use("/api/product-preview", productPreviewRoutes); // 产品预览接口
-app.use("/api/sessions", sessionRouter); // 会话管理接口
+app.use("/api/sessions", sessionRouter); // FastGPT会话管理接口
+app.use("/api/chat-sessions", chatSessionsRouter); // ✅ T009: 通用会话持久化接口
+app.use("/api/upload", uploadRouter); // ✅ T011: 文件上传接口
 app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接口
 app.use("/api/cache", cacheRouter); // 缓存管理接口
 app.use("/api/queue", queueRouter); // 消息队列管理接口

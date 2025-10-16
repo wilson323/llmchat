@@ -5,9 +5,11 @@
  * 支持标准 OpenAI 兼容接口和 Function Calling
  */
 
-import axios, { AxiosInstance } from 'axios';
-import { ChatMessage, ChatOptions, ChatResponse } from '@/types';
-import { CadFunctionTool } from '@llmchat/shared-types';
+import type { AxiosInstance } from 'axios';
+import axios from 'axios';
+import type { ChatMessage, ChatOptions} from '@/types';
+import { ChatResponse } from '@/types';
+import type { CadFunctionTool } from '@llmchat/shared-types';
 import logger from '@/utils/logger';
 
 export interface DashScopeConfig {
@@ -68,8 +70,8 @@ export interface DashScopeResponse {
  * DashScope 服务类
  */
 export class DashScopeService {
-  private client: AxiosInstance;
-  private config: Required<DashScopeConfig>;
+  private readonly client: AxiosInstance;
+  private readonly config: Required<DashScopeConfig>;
 
   constructor(config: DashScopeConfig) {
     this.config = {

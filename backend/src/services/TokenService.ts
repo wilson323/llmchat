@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { ValidationError, SystemError } from '@/types/errors';
 import logger from '@/utils/logger';
 import { getPool } from '@/utils/db';
@@ -22,10 +22,10 @@ export interface TokenMetadata {
 }
 
 export class TokenService {
-  private redis: Redis;
-  private secret: string;
-  private ttl: number;
-  private refreshTtl: number;
+  private readonly redis: Redis;
+  private readonly secret: string;
+  private readonly ttl: number;
+  private readonly refreshTtl: number;
 
   /**
    * 延迟获取数据库连接池

@@ -207,15 +207,65 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    max: 50,                          // 连接池最大50个连接（支持1000并发）
-    min: 10,                          // 最小保持10个连接（P0优化）
+    
+    // ✅ T006: 动态连接池配置（环境变量控制）
+    max: parseInt(process.env.DB_POOL_MAX || '50'),          // 最大连接数（默认50）
+    min: parseInt(process.env.DB_POOL_MIN || '10'),          // 最小连接数（默认10）
     idleTimeoutMillis: 30_000,        // 30秒空闲超时
     connectionTimeoutMillis: 5000,   // 5秒连接超时
     query_timeout: 5000,             // 5秒查询超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
+    
+    // ✅ 应用标识
+    application_name: 'llmchat-backend',
   });
 
-  logger.info('[initDB] 数据库连接池创建成功');
+  logger.info('[initDB] 数据库连接池创建成功', {
+    min: pool.options.min,
+    max: pool.options.max,
+    idleTimeout: pool.options.idleTimeoutMillis,
+  });
+  
+  // ✅ T006: 连接池事件监听
+  pool.on('connect', (client) => {
+    logger.info('DB Pool: 新连接已建立', {
+      total: pool.totalCount,
+      idle: pool.idleCount,
+      waiting: pool.waitingCount,
+    });
+  });
+
+  pool.on('acquire', (client) => {
+    // 仅在debug模式记录（避免日志洪水）
+    if (process.env.LOG_LEVEL === 'debug') {
+      logger.debug('DB Pool: 连接已获取');
+    }
+  });
+
+  pool.on('remove', (client) => {
+    logger.info('DB Pool: 连接已移除', {
+      total: pool.totalCount,
+      idle: pool.idleCount,
+    });
+  });
+
+  pool.on('error', (err, client) => {
+    logger.error('DB Pool: 意外错误', {
+      error: err.message,
+      stack: err.stack,
+    });
+  });
+
+  // ✅ T006: 定期报告连接池状态（每分钟）
+  setInterval(() => {
+    if (pool.totalCount > 0) {
+      logger.info('DB Pool Status', {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+      });
+    }
+  }, 60000);
 
   // 建表（若不存在）
   await withClient(async (client) => {
@@ -397,7 +447,7 @@ export async function initDB(): Promise<void> {
   // 🔄 自动运行数据库迁移（版本化管理）
   try {
     logger.info('🔄 开始检查数据库迁移...');
-    const migrationManager = new MigrationManager(pool!, 'src/migrations');
+    const migrationManager = new MigrationManager(pool, 'src/migrations');
     const result = await migrationManager.runMigrations();
     logger.info('✅ 数据库迁移完成', {
       executed: result.executed,

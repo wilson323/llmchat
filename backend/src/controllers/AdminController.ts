@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { AgentConfigService } from '@/services/AgentConfigService';
-import { ApiResponse } from '@/types';
+import type { ApiResponse } from '@/types';
 import { safeLogger as logger } from '@/utils/logSanitizer';
 import { HTTP_STATUS } from '@/constants/httpStatus';
 import { TIME_CONSTANTS, TIME_UNITS } from '@/constants/intervals';
@@ -1071,5 +1071,202 @@ export class AdminController {
         timestamp: new Date().toISOString(),
       });
     }
+  }
+}
+
+/**
+ * 获取管理员统计数据
+ * GET /api/admin/stats
+ *
+ * @swagger
+ * /api/admin/stats:
+ *   get:
+ *     summary: 获取管理员统计数据
+ *     tags: [Admin]
+ *     description: 获取系统统计信息，包括用户数、会话数、智能体使用情况等
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功返回统计数据
+ */
+export async function getAdminStats(
+  req: Request,
+  res: Response,
+): Promise<Response> {
+  try {
+    // 确保管理员权限
+    const adminCheck = req.headers['x-admin-verified'];
+    if (adminCheck !== 'true') {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        code: HTTP_STATUS.UNAUTHORIZED,
+        message: '需要管理员权限',
+        data: null,
+      });
+    }
+
+    const now = new Date();
+    const todayStart = startOfDay(now);
+
+    // 获取统计数据
+    const stats = await withClient(async (client) => {
+      // 用户统计
+      const usersResult = await client.query(`
+        SELECT 
+          COUNT(*)::int AS total,
+          COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
+          COUNT(CASE WHEN role = 'admin' THEN 1 END)::int AS admins
+        FROM users
+      `);
+
+      // 会话统计
+      const sessionsResult = await client.query(`
+        SELECT 
+          COUNT(*)::int AS total,
+          COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
+        FROM conversations
+      `, [todayStart]);
+
+      // 智能体统计
+      const agentsResult = await client.query(`
+        SELECT 
+          COUNT(*)::int AS total,
+          COUNT(CASE WHEN is_active = true THEN 1 END)::int AS active
+        FROM agent_configs
+      `);
+
+      // 消息统计
+      const messagesResult = await client.query(`
+        SELECT 
+          COUNT(*)::int AS total,
+          COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
+        FROM messages
+      `, [todayStart]);
+
+      return {
+        users: usersResult.rows[0] || { total: 0, active: 0, admins: 0 },
+        sessions: sessionsResult.rows[0] || { total: 0, today: 0 },
+        agents: agentsResult.rows[0] || { total: 0, active: 0 },
+        messages: messagesResult.rows[0] || { total: 0, today: 0 },
+      };
+    });
+
+    const response: ApiResponse<typeof stats> = {
+      code: 200,
+      message: 'success',
+      data: stats,
+    };
+
+    return res.json(response);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('[AdminController] 获取统计数据失败', {
+      error: errorMessage,
+      type: error instanceof Error ? error.constructor.name : 'Unknown',
+    });
+
+    const response: ApiResponse<null> = {
+      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      message: '获取统计数据失败',
+      data: null,
+    };
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
+  }
+}
+
+/**
+ * 获取管理员指标数据
+ * GET /api/admin/metrics
+ *
+ * @swagger
+ * /api/admin/metrics:
+ *   get:
+ *     summary: 获取管理员指标数据
+ *     tags: [Admin]
+ *     description: 获取系统性能指标，包括CPU、内存、响应时间等
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功返回指标数据
+ */
+export async function getAdminMetrics(
+  req: Request,
+  res: Response,
+): Promise<Response> {
+  try {
+    // 确保管理员权限
+    const adminCheck = req.headers['x-admin-verified'];
+    if (adminCheck !== 'true') {
+      return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+        code: HTTP_STATUS.UNAUTHORIZED,
+        message: '需要管理员权限',
+        data: null,
+      });
+    }
+
+    // 系统指标
+    const memTotal = os.totalmem();
+    const memFree = os.freemem();
+    const memUsed = memTotal - memFree;
+    const load = os.loadavg ? os.loadavg() : [0, 0, 0];
+    
+    // 获取数据库指标
+    const dbMetrics = await withClient(async (client) => {
+      const startTime = Date.now();
+      await client.query('SELECT 1');
+      const queryTime = Date.now() - startTime;
+
+      // 获取活动连接数
+      const connectionsResult = await client.query(`
+        SELECT COUNT(*)::int AS active_connections
+        FROM pg_stat_activity
+        WHERE state = 'active'
+      `);
+
+      return {
+        activeConnections: connectionsResult.rows[0]?.active_connections || 0,
+        queryTime,
+      };
+    });
+
+    const metrics = {
+      system: {
+        cpuUsage: load[0] || 0,
+        memoryUsage: Math.round((memUsed / memTotal) * 100),
+        uptime: Math.floor(process.uptime()),
+      },
+      performance: {
+        avgResponseTime: 0, // 可以从MetricsService获取
+        requestsPerMinute: 0, // 可以从MetricsService获取
+      },
+      database: {
+        activeConnections: dbMetrics.activeConnections,
+        queryTime: dbMetrics.queryTime,
+      },
+    };
+
+    const response: ApiResponse<typeof metrics> = {
+      code: 200,
+      message: 'success',
+      data: metrics,
+    };
+
+    return res.json(response);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('[AdminController] 获取指标数据失败', {
+      error: errorMessage,
+      type: error instanceof Error ? error.constructor.name : 'Unknown',
+    });
+
+    const response: ApiResponse<null> = {
+      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      message: '获取指标数据失败',
+      data: null,
+    };
+
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
   }
 }

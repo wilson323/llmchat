@@ -12,6 +12,27 @@ import { QueueStatsService } from '../../services/QueueStatsService';
 import { QueueHealthService } from '../../services/QueueHealthService';
 import { QueueMonitoringService } from '../../services/QueueMonitoringService';
 import Redis from 'ioredis';
+import type { QueueConfig, MessagePriority } from '../../types/queue';
+
+// 辅助函数：创建完整的QueueConfig
+function createQueueConfig(name: string, partial: Partial<QueueConfig> = {}): QueueConfig {
+  return {
+    name,
+    concurrency: partial.concurrency || 5,
+    maxRetries: partial.maxRetries || 3,
+    retryDelay: partial.retryDelay || 1000,
+    backoffMultiplier: partial.backoffMultiplier || 2,
+    removeOnComplete: partial.removeOnComplete || 100,
+    removeOnFail: partial.removeOnFail || 50,
+    defaultPriority: (partial.defaultPriority || 5) as MessagePriority,
+    stalledInterval: partial.stalledInterval || 30000,
+    maxStalledCount: partial.maxStalledCount || 3,
+    delayOnFail: partial.delayOnFail !== undefined ? partial.delayOnFail : false,
+    deadLetterQueue: partial.deadLetterQueue,
+    paused: partial.paused,
+    visibilityTimeout: partial.visibilityTimeout || 30000,
+  };
+}
 
 describe('QueueManager Integration Tests', () => {
   let app: express.Application;
@@ -41,7 +62,8 @@ describe('QueueManager Integration Tests', () => {
       queueHealthService
     );
 
-    queueManager = new QueueManager(redis, {
+    queueManager = QueueManager.getInstance({
+      redis,
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,
@@ -81,16 +103,16 @@ describe('QueueManager Integration Tests', () => {
 
     beforeEach(async () => {
       // 创建测试队列
-      await queueManager.createQueue(testQueueName, {
+      queueManager.createQueue(createQueueConfig(testQueueName, {
         concurrency: 5,
         maxRetries: 3,
         retryDelay: 1000,
-      });
+      }));
     });
 
     afterEach(async () => {
-      // 清理测试队列
-      await queueManager.deleteQueue(testQueueName);
+      // 清理测试队列（QueueManager没有delete方法，清理Redis数据即可）
+      await redis.del(`queue:${testQueueName}:*`);
     });
 
     it('should handle complete job lifecycle', async () => {
@@ -98,7 +120,7 @@ describe('QueueManager Integration Tests', () => {
 
       // 1. 添加作业
       const jobId = await queueOpsService.addJob(testQueueName, jobData, {
-        priority: 'normal',
+        priority: MessagePriority.NORMAL,
         maxAttempts: 3,
       });
       expect(jobId).toBeTruthy();
@@ -273,20 +295,20 @@ describe('QueueManager Integration Tests', () => {
 
     it('should handle priority distribution', async () => {
       // 添加不同优先级的作业
-      await queueOpsService.addJob(testQueueName, { priority: 'low' }, { priority: 'low' });
-      await queueOpsService.addJob(testQueueName, { priority: 'normal' }, { priority: 'normal' });
-      await queueOpsService.addJob(testQueueName, { priority: 'high' }, { priority: 'high' });
-      await queueOpsService.addJob(testQueueName, { priority: 'urgent' }, { priority: 'urgent' });
+      await queueOpsService.addJob(testQueueName, { priority: MessagePriority.LOW }, { priority: MessagePriority.LOW });
+      await queueOpsService.addJob(testQueueName, { priority: MessagePriority.NORMAL }, { priority: MessagePriority.NORMAL });
+      await queueOpsService.addJob(testQueueName, { priority: MessagePriority.HIGH }, { priority: MessagePriority.HIGH });
+      await queueOpsService.addJob(testQueueName, { priority: MessagePriority.CRITICAL }, { priority: MessagePriority.CRITICAL });
 
       const distribution = await queueStatsService.getPriorityDistribution(testQueueName);
-      expect(distribution).toHaveProperty('low');
-      expect(distribution).toHaveProperty('normal');
-      expect(distribution).toHaveProperty('high');
-      expect(distribution).toHaveProperty('urgent');
-      expect(distribution.low).toBe(1);
-      expect(distribution.normal).toBe(1);
-      expect(distribution.high).toBe(1);
-      expect(distribution.urgent).toBe(1);
+      expect(distribution).toHaveProperty(MessagePriority.LOW);
+      expect(distribution).toHaveProperty(MessagePriority.NORMAL);
+      expect(distribution).toHaveProperty(MessagePriority.HIGH);
+      expect(distribution).toHaveProperty(MessagePriority.CRITICAL);
+      expect(distribution[MessagePriority.LOW]).toBe(1);
+      expect(distribution[MessagePriority.NORMAL]).toBe(1);
+      expect(distribution[MessagePriority.HIGH]).toBe(1);
+      expect(distribution[MessagePriority.CRITICAL]).toBe(1);
     });
   });
 

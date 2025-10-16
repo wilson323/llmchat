@@ -3,11 +3,12 @@
  * 集成熔断器、限流器、重试机制和监控
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
+import type { Request, Response, NextFunction } from 'express';
+import type { ProtectedRequestContext } from '@/services/ProtectionService';
+import { getProtectionService } from '@/services/ProtectionService';
 import { createErrorFromUnknown } from '@/types/errors';
 import logger from '@/utils/logger';
-import { JsonValue } from '@/types/dynamic';
+import type { JsonValue } from '@/types/dynamic';
 import { createDefaultFirewall } from '@/services/EthicsFirewallService';
 
 /**
@@ -360,7 +361,7 @@ function checkCircuitBreakerHealth(agentId: string, protectionService: { circuit
   message: string;
 } {
   try {
-    const circuitBreakerManager = protectionService.circuitBreakerManager;
+    const {circuitBreakerManager} = protectionService;
     const healthStatus = circuitBreakerManager.getHealthStatus();
 
     const agentCircuitBreaker = healthStatus.find((cb: { name: string; healthy: boolean; message?: string }) => cb.name === `agent_${agentId}`);

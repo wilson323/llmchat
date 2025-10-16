@@ -4,7 +4,7 @@
  * 集成查询优化器、连接池优化器、缓存等功能
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 import { getQueryOptimizer } from '@/utils/queryOptimizer';
 import { connectionPoolOptimizer } from '@/utils/connectionPoolOptimizer';
@@ -155,7 +155,7 @@ class DatabaseOptimizer {
           if (this.config.autoOptimizeQueries && analysis.suggestions.length > 0) {
             const optimized = optimizer.optimizeQuery(query);
             query = optimized.optimized;
-            result.queryOptimization!.optimizedQuery = query;
+            result.queryOptimization.optimizedQuery = query;
           }
         } catch (dbError) {
           logger.warn('数据库查询分析失败，跳过优化', { query, error: dbError instanceof Error ? dbError.message : String(dbError) });
@@ -373,7 +373,7 @@ export function databaseOptimizationMiddleware(
     // 添加优化信息到响应中（如果在开发环境）
     if (process.env.NODE_ENV === 'development' && queryOptimizations.length > 0) {
       if (data && typeof data === 'object') {
-        (data as any)._queryOptimizations = queryOptimizations;
+        (data)._queryOptimizations = queryOptimizations;
       }
     }
 

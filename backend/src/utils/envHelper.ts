@@ -19,7 +19,7 @@ import { EnvManager } from '@/config/EnvManager';
  * @param silent 是否静默模式（不记录警告）
  * @returns 替换后的字符串
  */
-export function replaceEnvVariables(input: string, defaultValue?: string, silent: boolean = false): string {
+export function replaceEnvVariables(input: string, defaultValue?: string, silent = false): string {
   const envManager = EnvManager.getInstance();
 
   return input.replace(/\$\{([^}]+)\}/g, (match, envVar) => {
@@ -62,7 +62,7 @@ export function replaceEnvVariables(input: string, defaultValue?: string, silent
  * @param silent 是否静默模式（不记录警告）
  * @returns 处理后的对象
  */
-export function deepReplaceEnvVariables<T>(obj: T, silent: boolean = false): T {
+export function deepReplaceEnvVariables<T>(obj: T, silent = false): T {
   if (typeof obj === 'string') {
     return replaceEnvVariables(obj, undefined, silent) as T;
   }

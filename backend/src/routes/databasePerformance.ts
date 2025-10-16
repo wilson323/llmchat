@@ -4,7 +4,8 @@
  * 提供数据库性能监控、优化建议、统计信息等功能
  */
 
-import { Router, Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
 import logger from '@/utils/logger';
 import { getQueryOptimizer } from '@/utils/queryOptimizer';
 import { connectionPoolOptimizer } from '@/utils/connectionPoolOptimizer';

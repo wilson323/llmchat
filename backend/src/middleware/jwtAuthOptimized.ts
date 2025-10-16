@@ -4,10 +4,11 @@
  * 支持测试环境和生产环境
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { LRUCache } from 'lru-cache';
 import jwt from 'jsonwebtoken';
-import { SecureJWT, JWTPayload } from '@/utils/secureJwt';
+import type { JWTPayload } from '@/utils/secureJwt';
+import { SecureJWT } from '@/utils/secureJwt';
 import { safeLogger } from '@/utils/logSanitizer';
 
 export interface AuthenticatedRequest extends Request {
@@ -338,7 +339,7 @@ export function createAuthPerformanceMonitor() {
 
   return (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
-    const path = req.path;
+    const {path} = req;
 
     res.on('finish', () => {
       const duration = Date.now() - startTime;

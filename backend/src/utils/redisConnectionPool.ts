@@ -43,15 +43,15 @@ export interface ConnectionStats {
 }
 
 export class RedisConnectionPool extends EventEmitter {
-  private config: RedisPoolConfig;
+  private readonly config: RedisPoolConfig;
   private pool: Redis[] = [];
-  private activeConnections: Set<Redis> = new Set();
+  private readonly activeConnections: Set<Redis> = new Set();
   private waitingQueue: Array<{
     resolve: (connection: Redis) => void;
     reject: (error: Error) => void;
     timeout: NodeJS.Timeout;
   }> = [];
-  private stats: ConnectionStats = {
+  private readonly stats: ConnectionStats = {
     total: 0,
     active: 0,
     idle: 0,

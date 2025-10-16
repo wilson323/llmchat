@@ -1,18 +1,18 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import Joi from 'joi';
 import { ProductPreviewService } from '@/services/ProductPreviewService';
-import { ApiError, ProductPreviewRequest } from '@/types';
+import type { ApiError, ProductPreviewRequest } from '@/types';
 import logger from '@/utils/logger';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 
 export class ProductPreviewController {
-  private service: ProductPreviewService;
+  private readonly service: ProductPreviewService;
 
   constructor() {
     this.service = new ProductPreviewService();
   }
 
-  private generateSchema = Joi.object<ProductPreviewRequest>({
+  private readonly generateSchema = Joi.object<ProductPreviewRequest>({
     sceneImage: Joi.string().min(10).required().messages({
       'any.required': '现场照片不能为空',
       'string.empty': '现场照片不能为空',

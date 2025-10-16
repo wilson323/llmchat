@@ -5,8 +5,8 @@
 
 import logger from '@/utils/logger';
 import { EventEmitter } from 'events';
-import MemoryOptimizationService from '@/services/MemoryOptimizationService';
-import QueueManager from '@/services/QueueManager';
+import type MemoryOptimizationService from '@/services/MemoryOptimizationService';
+import type QueueManager from '@/services/QueueManager';
 
 export interface MonitoringConfig {
   // 监控开关
@@ -140,8 +140,8 @@ export interface MonitoringStats {
 export class MonitoringService extends EventEmitter {
   private static instance: MonitoringService | null = null;
   private config: MonitoringConfig;
-  private queueManager: QueueManager;
-  private memoryOptimizationService: MemoryOptimizationService | null;
+  private readonly queueManager: QueueManager;
+  private readonly memoryOptimizationService: MemoryOptimizationService | null;
 
   // 监控定时器
   private performanceTimer: NodeJS.Timeout | null;
@@ -151,12 +151,12 @@ export class MonitoringService extends EventEmitter {
 
   // 数据存储
   private metricsHistory: MonitoringMetrics[] = [];
-  private alertRules: Map<string, AlertRule> = new Map();
-  private activeAlerts: Map<string, Alert> = new Map();
+  private readonly alertRules: Map<string, AlertRule> = new Map();
+  private readonly activeAlerts: Map<string, Alert> = new Map();
   private alertHistory: Alert[] = [];
 
   // 统计信息
-  private stats: MonitoringStats = {
+  private readonly stats: MonitoringStats = {
     startTime: Date.now(),
     uptime: 0,
     isRunning: false,
@@ -450,7 +450,7 @@ export class MonitoringService extends EventEmitter {
   private async collectQueueMetrics(): Promise<MonitoringMetrics['queue']> {
     try {
       const queueHealth = await this.queueManager.healthCheck();
-      const queues = queueHealth.queues;
+      const {queues} = queueHealth;
 
       let totalJobs = 0;
       let waitingJobs = 0;
@@ -470,10 +470,10 @@ export class MonitoringService extends EventEmitter {
 
         // 从stats中提取throughput和processingTime（如果可用）
         if ('throughput' in stats) {
-          totalThroughput += (stats as any).throughput || 0;
+          totalThroughput += (stats).throughput || 0;
         }
         if ('avgProcessingTime' in stats) {
-          totalProcessingTime += (stats as any).avgProcessingTime || 0;
+          totalProcessingTime += (stats).avgProcessingTime || 0;
         }
 
         queueCount++;

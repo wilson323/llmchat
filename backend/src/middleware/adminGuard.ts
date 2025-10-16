@@ -3,7 +3,7 @@
  * 确保只有管理员用户才能访问特定路由
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { AuthenticationError } from '@/types/errors';
 import logger from '@/utils/logger';
 

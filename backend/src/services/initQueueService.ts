@@ -5,7 +5,8 @@
 
 import QueueManager from '@/services/QueueManager';
 import logger from '@/utils/logger';
-import { QueueProcessor, QueueMiddleware, JobType, MessagePriority } from '@/types/queue';
+import type { QueueProcessor, QueueMiddleware} from '@/types/queue';
+import { JobType, MessagePriority } from '@/types/queue';
 
 // 聊天消息处理器
 const chatMessageProcessor: QueueProcessor = async (job) => {

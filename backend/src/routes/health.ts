@@ -3,7 +3,8 @@
  * 支持基础检查、详细检查、就绪检查、存活检查、性能监控
  */
 
-import { Router, Request, Response, type Router as RouterType } from 'express';
+import type { Request, Response} from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
 

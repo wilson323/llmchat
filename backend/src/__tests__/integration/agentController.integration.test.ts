@@ -14,6 +14,7 @@ describe('AgentController Integration Tests', () => {
   let authToken: string;
   let testDb: any;
   let originalConfig: any;
+  let testAgentId: string;
 
   beforeAll(async () => {
     testDb = await setupTestDatabase();
@@ -34,6 +35,17 @@ describe('AgentController Integration Tests', () => {
       });
 
     authToken = loginResponse.body.token;
+
+    // 获取第一个可用的智能体ID用于测试
+    const agentsResponse = await request(app)
+      .get('/api/agents')
+      .set('Authorization', `Bearer ${authToken}`);
+    
+    if (agentsResponse.body.data && agentsResponse.body.data.length > 0) {
+      testAgentId = agentsResponse.body.data[0].id;
+    } else {
+      testAgentId = 'test-agent-fallback';
+    }
   });
 
   afterAll(async () => {

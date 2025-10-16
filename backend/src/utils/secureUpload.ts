@@ -3,7 +3,7 @@
  * 提供文件上传的安全验证和处理
  */
 
-import { Request } from 'express';
+import type { Request } from 'express';
 import { LogSanitizer } from './logSanitizer';
 import { promises as fs } from 'fs';
 

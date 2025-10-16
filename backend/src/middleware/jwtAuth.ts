@@ -3,7 +3,7 @@
  * 验证请求中的 Bearer Token 并解析用户信息
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { SecureJWT } from '@/utils/secureJwt';
 import { safeLogger } from '@/utils/logSanitizer';

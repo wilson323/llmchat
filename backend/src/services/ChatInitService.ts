@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { AgentConfigService } from './AgentConfigService';
-import { AgentConfig, FastGPTInitResponse } from '@/types';
+import type { AgentConfigService } from './AgentConfigService';
+import type { AgentConfig, FastGPTInitResponse } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import logger from '@/utils/logger';
 
@@ -9,9 +9,9 @@ import logger from '@/utils/logger';
  * 负责调用FastGPT的初始化API并处理流式输出
  */
 export class ChatInitService {
-  private httpClient: ReturnType<typeof axios.create>;
-  private agentService: AgentConfigService;
-  private cache: Map<string, { data: FastGPTInitResponse; expiresAt: number }> = new Map();
+  private readonly httpClient: ReturnType<typeof axios.create>;
+  private readonly agentService: AgentConfigService;
+  private readonly cache: Map<string, { data: FastGPTInitResponse; expiresAt: number }> = new Map();
   private readonly cachePolicy = new AdaptiveTtlPolicy({
     initialTtl: 5 * 60 * 1000,
     minTtl: 60 * 1000,

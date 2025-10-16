@@ -4,17 +4,19 @@
  */
 
 import { EventEmitter } from 'events';
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 import logger from '@/utils/logger';
-import { QueueStatsService } from './QueueStatsService';
-import { QueueHealthService, QueueHealthConfig } from './QueueHealthService';
-import {
+import type { QueueStatsService } from './QueueStatsService';
+import type { QueueHealthService, QueueHealthConfig } from './QueueHealthService';
+import type {
   QueueConfig,
   QueueStats,
-  QueueHealthStatus,
-  QueueEvent,
   QueueMetrics,
   QueueAlert
+} from '@/types/queue';
+import {
+  QueueHealthStatus,
+  QueueEvent
 } from '@/types/queue';
 
 export interface QueueMonitoringConfig extends QueueHealthConfig {
@@ -29,13 +31,13 @@ export interface QueueMonitoringConfig extends QueueHealthConfig {
 }
 
 export class QueueMonitoringService extends EventEmitter {
-  private redis: Redis;
-  private queueStatsService: QueueStatsService;
-  private queueHealthService: QueueHealthService;
-  private monitoringConfig: QueueMonitoringConfig;
-  private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
-  private metricsHistory: Map<string, QueueMetrics[]> = new Map();
-  private alerts: Map<string, QueueAlert[]> = new Map();
+  private readonly redis: Redis;
+  private readonly queueStatsService: QueueStatsService;
+  private readonly queueHealthService: QueueHealthService;
+  private readonly monitoringConfig: QueueMonitoringConfig;
+  private readonly monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private readonly metricsHistory: Map<string, QueueMetrics[]> = new Map();
+  private readonly alerts: Map<string, QueueAlert[]> = new Map();
   private isMonitoring = false;
 
   constructor(
@@ -539,7 +541,7 @@ export class QueueMonitoringService extends EventEmitter {
    */
   private async getMemoryUsage(): Promise<number> {
     try {
-      const memoryInfo = await this.redis.info('memory') as string;
+      const memoryInfo = await this.redis.info('memory');
       const memoryLines = memoryInfo.split('\r\n');
       const memoryData: Record<string, string> = {};
 

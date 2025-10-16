@@ -32,7 +32,7 @@ interface ValidationResult {
 }
 
 class EnvValidator {
-  private result: ValidationResult = {
+  private readonly result: ValidationResult = {
     passed: true,
     errors: [],
     warnings: [],

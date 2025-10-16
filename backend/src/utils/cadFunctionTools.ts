@@ -4,7 +4,7 @@
  * 为阿里云通义千问提供的工具函数定义
  */
 
-import { CadFunctionTool } from '@llmchat/shared-types';
+import type { CadFunctionTool } from '@llmchat/shared-types';
 
 /**
  * CAD 操作工具集

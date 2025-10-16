@@ -5,8 +5,9 @@
 
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
-import { QueueJob, QueueOptions, JobStatus, BackoffStrategy } from '@/types/queue';
-import RedisConnectionPool from '@/utils/redisConnectionPool';
+import type { QueueJob, QueueOptions} from '@/types/queue';
+import { JobStatus, BackoffStrategy } from '@/types/queue';
+import type RedisConnectionPool from '@/utils/redisConnectionPool';
 
 export interface BatchOperation {
   type: 'add' | 'remove' | 'retry' | 'update';
@@ -55,7 +56,7 @@ export interface BatchRetryOperation {
  * 批量操作服务类
  */
 export class BatchOperationService {
-  private connectionPool: RedisConnectionPool;
+  private readonly connectionPool: RedisConnectionPool;
   private batchSize: number;
   private enablePipelining: boolean;
   private enableTransactions: boolean;
@@ -170,7 +171,7 @@ export class BatchOperationService {
                 priority: job.opts.priority!,
                 attempts: 0,
                 maxAttempts: job.opts.attempts!,
-                delay: operation.delay!,
+                delay: operation.delay,
                 createdAt: job.createdAt,
                 metadata: job.opts.metadata,
                 scheduledAt
@@ -360,7 +361,7 @@ export class BatchOperationService {
                   }
 
                   // 重新添加到等待队列
-                  const score = this.getScore(job.opts.priority!, job.createdAt);
+                  const score = this.getScore(job.opts.priority, job.createdAt);
                   const currentJobId = jobIds[globalIndex] || 'unknown';
 
                   // 注意：这里需要重新创建pipeline，因为之前的pipeline已经执行了
@@ -461,7 +462,7 @@ export class BatchOperationService {
   public async batchCleanCompletedJobs(
     queueName: string,
     olderThanMs: number,
-    batchSize: number = 1000
+    batchSize = 1000
   ): Promise<number> {
     const redis = await this.connectionPool.acquire();
     try {

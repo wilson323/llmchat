@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { auditService } from '@/services/AuditService';
-import { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
+import type { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 import logger from '@/utils/logger';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 

@@ -3,7 +3,7 @@
  * 提供基本的性能优化功能
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { logPerformance } from '@/utils/logger';
 
 export interface OptimizationOptions {
@@ -12,7 +12,7 @@ export interface OptimizationOptions {
 }
 
 class ResponseOptimizer {
-  constructor(private options: OptimizationOptions = {}) {
+  constructor(private readonly options: OptimizationOptions = {}) {
     this.options = {
       enableCache: true,
       cacheTTL: 300, // 5分钟

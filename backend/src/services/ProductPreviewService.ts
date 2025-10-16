@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ProductPreviewRequest, ProductPreviewResult } from '@/types';
+import type { ProductPreviewRequest, ProductPreviewResult } from '@/types';
 
 // 定义豆包 / OpenAI 风格图片生成接口可能返回的数据结构（兼容多种字段命名）
 interface ProductPreviewApiResponse {
@@ -47,11 +47,11 @@ const normalizeDataUrl = (image: string): string => {
 };
 
 export class ProductPreviewService {
-  private endpoint: string;
-  private apiKey: string | undefined;
-  private model: string | undefined;
-  private size: string | undefined;
-  private stream: boolean;
+  private readonly endpoint: string;
+  private readonly apiKey: string | undefined;
+  private readonly model: string | undefined;
+  private readonly size: string | undefined;
+  private readonly stream: boolean;
 
   constructor() {
     // 默认使用 Ark Doubao v3 端点，可通过 DOUBAO_IMAGE_API_URL 覆盖

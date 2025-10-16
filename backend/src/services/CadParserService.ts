@@ -5,7 +5,7 @@
  */
 
 import DxfParser from 'dxf-parser';
-import {
+import type {
   DxfEntity,
   CadFileInfo,
   Point3D,
@@ -23,7 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
  * CAD 解析服务类
  */
 export class CadParserService {
-  private parser: DxfParser;
+  private readonly parser: DxfParser;
 
   constructor() {
     this.parser = new DxfParser();

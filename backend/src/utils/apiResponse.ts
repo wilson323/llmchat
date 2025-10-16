@@ -1,16 +1,17 @@
-import { Response } from 'express';
-import { ApiSuccessResponse, JsonObject, JsonValue, DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
+import type { Response } from 'express';
+import type { ApiSuccessResponse, JsonObject, JsonValue} from '@/types/dynamic';
+import { DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
 import { createErrorFromUnknown } from '@/types/errors';
 import { ApiError } from '@/types';
 
-type PaginationMetadata = {
+interface PaginationMetadata {
   page: number;
   pageSize: number;
   total: number;
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
-};
+}
 
 interface SuccessMetadata {
   pagination?: PaginationMetadata;
@@ -257,7 +258,7 @@ export class ApiResponseHandler {
    */
   static sendUnauthorized(
     res: Response,
-    message: string = '未授权访问',
+    message = '未授权访问',
     options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
@@ -276,7 +277,7 @@ export class ApiResponseHandler {
    */
   static sendForbidden(
     res: Response,
-    message: string = '禁止访问',
+    message = '禁止访问',
     options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
@@ -295,7 +296,7 @@ export class ApiResponseHandler {
    */
   static sendNotFound(
     res: Response,
-    message: string = '资源不存在',
+    message = '资源不存在',
     options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
@@ -314,7 +315,7 @@ export class ApiResponseHandler {
    */
   static sendMethodNotAllowed(
     res: Response,
-    message: string = '方法不允许',
+    message = '方法不允许',
     options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
@@ -333,7 +334,7 @@ export class ApiResponseHandler {
    */
   static sendConflict(
     res: Response,
-    message: string = '资源冲突',
+    message = '资源冲突',
     options: { requestId?: string } = {},
   ): void {
     const error = createErrorFromUnknown(
@@ -431,7 +432,7 @@ export class ApiResponseHandler {
    * 获取默认错误状态码
    */
   private static getDefaultErrorStatusCode(error: ReturnType<typeof createErrorFromUnknown>): number {
-    const code = error.code;
+    const {code} = error;
     const message = error.message.toLowerCase();
 
     // 客户端错误

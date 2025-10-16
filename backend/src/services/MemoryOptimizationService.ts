@@ -4,9 +4,10 @@
  */
 
 import logger from '@/utils/logger';
-import { MemoryMonitor, MemoryStats, MemoryOptimizationResult } from '@/utils/memoryMonitor';
+import type { MemoryStats, MemoryOptimizationResult } from '@/utils/memoryMonitor';
+import { MemoryMonitor } from '@/utils/memoryMonitor';
 import { EventEmitter } from 'events';
-import RedisConnectionPool from '@/utils/redisConnectionPool';
+import type RedisConnectionPool from '@/utils/redisConnectionPool';
 
 export interface MemoryOptimizationConfig {
   // 监控配置
@@ -71,7 +72,7 @@ export interface OptimizationReport {
  * 内存优化服务类
  */
 export class MemoryOptimizationService extends EventEmitter {
-  private memoryMonitor: MemoryMonitor;
+  private readonly memoryMonitor: MemoryMonitor;
   private config: MemoryOptimizationConfig;
   private optimizationTimer?: NodeJS.Timeout | null;
   private cleanupTimer?: NodeJS.Timeout | null;
@@ -81,7 +82,7 @@ export class MemoryOptimizationService extends EventEmitter {
   private connectionPool?: RedisConnectionPool;
 
   // 统计信息
-  private stats = {
+  private readonly stats = {
     totalOptimizations: 0,
     successfulOptimizations: 0,
     totalMemoryFreed: 0,
@@ -703,7 +704,7 @@ export class MemoryOptimizationService extends EventEmitter {
     }
 
     logger.info('MemoryOptimizationService: Configuration updated', {
-      oldConfig: oldConfig,
+      oldConfig,
       newConfig: this.config
     });
   }

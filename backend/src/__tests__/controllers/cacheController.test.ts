@@ -668,10 +668,16 @@ describe('CacheController', () => {
   describe('getCacheStats', () => {
     test('应该获取缓存统计', async () => {
       const mockRedisStats = {
+        memoryItems: 150,
+        memorySize: 1024000,
+        redisConnected: true,
+        connected: true,
         hits: 100,
         misses: 20,
         hitRate: 83.33,
-        memoryUsage: 1024000
+        sets: 120,
+        dels: 10,
+        errors: 0,
       };
 
       mockCacheManager.getStats.mockReturnValue(mockRedisStats);

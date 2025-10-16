@@ -12,8 +12,9 @@
  * - 保留原rateLimiter接口
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { RateLimiterRedis, RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+import type { Request, Response, NextFunction } from 'express';
+import type { RateLimiterRes } from 'rate-limiter-flexible';
+import { RateLimiterRedis, RateLimiterMemory } from 'rate-limiter-flexible';
 import { Redis } from 'ioredis';
 import { EnvManager } from '@/config/EnvManager';
 import logger from '@/utils/logger';
@@ -83,7 +84,7 @@ export const RATE_LIMIT_PRESETS = {
 
 class RateLimiterManager {
   private redis: Redis | null = null;
-  private limiters = new Map<string, RateLimiterRedis | RateLimiterMemory>();
+  private readonly limiters = new Map<string, RateLimiterRedis | RateLimiterMemory>();
   private isRedisAvailable = false;
 
   constructor() {
@@ -299,7 +300,7 @@ export function userKeyGenerator(req: Request): string {
  */
 export function endpointKeyGenerator(req: Request): string {
   const ip = defaultKeyGenerator(req);
-  const path = req.path;
+  const {path} = req;
   return `${ip}:${path}`;
 }
 

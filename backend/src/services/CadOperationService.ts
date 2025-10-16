@@ -6,7 +6,7 @@
  */
 
 import DxfWriter from 'dxf-writer';
-import {
+import type {
   DxfEntity,
   AddLineParams,
   AddCircleParams,

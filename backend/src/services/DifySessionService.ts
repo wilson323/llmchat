@@ -1,5 +1,6 @@
-import axios, { AxiosInstance } from 'axios';
-import { AgentConfig } from '@/types';
+import type { AxiosInstance } from 'axios';
+import axios from 'axios';
+import type { AgentConfig } from '@/types';
 import logger from '@/utils/logger';
 
 /**
@@ -109,7 +110,7 @@ export interface DifyFeedbackParams {
  * - GET  /v1/messages/:id/suggested - 建议问题
  */
 export class DifySessionService {
-  private httpClient: AxiosInstance;
+  private readonly httpClient: AxiosInstance;
 
   constructor() {
     this.httpClient = axios.create({

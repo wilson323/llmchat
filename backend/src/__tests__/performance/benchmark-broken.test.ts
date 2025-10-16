@@ -103,7 +103,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(150, `Token refresh took ${responseTime.toFixed(2)}ms, expected < 150ms`);
+      expect(responseTime).toBeLessThan(150);
 
       // Record benchmark
       benchmark.record('auth.refresh', responseTime, {
@@ -128,7 +128,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(100, `Get agents took ${responseTime.toFixed(2)}ms, expected < 100ms`);
+      expect(responseTime).toBeLessThan(100);
 
       // Record benchmark
       benchmark.record('agents.list', responseTime, {
@@ -138,9 +138,9 @@ describe('Performance Benchmark Tests', () => {
       });
 
       // Response validation
-      expect(response.status).to.equal(200);
-      expect(response.body).to.have.property('agents');
-      expect(response.body.agents).to.be.an('array');
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('agents');
+      expect(Array.isArray(response.body.agents)).toBe(true);
     });
 
     it('GET /api/agents/:id/status - should respond within 50ms', async () => {
@@ -153,7 +153,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(50, `Agent status check took ${responseTime.toFixed(2)}ms, expected < 50ms`);
+      expect(responseTime).toBeLessThan(50);
 
       // Record benchmark
       benchmark.record('agents.status', responseTime, {
@@ -183,7 +183,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion (AI responses can be slower)
-      expect(responseTime).toBeLessThan(5000, `Chat completion took ${responseTime.toFixed(2)}ms, expected < 5000ms`);
+      expect(responseTime).toBeLessThan(5000);
 
       // Record benchmark
       benchmark.record('chat.completion', responseTime, {
@@ -208,7 +208,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(200, `Chat history took ${responseTime.toFixed(2)}ms, expected < 200ms`);
+      expect(responseTime).toBeLessThan(200);
 
       // Record benchmark
       benchmark.record('chat.history', responseTime, {
@@ -234,7 +234,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(300, `Admin stats took ${responseTime.toFixed(2)}ms, expected < 300ms`);
+      expect(responseTime).toBeLessThan(300);
 
       // Record benchmark
       benchmark.record('admin.stats', responseTime, {
@@ -256,7 +256,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion (audit logs can be large)
-      expect(responseTime).toBeLessThan(500, `Admin audit took ${responseTime.toFixed(2)}ms, expected < 500ms`);
+      expect(responseTime).toBeLessThan(500);
 
       // Record benchmark
       benchmark.record('admin.audit', responseTime, {
@@ -281,7 +281,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(100, `Queue stats took ${responseTime.toFixed(2)}ms, expected < 100ms`);
+      expect(responseTime).toBeLessThan(100);
 
       // Record benchmark
       benchmark.record('queue.stats', responseTime, {
@@ -304,7 +304,7 @@ describe('Performance Benchmark Tests', () => {
       const responseTime = end - start;
 
       // Benchmark assertion
-      expect(responseTime).toBeLessThan(50, `Queue pause took ${responseTime.toFixed(2)}ms, expected < 50ms`);
+      expect(responseTime).toBeLessThan(50);
 
       // Record benchmark
       benchmark.record('queue.pause', responseTime, {
@@ -318,7 +318,7 @@ describe('Performance Benchmark Tests', () => {
     });
   });
 
-  after(() => {
+  afterAll(() => {
     // Generate benchmark report
     const report = benchmark.generateReport();
     console.log('\n📊 Performance Benchmark Report:');

@@ -5,8 +5,10 @@
  * to prevent plaintext password exposure in logs, memory dumps, and configuration files.
  */
 
-import { Pool, PoolConfig } from 'pg';
-import { SecureCredentialsManager, EncryptedData } from './secureCredentials';
+import type { PoolConfig } from 'pg';
+import { Pool } from 'pg';
+import type { EncryptedData } from './secureCredentials';
+import { SecureCredentialsManager } from './secureCredentials';
 import { deepReplaceEnvVariables } from './envHelper';
 import { readJsonc } from './config';
 import logger from './logger';

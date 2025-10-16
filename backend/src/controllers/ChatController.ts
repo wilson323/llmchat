@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 /**
  * 扩展的 Express Request 接口，包含保护上下文
@@ -97,13 +97,16 @@ class ErrorExtractor {
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
 import { ChatInitService } from '@/services/ChatInitService';
-import { ChatHistoryService, ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
+import type { ChatHistoryQueryOptions } from '@/services/ChatHistoryService';
+import { ChatHistoryService } from '@/services/ChatHistoryService';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { authService } from '@/services/authInstance';
-import { AuthUser, AuthService } from '@/services/AuthService';
+import type { AuthUser} from '@/services/AuthService';
+import { AuthService } from '@/services/AuthService';
 import { analyticsService } from '@/services/analyticsInstance';
-import { getProtectionService, ProtectedRequestContext } from '@/services/ProtectionService';
-import {
+import type { ProtectedRequestContext } from '@/services/ProtectionService';
+import { getProtectionService } from '@/services/ProtectionService';
+import type {
   ChatMessage,
   ChatOptions,
   ChatRequest,
@@ -113,11 +116,13 @@ import {
   VoiceNoteMetadata,
   FastGPTChatHistorySummary,
   FastGPTChatHistoryDetail,
-  FeedbackRequest,
+  FeedbackRequest} from '@/types';
+import {
   FastGPTInitResponse,
 } from '@/types';
+import type {
+  JsonValue} from '@/types/dynamic';
 import {
-  JsonValue,
   DynamicTypeGuard,
   SafeAccess,
   FastGPTEventPayload,
@@ -155,13 +160,13 @@ async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
  * 聊天控制器
  */
 export class ChatController {
-  private agentService: AgentConfigService;
-  private chatService: ChatProxyService;
-  private initService: ChatInitService;
-  private historyService: ChatHistoryService;
-  private fastgptSessionService: FastGPTSessionService;
-  private protectionService = getProtectionService();
-  private uploadDir: string;
+  private readonly agentService: AgentConfigService;
+  private readonly chatService: ChatProxyService;
+  private readonly initService: ChatInitService;
+  private readonly historyService: ChatHistoryService;
+  private readonly fastgptSessionService: FastGPTSessionService;
+  private readonly protectionService = getProtectionService();
+  private readonly uploadDir: string;
   private static readonly supportedHistoryRoles = ['user', 'assistant', 'system'] as const;
 
   constructor() {
@@ -176,7 +181,7 @@ export class ChatController {
   /**
    * 聊天初始化请求验证Schema
    */
-  private chatInitSchema = Joi.object({
+  private readonly chatInitSchema = Joi.object({
     appId: Joi.string().required().messages({
       'any.required': '应用ID不能为空',
       'string.empty': '应用ID不能为空',
@@ -188,7 +193,7 @@ export class ChatController {
   /**
    * 聊天请求验证Schema
    */
-  private chatRequestSchema = Joi.object({
+  private readonly chatRequestSchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
@@ -264,7 +269,7 @@ export class ChatController {
     }).optional(),
   });
 
-  private historyListSchema = Joi.object({
+  private readonly historyListSchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
@@ -273,14 +278,14 @@ export class ChatController {
     pageSize: Joi.number().min(1).max(200).optional(),
   });
 
-  private historyDetailSchema = Joi.object({
+  private readonly historyDetailSchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
     }),
   });
 
-  private historyMessagesSchema = Joi.object({
+  private readonly historyMessagesSchema = Joi.object({
     limit: Joi.number().integer().min(1).max(200).optional(),
     offset: Joi.number().integer().min(0).optional(),
     role: Joi.alternatives()
@@ -291,14 +296,14 @@ export class ChatController {
       .optional(),
   });
 
-  private historyDeleteSchema = Joi.object({
+  private readonly historyDeleteSchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
     }),
   });
 
-  private historyRetrySchema = Joi.object({
+  private readonly historyRetrySchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
@@ -313,7 +318,7 @@ export class ChatController {
   /**
    * 点赞/点踩反馈请求验证Schema
    */
-  private feedbackSchema = Joi.object({
+  private readonly feedbackSchema = Joi.object({
     agentId: Joi.string().required().messages({
       'any.required': '智能体ID不能为空',
       'string.empty': '智能体ID不能为空',
@@ -329,7 +334,7 @@ export class ChatController {
     userGoodFeedback: Joi.string().optional(),
     userBadFeedback: Joi.string().optional(),
   });
-  private attachmentUploadSchema = Joi.object({
+  private readonly attachmentUploadSchema = Joi.object({
     filename: Joi.string().max(256).required(),
     mimeType: Joi.string().max(128).required(),
     size: Joi.number().min(1).max(20 * 1024 * 1024).required(),
@@ -541,8 +546,8 @@ export class ChatController {
       }
 
       const { agentId, messages, stream } = value as ChatRequest;
-      const attachments: ChatAttachmentMetadata[] | undefined = value.attachments;
-      const voiceNote: VoiceNoteMetadata | undefined = value.voiceNote;
+      const {attachments} = value;
+      const {voiceNote} = value;
 
       // 统一兼容：顶层与 options 的混用，归一化为 ChatOptions
       const normalizedOptions: ChatOptions = {
@@ -612,7 +617,7 @@ export class ChatController {
       });
 
       // 获取保护上下文
-      const protectionContext = (req as ProtectedRequest).protectionContext;
+      const {protectionContext} = (req as ProtectedRequest);
 
       // 处理流式请求
       if (stream) {

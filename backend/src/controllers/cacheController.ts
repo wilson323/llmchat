@@ -4,13 +4,16 @@
  * 提供缓存管理API，支持手动缓存操作、监控和配置
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
-import { RedisCacheManager, CacheStrategy } from '@/services/RedisCacheManager';
+import type { CacheStrategy } from '@/services/RedisCacheManager';
+import { RedisCacheManager } from '@/services/RedisCacheManager';
+import type {
+  CacheMiddlewareStats
+} from '@/middleware/cacheMiddleware';
 import {
   getCacheMiddlewareStats,
-  generateCachePerformanceReport,
-  CacheMiddlewareStats
+  generateCachePerformanceReport
 } from '@/middleware/cacheMiddleware';
 
 // 缓存操作请求接口
@@ -77,7 +80,7 @@ export interface CacheStatsResponse {
  * 缓存管理控制器类
  */
 export class CacheController {
-  private cacheManager: RedisCacheManager;
+  private readonly cacheManager: RedisCacheManager;
 
   constructor() {
     this.cacheManager = RedisCacheManager.getInstance();

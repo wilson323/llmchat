@@ -31,12 +31,12 @@ describe('缓存中间件', () => {
       originalUrl: '/api/test?param=value',
       path: '/api/test',
       query: { param: 'value', timestamp: '1234567890' },
-      user: { role: 'user' }
+      user: { id: 'test-user-id', role: 'user' }
     };
 
     mockResponse = {
-      json: jest.fn(),
-      set: jest.fn(),
+      json: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
       get: jest.fn(),
       statusCode: 200
     };
@@ -64,8 +64,6 @@ describe('缓存中间件', () => {
       const middleware = cacheMiddleware();
 
       mockCacheManager.get.mockResolvedValue(JSON.stringify(cachedData));
-      mockResponse.set!.mockReturnValue(mockResponse as Response);
-      mockResponse.json!.mockReturnValue(mockResponse as Response);
 
       // 执行中间件
       await middleware(mockRequest as Request, mockResponse as Response, mockNext);
@@ -405,8 +403,6 @@ describe('缓存中间件', () => {
       const middleware = cacheMiddleware();
 
       mockCacheManager.get.mockResolvedValue(JSON.stringify({ data: 'cached' }));
-      mockResponse.set!.mockReturnValue(mockResponse as Response);
-      mockResponse.json!.mockReturnValue(mockResponse as Response);
 
       await middleware(mockRequest as Request, mockResponse as Response, mockNext);
 
@@ -472,9 +468,16 @@ describe('缓存中间件', () => {
   describe('性能报告', () => {
     test('应该生成性能报告', () => {
       mockCacheManager.getStats.mockReturnValue({
+        memoryItems: 100,
+        memorySize: 1024 * 1024,
+        redisConnected: true,
+        connected: true,
         hits: 10,
         misses: 5,
-        hitRate: 66.67
+        hitRate: 66.67,
+        sets: 15,
+        dels: 0,
+        errors: 0,
       });
 
       const report = generateCachePerformanceReport();

@@ -4,7 +4,8 @@
  * 提供缓存操作的API端点
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import CacheController from '@/controllers/cacheController';
 import { authenticateJWT } from '@/middleware/jwtAuth';
 import { rateLimiterMiddleware } from '@/middleware/rateLimiter';

@@ -11,47 +11,49 @@ import logger from '@/utils/logger';
 import RedisConnectionPool from '@/utils/redisConnectionPool';
 import BatchOperationService from '@/services/BatchOperationService';
 import MemoryOptimizationService from '@/services/MemoryOptimizationService';
-import {
+import type {
   QueueConfig,
   QueueStats,
   QueueJob,
   QueueOptions,
-  QueueStatus,
-  JobStatus,
-  MessagePriority,
-  BackoffStrategy,
   QueueProcessor,
   QueueMiddleware,
   QueueEvent,
   QueueManagerConfig,
-  QueueType,
-  JobType,
   QueueMessage
+} from '@/types/queue';
+import {
+  QueueStatus,
+  JobStatus,
+  MessagePriority,
+  BackoffStrategy,
+  QueueType,
+  JobType
 } from '@/types/queue';
 
 export class QueueManager extends EventEmitter {
   private static instance: QueueManager | null = null;
-  private redis!: Redis;
-  private subscriber!: Redis;
-  private config: QueueManagerConfig;
-  private queues: Map<string, QueueConfig> = new Map();
-  private processors: Map<string, QueueProcessor> = new Map();
-  private middleware: Map<string, QueueMiddleware[]> = new Map();
-  private workers: Map<string, NodeJS.Timeout[]> = new Map();
-  private processing: Map<string, Set<string>> = new Map();
-  private stats: Map<string, QueueStats> = new Map();
+  private readonly redis!: Redis;
+  private readonly subscriber!: Redis;
+  private readonly config: QueueManagerConfig;
+  private readonly queues: Map<string, QueueConfig> = new Map();
+  private readonly processors: Map<string, QueueProcessor> = new Map();
+  private readonly middleware: Map<string, QueueMiddleware[]> = new Map();
+  private readonly workers: Map<string, NodeJS.Timeout[]> = new Map();
+  private readonly processing: Map<string, Set<string>> = new Map();
+  private readonly stats: Map<string, QueueStats> = new Map();
   private isShuttingDown = false;
 
   // 连接池
-  private connectionPool!: RedisConnectionPool;
+  private readonly connectionPool!: RedisConnectionPool;
   private connectionPoolStatsInterval?: NodeJS.Timeout;
 
   // 批量操作服务
-  private batchOperationService!: BatchOperationService;
+  private readonly batchOperationService!: BatchOperationService;
 
   // 内存优化服务
-  private memoryOptimizationService!: MemoryOptimizationService;
-  private memoryMonitoringEnabled: boolean;
+  private readonly memoryOptimizationService!: MemoryOptimizationService;
+  private readonly memoryMonitoringEnabled: boolean;
 
   private constructor(config: QueueManagerConfig) {
     super();
@@ -810,8 +812,8 @@ export class QueueManager extends EventEmitter {
    */
   public async batchCleanExpiredJobs(
     queueName: string,
-    olderThanMs: number = 3600000, // 默认1小时
-    batchSize: number = 1000
+    olderThanMs = 3600000, // 默认1小时
+    batchSize = 1000
   ): Promise<number> {
     const cleanedCount = await this.batchOperationService.batchCleanCompletedJobs(queueName, olderThanMs, batchSize);
 
@@ -1514,7 +1516,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 获取内存优化历史
    */
-  public getMemoryOptimizationHistory(count: number = 10): Array<{
+  public getMemoryOptimizationHistory(count = 10): Array<{
     timestamp: number;
     method: string;
     freedMemoryMB: number;
@@ -1668,7 +1670,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 重试失败任务
    */
-  public async retryFailedJobs(queueName: string, limit: number = 10): Promise<number> {
+  public async retryFailedJobs(queueName: string, limit = 10): Promise<number> {
     try {
       const redis = await this.getRedisConnection();
       try {
@@ -1712,7 +1714,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 获取已完成的任务
    */
-  public async getCompletedJobs(queueName: string, limit: number = 100): Promise<any[]> {
+  public async getCompletedJobs(queueName: string, limit = 100): Promise<any[]> {
     try {
       const redis = await this.getRedisConnection();
       try {
@@ -1747,7 +1749,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 获取失败的任务
    */
-  public async getFailedJobs(queueName: string, limit: number = 100): Promise<any[]> {
+  public async getFailedJobs(queueName: string, limit = 100): Promise<any[]> {
     try {
       const redis = await this.getRedisConnection();
       try {

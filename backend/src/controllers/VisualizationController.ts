@@ -3,19 +3,19 @@
  * 提供可视化界面的API端点
  */
 
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import VisualizationConfigService from '@/services/VisualizationConfigService';
 import VisualizationDataService from '@/services/VisualizationDataService';
-import QueueManager from '@/services/QueueManager';
-import MonitoringService from '@/services/MonitoringService';
-import RedisConnectionPool from '@/utils/redisConnectionPool';
+import type QueueManager from '@/services/QueueManager';
+import type MonitoringService from '@/services/MonitoringService';
+import type RedisConnectionPool from '@/utils/redisConnectionPool';
 
 export class VisualizationController {
-  private configService: VisualizationConfigService;
-  private dataService: VisualizationDataService;
-  private queueManager: QueueManager;
-  private monitoringService: MonitoringService;
-  private connectionPool: RedisConnectionPool;
+  private readonly configService: VisualizationConfigService;
+  private readonly dataService: VisualizationDataService;
+  private readonly queueManager: QueueManager;
+  private readonly monitoringService: MonitoringService;
+  private readonly connectionPool: RedisConnectionPool;
 
   constructor(
     queueManager: QueueManager,
@@ -453,8 +453,8 @@ export class VisualizationController {
     try {
       // Support both params (from URL) and body (from POST) for queueName
       const queueName = req.params.queueName || req.body.queueName;
-      const action = req.body.action;
-      const options = req.body.options;
+      const {action} = req.body;
+      const {options} = req.body;
 
       if (!queueName || !action) {
         res.status(400).json({

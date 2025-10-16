@@ -1,22 +1,22 @@
 {
-  "timestamp": "2025-10-16T05:26:13.581Z",
-  "duration": 101,
+  "timestamp": "2025-10-16T12:50:58.247Z",
+  "duration": 109,
   "results": {
     "root.get": {
       "stats": {
         "count": 1,
-        "min": 7.610799999994924,
-        "max": 7.610799999994924,
-        "avg": 7.610799999994924,
-        "p95": 7.610799999994924,
-        "p99": 7.610799999994924,
+        "min": 12.35679999999411,
+        "max": 12.35679999999411,
+        "avg": 12.35679999999411,
+        "p95": 12.35679999999411,
+        "p99": 12.35679999999411,
         "successRate": 100
       },
       "metrics": [
         {
           "name": "root.get",
-          "responseTime": 7.610799999994924,
-          "timestamp": 1760592373525,
+          "responseTime": 12.35679999999411,
+          "timestamp": 1760619058192,
           "statusCode": 404,
           "success": true,
           "metadata": {
@@ -29,18 +29,18 @@
     "root.post": {
       "stats": {
         "count": 1,
-        "min": 15.343899999992573,
-        "max": 15.343899999992573,
-        "avg": 15.343899999992573,
-        "p95": 15.343899999992573,
-        "p99": 15.343899999992573,
+        "min": 10.606999999996333,
+        "max": 10.606999999996333,
+        "avg": 10.606999999996333,
+        "p95": 10.606999999996333,
+        "p99": 10.606999999996333,
         "successRate": 100
       },
       "metrics": [
         {
           "name": "root.post",
-          "responseTime": 15.343899999992573,
-          "timestamp": 1760592373541,
+          "responseTime": 10.606999999996333,
+          "timestamp": 1760619058204,
           "statusCode": 404,
           "success": true,
           "metadata": {
@@ -53,18 +53,18 @@
     "health.check": {
       "stats": {
         "count": 1,
-        "min": 4.40669999999227,
-        "max": 4.40669999999227,
-        "avg": 4.40669999999227,
-        "p95": 4.40669999999227,
-        "p99": 4.40669999999227,
+        "min": 4.966999999996915,
+        "max": 4.966999999996915,
+        "avg": 4.966999999996915,
+        "p95": 4.966999999996915,
+        "p99": 4.966999999996915,
         "successRate": 100
       },
       "metrics": [
         {
           "name": "health.check",
-          "responseTime": 4.40669999999227,
-          "timestamp": 1760592373548,
+          "responseTime": 4.966999999996915,
+          "timestamp": 1760619058211,
           "statusCode": 200,
           "success": true,
           "metadata": {
@@ -77,18 +77,18 @@
     "agents.list": {
       "stats": {
         "count": 1,
-        "min": 3.82039999999688,
-        "max": 3.82039999999688,
-        "avg": 3.82039999999688,
-        "p95": 3.82039999999688,
-        "p99": 3.82039999999688,
+        "min": 3.7248000000035972,
+        "max": 3.7248000000035972,
+        "avg": 3.7248000000035972,
+        "p95": 3.7248000000035972,
+        "p99": 3.7248000000035972,
         "successRate": 100
       },
       "metrics": [
         {
           "name": "agents.list",
-          "responseTime": 3.82039999999688,
-          "timestamp": 1760592373553,
+          "responseTime": 3.7248000000035972,
+          "timestamp": 1760619058215,
           "statusCode": 200,
           "success": true,
           "metadata": {
@@ -102,29 +102,29 @@
     "concurrent.test": {
       "stats": {
         "count": 1,
-        "min": 4.8230199999990875,
-        "max": 4.8230199999990875,
-        "avg": 4.8230199999990875,
-        "p95": 4.8230199999990875,
-        "p99": 4.8230199999990875,
+        "min": 5.758040000000619,
+        "max": 5.758040000000619,
+        "avg": 5.758040000000619,
+        "p95": 5.758040000000619,
+        "p99": 5.758040000000619,
         "successRate": 100
       },
       "metrics": [
         {
           "name": "concurrent.test",
-          "responseTime": 4.8230199999990875,
-          "timestamp": 1760592373580,
+          "responseTime": 5.758040000000619,
+          "timestamp": 1760619058246,
           "statusCode": 200,
           "success": true,
           "metadata": {
             "statusCode": 200,
             "success": true,
             "concurrentRequests": 5,
-            "totalTime": 24.115099999995437
+            "totalTime": 28.790200000003097
           }
         }
       ]
     }
   },
-  "report": "📊 Performance Benchmark Summary\n===============================\nTest Duration: 0.10s\nTotal Requests: 5\nOverall Success Rate: 100.0%\nAverage Response Time: 7.20ms\nSlowest Endpoint: root.post (15.34ms)\nFastest Endpoint: agents.list (3.82ms)\n\n🔍 Endpoint Performance Details\n===============================\n\nroot.post:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 15.34ms\n    Min: 15.34ms\n    Max: 15.34ms\n    P95: 15.34ms\n    P99: 15.34ms\n\nroot.get:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 7.61ms\n    Min: 7.61ms\n    Max: 7.61ms\n    P95: 7.61ms\n    P99: 7.61ms\n\nconcurrent.test:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 4.82ms\n    Min: 4.82ms\n    Max: 4.82ms\n    P95: 4.82ms\n    P99: 4.82ms\n\nhealth.check:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 4.41ms\n    Min: 4.41ms\n    Max: 4.41ms\n    P95: 4.41ms\n    P99: 4.41ms\n\nagents.list:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 3.82ms\n    Min: 3.82ms\n    Max: 3.82ms\n    P95: 3.82ms\n    P99: 3.82ms\n"
+  "report": "📊 Performance Benchmark Summary\n===============================\nTest Duration: 0.11s\nTotal Requests: 5\nOverall Success Rate: 100.0%\nAverage Response Time: 7.48ms\nSlowest Endpoint: root.get (12.36ms)\nFastest Endpoint: agents.list (3.72ms)\n\n🔍 Endpoint Performance Details\n===============================\n\nroot.get:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 12.36ms\n    Min: 12.36ms\n    Max: 12.36ms\n    P95: 12.36ms\n    P99: 12.36ms\n\nroot.post:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 10.61ms\n    Min: 10.61ms\n    Max: 10.61ms\n    P95: 10.61ms\n    P99: 10.61ms\n\nconcurrent.test:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 5.76ms\n    Min: 5.76ms\n    Max: 5.76ms\n    P95: 5.76ms\n    P99: 5.76ms\n\nhealth.check:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 4.97ms\n    Min: 4.97ms\n    Max: 4.97ms\n    P95: 4.97ms\n    P99: 4.97ms\n\nagents.list:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 3.72ms\n    Min: 3.72ms\n    Max: 3.72ms\n    P95: 3.72ms\n    P99: 3.72ms\n"
 }

@@ -93,7 +93,7 @@ export interface SystemVisualizationData {
 
 class VisualizationConfigService {
   private config: VisualizationConfig;
-  private configPath: string;
+  private readonly configPath: string;
 
   constructor(configPath?: string) {
     this.configPath = configPath || './config/visualization.json';

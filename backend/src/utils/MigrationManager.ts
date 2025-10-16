@@ -8,7 +8,7 @@
  * - 事务保证和回滚支持
  */
 
-import { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import logger from './logger';
@@ -31,10 +31,10 @@ export interface MigrationFile {
 }
 
 export class MigrationManager {
-  private pool: Pool;
-  private migrationsDir: string;
+  private readonly pool: Pool;
+  private readonly migrationsDir: string;
 
-  constructor(pool: Pool, migrationsDir: string = 'src/migrations') {
+  constructor(pool: Pool, migrationsDir = 'src/migrations') {
     this.pool = pool;
     this.migrationsDir = path.resolve(process.cwd(), migrationsDir);
   }
@@ -85,7 +85,7 @@ export class MigrationManager {
     for (const file of files) {
       // 解析文件名格式: 001_initial_schema.sql
       const match = file.match(/^(\d+)_(.+)\.sql$/);
-      if (!match || !match[1] || !match[2]) {
+      if (!match?.[1] || !match[2]) {
         logger.warn(`[Migration] 跳过无效文件名: ${file}`);
         continue;
       }

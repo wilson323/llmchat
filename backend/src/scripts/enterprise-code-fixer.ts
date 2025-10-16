@@ -128,10 +128,10 @@ interface FixContext {
 // ========================================
 
 class EnterpriseCodeFixer {
-  private config: EnterpriseConfig;
-  private fixers: Map<string, CodeFixer> = new Map();
+  private readonly config: EnterpriseConfig;
+  private readonly fixers: Map<string, CodeFixer> = new Map();
   private program: ts.Program | null = null;
-  private backupManager: BackupManager;
+  private readonly backupManager: BackupManager;
 
   constructor(config: EnterpriseConfig) {
     this.config = config;
@@ -587,7 +587,7 @@ class EnterpriseCodeFixer {
 // ========================================
 
 class BackupManager {
-  private backupDir: string = 'backups/code-fixer';
+  private readonly backupDir = 'backups/code-fixer';
 
   async createBackup(filePath: string, backupPath: string): Promise<void> {
     await this.ensureBackupDir();
@@ -598,7 +598,7 @@ class BackupManager {
     // 创建备份信息文件
     const backupInfo = {
       originalPath: filePath,
-      backupPath: backupPath,
+      backupPath,
       checksum,
       timestamp: new Date().toISOString(),
     };
@@ -626,9 +626,9 @@ class BackupManager {
 // ========================================
 
 class RuleVisitor {
-  private issues: CodeIssue[] = [];
-  private fixer: CodeFixer;
-  private severity: 'error' | 'warning' | 'info';
+  private readonly issues: CodeIssue[] = [];
+  private readonly fixer: CodeFixer;
+  private readonly severity: 'error' | 'warning' | 'info';
 
   constructor(fixer: CodeFixer, severity: 'error' | 'warning' | 'info') {
     this.fixer = fixer;

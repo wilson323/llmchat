@@ -3,7 +3,7 @@
  * 实现滑动窗口限流、多维度限流策略和缓存穿透保护
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 
 export interface RateLimitConfig {
@@ -45,12 +45,12 @@ export interface RateLimitMetrics {
  * 滑动窗口限流器
  */
 export class SlidingWindowRateLimiter {
-  private windows: Map<string, RateLimitMetrics> = new Map();
-  private cleanupInterval: NodeJS.Timeout;
+  private readonly windows: Map<string, RateLimitMetrics> = new Map();
+  private readonly cleanupInterval: NodeJS.Timeout;
 
   constructor(
     private readonly config: RateLimitConfig,
-    private readonly name: string = 'default',
+    private readonly name = 'default',
   ) {
     // 定期清理过期数据
     this.cleanupInterval = setInterval(() => {
@@ -215,9 +215,9 @@ export class SlidingWindowRateLimiter {
  * 多维度限流器
  */
 export class MultiDimensionRateLimiter {
-  private limiters: Map<string, SlidingWindowRateLimiter> = new Map();
+  private readonly limiters: Map<string, SlidingWindowRateLimiter> = new Map();
 
-  constructor(private configs: { [dimension: string]: RateLimitConfig }) {
+  constructor(private readonly configs: { [dimension: string]: RateLimitConfig }) {
     // 初始化各维度的限流器
     Object.entries(configs).forEach(([dimension, config]) => {
       const limiter = new SlidingWindowRateLimiter(config, `${dimension}-limiter`);
@@ -298,7 +298,7 @@ export class MultiDimensionRateLimiter {
  * 缓存穿透保护器
  */
 export class CacheBreachProtector {
-  private cache: Map<string, { timestamp: number; blocked: boolean }> = new Map();
+  private readonly cache: Map<string, { timestamp: number; blocked: boolean }> = new Map();
   private readonly suspiciousThreshold: number;
   private readonly blockDuration: number;
 

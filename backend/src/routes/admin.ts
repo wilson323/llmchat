@@ -4,6 +4,8 @@ import {
   compareConfigSnapshot,
   cleanupObsoleteConfigs,
   getConfigDetails,
+  getAdminStats,
+  getAdminMetrics,
 } from '@/controllers/AdminController';
 import { adminGuard } from '@/middleware/adminGuard';
 
@@ -25,5 +27,9 @@ router.post('/config/cleanup', adminGuard, cleanupObsoleteConfigs);
 
 // 获取配置详情
 router.get('/config/details', adminGuard, getConfigDetails);
+
+// 统计数据和指标
+router.get('/stats', adminGuard, getAdminStats);
+router.get('/metrics', adminGuard, getAdminMetrics);
 
 export default router;

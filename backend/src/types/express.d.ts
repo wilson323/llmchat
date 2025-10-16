@@ -1,8 +1,8 @@
 /**
  * Express类型扩展
  */
-import { ProtectedRequestContext } from '@/services/ProtectionService';
-import { AuditAction, ResourceType } from './audit';
+import type { ProtectedRequestContext } from '@/services/ProtectionService';
+import type { AuditAction, ResourceType } from './audit';
 
 /**
  * 审计上下文

@@ -135,7 +135,7 @@ export class SecureCredentialsManager {
   /**
    * Generates a secure random key for additional entropy
    */
-  static generateSecureKey(length: number = 32): string {
+  static generateSecureKey(length = 32): string {
     return crypto.randomBytes(length).toString('hex');
   }
 

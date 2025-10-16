@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { AgentConfigService } from './AgentConfigService';
-import { AgentConfig } from '@/types';
+import type { AgentConfigService } from './AgentConfigService';
+import type { AgentConfig } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import logger from '@/utils/logger';
 import { ResourceError, ValidationError, ExternalServiceError } from '@/types/errors';
@@ -68,9 +68,9 @@ export interface DifyInitResponse {
  * 负责调用Dify的info和parameters API
  */
 export class DifyInitService {
-  private httpClient: ReturnType<typeof axios.create>;
-  private agentService: AgentConfigService;
-  private cache: Map<string, { data: DifyInitResponse; expiresAt: number }> = new Map();
+  private readonly httpClient: ReturnType<typeof axios.create>;
+  private readonly agentService: AgentConfigService;
+  private readonly cache: Map<string, { data: DifyInitResponse; expiresAt: number }> = new Map();
   private readonly cachePolicy = new AdaptiveTtlPolicy({
     initialTtl: 5 * 60 * 1000, // 5分钟
     minTtl: 60 * 1000, // 1分钟

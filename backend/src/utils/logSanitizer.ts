@@ -23,7 +23,7 @@ export const safeLogger = {
 };
 
 export class LogSanitizer {
-  private static sensitivePatterns = [
+  private static readonly sensitivePatterns = [
     { pattern: /password/i, replacement: '****' },
     { pattern: /token/i, replacement: '***' },
     { pattern: /secret/i, replacement: '***' },

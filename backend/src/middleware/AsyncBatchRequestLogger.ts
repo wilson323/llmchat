@@ -13,7 +13,7 @@
  * ```
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 
 /**
@@ -35,11 +35,11 @@ interface LogEntry {
  * 异步批量请求日志器类
  */
 export class AsyncBatchRequestLogger {
-  private logQueue: LogEntry[] = [];
-  private batchSize = 100;           // 100条批量写入
-  private flushInterval = 5000;      // 5秒强制刷新
+  private readonly logQueue: LogEntry[] = [];
+  private readonly batchSize = 100;           // 100条批量写入
+  private readonly flushInterval = 5000;      // 5秒强制刷新
   private lastFlushTime = Date.now();
-  private flushTimer: NodeJS.Timeout;
+  private readonly flushTimer: NodeJS.Timeout;
 
   constructor() {
     // 定时刷新队列

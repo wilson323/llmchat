@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import logger from '@/utils/logger';
-import {
+import type {
   SessionListParams,
   BatchOperationOptions,
   ExportOptions,
@@ -12,7 +12,7 @@ import {
 } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 import { createErrorFromUnknown, AuthenticationError } from '@/types/errors';
-import { JsonValue } from '@/types/dynamic';
+import type { JsonValue } from '@/types/dynamic';
 
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
@@ -53,11 +53,11 @@ function handleAdminAuthError(error: unknown, res: Response): boolean {
  * 会话管理控制器
  */
 export class SessionController {
-  private sessionService: FastGPTSessionService;
-  private agentService: AgentConfigService;
+  private readonly sessionService: FastGPTSessionService;
+  private readonly agentService: AgentConfigService;
 
   // 验证schemas
-  private sessionListSchema = Joi.object({
+  private readonly sessionListSchema = Joi.object({
     page: Joi.number().min(1).default(1),
     pageSize: Joi.number().min(1).max(100).default(20),
     startDate: Joi.date().iso().optional(),
@@ -70,7 +70,7 @@ export class SessionController {
     searchKeyword: Joi.string().max(500).optional(),
   });
 
-  private batchOperationSchema = Joi.object({
+  private readonly batchOperationSchema = Joi.object({
     sessionIds: Joi.array().items(Joi.string()).min(1).required(),
     operation: Joi.string().valid('delete', 'archive', 'addTags', 'removeTags').required(),
     tags: Joi.array().items(Joi.string()).when('operation', {
@@ -80,7 +80,7 @@ export class SessionController {
     }),
   });
 
-  private exportOptionsSchema = Joi.object({
+  private readonly exportOptionsSchema = Joi.object({
     format: Joi.string().valid('json', 'csv', 'excel').required(),
     includeMessages: Joi.boolean().default(false),
     includeMetadata: Joi.boolean().default(false),
@@ -91,7 +91,7 @@ export class SessionController {
     }).optional(),
   });
 
-  private eventQuerySchema = Joi.object({
+  private readonly eventQuerySchema = Joi.object({
     sessionIds: Joi.array().items(Joi.string()).optional(),
     eventTypes: Joi.array().items(Joi.string()).optional(),
     startDate: Joi.date().iso().optional(),

@@ -325,7 +325,7 @@ export class CacheService {
   /**
    * 分布式锁（简单实现）
    */
-  async lock(key: string, ttl: number = 10): Promise<boolean> {
+  async lock(key: string, ttl = 10): Promise<boolean> {
     return this.set(`lock:${key}`, Date.now(), { ttl, nx: true });
   }
 
@@ -440,7 +440,7 @@ export async function initCacheService(): Promise<CacheService> {
 /**
  * 缓存装饰器（用于方法级缓存）
  */
-export function Cacheable(key: string, ttl: number = 300) {
+export function Cacheable(key: string, ttl = 300) {
   return function (
     _target: any,
     _propertyKey: string,

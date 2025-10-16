@@ -7,8 +7,9 @@
  * - 渐进式迁移，保持向后兼容
  */
 
-import { AuthService, AuthUser, LoginResult } from '@/services/AuthService';
-import { AuthServiceV2, getAuthService } from '@/services/AuthServiceV2';
+import type { AuthService, AuthUser, LoginResult } from '@/services/AuthService';
+import type { AuthServiceV2} from '@/services/AuthServiceV2';
+import { getAuthService } from '@/services/AuthServiceV2';
 import logger from '@/utils/logger';
 import { authService, isAuthV2 } from '@/services/authInstance';
 
@@ -29,7 +30,7 @@ export interface IAuthServiceAdapter {
  * V1服务适配器
  */
 export class AuthServiceV1Adapter implements IAuthServiceAdapter {
-  constructor(private service: AuthService) {}
+  constructor(private readonly service: AuthService) {}
 
   async login(
     username: string,
@@ -61,7 +62,7 @@ export class AuthServiceV1Adapter implements IAuthServiceAdapter {
  * V2服务适配器
  */
 export class AuthServiceV2Adapter implements IAuthServiceAdapter {
-  constructor(private service: AuthServiceV2) {}
+  constructor(private readonly service: AuthServiceV2) {}
 
   async login(
     username: string,

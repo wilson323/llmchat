@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import {
+import type {
   SessionEvent,
   SessionEventType,
   EventQueryParams,
@@ -12,8 +12,8 @@ import logger from '@/utils/logger';
  * 负责记录、存储和查询会话相关的事件
  */
 export class SessionEventService {
-  private events: Map<string, SessionEvent[]> = new Map();
-  private maxEventsPerAgent = 10000; // 每个智能体最大事件数量
+  private readonly events: Map<string, SessionEvent[]> = new Map();
+  private readonly maxEventsPerAgent = 10000; // 每个智能体最大事件数量
 
   /**
    * 清理事件缓存（测试或重置时使用）
@@ -261,7 +261,7 @@ export class SessionEventService {
   /**
    * 清理旧事件（防止内存溢出）
    */
-  async cleanupOldEvents(agentId: string, olderThanDays: number = 30): Promise<number> {
+  async cleanupOldEvents(agentId: string, olderThanDays = 30): Promise<number> {
     const agentEvents = this.events.get(agentId) || [];
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);

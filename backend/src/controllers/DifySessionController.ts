@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { difySessionService } from '@/services/DifySessionService';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import logger from '@/utils/logger';

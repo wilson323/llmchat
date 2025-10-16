@@ -4,7 +4,7 @@
  * 提供数据库查询性能监控、慢查询检测、性能报告等功能
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
 import { getQueryOptimizer } from '@/utils/queryOptimizer';
 
@@ -58,9 +58,9 @@ export interface PerformanceStats {
  */
 class DatabasePerformanceMonitor {
   private static instance: DatabasePerformanceMonitor;
-  private activeQueries = new Map<string, DatabasePerformanceMetrics>();
+  private readonly activeQueries = new Map<string, DatabasePerformanceMetrics>();
   private completedQueries: DatabasePerformanceMetrics[] = [];
-  private maxCompletedQueries = 1000; // 最多保存1000条完成的查询记录
+  private readonly maxCompletedQueries = 1000; // 最多保存1000条完成的查询记录
   private slowQueryThreshold = 1000; // 1秒
   private slowQueryQueue: DatabasePerformanceMetrics[] = []; // ✅ 慢查询队列
   private stats: PerformanceStats = {
@@ -237,14 +237,14 @@ class DatabasePerformanceMonitor {
   /**
    * 获取完成的查询（最近N条）
    */
-  getCompletedQueries(limit: number = 100): DatabasePerformanceMetrics[] {
+  getCompletedQueries(limit = 100): DatabasePerformanceMetrics[] {
     return this.completedQueries.slice(-limit);
   }
 
   /**
    * 获取慢查询
    */
-  getSlowQueries(limit: number = 50): DatabasePerformanceMetrics[] {
+  getSlowQueries(limit = 50): DatabasePerformanceMetrics[] {
     return this.completedQueries
       .filter(query => query.isSlowQuery)
       .slice(-limit)

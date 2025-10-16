@@ -4,12 +4,12 @@
  * 处理 CAD 文件上传、解析和操作请求
  */
 
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { CadParserService } from '@/services/CadParserService';
 import { CadOperationService } from '@/services/CadOperationService';
 import { DashScopeService } from '@/services/DashScopeService';
 import { CAD_FUNCTION_TOOLS } from '@/utils/cadFunctionTools';
-import {
+import type {
   DxfEntity,
   CadFileInfo,
   AddLineParams,
@@ -29,8 +29,8 @@ const cadFiles: Map<string, { info: CadFileInfo; entities: DxfEntity[]; content:
  * CAD 控制器类
  */
 export class CadController {
-  private parserService: CadParserService;
-  private operationService: CadOperationService;
+  private readonly parserService: CadParserService;
+  private readonly operationService: CadOperationService;
 
   constructor() {
     this.parserService = new CadParserService();

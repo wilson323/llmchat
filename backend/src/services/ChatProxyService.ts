@@ -1,5 +1,5 @@
 import axios from 'axios';
-import {
+import type {
   AgentConfig,
   ChatMessage,
   ChatOptions,
@@ -8,7 +8,7 @@ import {
   RequestHeaders,
   JsonValue,
 } from '@/types';
-import {
+import type {
   FastGPTResponse,
   FastGPTStreamChunk,
   OpenAIResponse,
@@ -21,10 +21,11 @@ import {
   SSEEventData,
   ReasoningPayload,
 } from '@/types/provider';
-import { AgentConfigService } from './AgentConfigService';
+import type { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
-import { getProtectionService, ProtectedRequestContext } from './ProtectionService';
+import type { ProtectedRequestContext } from './ProtectionService';
+import { getProtectionService } from './ProtectionService';
 import logger from '@/utils/logger';
 import {
   getNormalizedEventKey,
@@ -80,7 +81,7 @@ export interface AIProvider {
 export class FastGPTProvider implements AIProvider {
   name = 'FastGPT';
 
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions): ProviderRequestData {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream = false, options?: ChatOptions): ProviderRequestData {
     const detail = options?.detail ?? config.features?.supportsDetail ?? false;
     const request: ProviderRequestData = {
       chatId: options?.chatId || `chat_${Date.now()}`,
@@ -178,7 +179,7 @@ export class FastGPTProvider implements AIProvider {
 export class OpenAIProvider implements AIProvider {
   name = 'OpenAI';
 
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream = false, options?: ChatOptions) {
     return {
       model: config.model,
       messages: messages.map(msg => ({
@@ -243,7 +244,7 @@ export class OpenAIProvider implements AIProvider {
 export class AnthropicProvider implements AIProvider {
   name = 'Anthropic';
 
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream = false, options?: ChatOptions) {
     return {
       model: config.model,
       max_tokens: options?.maxTokens || config.maxTokens || 4096,
@@ -320,7 +321,7 @@ export class DifyProvider implements AIProvider {
    *
    * Dify 使用 query 字段而非 messages 数组，需要提取最后一条用户消息
    */
-  transformRequest(messages: ChatMessage[], config: AgentConfig, stream: boolean = false, options?: ChatOptions) {
+  transformRequest(messages: ChatMessage[], config: AgentConfig, stream = false, options?: ChatOptions) {
     // 提取最后一条用户消息作为 query
     const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
     if (!lastUserMessage) {
@@ -495,11 +496,11 @@ export class DifyProvider implements AIProvider {
  * 聊天代理服务
  */
 export class ChatProxyService {
-  private agentService: AgentConfigService;
-  private httpClient: ReturnType<typeof axios.create>;
-  private providers: Map<string, AIProvider> = new Map();
-  private chatLog: ChatLogService = new ChatLogService();
-  private protectionService = getProtectionService();
+  private readonly agentService: AgentConfigService;
+  private readonly httpClient: ReturnType<typeof axios.create>;
+  private readonly providers: Map<string, AIProvider> = new Map();
+  private readonly chatLog: ChatLogService = new ChatLogService();
+  private readonly protectionService = getProtectionService();
 
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;

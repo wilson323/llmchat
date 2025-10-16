@@ -3,7 +3,8 @@
  * 提供队列操作、任务管理和监控的API端点
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import QueueController from '@/controllers/queueController';
 import { rateLimit } from 'express-rate-limit';
 import logger from '@/utils/logger';
@@ -219,6 +220,18 @@ router.get('/health', queueRateLimit, async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/queue/status
+ * 获取队列整体状态概览
+ */
+router.get('/status', queueRateLimit, async (req, res, next) => {
+  try {
+    await queueController.getHealthStatus(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ==================== 任务状态查询 ====================
 
 /**
@@ -255,7 +268,7 @@ router.use((error: any, req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  return res.status((error as any).status || 500).json({
+  return res.status((error).status || 500).json({
     success: false,
     message: error.message || 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? error.stack : undefined

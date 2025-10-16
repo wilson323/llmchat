@@ -53,11 +53,11 @@ export class MemoryMonitor extends EventEmitter {
   private isMonitoring = false;
   private monitoringInterval: NodeJS.Timeout | null = null;
   private statsHistory: MemoryStats[] = [];
-  private maxHistorySize = 1000;  // 保留最近1000个数据点
+  private readonly maxHistorySize = 1000;  // 保留最近1000个数据点
   private thresholds: MemoryThresholds;
   private lastStats?: MemoryStats;
   private memoryTrends: MemoryTrend[] = [];
-  private leakDetector: Map<string, number> = new Map();  // 对象计数器
+  private readonly leakDetector: Map<string, number> = new Map();  // 对象计数器
   private gcStats = {
     total: 0,
     duration: 0,
@@ -86,7 +86,7 @@ export class MemoryMonitor extends EventEmitter {
   /**
    * 开始内存监控
    */
-  public startMonitoring(intervalMs: number = 30000): void {
+  public startMonitoring(intervalMs = 30000): void {
     if (this.isMonitoring) {
       logger.warn('MemoryMonitor: Monitoring already started');
       return;
@@ -133,8 +133,8 @@ export class MemoryMonitor extends EventEmitter {
    */
   public collectMemoryStats(): MemoryStats {
     const memUsage = process.memoryUsage();
-    const heapUsed = memUsage.heapUsed;
-    const heapTotal = memUsage.heapTotal;
+    const {heapUsed} = memUsage;
+    const {heapTotal} = memUsage;
     const heapUsedPercentage = (heapUsed / heapTotal) * 100;
 
     const stats: MemoryStats = {
@@ -432,7 +432,7 @@ export class MemoryMonitor extends EventEmitter {
   /**
    * 增加对象计数
    */
-  public incrementObjectCounter(key: string, delta: number = 1): void {
+  public incrementObjectCounter(key: string, delta = 1): void {
     const current = this.leakDetector.get(key) || 0;
     this.leakDetector.set(key, current + delta);
   }

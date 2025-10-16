@@ -190,6 +190,7 @@ describe('Visualization System Simple Tests', () => {
         avgProcessingTime: 150,
         errorRate: 0.03,
         createdAt: new Date(),
+        lastProcessedAt: new Date(),
       });
 
       const timestamp = Date.now();

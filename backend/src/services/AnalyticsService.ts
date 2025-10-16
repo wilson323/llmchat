@@ -229,7 +229,7 @@ export class AnalyticsService {
             },
           ];
 
-          type MongoAggRow = { _id: { day: string; appId: ObjectId }; count: number };
+          interface MongoAggRow { _id: { day: string; appId: ObjectId }; count: number }
           const docs = await db.collection<MongoAggRow>('chats').aggregate(pipeline).toArray();
           return docs;
         });
@@ -375,7 +375,7 @@ export class AnalyticsService {
             },
           ];
 
-          type MongoAggRow = { _id: ObjectId; count: number };
+          interface MongoAggRow { _id: ObjectId; count: number }
           return db.collection<MongoAggRow>('chats').aggregate(pipeline).toArray();
         });
 

@@ -2,8 +2,9 @@
  * 队列管理可视化路由
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import VisualizationController from '@/controllers/VisualizationController';
+import type { Request, Response} from 'express';
+import { Router, NextFunction } from 'express';
+import type VisualizationController from '@/controllers/VisualizationController';
 import { authenticateJWT } from '@/middleware/jwtAuth';
 import { rateLimiterMiddleware } from '@/middleware/rateLimiter';
 

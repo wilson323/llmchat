@@ -4,7 +4,7 @@
  * 提供连接池监控、动态调整、健康检查等功能
  */
 
-import { Pool, PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { getPool } from './db';
 import logger from '@/utils/logger';
 
@@ -78,7 +78,7 @@ export class ConnectionPoolOptimizer {
     maxWaitTime: 0,
     reuseRate: 0,
   };
-  private connectionHealth = new Map<string, ConnectionHealth>();
+  private readonly connectionHealth = new Map<string, ConnectionHealth>();
   private monitoringInterval: NodeJS.Timeout | null = null;
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private isMonitoring = false;
@@ -451,7 +451,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
   /**
    * 预热连接池
    */
-  async warmupPool(connectionCount: number = 5): Promise<void> {
+  async warmupPool(connectionCount = 5): Promise<void> {
     try {
       const pool = this.getPool();
       logger.info(`🔥 预热连接池，目标连接数: ${connectionCount}`);
@@ -485,7 +485,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
   /**
    * 测试连接池性能
    */
-  async testPoolPerformance(concurrency: number = 10): Promise<{
+  async testPoolPerformance(concurrency = 10): Promise<{
     success: number;
     failed: number;
     averageTime: number;
