@@ -397,6 +397,12 @@ async function startServer() {
     // 初始化缓存服务
     await initCacheService();
 
+    // 启动Redis健康检查服务
+    const { default: RedisHealthService } = await import("./services/RedisHealthService");
+    const redisHealthService = RedisHealthService.getInstance();
+    redisHealthService.start();
+    logger.info("✅ Redis健康检查服务已启动");
+
     // 初始化数据库优化器
     await initializeDatabaseOptimization();
     logger.info("✅ 数据库优化器已初始化");

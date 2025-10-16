@@ -8,11 +8,13 @@ import { Router, type Router as RouterType } from 'express';
 import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
 import DatabaseHealthService from '@/services/DatabaseHealthService';
+import RedisHealthService from '@/services/RedisHealthService';
 
 const router: RouterType = Router();
 
-// 初始化数据库健康检查服务
+// 初始化健康检查服务
 const dbHealthService = DatabaseHealthService.getInstance();
+const redisHealthService = RedisHealthService.getInstance();
 
 /**
  * 检查数据库健康状态
@@ -339,6 +341,57 @@ router.get('/database/stats', async (_req: Request, res: Response) => {
       status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Failed to retrieve database stats',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * Redis连接健康监控
+ * GET /health/redis
+ * 获取Redis连接的详细状态和性能指标
+ */
+router.get('/redis', async (_req: Request, res: Response) => {
+  try {
+    const healthStatus = await redisHealthService.performHealthCheck();
+
+    res.status(healthStatus.healthy ? 200 : 503).json({
+      status: healthStatus.status,
+      timestamp: healthStatus.lastCheck,
+      healthy: healthStatus.healthy,
+      connected: healthStatus.connected,
+      latency: `${healthStatus.latency}ms`,
+      ...(healthStatus.error && { error: healthStatus.error }),
+    });
+  } catch (error) {
+    logger.error('Redis health check failed', { error });
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Redis health check failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * Redis连接状态快速检查
+ * GET /health/redis/ping
+ * 快速检查Redis响应
+ */
+router.get('/redis/ping', async (_req: Request, res: Response) => {
+  try {
+    const status = redisHealthService.getHealthStatus();
+    
+    res.json({
+      pong: status.healthy,
+      latency: `${status.latency}ms`,
+      timestamp: status.lastCheck,
+    });
+  } catch (error) {
+    logger.error('Redis ping failed', { error });
+    res.status(500).json({
+      pong: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
