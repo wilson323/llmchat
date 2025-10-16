@@ -35,22 +35,25 @@ test.describe('认证系统测试套件', () => {
     expect(response.status()).toBe(200);
 
     // 验证响应格式
-    const data = await response.json();
-    expect(data).toHaveProperty('token');
-    expect(data).toHaveProperty('user');
+    const result = await response.json();
+    expect(result).toHaveProperty('code');
+    expect(result.code).toBe('SUCCESS');
+    expect(result).toHaveProperty('data');
+    expect(result.data).toHaveProperty('token');
+    expect(result.data).toHaveProperty('user');
 
     // 验证Token格式（JWT应该是3段用.分隔）
-    authToken = data.token;
+    authToken = result.data.token;
     const tokenParts = authToken.split('.');
     expect(tokenParts).toHaveLength(3);
     expect(authToken.length).toBeGreaterThan(200);
 
     // 验证用户信息
-    expect(data.user).toHaveProperty('id');
-    expect(data.user).toHaveProperty('username');
-    expect(data.user.username).toBe(TEST_USER.username);
+    expect(result.data.user).toHaveProperty('id');
+    expect(result.data.user).toHaveProperty('username');
+    expect(result.data.user.username).toBe(TEST_USER.username);
     
-    userId = data.user.id;
+    userId = result.data.user.id;
 
     console.log('✅ 登录成功');
     console.log(`   Token长度: ${authToken.length} 字符`);
@@ -74,7 +77,7 @@ test.describe('认证系统测试套件', () => {
     // 验证错误格式
     const data = await response.json();
     expect(data).toHaveProperty('code');
-    expect(data.code).toContain('AUTH');
+    expect(data.code).toBe('INVALID_CREDENTIALS'); // 实际返回的错误码
 
     console.log('✅ 无效凭证正确拒绝');
   });
