@@ -1,0 +1,800 @@
+# LLMChat Platform - Implementation Tasks
+
+**Version**: 1.0.0
+**Created**: 2025-01-16
+**Status**: Active
+**Total Tasks**: 45
+
+## Task Overview
+
+This document breaks down the LLMChat platform requirements into atomic, executable tasks.
+Each task is designed to be completed independently and traced back to specific requirements.
+
+### Task Status Legend
+- [ ] Pending - Not started
+- [x] Completed - Finished and tested
+- [~] In Progress - Currently being worked on
+- [!] Blocked - Waiting on dependencies
+
+### Priority Levels
+- P0: Critical - Must have for MVP
+- P1: High - Important for launch
+- P2: Medium - Nice to have
+- P3: Low - Future enhancement
+
+---
+
+## Phase 1: Foundation & Type Safety (P0)
+
+### 1.1 Project Setup & Configuration
+
+- [ ] **T001: Initialize Project Structure** [Ref: TC-001]
+  - **Files**: Setup monorepo structure
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: None
+  - **Acceptance**: Project compiles with zero TypeScript errors
+  - **Details**: 
+    - Create backend/, frontend/, shared-types/ directories
+    - Configure pnpm workspace
+    - Setup tsconfig for strict mode
+    - Verify clean build
+
+- [ ] **T002: Configure TypeScript Strict Mode** [Ref: NFR-010, TC-002]
+  - **Files**: tsconfig.json (all packages)
+  - **Priority**: P0
+  - **Estimated Time**: 15 minutes
+  - **Dependencies**: T001
+  - **Acceptance**: All TypeScript configs have strict: true
+  - **Details**:
+    - Enable strict, noImplicitAny, noImplicitReturns
+    - Enable exactOptionalPropertyTypes
+    - Enable noUncheckedIndexedAccess
+    - Run type-check and verify zero errors
+
+- [ ] **T003: Setup Environment Variables** [Ref: NFR-004]
+  - **Files**: .env.example, backend/.env.example
+  - **Priority**: P0
+  - **Estimated Time**: 20 minutes
+  - **Dependencies**: T001
+  - **Acceptance**: All required env vars documented
+  - **Details**:
+    - Document: DATABASE_URL, JWT_SECRET, REDIS_URL
+    - Document: FASTGPT_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY
+    - Create validation script
+    - Add to documentation
+
+### 1.2 Type Safety Fixes
+
+- [ ] **T004: Fix reasoning.ts Type Issues** [Ref: NFR-010]
+  - **Files**: frontend/src/lib/reasoning.ts
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Zero TypeScript errors in reasoning.ts
+  - **Details**:
+    - Add type guards for payload validation (lines 151, 358)
+    - Create ValidPayload and ApiResponse interfaces
+    - Add comprehensive null checks
+    - Write unit tests for type guards
+
+- [ ] **T005: Fix HybridStorageService.ts Type Issues** [Ref: NFR-010]
+  - **Files**: frontend/src/services/HybridStorageService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Zero TypeScript errors in HybridStorageService.ts
+  - **Details**:
+    - Resolve CacheStrategy duplicate definition
+    - Fix type conflicts in CacheConfig interface
+    - Ensure consistent enum usage
+    - Add unit tests
+
+---
+
+## Phase 2: Database & Backend Core (P0)
+
+### 2.1 Database Setup
+
+- [ ] **T006: Create Database Migrations** [Ref: TC-003, TC-004]
+  - **Files**: backend/src/migrations/001_create_users.sql
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: All required tables created with constraints
+  - **Details**:
+    - Create users table with unique email constraint
+    - Create sessions table with foreign key to users
+    - Create messages table with foreign key to sessions
+    - Add indexes for performance
+
+- [ ] **T007: Create Database Connection Pool** [Ref: NFR-003]
+  - **Files**: backend/src/database/connection.ts
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: T006
+  - **Acceptance**: Database connection pool initialized with 10-50 connections
+  - **Details**:
+    - Configure PostgreSQL connection pool
+    - Add health check query
+    - Implement connection retry logic
+    - Add connection pool monitoring
+
+### 2.2 Authentication System
+
+- [ ] **T008: Implement Password Hashing Utility** [Ref: FR-002, US-001]
+  - **Files**: backend/src/utils/password.ts
+  - **Priority**: P0
+  - **Estimated Time**: 20 minutes
+  - **Dependencies**: T001
+  - **Acceptance**: Password hashing with bcrypt, salt rounds = 10
+  - **Details**:
+    - Create hashPassword function
+    - Create comparePassword function
+    - Add password strength validation
+    - Write unit tests
+
+- [ ] **T009: Implement JWT Token Service** [Ref: FR-001, US-002]
+  - **Files**: backend/src/services/JWTService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 40 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: JWT generation and validation working
+  - **Details**:
+    - Create generateToken function (HS256, 1 hour expiry)
+    - Create verifyToken function
+    - Include user role in payload
+    - Add token refresh logic
+    - Write unit tests
+
+- [ ] **T010: Create Auth Controller** [Ref: US-001, US-002, US-003]
+  - **Files**: backend/src/controllers/AuthController.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T008, T009
+  - **Acceptance**: Registration, login, refresh endpoints working
+  - **Details**:
+    - POST /api/auth/register endpoint
+    - POST /api/auth/login endpoint
+    - POST /api/auth/refresh endpoint
+    - Input validation for all endpoints
+    - Standardized error responses
+    - Write integration tests
+
+- [ ] **T011: Create JWT Authentication Middleware** [Ref: FR-001, FR-003]
+  - **Files**: backend/src/middleware/jwtAuth.ts
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: T009
+  - **Acceptance**: Protected routes require valid JWT
+  - **Details**:
+    - Extract token from Authorization header
+    - Verify token signature
+    - Attach user to request object
+    - Handle expired tokens
+    - Write middleware tests
+
+- [ ] **T012: Create Role-Based Access Middleware** [Ref: FR-003, US-011]
+  - **Files**: backend/src/middleware/rbac.ts
+  - **Priority**: P0
+  - **Estimated Time**: 25 minutes
+  - **Dependencies**: T011
+  - **Acceptance**: Admin endpoints restricted to admin role
+  - **Details**:
+    - Create requireRole middleware
+    - Check user role from token
+    - Return 403 for unauthorized access
+    - Write middleware tests
+
+---
+
+## Phase 3: Agent Management (P0)
+
+### 3.1 Agent Configuration
+
+- [ ] **T013: Create Agent Types** [Ref: FR-006]
+  - **Files**: shared-types/src/agent.ts
+  - **Priority**: P0
+  - **Estimated Time**: 30 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Complete agent type definitions
+  - **Details**:
+    - Define AgentProvider enum (fastgpt, openai, anthropic, dify)
+    - Define AgentConfig interface
+    - Define AgentStatus enum
+    - Define AgentFeatures interface
+    - Export all types
+
+- [ ] **T014: Create Agent Configuration Service** [Ref: FR-004, US-004]
+  - **Files**: backend/src/services/AgentConfigService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T013
+  - **Acceptance**: Load agents from config/agents.json
+  - **Details**:
+    - Read config/agents.json
+    - Validate agent configuration schema
+    - Support hot-reload functionality
+    - Cache agent configurations
+    - Write unit tests
+
+- [ ] **T015: Implement Agent Health Monitoring** [Ref: FR-005, US-006]
+  - **Files**: backend/src/services/AgentHealthService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T014
+  - **Acceptance**: Health checks every 5 minutes
+  - **Details**:
+    - Create health check scheduler
+    - Ping each agent API endpoint
+    - Mark inactive after 3 failed checks
+    - Log health check results
+    - Notify admins of failures
+    - Write unit tests
+
+- [ ] **T016: Create Agent Controller** [Ref: US-004, US-005, US-006]
+  - **Files**: backend/src/controllers/AgentController.ts
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T014, T015
+  - **Acceptance**: Agent list and status endpoints working
+  - **Details**:
+    - GET /api/agents endpoint
+    - GET /api/agents/:id/status endpoint
+    - POST /api/agents/reload endpoint (admin only)
+    - Return standardized agent format
+    - Write integration tests
+
+### 3.2 Agent Providers
+
+- [ ] **T017: Implement FastGPT Provider** [Ref: FR-006]
+  - **Files**: backend/src/providers/FastGPTProvider.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T013
+  - **Acceptance**: FastGPT API integration working
+  - **Details**:
+    - Initialize FastGPT client with API key
+    - Implement sendMessage method
+    - Support streaming responses
+    - Handle API errors
+    - Add request/response logging
+    - Write unit tests
+
+- [ ] **T018: Implement OpenAI Provider** [Ref: FR-006]
+  - **Files**: backend/src/providers/OpenAIProvider.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T013
+  - **Acceptance**: OpenAI API integration working
+  - **Details**:
+    - Initialize OpenAI client
+    - Implement sendMessage method
+    - Support streaming with SSE
+    - Handle rate limiting
+    - Write unit tests
+
+- [ ] **T019: Implement Anthropic Provider** [Ref: FR-006]
+  - **Files**: backend/src/providers/AnthropicProvider.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T013
+  - **Acceptance**: Anthropic API integration working
+  - **Details**:
+    - Initialize Anthropic client
+    - Implement sendMessage method
+    - Support streaming
+    - Handle API-specific formats
+    - Write unit tests
+
+- [ ] **T020: Create Unified Chat Proxy Service** [Ref: FR-006, US-007]
+  - **Files**: backend/src/services/ChatProxyService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 70 minutes
+  - **Dependencies**: T017, T018, T019
+  - **Acceptance**: Unified interface for all providers
+  - **Details**:
+    - Create provider factory
+    - Route messages to correct provider
+    - Normalize responses from all providers
+    - Handle provider-specific errors
+    - Add fallback logic
+    - Write integration tests
+
+---
+
+## Phase 4: Chat System (P0)
+
+### 4.1 Message Processing
+
+- [ ] **T021: Create Message Types** [Ref: FR-009, FR-010]
+  - **Files**: shared-types/src/chat.ts
+  - **Priority**: P0
+  - **Estimated Time**: 20 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Complete message type definitions
+  - **Details**:
+    - Define Message interface
+    - Define Session interface
+    - Define ChatRequest interface
+    - Define ChatResponse interface
+
+- [ ] **T022: Implement Input Validation Middleware** [Ref: FR-007, NFR-004]
+  - **Files**: backend/src/middleware/validateInput.ts
+  - **Priority**: P0
+  - **Estimated Time**: 35 minutes
+  - **Dependencies**: T021
+  - **Acceptance**: All inputs validated and sanitized
+  - **Details**:
+    - Validate message content not empty
+    - Limit message size to 10,000 characters
+    - Sanitize input to prevent injection
+    - Return validation errors
+    - Write middleware tests
+
+- [ ] **T023: Implement Rate Limiting Middleware** [Ref: FR-007, NFR-005]
+  - **Files**: backend/src/middleware/rateLimiter.ts
+  - **Priority**: P0
+  - **Estimated Time**: 40 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: Rate limits enforced per user
+  - **Details**:
+    - Configure Redis for rate limiting
+    - Limit to 10 messages per minute per user
+    - Return 429 when limit exceeded
+    - Add rate limit headers to response
+    - Write middleware tests
+
+- [ ] **T024: Create Chat Controller** [Ref: US-007, US-008]
+  - **Files**: backend/src/controllers/ChatController.ts
+  - **Priority**: P0
+  - **Estimated Time**: 90 minutes
+  - **Dependencies**: T020, T022, T023
+  - **Acceptance**: Chat completions endpoint working
+  - **Details**:
+    - POST /api/chat/completions endpoint
+    - Support streaming and non-streaming modes
+    - Create session if not exists
+    - Store messages in database
+    - Return standardized response
+    - Write integration tests
+
+### 4.2 Streaming Support
+
+- [ ] **T025: Implement SSE Streaming Service** [Ref: FR-008, US-008]
+  - **Files**: backend/src/services/StreamingService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T024
+  - **Acceptance**: Server-Sent Events working
+  - **Details**:
+    - Setup SSE connection
+    - Stream response chunks
+    - Handle connection drops
+    - Provide non-streaming fallback
+    - Write unit tests
+
+### 4.3 Session & History
+
+- [ ] **T026: Create Session Service** [Ref: FR-009, US-009, US-010]
+  - **Files**: backend/src/services/SessionService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T007
+  - **Acceptance**: Session management working
+  - **Details**:
+    - Create new session
+    - Get user sessions
+    - Get session by ID
+    - Update session title
+    - Store session metadata
+    - Write unit tests
+
+- [ ] **T027: Create Message Repository** [Ref: FR-010]
+  - **Files**: backend/src/repositories/MessageRepository.ts
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T007
+  - **Acceptance**: Message CRUD operations working
+  - **Details**:
+    - Create message
+    - Get messages by session (paginated, 50 per page)
+    - Add database indexes for performance
+    - Handle database errors
+    - Write unit tests
+
+- [ ] **T028: Create History Controller** [Ref: US-009]
+  - **Files**: backend/src/controllers/HistoryController.ts
+  - **Priority**: P0
+  - **Estimated Time**: 40 minutes
+  - **Dependencies**: T026, T027
+  - **Acceptance**: History endpoints working
+  - **Details**:
+    - GET /api/history/sessions endpoint
+    - GET /api/history/sessions/:id endpoint
+    - Support pagination
+    - Return formatted responses
+    - Write integration tests
+
+---
+
+## Phase 5: Frontend Core (P0)
+
+### 5.1 State Management
+
+- [ ] **T029: Create Auth Store** [Ref: US-001, US-002, US-003]
+  - **Files**: frontend/src/store/authStore.ts
+  - **Priority**: P0
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Authentication state management working
+  - **Details**:
+    - Store user, token, isAuthenticated
+    - Create login, logout, register actions
+    - Persist token in localStorage
+    - Auto-refresh expired tokens
+    - Write unit tests
+
+- [ ] **T030: Create Agent Store** [Ref: US-004, US-005]
+  - **Files**: frontend/src/store/agentStore.ts
+  - **Priority**: P0
+  - **Estimated Time**: 40 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Agent state management working
+  - **Details**:
+    - Store agents list and selected agent
+    - Create fetchAgents, selectAgent actions
+    - Handle agent status updates
+    - Write unit tests
+
+- [ ] **T031: Create Chat Store** [Ref: US-007, US-008, US-009]
+  - **Files**: frontend/src/store/chatStore.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T002
+  - **Acceptance**: Chat state management working
+  - **Details**:
+    - Store sessions, messages, current session
+    - Create sendMessage, loadHistory actions
+    - Handle streaming updates
+    - Optimistic UI updates
+    - Write unit tests
+
+### 5.2 API Services
+
+- [ ] **T032: Create Auth Service** [Ref: US-001, US-002, US-003]
+  - **Files**: frontend/src/services/authService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 45 minutes
+  - **Dependencies**: T029
+  - **Acceptance**: Auth API calls working
+  - **Details**:
+    - Implement register, login, refresh methods
+    - Add JWT token to request headers
+    - Handle auth errors
+    - Write unit tests
+
+- [ ] **T033: Create Agent Service** [Ref: US-004, US-005, US-006]
+  - **Files**: frontend/src/services/agentService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 35 minutes
+  - **Dependencies**: T030
+  - **Acceptance**: Agent API calls working
+  - **Details**:
+    - Implement getAgents, getAgentStatus methods
+    - Handle API errors
+    - Write unit tests
+
+- [ ] **T034: Create Chat Service** [Ref: US-007, US-008, US-009]
+  - **Files**: frontend/src/services/chatService.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T031
+  - **Acceptance**: Chat API calls working including streaming
+  - **Details**:
+    - Implement sendMessage with SSE support
+    - Implement getSessions, getMessages methods
+    - Handle streaming connections
+    - Handle API errors
+    - Write unit tests
+
+### 5.3 UI Components
+
+- [ ] **T035: Create Login Component** [Ref: US-002]
+  - **Files**: frontend/src/components/auth/Login.tsx
+  - **Priority**: P0
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T029, T032
+  - **Acceptance**: User can log in via UI
+  - **Details**:
+    - Email and password input fields
+    - Form validation
+    - Loading states
+    - Error display
+    - Write component tests
+
+- [ ] **T036: Create Agent Selector Component** [Ref: US-004, US-005]
+  - **Files**: frontend/src/components/agents/AgentSelector.tsx
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T030, T033
+  - **Acceptance**: User can select agents
+  - **Details**:
+    - Display agent list grouped by provider
+    - Show agent status
+    - Handle agent selection
+    - Responsive design
+    - Write component tests
+
+- [ ] **T037: Create Chat Window Component** [Ref: US-007, US-008]
+  - **Files**: frontend/src/components/chat/ChatWindow.tsx
+  - **Priority**: P0
+  - **Estimated Time**: 90 minutes
+  - **Dependencies**: T031, T034
+  - **Acceptance**: User can send and receive messages
+  - **Details**:
+    - Message list display
+    - Message input field
+    - Send button
+    - Loading indicators
+    - Streaming response display
+    - Auto-scroll
+    - Write component tests
+
+- [ ] **T038: Create Chat History Component** [Ref: US-009, US-010]
+  - **Files**: frontend/src/components/chat/ChatHistory.tsx
+  - **Priority**: P0
+  - **Estimated Time**: 70 minutes
+  - **Dependencies**: T031, T034
+  - **Acceptance**: User can view and navigate sessions
+  - **Details**:
+    - Session list sidebar
+    - Session click to load
+    - New session button
+    - Session title display
+    - Pagination support
+    - Write component tests
+
+---
+
+## Phase 6: Admin Dashboard (P1)
+
+### 6.1 Admin Backend
+
+- [ ] **T039: Create Admin Agent Controller** [Ref: US-011, US-012]
+  - **Files**: backend/src/controllers/AdminAgentController.ts
+  - **Priority**: P1
+  - **Estimated Time**: 70 minutes
+  - **Dependencies**: T012, T014
+  - **Acceptance**: Admin can manage agents
+  - **Details**:
+    - POST /api/admin/agents (create)
+    - PUT /api/admin/agents/:id (update)
+    - DELETE /api/admin/agents/:id (delete)
+    - Validate agent configuration
+    - Test agent connection before save
+    - Write integration tests
+
+- [ ] **T040: Create Metrics Service** [Ref: FR-012, US-013]
+  - **Files**: backend/src/services/MetricsService.ts
+  - **Priority**: P1
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: System metrics collected
+  - **Details**:
+    - Track API response times (P50, P95, P99)
+    - Count errors by type
+    - Track active sessions
+    - Record agent usage
+    - Export Prometheus metrics
+    - Write unit tests
+
+- [ ] **T041: Create Error Logging Service** [Ref: FR-013, US-014]
+  - **Files**: backend/src/services/ErrorLoggingService.ts
+  - **Priority**: P1
+  - **Estimated Time**: 50 minutes
+  - **Dependencies**: T003
+  - **Acceptance**: Errors logged with context
+  - **Details**:
+    - Log errors with stack traces
+    - Include request context
+    - Categorize by severity
+    - Store in database or external service
+    - Write unit tests
+
+### 6.2 Admin Frontend
+
+- [ ] **T042: Create Admin Dashboard Component** [Ref: US-013]
+  - **Files**: frontend/src/components/admin/AdminDashboard.tsx
+  - **Priority**: P1
+  - **Estimated Time**: 90 minutes
+  - **Dependencies**: T040
+  - **Acceptance**: Admin can view metrics
+  - **Details**:
+    - Display API response times
+    - Display error rates
+    - Display active users
+    - Display agent usage
+    - Real-time updates
+    - Time-range filters
+    - Write component tests
+
+- [ ] **T043: Create Agent Management Component** [Ref: US-011, US-012]
+  - **Files**: frontend/src/components/admin/AgentManagement.tsx
+  - **Priority**: P1
+  - **Estimated Time**: 100 minutes
+  - **Dependencies**: T039
+  - **Acceptance**: Admin can CRUD agents
+  - **Details**:
+    - Agent list with edit/delete actions
+    - Add agent form
+    - Edit agent form
+    - Configuration validation
+    - Connection testing
+    - Write component tests
+
+- [ ] **T044: Create Error Logs Component** [Ref: US-014]
+  - **Files**: frontend/src/components/admin/ErrorLogs.tsx
+  - **Priority**: P1
+  - **Estimated Time**: 70 minutes
+  - **Dependencies**: T041
+  - **Acceptance**: Admin can view error logs
+  - **Details**:
+    - Error log table
+    - Filter by severity
+    - Filter by component
+    - Search functionality
+    - Pagination
+    - Write component tests
+
+---
+
+## Phase 7: Testing & Quality Assurance (P0)
+
+### 7.1 Testing Infrastructure
+
+- [ ] **T045: Setup Test Environment** [Ref: NFR-010]
+  - **Files**: jest.config.js, vitest.config.ts, playwright.config.ts
+  - **Priority**: P0
+  - **Estimated Time**: 60 minutes
+  - **Dependencies**: T001
+  - **Acceptance**: All test frameworks configured
+  - **Details**:
+    - Configure Jest for backend
+    - Configure Vitest for frontend
+    - Configure Playwright for E2E
+    - Setup test databases
+    - Setup CI/CD test pipeline
+    - Verify 80%+ coverage requirement
+
+---
+
+## Task Summary
+
+### By Phase
+- **Phase 1** (Foundation): 5 tasks (T001-T005)
+- **Phase 2** (Backend Core): 7 tasks (T006-T012)
+- **Phase 3** (Agent Management): 8 tasks (T013-T020)
+- **Phase 4** (Chat System): 8 tasks (T021-T028)
+- **Phase 5** (Frontend Core): 10 tasks (T029-T038)
+- **Phase 6** (Admin Dashboard): 6 tasks (T039-T044)
+- **Phase 7** (Testing): 1 task (T045)
+
+### By Priority
+- **P0** (Critical): 39 tasks
+- **P1** (High): 6 tasks
+- **P2** (Medium): 0 tasks
+- **P3** (Low): 0 tasks
+
+### Estimated Total Time
+- **Total**: ~46.5 hours (assuming experienced developer)
+- **Phase 1**: ~2.5 hours
+- **Phase 2**: ~4.25 hours
+- **Phase 3**: ~6.25 hours
+- **Phase 4**: ~6 hours
+- **Phase 5**: ~8 hours
+- **Phase 6**: ~5.5 hours
+- **Phase 7**: ~1 hour
+
+---
+
+## Dependencies Graph
+
+```mermaid
+graph TD
+    T001[T001: Project Setup] --> T002[T002: TypeScript Config]
+    T001 --> T003[T003: Environment Variables]
+    T002 --> T004[T004: Fix reasoning.ts]
+    T002 --> T005[T005: Fix HybridStorage]
+    T002 --> T013[T013: Agent Types]
+    T002 --> T021[T021: Message Types]
+    T002 --> T029[T029: Auth Store]
+    T002 --> T030[T030: Agent Store]
+    T002 --> T031[T031: Chat Store]
+    
+    T003 --> T006[T006: Database Migrations]
+    T003 --> T009[T009: JWT Service]
+    T003 --> T023[T023: Rate Limiting]
+    T003 --> T040[T040: Metrics Service]
+    T003 --> T041[T041: Error Logging]
+    
+    T006 --> T007[T007: Connection Pool]
+    T007 --> T026[T026: Session Service]
+    T007 --> T027[T027: Message Repository]
+    
+    T001 --> T008[T008: Password Hashing]
+    T008 --> T010[T010: Auth Controller]
+    T009 --> T010
+    T009 --> T011[T011: JWT Middleware]
+    T011 --> T012[T012: RBAC Middleware]
+    
+    T013 --> T014[T014: Agent Config Service]
+    T014 --> T015[T015: Health Monitoring]
+    T014 --> T016[T016: Agent Controller]
+    T015 --> T016
+    
+    T013 --> T017[T017: FastGPT Provider]
+    T013 --> T018[T018: OpenAI Provider]
+    T013 --> T019[T019: Anthropic Provider]
+    T017 --> T020[T020: Chat Proxy]
+    T018 --> T020
+    T019 --> T020
+    
+    T021 --> T022[T022: Input Validation]
+    T020 --> T024[T024: Chat Controller]
+    T022 --> T024
+    T023 --> T024
+    T024 --> T025[T025: SSE Streaming]
+    
+    T026 --> T028[T028: History Controller]
+    T027 --> T028
+    
+    T029 --> T032[T032: Auth Service]
+    T030 --> T033[T033: Agent Service]
+    T031 --> T034[T034: Chat Service]
+    
+    T029 --> T035[T035: Login Component]
+    T032 --> T035
+    T030 --> T036[T036: Agent Selector]
+    T033 --> T036
+    T031 --> T037[T037: Chat Window]
+    T034 --> T037
+    T031 --> T038[T038: Chat History]
+    T034 --> T038
+    
+    T012 --> T039[T039: Admin Agent Controller]
+    T014 --> T039
+    T040 --> T042[T042: Admin Dashboard]
+    T039 --> T043[T043: Agent Management]
+    T041 --> T044[T044: Error Logs]
+    
+    T001 --> T045[T045: Test Setup]
+```
+
+---
+
+## Progress Tracking
+
+**Last Updated**: 2025-01-16
+**Completed**: 0 / 45 tasks (0%)
+**In Progress**: 0 tasks
+**Blocked**: 0 tasks
+
+### Milestone Status
+- [ ] Phase 1 Complete (0 / 5 tasks)
+- [ ] Phase 2 Complete (0 / 7 tasks)
+- [ ] Phase 3 Complete (0 / 8 tasks)
+- [ ] Phase 4 Complete (0 / 8 tasks)
+- [ ] Phase 5 Complete (0 / 10 tasks)
+- [ ] Phase 6 Complete (0 / 6 tasks)
+- [ ] Phase 7 Complete (0 / 1 task)
+
+---
+
+**Notes**:
+- All tasks are atomic and can be completed in 15-60 minutes
+- Each task specifies exact files to create/modify
+- Dependencies are clearly mapped
+- All tasks reference specific requirements
+- Ready for agent-based implementation
+
