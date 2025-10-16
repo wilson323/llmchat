@@ -12,6 +12,11 @@ import { persist } from 'zustand/middleware';
 import { Agent } from '@/types';
 import { perfMonitor } from '@/utils/performanceMonitor';
 
+// 类型安全的Store辅助类型
+type SetState<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void;
+type GetState<T> = () => T;
+
+// 状态类型定义
 interface AgentState {
   // 智能体数据
   agents: Agent[];
@@ -20,8 +25,11 @@ interface AgentState {
   // 加载状态
   agentsLoading: boolean;
   agentsError: string | null;
+}
 
-  // Actions
+// Action类型定义
+interface AgentActions {
+  // 基础Actions
   setAgents: (agents: Agent[]) => void;
   setCurrentAgent: (agent: Agent | null) => void;
   setAgentsLoading: (loading: boolean) => void;
@@ -30,11 +38,19 @@ interface AgentState {
   // 辅助方法
   getAgentById: (id: string) => Agent | undefined;
   getActiveAgents: () => Agent[];
+  getAgentsByProvider: (provider: string) => Agent[];
+  hasAgent: (id: string) => boolean;
+
+  // Zustand store methods
+  getState: () => AgentStore;
 }
 
-export const useAgentStore = create<AgentState>()(
+// 完整的Store类型
+type AgentStore = AgentState & AgentActions;
+
+export const useAgentStore = create<AgentStore>()(
   persist(
-    (set, get) => ({
+    (set: SetState<AgentStore>, get: GetState<AgentStore>): AgentStore => ({
       // 初始状态
       agents: [],
       currentAgent: null,
@@ -42,48 +58,63 @@ export const useAgentStore = create<AgentState>()(
       agentsError: null,
 
       // 设置智能体列表
-      setAgents: (agents) => {
+      setAgents: (agents: Agent[]) => {
         perfMonitor.measure('agentStore.setAgents', () => {
           set({ agents, agentsError: null });
         });
       },
 
       // 切换当前智能体
-      setCurrentAgent: (agent) => {
+      setCurrentAgent: (agent: Agent | null) => {
         perfMonitor.measure('agentStore.setCurrentAgent', () => {
           set({ currentAgent: agent });
         });
       },
 
       // 设置加载状态
-      setAgentsLoading: (loading) => {
+      setAgentsLoading: (loading: boolean) => {
         set({ agentsLoading: loading });
       },
 
       // 设置错误信息
-      setAgentsError: (error) => {
+      setAgentsError: (error: string | null) => {
         set({ agentsError: error, agentsLoading: false });
       },
 
       // 根据ID获取智能体
-      getAgentById: (id) => {
+      getAgentById: (id: string): Agent | undefined => {
         const { agents } = get();
-        return agents.find((agent) => agent.id === id);
+        return agents.find((agent: Agent) => agent.id === id);
       },
 
       // 获取所有激活的智能体
-      getActiveAgents: () => {
+      getActiveAgents: (): Agent[] => {
         const { agents } = get();
-        return agents.filter((agent) => agent.isActive);
+        return agents.filter((agent: Agent) => agent.isActive);
       },
+
+      // 根据provider获取智能体
+      getAgentsByProvider: (provider: string): Agent[] => {
+        const { agents } = get();
+        return agents.filter((agent: Agent) => agent.provider === provider);
+      },
+
+      // 检查智能体是否存在
+      hasAgent: (id: string): boolean => {
+        const { agents } = get();
+        return agents.some((agent: Agent) => agent.id === id);
+      },
+
+      // Zustand store method
+      getState: (): AgentStore => get(),
     }),
     {
       name: 'agent-store',
-      partialize: (state) => ({
+      partialize: (state: AgentStore) => ({
         currentAgent: state.currentAgent, // 持久化当前智能体
       }),
-    },
-  ),
+    }
+  )
 );
 
 export default useAgentStore;

@@ -1,18 +1,25 @@
 'use client';
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {AlertTriangle, ArrowLeft, BarChart3, CheckCircle, Clock, Pause, Play, RefreshCw, RotateCcw, XCircle} from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  BarChart3,
-  RefreshCw,
-  Play,
-  Pause,
-  RotateCcw,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -25,14 +32,28 @@ import {
   ErrorRateChart,
   RequestVolumeChart,
 } from './PerformanceChart';
-import {
-  type AgentHealthStatus,
-  type TimeSeriesData,
-} from '@/services/slaApi';
 import { toast } from '@/components/ui/Toast';
 
 interface AgentDetailsProps {
   agentId?: string;
+}
+
+interface AgentMetrics {
+  id: string;
+  name: string;
+  provider: string;
+  status: 'online' | 'offline' | 'degraded' | 'unknown';
+  responseTime: number;
+  successRate: number;
+  lastCheckTime: string;
+  errorCount: number;
+  requestCount: number;
+  enabled: boolean;
+  metrics: Array<{
+    timestamp: string;
+    value: number;
+    labels: { type: string };
+  }>;
 }
 
 export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
@@ -41,8 +62,8 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
   const agentId = propAgentId || params.id as string;
 
   const [loading, setLoading] = useState(true);
-  const [agentMetrics, setAgentMetrics] = useState<(AgentHealthStatus & { metrics: TimeSeriesData[] }) | null>(null);
-  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d'>('24h');
+  const [agentMetrics, setAgentMetrics] = useState<AgentMetrics | null>(null);
+  const [timeRange, setTimeRange] = useState('24h');
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // 生成模拟数据
@@ -275,7 +296,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
 
           <MetricsCard
             title="吞吐量"
-            value={agentMetrics.metrics?.filter(m => m.labels?.type === 'throughput')?.pop()?.value || 0}
+            value={agentMetrics.metrics?.filter((m: any) => m.labels?.type === 'throughput')?.pop()?.value || 0}
             unit="req/min"
             icon={<BarChart3 className="h-5 w-5 text-brand" />}
             description="当前每分钟请求数"
@@ -306,7 +327,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
                 <option value="7d">7天</option>
               </select>
             </div>
-            <ResponseTimeChart data={agentMetrics.metrics?.filter(m => m.labels?.type === 'responseTime') || []} loading={loading} />
+            <ResponseTimeChart data={agentMetrics.metrics?.filter((m: any) => m.labels?.type === 'responseTime') || []} loading={loading} />
           </div>
 
           <div className="space-y-4">
@@ -323,7 +344,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
                 <option value="7d">7天</option>
               </select>
             </div>
-            <ErrorRateChart data={agentMetrics.metrics?.filter(m => m.labels?.type === 'errorRate') || []} loading={loading} />
+            <ErrorRateChart data={agentMetrics.metrics?.filter((m: any) => m.labels?.type === 'errorRate') || []} loading={loading} />
           </div>
         </div>
       )}
@@ -333,7 +354,7 @@ export function AgentDetails({ agentId: propAgentId }: AgentDetailsProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">吞吐量趋势</h2>
-            <RequestVolumeChart data={agentMetrics.metrics?.filter(m => m.labels?.type === 'throughput') || []} loading={loading} />
+            <RequestVolumeChart data={agentMetrics.metrics?.filter((m: any) => m.labels?.type === 'throughput') || []} loading={loading} />
           </div>
 
           <div className="rounded-lg border border-border/20 bg-card/50 p-6">

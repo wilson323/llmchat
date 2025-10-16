@@ -49,7 +49,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
         />
       );
     }
-    const scrollRef = useRef(null);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
     const lastMessageRef = useRef<HTMLDivElement | null>(null);
     const currentAgent = agentStore((state: any) => state.currentAgent);
     const streamingStatus = messageStore((state: any) => state.streamingStatus);

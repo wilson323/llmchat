@@ -4,8 +4,16 @@
  * 仅在开发环境中显示，用于监控代码分割的性能表现
  */
 
+;
+;
+;
+;
+;
+;
+;
+import {Activity, AlertCircle, Clock, Package, RefreshCw, Trash2} from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Activity, Package, Clock, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
+;
 import { useEnhancedCodeSplitting } from '@/hooks/useEnhancedCodeSplitting';
 
 interface CodeSplittingMonitorProps {
@@ -154,7 +162,7 @@ export default function CodeSplittingMonitor({
                 <div className="text-xs text-muted-foreground space-y-1">
                   <div>加载变化: {performanceMetrics.loadingRateChange > 0 ? '+' : ''}{performanceMetrics.loadingRateChange}</div>
                   <div>已加载变化: {performanceMetrics.loadedRateChange > 0 ? '+' : ''}{performanceMetrics.loadedRateChange}</div>
-                  <div>时间范围: {new Date(performanceMetrics.timeRange.split(' - ')[0]).toLocaleTimeString()} - {new Date(performanceMetrics.timeRange.split(' - ')[1]).toLocaleTimeString()}</div>
+                  <div>时间范围: {performanceMetrics.timeRange}</div>
                 </div>
               </div>
             )}

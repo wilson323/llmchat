@@ -1,6 +1,14 @@
+;
+;
+;
+;
+;
+import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 import { create } from 'zustand';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+;
+;
+;
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -20,14 +28,16 @@ interface ToastState {
   toasts: ToastItem[];
   add: (t: ToastItem) => void;
   remove: (id: string) => void;
+  getState: () => ToastState;
 }
 
 const genId = () => Math.random().toString(36).slice(2);
 
-export const useToastStore = create<ToastState>((set) => ({
+export const useToastStore = create<ToastState>((set, get: () => any) => ({
   toasts: [],
-  add: (t) => set((s) => ({ toasts: [...s.toasts, t] })),
-  remove: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
+  add: (t: any) => set((s: any) => ({ toasts: [...s.toasts, t] })),
+  remove: (id: string | number) => set((s: any) => ({ toasts: s.toasts.filter((x: any) => x.id !== id) })),
+  getState: get,
 }));
 
 export function toast(opts: ToastOptions | string) {
@@ -58,7 +68,7 @@ export function Toaster() {
         className="sr-only"
         role="status"
         >
-        {toasts.map(t => (
+        {toasts.map((t: any) => (
           <div key={`a11y-${t.id}`}>
             {t.type === 'error' ? '错误：' : t.type === 'warning' ? '警告：' : t.type === 'success' ? '成功：' : '信息：'}
             {t.title}
@@ -74,7 +84,7 @@ export function Toaster() {
         className="sr-only"
         role="alert"
         >
-        {toasts.filter(t => t.type === 'error').map(t => (
+        {toasts.filter((t: any) => t.type === 'error').map((t: any) => (
           <div key={`error-${t.id}`}>
             错误：{t.title}
             {t.description && `，${t.description}`}
@@ -85,7 +95,7 @@ export function Toaster() {
       {/* 视觉Toast显示区域 */}
       <div className="pointer-events-none fixed top-3 right-3 z-[100] flex flex-col gap-2">
         <AnimatePresence>
-          {toasts.map((t) => (
+          {toasts.map((t: any) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -101,7 +111,7 @@ export function Toaster() {
             >
               <div className="p-3 flex items-start gap-3">
                 <div className="mt-0.5" aria-hidden="true">
-                  {t.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                  {t.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
                   {t.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
                   {t.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
                   {t.type === 'info' && <Info className="w-5 h-5 text-[var(--brand)]" />}

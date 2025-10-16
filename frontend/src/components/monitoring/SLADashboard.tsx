@@ -1,12 +1,16 @@
 'use client';
+;
+;
+;
+;
+;
+;
+import {Clock, Maximize2, Minimize2, RefreshCw, Shield} from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Clock,
-  RefreshCw,
-  Shield,
-  Maximize2,
-  Minimize2,
-} from 'lucide-react';
+;
+;
+;
+;
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 
@@ -27,11 +31,7 @@ import { AgentStatusGrid } from './AgentStatusGrid';
 import {
   acknowledgeAlert,
   resolveAlert,
-  type SystemHealthMetrics,
-  type PerformanceMetrics,
-  type Alert,
   type AgentHealthStatus,
-  type SLADashboardParams,
 } from '@/services/slaApi';
 
 const timeRanges = [
@@ -50,9 +50,9 @@ interface LayoutState {
 }
 
 export function SLADashboard() {
-  const [timeRange, setTimeRange] = useState<SLADashboardParams['timeRange']>('24h');
+  const [timeRange, setTimeRange] = useState('24h');
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [layout, setLayout] = useState<LayoutState>({
+  const [layout, setLayout] = useState({
     alertsExpanded: false,
     metricsExpanded: false,
     chartsExpanded: false,
@@ -61,14 +61,10 @@ export function SLADashboard() {
 
   // 数据状态
   const [loading, setLoading] = useState(true);
-  const [systemHealth, setSystemHealth] = useState<SystemHealthMetrics | null>(null);
-  const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [realTimeData, setRealTimeData] = useState<{
-    systemHealth: SystemHealthMetrics;
-    activeAlerts: Alert[];
-    recentViolations: any[];
-  } | null>(null);
+  const [systemHealth, setSystemHealth] = useState<any>(null);
+  const [performance, setPerformance] = useState<any>(null);
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [realTimeData, setRealTimeData] = useState<any>(null);
 
   // 生成模拟数据（实际应用中应该从API获取）
   const generateMockData = useCallback(() => {
@@ -299,7 +295,7 @@ export function SLADashboard() {
               loading={loading}
             />
             <ActiveAgentsCard
-              activeAgents={systemHealth.agents.filter(a => a.status === 'online').length}
+              activeAgents={systemHealth.agents.filter((a: any) => a.status === 'online').length}
               totalAgents={systemHealth.agents.length}
               loading={loading}
             />

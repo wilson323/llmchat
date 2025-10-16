@@ -5,21 +5,34 @@
  * 可以通过切换开关来对比两种实现
  */
 
+;
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { perfMonitor } from '@/utils/performanceMonitor';
 
-// 新的优化Store
-import { useMessageStore } from '@/store/messageStore';
-
-// 旧的合并Store
+// 使用统一的chatStore（主store）
 import { useChatStore } from '@/store/chatStore';
+// 暂时注释拆分store以避免类型错误
+// import { useMessageStore } from '@/store/messageStore';
+
+interface TestResults {
+  old?: {
+    duration: string;
+    chunks: number;
+    updateCount?: number;
+    finalMessage: number;
+  };
+  new?: {
+    duration: string;
+    chunks: number;
+    finalMessage: number;
+    flushCount?: number;
+    avgFlushTime?: number;
+  };
+}
 
 export const PerformanceComparisonDemo: React.FC = () => {
-  const [testResults, setTestResults] = useState<{
-    old?: any;
-    new?: any;
-  }>({});
+  const [testResults, setTestResults] = useState<TestResults>({});
 
   // 模拟流式响应测试
   const testStreamingPerformance = async (optimized: boolean) => {
@@ -29,49 +42,39 @@ export const PerformanceComparisonDemo: React.FC = () => {
     perfMonitor.clearAll();
 
     if (optimized) {
-      // 测试新Store（优化版）
+      // 测试优化版Store（暂时使用主store）
       console.log('🚀 测试优化版 Store...');
 
       // 清空消息
-      useMessageStore.getState().clearMessages();
+      useChatStore.getState().clearMessages();
 
       // 添加初始消息
-      useMessageStore.getState().addMessage({
+      useChatStore.getState().addMessage({
         HUMAN: '测试消息',
         timestamp: Date.now(),
       });
-      useMessageStore.getState().addMessage({
+      useChatStore.getState().addMessage({
         AI: '',
         timestamp: Date.now(),
       });
 
       const start = performance.now();
 
-      // 模拟流式chunk
+      // 模拟流式chunk（简化版本，不使用缓冲机制）
       for (let i = 0; i < chunks; i++) {
         const chunk = 'x'.repeat(chunkSize);
-        useMessageStore.getState().appendToBuffer(chunk);
-
-        // 每10个chunk手动flush一次（模拟requestAnimationFrame）
-        if (i % 10 === 0) {
-          useMessageStore.getState().flushBuffer();
-        }
+        useChatStore.getState().updateLastMessage(chunk);
 
         // 模拟网络延迟
         await new Promise(resolve => setTimeout(resolve, 10));
       }
 
-      // 最后flush
-      useMessageStore.getState().flushBuffer();
-
       const duration = performance.now() - start;
 
       const stats = {
         duration: `${duration.toFixed(2)}ms`,
-        flushCount: perfMonitor.getStats('messageStore.flushBuffer')?.count || 0,
-        avgFlushTime: perfMonitor.getStats('messageStore.flushBuffer')?.avg.toFixed(2) || 'N/A',
         chunks,
-        finalMessage: useMessageStore.getState().messages[useMessageStore.getState().messages.length - 1]?.AI?.length || 0,
+        finalMessage: useChatStore.getState().messages[useChatStore.getState().messages.length - 1]?.AI?.length || 0,
       };
 
       console.log('✅ 优化版测试完成:', stats);
@@ -229,8 +232,12 @@ export const PerformanceComparisonDemo: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-blue-700">状态更新减少:</span>
               <span className="font-bold text-blue-900">
-                {testResults.old.updateCount}次 → {testResults.new.flushCount}次
-                (减少 {(((testResults.old.updateCount - testResults.new.flushCount) / testResults.old.updateCount) * 100).toFixed(0)}%)
+                {testResults.old?.updateCount ?? 0}次 → {testResults.new?.flushCount ?? 0}次
+                {testResults.old?.updateCount && testResults.new?.flushCount && (
+                  <>
+                    (减少 {(((testResults.old.updateCount - testResults.new.flushCount) / testResults.old.updateCount) * 100).toFixed(0)}%)
+                  </>
+                )}
               </span>
             </div>
           </div>

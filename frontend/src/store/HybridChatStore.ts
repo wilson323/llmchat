@@ -93,7 +93,7 @@ interface HybridChatState {
 }
 
 export const useHybridChatStore = create<HybridChatState>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector((set: any, get: any): HybridChatState => ({
     // 初始状态
     storageManager: null,
     isStorageInitialized: false,
@@ -168,12 +168,12 @@ export const useHybridChatStore = create<HybridChatState>()(
       }
     },
 
-    setStorageManager: (manager) => set({ storageManager: manager }),
+    setStorageManager: (manager: HybridStorageManager) => set({ storageManager: manager }),
 
     // 智能体操作
-    setAgents: (agents) => set({ agents }),
+    setAgents: (agents: Agent[]) => set({ agents }),
 
-    setCurrentAgent: async (agent) => {
+    setCurrentAgent: async (agent: Agent | null) => {
       const state = get();
 
       if (!agent) {
@@ -212,11 +212,11 @@ export const useHybridChatStore = create<HybridChatState>()(
       }
     },
 
-    setAgentsLoading: (loading) => set({ agentsLoading: loading }),
-    setAgentsError: (error) => set({ agentsError: error }),
+    setAgentsLoading: (loading: boolean) => set({ agentsLoading: loading }),
+    setAgentsError: (error: string | null) => set({ agentsError: error }),
 
     // 会话操作（混合存储版本）
-    loadAgentSessions: async (agentId) => {
+    loadAgentSessions: async (agentId: string) => {
       const state = get();
       if (!state.storageManager) {
         logger.warn('存储管理器未初始化');
@@ -266,7 +266,7 @@ export const useHybridChatStore = create<HybridChatState>()(
         // 更新agentSessions中的会话
         if (state.currentAgent) {
           const agentSessions = state.agentSessions[state.currentAgent.id] || [];
-          const updatedSessions = agentSessions.map(session =>
+          const updatedSessions = agentSessions.map((session: ChatSession) =>
             session.id === updatedSession.id ? updatedSession : session,
           );
 
@@ -279,7 +279,12 @@ export const useHybridChatStore = create<HybridChatState>()(
         }
 
       } catch (error) {
-        logger.error('保存当前会话失败', error as Error, { sessionId: get().currentSession?.id });
+        const currentSessionId = get().currentSession?.id;
+        if (currentSessionId) {
+          logger.error('保存当前会话失败', error as Error, { sessionId: currentSessionId });
+        } else {
+          logger.error('保存当前会话失败', error as Error);
+        }
         set({ storageError: error instanceof Error ? error.message : '保存会话失败' });
       }
     },
@@ -320,12 +325,17 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
 
       } catch (error) {
-        logger.error('创建新会话失败', error as Error, { agentId: get().currentAgent?.id });
+        const currentAgentId = get().currentAgent?.id;
+        if (currentAgentId) {
+          logger.error('创建新会话失败', error as Error, { agentId: currentAgentId });
+        } else {
+          logger.error('创建新会话失败', error as Error);
+        }
         set({ storageError: error instanceof Error ? error.message : '创建会话失败' });
       }
     },
 
-    deleteSession: async (sessionId) => {
+    deleteSession: async (sessionId: string) => {
       const state = get();
       if (!state.storageManager || !state.currentAgent) {
         return;
@@ -337,7 +347,7 @@ export const useHybridChatStore = create<HybridChatState>()(
 
         // 更新本地状态
         const agentSessions = state.agentSessions[state.currentAgent.id] || [];
-        const updatedSessions = agentSessions.filter(s => s.id !== sessionId);
+        const updatedSessions = agentSessions.filter((s: ChatSession) => s.id !== sessionId);
 
         const isCurrentSession = state.currentSession?.id === sessionId;
         const newCurrentSession = isCurrentSession ? updatedSessions[0] || null : state.currentSession;
@@ -357,7 +367,7 @@ export const useHybridChatStore = create<HybridChatState>()(
       }
     },
 
-    switchToSession: async (sessionId) => {
+    switchToSession: async (sessionId: string) => {
       const state = get();
       if (!state.storageManager || !state.currentAgent) {
         return;
@@ -386,7 +396,7 @@ export const useHybridChatStore = create<HybridChatState>()(
       }
     },
 
-    renameSession: async (sessionId, title) => {
+    renameSession: async (sessionId: string, title: string) => {
       const state = get();
       if (!state.storageManager || !state.currentAgent) {
         return;
@@ -405,7 +415,7 @@ export const useHybridChatStore = create<HybridChatState>()(
 
         // 更新本地状态
         const agentSessions = state.agentSessions[state.currentAgent.id] || [];
-        const updatedSessions = agentSessions.map(s =>
+        const updatedSessions = agentSessions.map((s: ChatSession) =>
           s.id === sessionId ? updatedSession : s,
         );
 
@@ -424,7 +434,7 @@ export const useHybridChatStore = create<HybridChatState>()(
     },
 
     // 消息操作（混合存储版本）
-    addMessage: async (message) => {
+    addMessage: async (message: ChatMessage) => {
       const state = get();
       if (!state.storageManager || !state.currentSession) {
         return;
@@ -448,12 +458,17 @@ export const useHybridChatStore = create<HybridChatState>()(
         set({ currentSession: updatedSession });
 
       } catch (error) {
-        logger.error('添加消息失败', error as Error, { sessionId: get().currentSession?.id });
+        const currentSessionId = get().currentSession?.id;
+        if (currentSessionId) {
+          logger.error('添加消息失败', error as Error, { sessionId: currentSessionId });
+        } else {
+          logger.error('添加消息失败', error as Error);
+        }
         set({ storageError: error instanceof Error ? error.message : '添加消息失败' });
       }
     },
 
-    updateLastMessage: async (content) => {
+    updateLastMessage: async (content: string) => {
       const state = get();
       if (!state.storageManager || !state.currentSession || state.messages.length === 0) {
         return;
@@ -469,14 +484,14 @@ export const useHybridChatStore = create<HybridChatState>()(
         await state.storageManager.updateMessageInSession(
           state.currentSession.id,
           lastMessage.id,
-          (msg) => ({
+          (msg: ChatMessage) => ({
             ...msg,
             AI: ((msg.AI || '') + content),
           }),
         );
 
         // 更新本地状态
-        const updatedMessages = state.messages.map((msg, index) =>
+        const updatedMessages = state.messages.map((msg: ChatMessage, index: number) =>
           index === state.messages.length - 1
             ? { ...msg, AI: ((msg.AI || '') + content) }
             : msg,
@@ -493,7 +508,12 @@ export const useHybridChatStore = create<HybridChatState>()(
         set({ currentSession: updatedSession });
 
       } catch (error) {
-        logger.error('更新最后消息失败', error as Error, { sessionId: get().currentSession?.id });
+        const currentSessionId = get().currentSession?.id;
+        if (currentSessionId) {
+          logger.error('更新最后消息失败', error as Error, { sessionId: currentSessionId });
+        } else {
+          logger.error('更新最后消息失败', error as Error);
+        }
         set({ storageError: error instanceof Error ? error.message : '更新消息失败' });
       }
     },
@@ -516,13 +536,18 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
         return success;
       } catch (error) {
-        logger.error('同步当前会话失败', error as Error, { sessionId: get().currentSession?.id });
+        const currentSessionId = get().currentSession?.id;
+        if (currentSessionId) {
+          logger.error('同步当前会话失败', error as Error, { sessionId: currentSessionId });
+        } else {
+          logger.error('同步当前会话失败', error as Error);
+        }
         set({ syncStatus: 'error' });
         return false;
       }
     },
 
-    syncAgentSessions: async (agentId) => {
+    syncAgentSessions: async (agentId?: string) => {
       const state = get();
       if (!state.storageManager) {
         return false;
@@ -548,7 +573,11 @@ export const useHybridChatStore = create<HybridChatState>()(
         });
         return success;
       } catch (error) {
-        logger.error('同步智能体会话失败', error as Error, { agentId });
+        if (agentId) {
+          logger.error('同步智能体会话失败', error as Error, { agentId });
+        } else {
+          logger.error('同步智能体会话失败', error as Error);
+        }
         set({ syncStatus: 'error' });
         return false;
       }
@@ -580,7 +609,7 @@ export const useHybridChatStore = create<HybridChatState>()(
     },
 
     // 缓存操作
-    preloadSessions: async (agentId, limit = 10) => {
+    preloadSessions: async (agentId: string, limit = 10) => {
       const state = get();
       if (!state.storageManager) {
         return;
@@ -636,7 +665,7 @@ export const useHybridChatStore = create<HybridChatState>()(
     },
 
     // 搜索操作
-    searchSessions: async (query) => {
+    searchSessions: async (query: SearchQuery) => {
       const state = get();
       if (!state.storageManager) {
         return [];
@@ -680,18 +709,18 @@ export const useHybridChatStore = create<HybridChatState>()(
     },
 
     // UI状态
-    setAgentSelectorOpen: (open) => set({ agentSelectorOpen: open }),
-    setSidebarOpen: (open) => set({ sidebarOpen: open }),
-    setIsStreaming: (streaming) => set({ isStreaming: streaming }),
-    setStreamingStatus: (status) => set({ streamingStatus: status }),
-    setStreamAbortController: (controller) => set({ streamAbortController: controller }),
+    setAgentSelectorOpen: (open: boolean) => set({ agentSelectorOpen: open }),
+    setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+    setIsStreaming: (streaming: boolean) => set({ isStreaming: streaming }),
+    setStreamingStatus: (status: Record<string, unknown> | null) => set({ streamingStatus: status }),
+    setStreamAbortController: (controller: AbortController | null) => set({ streamAbortController: controller }),
     stopStreaming: () => {
       const controller = get().streamAbortController;
       if (controller) {
         try {
           controller.abort();
         } catch (error) {
-          logger.warn('停止流式传输失败', { error });
+          logger.warn('停止流式传输失败', { error: error as Error | unknown });
         }
       }
       set({
@@ -720,31 +749,22 @@ export const useHybridChatStore = create<HybridChatState>()(
 
 // 自动保存当前会话
 useHybridChatStore.subscribe(
-  (state) => ({
-    messages: state.messages,
-    currentSession: state.currentSession,
-    isStorageInitialized: state.isStorageInitialized,
-  }),
-  async (currentState, previousState) => {
+  (state: HybridChatState) => {
     // 只在消息变化且存储已初始化时自动保存
     if (
-      currentState.isStorageInitialized &&
-      currentState.messages !== previousState.messages &&
-      currentState.currentSession &&
-      currentState.messages.length > 0
+      state.isStorageInitialized &&
+      state.currentSession &&
+      state.messages.length > 0
     ) {
       // 延迟保存，避免频繁操作
       setTimeout(() => {
-        useHybridChatStore.getState().saveCurrentSession();
+        const store = useHybridChatStore.getState();
+        store.saveCurrentSession().catch(error => {
+          console.error('Auto-save failed:', error);
+        });
       }, 1000);
     }
-  },
-  {
-    equalityFn: (a, b) =>
-      a.messages === b.messages &&
-      a.currentSession?.id === b.currentSession?.id &&
-      a.isStorageInitialized === b.isStorageInitialized,
-  },
+  }
 );
 
 // 监听网络状态变化

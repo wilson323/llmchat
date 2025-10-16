@@ -9,56 +9,22 @@
  * 5. Component performance profiling
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Activity,
-  Cpu,
-  Database,
-  Globe,
-  MemoryStick,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw
-} from 'lucide-react';
+;
+;
+;
+import { Activity, Cpu, Globe, MemoryStick, RefreshCw, TrendingDown, TrendingUp, Zap } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Card, { CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+;
+;
+;
+;
+;
+;
+;
 import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
-
-interface PerformanceMetrics {
-  coreWebVitals: {
-    LCP: number; // Largest Contentful Paint
-    FID: number; // First Input Delay
-    CLS: number; // Cumulative Layout Shift
-    FCP: number; // First Contentful Paint
-    TTFB: number; // Time to First Byte
-  };
-  memory: {
-    usedJSHeapSize: number;
-    totalJSHeapSize: number;
-    jsHeapSizeLimit: number;
-    memoryUsagePercentage: number;
-  };
-  rendering: {
-    renderCount: number;
-    averageRenderTime: number;
-    maxRenderTime: number;
-    totalRenderTime: number;
-  };
-  network: {
-    totalRequests: number;
-    failedRequests: number;
-    averageResponseTime: number;
-    totalDataTransferred: number;
-  };
-  componentMetrics: {
-    componentName: string;
-    renderCount: number;
-    averageRenderTime: number;
-    isSlow: boolean;
-  }[];
-}
 
 interface PerformanceMonitorProps {
   enabled?: boolean;
@@ -220,6 +186,13 @@ function useNetworkMetrics() {
   return metrics;
 }
 
+interface ComponentMetric {
+  componentName: string;
+  renderCount: number;
+  averageRenderTime: number;
+  isSlow: boolean;
+}
+
 /**
  * Main Performance Monitor Component
  */
@@ -230,8 +203,8 @@ export function PerformanceMonitor({
   maxComponentMetrics = 10
 }: PerformanceMonitorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [componentMetrics, setComponentMetrics] = useState<any[]>([]);
-  const lastUpdate = useRef<number>(Date.now());
+  const [componentMetrics, setComponentMetrics] = useState<ComponentMetric[]>([]);
+  const lastUpdate = useRef(Date.now());
 
   const coreWebVitals = useCoreWebVitals();
   const memory = useMemoryUsage();

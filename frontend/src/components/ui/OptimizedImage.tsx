@@ -11,6 +11,7 @@
 
 'use client';
 
+;
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -48,8 +49,8 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState<string>('');
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [currentSrc, setCurrentSrc] = useState('');
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // 生成现代格式URL
@@ -71,7 +72,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   }, []);
 
   // 检测浏览器支持的格式
-  const [supportedFormat, setSupportedFormat] = useState<'avif' | 'webp' | 'fallback'>('fallback');
+  const [supportedFormat, setSupportedFormat] = useState('fallback');
 
   useEffect(() => {
     const checkFormatSupport = async () => {
@@ -189,11 +190,13 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   // 生成响应式srcset
   const generateSrcSet = useCallback(() => {
-    if (currentSrc.startsWith('data:')) {
+    if (!currentSrc || currentSrc.startsWith('data:')) {
       return '';
     }
 
     const baseSrc = currentSrc.split('?')[0];
+    if (!baseSrc) return '';
+
     const query = currentSrc.includes('?') ? currentSrc.split('?')[1] : '';
     const baseUrl = baseSrc.includes('/') ? baseSrc.substring(0, baseSrc.lastIndexOf('/') + 1) : '';
     const filename = baseSrc.includes('/') ? baseSrc.substring(baseSrc.lastIndexOf('/') + 1) : baseSrc;
@@ -304,16 +307,16 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 };
 
 // 高阶组件：为现有图片添加优化
-export const withOptimization = (_ImgComponent: React.ComponentType<any>) => {
-  return React.memo(function OptimizedWrapper(props: any) {
+export const withOptimization = (_ImgComponent: React.ComponentType<OptimizedImageProps>) => {
+  return React.memo(function OptimizedWrapper(props: OptimizedImageProps) {
     return (
       <OptimizedImage
         src={props.src}
         alt={props.alt || ''}
-        width={props.width}
-        height={props.height}
-        className={props.className}
-        priority={props.priority}
+        {...(props.width !== undefined && { width: props.width })}
+        {...(props.height !== undefined && { height: props.height })}
+        {...(props.className && { className: props.className })}
+        {...(props.priority !== undefined && { priority: props.priority })}
       />
     );
   });

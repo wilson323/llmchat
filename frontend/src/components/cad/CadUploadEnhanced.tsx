@@ -8,19 +8,20 @@
  * - 错误提示优化
  */
 
+
+;
+;
+;
+;
+;
+;
+;
+;
+
+import { AlertCircle, CheckCircle, File, FileText, FileWarning, Loader2, Upload, XCircle } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import {
-  Upload,
-  FileText,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  File,
-  FileWarning,
-  Loader2,
-} from 'lucide-react';
-import axios from 'axios';
+import { useDropzone, type FileRejection } from 'react-dropzone';
+import axios, { type AxiosProgressEvent } from 'axios';
 import type { CadFileInfo } from '@llmchat/shared-types';
 
 interface CadUploadEnhancedProps {
@@ -68,18 +69,21 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
   };
 
   const onDrop = useCallback(
-    async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       // 处理拒绝的文件
       if (rejectedFiles.length > 0) {
-        const errors = rejectedFiles[0].errors.map((e: any) => e.message).join(', ');
-        setUploadState({
-          status: 'error',
-          progress: 0,
-          message: errors,
-        });
-        onUploadError(errors);
-        setTimeout(() => setUploadState({ status: 'idle', progress: 0 }), 3000);
-        return;
+        const firstRejection = rejectedFiles[0];
+        if (firstRejection) {
+          const errors = firstRejection.errors.map((e: { code: string; message: string }) => e.message).join(', ');
+          setUploadState({
+            status: 'error',
+            progress: 0,
+            message: errors,
+          });
+          onUploadError(errors);
+          setTimeout(() => setUploadState({ status: 'idle', progress: 0 }), 3000);
+          return;
+        }
       }
 
       if (acceptedFiles.length === 0) {
@@ -98,7 +102,7 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
           status: 'error',
           progress: 0,
           fileName: file?.name || '',
-          message: validation.error,
+          ...(validation.error && { message: validation.error }),
         });
         onUploadError(validation.error!);
         setTimeout(() => setUploadState({ status: 'idle', progress: 0 }), 3000);
@@ -120,11 +124,11 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / (progressEvent.total || 1),
             );
-            setUploadState(prev => ({
+            setUploadState((prev: UploadState) => ({
               ...prev,
               progress: percentCompleted,
             }));
@@ -165,7 +169,9 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      onDrop(acceptedFiles, fileRejections);
+    },
     accept: {
       'application/dxf': ['.dxf'],
       'application/x-dxf': ['.dxf'],
@@ -174,8 +180,10 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024,
     disabled: uploadState.status === 'uploading',
-    onDragEnter: () => setDragCounter(prev => prev + 1),
-    onDragLeave: () => setDragCounter(prev => prev - 1),
+    multiple: false,
+    onDragEnter: () => setDragCounter((prev: number) => prev + 1),
+    onDragLeave: () => setDragCounter((prev: number) => prev - 1),
+    onDragOver: () => {},
     onDropAccepted: () => setDragCounter(0),
     onDropRejected: () => setDragCounter(0),
   });
@@ -211,7 +219,7 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
           }
         `}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} type="file" />
 
         <div className="flex flex-col items-center gap-4">
           {/* 状态图标 */}
@@ -237,7 +245,7 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
 
           {uploadState.status === 'success' && (
             <div className="relative">
-              <CheckCircle2 className="w-16 h-16 text-green-500 animate-in zoom-in duration-300" />
+              <CheckCircle className="w-16 h-16 text-green-500 animate-in zoom-in duration-300" />
               <div className="absolute -inset-4 bg-green-500/20 rounded-full animate-ping" />
             </div>
           )}
@@ -350,7 +358,7 @@ const CadUploadEnhanced: React.FC<CadUploadEnhancedProps> = ({
       {/* 额外提示 */}
       <div className="mt-4 space-y-2">
         <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
+          <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
           <span>支持 AutoCAD R12 及以上版本的 DXF 文件</span>
         </div>
         <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">

@@ -10,29 +10,37 @@
  * - 帮助系统
  */
 
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {ChevronDown, ChevronRight, Download, Eye, EyeOff, FileText, HelpCircle, History, Info, Layers, Redo2, Search, Trash2, Undo2, X} from 'lucide-react';
 import React, { useState, useCallback } from 'react';
 import CadUploadEnhanced from './CadUploadEnhanced';
 import CadViewerEnhanced from './CadViewerEnhanced';
-import { useCadHistory } from '@/hooks/useCadHistory';
+import { useCadHistory, type CadHistoryEntry } from '@/hooks/useCadHistory';
 import type { CadFileInfo, DxfEntity } from '@llmchat/shared-types';
-import {
-  FileText,
-  Download,
-  Info,
-  Layers,
-  History,
-  Undo2,
-  Redo2,
-  HelpCircle,
-  X,
-  Eye,
-  EyeOff,
-  ChevronDown,
-  ChevronRight,
-  Search,
-  Trash2,
-} from 'lucide-react';
 import axios from 'axios';
+
+interface CadApiResponse {
+  code: 'SUCCESS' | 'ERROR';
+  message?: string;
+  data: {
+    entities: DxfEntity[];
+  };
+}
 
 interface CadPanelCompleteProps {
   onFileLoaded?: (fileId: string, fileInfo: CadFileInfo) => void;
@@ -40,12 +48,12 @@ interface CadPanelCompleteProps {
 
 export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded }) => {
   const [fileInfo, setFileInfo] = useState<CadFileInfo | null>(null);
-  const [summary, setSummary] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'viewer' | 'info' | 'layers' | 'history'>('viewer');
+  const [summary, setSummary] = useState('');
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('viewer');
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [hiddenLayers, setHiddenLayers] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [showHelp, setShowHelp] = useState(false);
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set());
 
@@ -71,7 +79,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
     // 加载实体数据
     axios
       .get(`/api/cad/${uploadedFileInfo.id}`)
-      .then((response) => {
+      .then((response: { data: CadApiResponse }) => {
         if (response.data.code === 'SUCCESS') {
           pushHistory('upload', '上传文件', response.data.data.entities);
           if (onFileLoaded) {
@@ -79,7 +87,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
           }
         }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('加载 CAD 实体失败', err);
         setError('加载 CAD 实体失败');
       });
@@ -106,9 +114,9 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
   }, []);
 
   const toggleLayer = (layer: string) => {
-    setHiddenLayers(prev =>
+    setHiddenLayers((prev: string[]) =>
       prev.includes(layer)
-        ? prev.filter(l => l !== layer)
+        ? prev.filter((l: string) => l !== layer)
         : [...prev, layer],
     );
   };
@@ -122,7 +130,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
   };
 
   const toggleLayerExpanded = (layer: string) => {
-    setExpandedLayers(prev => {
+    setExpandedLayers((prev: Set<string>) => {
       const next = new Set(prev);
       if (next.has(layer)) {
         next.delete(layer);
@@ -133,7 +141,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
     });
   };
 
-  const filteredEntities = entities.filter(entity => {
+  const filteredEntities = entities.filter((entity: DxfEntity) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -146,7 +154,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
   });
 
   const selectedEntity = selectedEntityId
-    ? entities.find(e => e.handle === selectedEntityId)
+    ? entities.find((e: DxfEntity) => e.handle === selectedEntityId)
     : null;
 
   return (
@@ -252,7 +260,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
                 height={window.innerHeight - 200}
                 onEntityClick={handleEntityClick}
                 onEntityHover={handleEntityHover}
-                selectedEntityId={selectedEntityId || undefined}
+                {...(selectedEntityId && { selectedEntityId })}
                 hiddenLayers={hiddenLayers}
               />
             </div>
@@ -268,7 +276,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
                 ].map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setActiveTab(id as any)}
+                    onClick={() => setActiveTab(id as 'viewer' | 'info' | 'layers' | 'history')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                       activeTab === id
                         ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
@@ -384,8 +392,8 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
 
                     {/* 图层列表 */}
                     <div className="space-y-1">
-                      {fileInfo.layers.map((layer) => {
-                        const layerEntities = entities.filter(e => e.layer === layer);
+                      {fileInfo.layers.map((layer: string) => {
+                        const layerEntities = entities.filter((e: DxfEntity) => e.layer === layer);
                         const isHidden = hiddenLayers.includes(layer);
                         const isExpanded = expandedLayers.has(layer);
 
@@ -400,7 +408,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
                               onClick={() => toggleLayerExpanded(layer)}
                             >
                               <button
-                                onClick={(e) => {
+                                onClick={(e: React.MouseEvent) => {
                                   e.stopPropagation();
                                   toggleLayer(layer);
                                 }}
@@ -432,7 +440,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
                             {isExpanded && (
                               <div className="border-t border-gray-200 dark:border-gray-700 p-2 bg-gray-50 dark:bg-gray-800">
                                 <div className="space-y-1 max-h-48 overflow-y-auto">
-                                  {layerEntities.map(entity => (
+                                  {layerEntities.map((entity: DxfEntity) => (
                                     <div
                                       key={entity.handle}
                                       onClick={() => setSelectedEntityId(entity.handle)}
@@ -480,7 +488,7 @@ export const CadPanelComplete: React.FC<CadPanelCompleteProps> = ({ onFileLoaded
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        {history.map((entry, index) => (
+                        {history.map((entry: CadHistoryEntry & { isCurrent: boolean }, index: number) => (
                           <button
                             key={entry.id}
                             onClick={() => goToHistory(index)}

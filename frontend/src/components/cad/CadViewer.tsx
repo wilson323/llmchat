@@ -4,11 +4,34 @@
  * 使用 dxf-viewer 或 Three.js 渲染 DXF 文件
  */
 
+import { Grid3x3, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';
-import { ZoomIn, ZoomOut, Maximize2, Grid3x3 } from 'lucide-react';
+import type {
+  ThreeScene,
+  ThreePerspectiveCamera,
+  ThreeWebGLRenderer,
+  ThreeVector3,
+  ThreeObject3D,
+} from '@/types/three-js-types';
+import {
+  createThreeScene,
+  createThreePerspectiveCamera,
+  createThreeWebGLRenderer,
+  createThreeColor,
+  createThreeVector3,
+  createThreeBufferGeometry,
+  createThreeLineBasicMaterial,
+  createThreeLine,
+  createThreeLineLoop,
+  createThreePoints,
+  createThreePointsMaterial,
+  createThreeAmbientLight,
+  createThreeDirectionalLight,
+  createThreeGridHelper,
+  createThreeBox3,
+} from '@/types/three-js-types';
 
 interface CadViewerProps {
   entities: DxfEntity[];
@@ -24,9 +47,9 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   onEntityClick: _onEntityClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<ThreeScene | null>(null);
+  const cameraRef = useRef<ThreePerspectiveCamera | null>(null);
+  const rendererRef = useRef<ThreeWebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const [showGrid, setShowGrid] = useState(true);
 
@@ -36,12 +59,12 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     }
 
     // 初始化场景
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
+    const scene = createThreeScene();
+    scene.background = createThreeColor(0xf5f5f5);
     sceneRef.current = scene;
 
     // 初始化相机
-    const camera = new THREE.PerspectiveCamera(
+    const camera = createThreePerspectiveCamera(
       75,
       width / height,
       0.1,
@@ -51,7 +74,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     cameraRef.current = camera;
 
     // 初始化渲染器
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = createThreeWebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     containerRef.current.appendChild(renderer.domElement);
@@ -64,16 +87,16 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     controlsRef.current = controls;
 
     // 添加光源
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = createThreeAmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const directionalLight = createThreeDirectionalLight(0xffffff, 0.4);
     directionalLight.position.set(10, 10, 10);
     scene.add(directionalLight);
 
     // 添加网格
     if (showGrid) {
-      const gridHelper = new THREE.GridHelper(200, 20, 0x888888, 0xcccccc);
+      const gridHelper = createThreeGridHelper(200, 20, 0x888888, 0xcccccc);
       gridHelper.rotation.x = Math.PI / 2;
       scene.add(gridHelper);
     }
@@ -90,7 +113,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     return () => {
       renderer.dispose();
       controls.dispose();
-      if (containerRef.current) {
+      if (containerRef.current && renderer.domElement) {
         containerRef.current.removeChild(renderer.domElement);
       }
     };
@@ -125,8 +148,8 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   }, [entities]);
 
   // 创建实体网格
-  const createEntityMesh = (entity: DxfEntity): THREE.Object3D | null => {
-    const material = new THREE.LineBasicMaterial({
+  const createEntityMesh = (entity: DxfEntity): ThreeObject3D | null => {
+    const material = createThreeLineBasicMaterial({
       color: entity.color || 0x000000,
       linewidth: 2,
     });
@@ -134,26 +157,26 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     switch (entity.type) {
       case 'LINE': {
         const points = [
-          new THREE.Vector3(entity.start.x, entity.start.y, entity.start.z),
-          new THREE.Vector3(entity.end.x, entity.end.y, entity.end.z),
+          createThreeVector3(entity.start.x, entity.start.y, entity.start.z),
+          createThreeVector3(entity.end.x, entity.end.y, entity.end.z),
         ];
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        return new THREE.Line(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        return createThreeLine(geometry, material);
       }
 
       case 'CIRCLE': {
         const segments = 64;
-        const points: THREE.Vector3[] = [];
+        const points: ThreeVector3[] = [];
         for (let i = 0; i <= segments; i++) {
           const angle = (i / segments) * Math.PI * 2;
-          points.push(new THREE.Vector3(
+          points.push(createThreeVector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
             0,
           ));
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const mesh = new THREE.LineLoop(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        const mesh = createThreeLineLoop(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
       }
@@ -162,18 +185,18 @@ export const CadViewer: React.FC<CadViewerProps> = ({
         const startAngle = (entity.startAngle * Math.PI) / 180;
         const endAngle = (entity.endAngle * Math.PI) / 180;
         const segments = 64;
-        const points: THREE.Vector3[] = [];
+        const points: ThreeVector3[] = [];
         const angleRange = endAngle - startAngle;
         for (let i = 0; i <= segments; i++) {
           const angle = startAngle + (i / segments) * angleRange;
-          points.push(new THREE.Vector3(
+          points.push(createThreeVector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
             0,
           ));
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const mesh = new THREE.Line(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        const mesh = createThreeLine(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
       }
@@ -181,24 +204,24 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       case 'POLYLINE':
       case 'LWPOLYLINE': {
         const points = entity.vertices.map(
-          (v) => new THREE.Vector3(v.x, v.y, v.z),
+          (v) => createThreeVector3(v.x, v.y, v.z),
         );
         if (entity.closed && points.length > 0) {
-          points.push(points[0]);
+          points.push(points[0]!.clone());
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        return new THREE.Line(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        return createThreeLine(geometry, material);
       }
 
       case 'TEXT':
       case 'MTEXT': {
         // 文本渲染较复杂，这里简化为点
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(entity.position.x, entity.position.y, entity.position.z),
+        const geometry = createThreeBufferGeometry().setFromPoints([
+          createThreeVector3(entity.position.x, entity.position.y, entity.position.z),
         ]);
-        return new THREE.Points(
+        return createThreePoints(
           geometry,
-          new THREE.PointsMaterial({ color: 0xff0000, size: 5 }),
+          createThreePointsMaterial({ color: 0xff0000, size: 5 }),
         );
       }
 
@@ -209,21 +232,21 @@ export const CadViewer: React.FC<CadViewerProps> = ({
 
   // 调整相机视角以适应所有实体
   const fitCameraToEntities = (
-    camera: THREE.PerspectiveCamera | null,
+    camera: ThreePerspectiveCamera | null,
     entities: DxfEntity[],
   ) => {
     if (!camera || entities.length === 0) {
       return;
     }
 
-    const box = new THREE.Box3();
+    const box = createThreeBox3();
     entities.forEach((entity) => {
       const points = getEntityPoints(entity);
-      points.forEach((p) => box.expandByPoint(new THREE.Vector3(p.x, p.y, p.z)));
+      points.forEach((p) => box.expandByPoint(createThreeVector3(p.x, p.y, p.z)));
     });
 
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(createThreeVector3());
+    const size = box.getSize(createThreeVector3());
     const maxDim = Math.max(size.x, size.y, size.z);
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));

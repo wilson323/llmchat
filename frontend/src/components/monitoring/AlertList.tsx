@@ -1,17 +1,26 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {AlertTriangle, Bell, CheckCircle, ChevronDown, Clock, Info, User, XCircle} from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import {
-  AlertTriangle,
-  Info,
-  CheckCircle,
-  XCircle,
-  Bell,
-  Clock,
-  User,
-  ChevronDown,
-} from 'lucide-react';
+;
+;
+;
+;
+;
+;
+;
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/services/slaApi';
@@ -47,6 +56,12 @@ const typeColors = {
   security: 'bg-red-500/10 text-red-600 border-red-200',
 };
 
+interface AlertFilter {
+  severity?: 'info' | 'warning' | 'error' | 'critical';
+  type?: 'system' | 'agent' | 'performance' | 'security';
+  acknowledged?: boolean;
+}
+
 export function AlertList({
   alerts,
   onAcknowledge,
@@ -55,11 +70,7 @@ export function AlertList({
   showFilters = true,
   maxHeight = '400px',
 }: AlertListProps) {
-  const [filter, setFilter] = useState<{
-    severity?: string;
-    type?: string;
-    acknowledged?: boolean;
-  }>({});
+  const [filter, setFilter] = useState<AlertFilter>({});
   const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
 
   // 过滤告警
@@ -131,10 +142,16 @@ export function AlertList({
             <span className="text-sm font-medium text-muted-foreground">严重程度:</span>
             <select
               value={filter.severity || ''}
-              onChange={(e) => setFilter(prev => ({
-                ...prev,
-                severity: e.target.value || undefined,
-              }))}
+              onChange={(e) => setFilter(prev => {
+                const newSeverity = e.target.value || '';
+                const newFilter = { ...prev };
+                if (newSeverity) {
+                  newFilter.severity = newSeverity as 'info' | 'warning' | 'error' | 'critical';
+                } else {
+                  delete newFilter.severity;
+                }
+                return newFilter;
+              })}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
               <option value="">全部</option>
@@ -149,10 +166,16 @@ export function AlertList({
             <span className="text-sm font-medium text-muted-foreground">类型:</span>
             <select
               value={filter.type || ''}
-              onChange={(e) => setFilter(prev => ({
-                ...prev,
-                type: e.target.value || undefined,
-              }))}
+              onChange={(e) => setFilter(prev => {
+                const newType = e.target.value || '';
+                const newFilter = { ...prev };
+                if (newType) {
+                  newFilter.type = newType as 'system' | 'agent' | 'performance' | 'security';
+                } else {
+                  delete newFilter.type;
+                }
+                return newFilter;
+              })}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
               <option value="">全部</option>
@@ -167,10 +190,18 @@ export function AlertList({
             <span className="text-sm font-medium text-muted-foreground">状态:</span>
             <select
               value={filter.acknowledged === undefined ? '' : filter.acknowledged.toString()}
-              onChange={(e) => setFilter(prev => ({
-                ...prev,
-                acknowledged: e.target.value === '' ? undefined : e.target.value === 'true',
-              }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFilter(prev => {
+                  const newFilter = { ...prev };
+                  if (value === '') {
+                    delete newFilter.acknowledged;
+                  } else {
+                    newFilter.acknowledged = value === 'true';
+                  }
+                  return newFilter;
+                });
+              }}
               className="text-sm border rounded px-2 py-1 bg-background"
             >
               <option value="">全部</option>

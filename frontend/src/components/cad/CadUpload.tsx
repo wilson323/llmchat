@@ -2,10 +2,15 @@
  * CAD 文件上传组件
  */
 
+;
+;
+;
+
+
+import { AlertCircle, FileText, Upload } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import axios, { type AxiosProgressEvent } from 'axios';
 import type { CadFileInfo } from '@llmchat/shared-types';
 
 interface CadUploadProps {
@@ -42,7 +47,7 @@ export const CadUpload: React.FC<CadUploadProps> = ({
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
             const percentCompleted = Math.round(
               (progressEvent.loaded * 100) / (progressEvent.total || 1),
             );
@@ -78,6 +83,10 @@ export const CadUpload: React.FC<CadUploadProps> = ({
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024, // 50MB
     disabled: uploading,
+    multiple: false,
+    onDragEnter: (): void => {},
+    onDragLeave: (): void => {},
+    onDragOver: (): void => {},
   });
 
   return (
@@ -91,7 +100,7 @@ export const CadUpload: React.FC<CadUploadProps> = ({
           ${uploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'}
         `}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} type="file" />
 
         <div className="flex flex-col items-center gap-4">
           {uploading ? (

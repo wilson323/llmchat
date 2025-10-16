@@ -17,9 +17,21 @@ const LazyComponent2 = React.lazy(() =>
   import('./LazyComponent2').then(module => ({ default: module.default || module })),
 );
 
+interface CodeSplittingStats {
+  total: number;
+  loaded: number;
+  loading: number;
+  components: Array<{
+    name: string;
+    loaded: boolean;
+    priority: number;
+    preloadStrategy: string;
+  }>;
+}
+
 export default function CodeSplittingDemo() {
-  const [activeComponent, setActiveComponent] = useState<string>('none');
-  const [stats, setStats] = useState<any>(null);
+  const [activeComponent, setActiveComponent] = useState('none');
+  const [stats, setStats] = useState<CodeSplittingStats | null>(null);
 
   useEffect(() => {
     // 注册组件到代码分割系统

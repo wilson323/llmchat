@@ -4,11 +4,15 @@
  * 在聊天界面中嵌入 CAD 编辑器
  */
 
+;
+;
+;
+;
+import { FileText, Maximize2, Minimize2, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { CadPanelComplete } from './CadPanelComplete';
 import { cadChatService } from '@/services/cadChatService';
 import type { CadFileInfo } from '@llmchat/shared-types';
-import { FileText, X, Maximize2, Minimize2 } from 'lucide-react';
 
 interface CadChatIntegrationProps {
   agentId: string;

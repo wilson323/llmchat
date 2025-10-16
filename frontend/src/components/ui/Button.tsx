@@ -47,13 +47,28 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends Omit<React.HTMLAttributes<HTMLButtonElement>, 'disabled'>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+  className?: string;
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, radius, asChild = false, disabled, children, ...props }, ref) => {
+const ButtonImpl = (
+  {
+    className,
+    variant,
+    size,
+    radius,
+    asChild = false,
+    disabled = false,
+    children,
+    type = 'button',
+    ...props
+  }: ButtonProps,
+  ref: ((instance: HTMLButtonElement | null) => void) | null | undefined
+) => {
     const Comp = asChild ? Slot : 'button';
 
     // 确保按钮有适当的aria属性
@@ -62,6 +77,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       'aria-disabled': disabled,
       role: asChild ? undefined : 'button',
+      type: asChild ? undefined : type,
     };
 
     return (
@@ -79,6 +95,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </Comp>
     );
-  },
-);
+  };
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(ButtonImpl as any);
 Button.displayName = 'Button';
+
+export default Button;

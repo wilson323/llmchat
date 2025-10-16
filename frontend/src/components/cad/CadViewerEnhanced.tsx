@@ -9,22 +9,40 @@
  * - 截图功能
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {Eye, Maximize2, Home, Move, ZoomIn, ZoomOut, Grid3x3, Ruler, Camera, MousePointer} from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';
 import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Grid3x3,
-  Home,
-  Camera,
-  Move,
-  Ruler,
-  MousePointer,
-  Eye,
-} from 'lucide-react';
+  createThreeScene,
+  createThreePerspectiveCamera,
+  createThreeWebGLRenderer,
+  createThreeColor,
+  createThreeVector3,
+  createThreeVector2,
+  createThreeBufferGeometry,
+  createThreeLineBasicMaterial,
+  createThreeLine,
+  createThreeLineLoop,
+  createThreePoints,
+  createThreePointsMaterial,
+  createThreeAmbientLight,
+  createThreeDirectionalLight,
+  createThreeHemisphereLight,
+  createThreeGridHelper,
+  createThreeAxesHelper,
+  createThreeRaycaster,
+  createThreeBox3,
+  getThreePCFSoftShadowMap,
+  type ThreeScene,
+  type ThreePerspectiveCamera,
+  type ThreeWebGLRenderer,
+  type ThreeOrbitControls,
+  type ThreeRaycaster,
+  type ThreeVector2,
+  type ThreeVector3,
+  type ThreeObject3D,
+} from '@/types/three-js-types';
 
 interface CadViewerEnhancedProps {
   entities: DxfEntity[];
@@ -36,7 +54,7 @@ interface CadViewerEnhancedProps {
   hiddenLayers?: string[];
 }
 
-const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
+const CadViewerEnhanced = ({
   entities,
   width = 800,
   height = 600,
@@ -44,20 +62,20 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
   onEntityHover,
   selectedEntityId,
   hiddenLayers = [],
-}) => {
+}: CadViewerEnhancedProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
-  const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
-  const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
+  const sceneRef = useRef<ThreeScene | null>(null);
+  const cameraRef = useRef<ThreePerspectiveCamera | null>(null);
+  const rendererRef = useRef<ThreeWebGLRenderer | null>(null);
+  const controlsRef = useRef<ThreeOrbitControls | null>(null);
+  const raycasterRef = useRef<ThreeRaycaster | null>(null);
+  const mouseRef = useRef<ThreeVector2>(createThreeVector2());
 
   const [showGrid, setShowGrid] = useState(true);
   const [_showAxes, _setShowAxes] = useState(true);
   const [viewMode, setViewMode] = useState<'3d' | 'top' | 'front' | 'side'>('3d');
   const [measureMode, setMeasureMode] = useState(false);
-  const [_cursorPosition, _setCursorPosition] = useState<Point3D | null>(null);
+  const [_cursorPosition, _setCursorPosition] = useState<{ x: number; y: number; z: number } | null>(null);
   const [hoveredEntity, setHoveredEntity] = useState<DxfEntity | null>(null);
   const [fps, setFps] = useState(60);
 
@@ -68,17 +86,17 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     }
 
     // 创建场景
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf8f9fa);
+    const scene = createThreeScene();
+    scene.background = createThreeColor(0xf8f9fa);
     sceneRef.current = scene;
 
     // 创建相机
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 10000);
+    const camera = createThreePerspectiveCamera(50, width / height, 0.1, 10000);
     camera.position.set(100, 100, 100);
     cameraRef.current = camera;
 
     // 创建渲染器
-    const renderer = new THREE.WebGLRenderer({
+    const renderer = createThreeWebGLRenderer({
       antialias: true,
       alpha: true,
       preserveDrawingBuffer: true, // 支持截图
@@ -86,8 +104,8 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    containerRef.current.appendChild(renderer.domElement);
+    renderer.shadowMap.type = getThreePCFSoftShadowMap();
+    containerRef.current!.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // 创建控制器
@@ -99,32 +117,33 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     controls.maxDistance = 5000;
     controls.maxPolarAngle = Math.PI;
     controlsRef.current = controls;
+    raycasterRef.current = createThreeRaycaster();
 
     // 添加光源
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = createThreeAmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = createThreeDirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(100, 100, 50);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
     scene.add(directionalLight);
 
-    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.3);
+    const hemisphereLight = createThreeHemisphereLight(0xffffff, 0x444444, 0.3);
     hemisphereLight.position.set(0, 100, 0);
     scene.add(hemisphereLight);
 
     // 添加网格
     if (showGrid) {
-      const gridHelper = new THREE.GridHelper(500, 50, 0x888888, 0xdddddd);
+      const gridHelper = createThreeGridHelper(500, 50, 0x888888, 0xdddddd);
       gridHelper.name = 'grid';
       scene.add(gridHelper);
     }
 
     // 添加坐标轴
     if (_showAxes) {
-      const axesHelper = new THREE.AxesHelper(100);
+      const axesHelper = createThreeAxesHelper(100);
       axesHelper.name = 'axes';
       scene.add(axesHelper);
     }
@@ -158,21 +177,23 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       // 射线检测
-      raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      const intersects = raycasterRef.current.intersectObjects(
-        scene.children.filter(child => child.userData.isEntity),
-        true,
-      );
+      if (raycasterRef.current) {
+        raycasterRef.current.setFromCamera(mouseRef.current, camera);
+        const intersects = raycasterRef.current.intersectObjects(
+          scene.children.filter((child: ThreeObject3D) => child.userData.isEntity),
+          true,
+        );
 
-      if (intersects.length > 0) {
-        const entity = intersects[0].object.userData.entity as DxfEntity;
-        setHoveredEntity(entity);
-        onEntityHover?.(entity);
-        renderer.domElement.style.cursor = 'pointer';
-      } else {
-        setHoveredEntity(null);
-        onEntityHover?.(null);
-        renderer.domElement.style.cursor = measureMode ? 'crosshair' : 'default';
+        if (intersects.length > 0) {
+          const entity = (intersects[0]!.object.userData.entity as DxfEntity);
+          setHoveredEntity(entity);
+          onEntityHover?.(entity);
+          renderer.domElement.style.cursor = 'pointer';
+        } else {
+          setHoveredEntity(null);
+          onEntityHover?.(null);
+          renderer.domElement.style.cursor = measureMode ? 'crosshair' : 'default';
+        }
       }
     };
 
@@ -182,15 +203,17 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
       mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-      raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      const intersects = raycasterRef.current.intersectObjects(
-        scene.children.filter(child => child.userData.isEntity),
-        true,
-      );
+      if (raycasterRef.current) {
+        raycasterRef.current.setFromCamera(mouseRef.current, camera);
+        const intersects = raycasterRef.current.intersectObjects(
+          scene.children.filter((child: ThreeObject3D) => child.userData.isEntity),
+          true,
+        );
 
-      if (intersects.length > 0) {
-        const entity = intersects[0].object.userData.entity as DxfEntity;
-        onEntityClick?.(entity);
+        if (intersects.length > 0) {
+          const entity = (intersects[0]!.object.userData.entity as DxfEntity);
+          onEntityClick?.(entity);
+        }
       }
     };
 
@@ -218,8 +241,8 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
     const scene = sceneRef.current;
 
     // 清除旧实体
-    const oldEntities = scene.children.filter(child => child.userData.isEntity);
-    oldEntities.forEach(child => scene.remove(child));
+    const oldEntities = scene.children.filter((child: ThreeObject3D) => child.userData.isEntity);
+    oldEntities.forEach((child: ThreeObject3D) => scene.remove(child));
 
     // 添加新实体
     entities.forEach(entity => {
@@ -241,38 +264,39 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
   }, [entities, selectedEntityId, hiddenLayers]);
 
   // 创建实体网格
-  const createEntityMesh = (entity: DxfEntity, selected: boolean): THREE.Object3D | null => {
+  const createEntityMesh = (entity: DxfEntity, selected: boolean): ThreeObject3D | null => {
     const isHovered = hoveredEntity?.handle === entity.handle;
     const color = selected ? 0x2196f3 : isHovered ? 0xff9800 : (entity.color || 0x000000);
     const linewidth = selected ? 3 : isHovered ? 2.5 : 2;
 
-    const material = new THREE.LineBasicMaterial({
+    const material = createThreeLineBasicMaterial({
       color,
       linewidth,
     });
 
     switch (entity.type) {
       case 'LINE': {
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(entity.start.x, entity.start.y, entity.start.z),
-          new THREE.Vector3(entity.end.x, entity.end.y, entity.end.z),
-        ]);
-        return new THREE.Line(geometry, material);
+        const points = [
+          createThreeVector3(entity.start.x, entity.start.y, entity.start.z),
+          createThreeVector3(entity.end.x, entity.end.y, entity.end.z),
+        ];
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        return createThreeLine(geometry, material);
       }
 
       case 'CIRCLE': {
         const segments = 64;
-        const points: THREE.Vector3[] = [];
+        const points: ThreeVector3[] = [];
         for (let i = 0; i <= segments; i++) {
           const angle = (i / segments) * Math.PI * 2;
-          points.push(new THREE.Vector3(
+          points.push(createThreeVector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
             0,
           ));
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const mesh = new THREE.LineLoop(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        const mesh = createThreeLineLoop(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
       }
@@ -281,41 +305,40 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
         const startAngle = (entity.startAngle * Math.PI) / 180;
         const endAngle = (entity.endAngle * Math.PI) / 180;
         const segments = 64;
-        const points: THREE.Vector3[] = [];
+        const points: ThreeVector3[] = [];
         const angleRange = endAngle - startAngle;
         for (let i = 0; i <= segments; i++) {
           const angle = startAngle + (i / segments) * angleRange;
-          points.push(new THREE.Vector3(
+          points.push(createThreeVector3(
             Math.cos(angle) * entity.radius,
             Math.sin(angle) * entity.radius,
             0,
           ));
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const mesh = new THREE.Line(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        const mesh = createThreeLine(geometry, material);
         mesh.position.set(entity.center.x, entity.center.y, entity.center.z);
         return mesh;
       }
 
       case 'POLYLINE':
       case 'LWPOLYLINE': {
-        const points = entity.vertices.map(v => new THREE.Vector3(v.x, v.y, v.z));
+        const points = entity.vertices.map(v => createThreeVector3(v.x, v.y, v.z));
         if (entity.closed && points.length > 0) {
-          points.push(points[0].clone());
+          points.push(points[0]!.clone());
         }
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        return new THREE.Line(geometry, material);
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        return createThreeLine(geometry, material);
       }
 
       case 'TEXT':
       case 'MTEXT': {
         // 文本显示为点
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(entity.position.x, entity.position.y, entity.position.z),
-        ]);
-        return new THREE.Points(
+        const points = [createThreeVector3(entity.position.x, entity.position.y, entity.position.z)];
+        const geometry = createThreeBufferGeometry().setFromPoints(points);
+        return createThreePoints(
           geometry,
-          new THREE.PointsMaterial({ color: color, size: 5 }),
+          createThreePointsMaterial({ color: color, size: 5 }),
         );
       }
 
@@ -326,21 +349,23 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
 
   // 调整相机视图
   const fitCameraToEntities = useCallback((
-    camera: THREE.PerspectiveCamera | null,
+    camera: ThreePerspectiveCamera | null,
     entities: DxfEntity[],
   ) => {
     if (!camera || entities.length === 0 || !controlsRef.current) {
       return;
     }
 
-    const box = new THREE.Box3();
+    const box = createThreeBox3();
     entities.forEach(entity => {
       const points = getEntityPoints(entity);
-      points.forEach(p => box.expandByPoint(new THREE.Vector3(p.x, p.y, p.z)));
+      points.forEach(p => box.expandByPoint(createThreeVector3(p.x, p.y, p.z)));
     });
 
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
+    const center = createThreeVector3();
+    const size = createThreeVector3();
+    box.getCenter(center);
+    box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
@@ -451,14 +476,14 @@ const CadViewerEnhanced: React.FC<CadViewerEnhancedProps> = ({
         {/* 左侧视图切换 */}
         <div className="flex gap-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg p-1">
           {[
-            { mode: '3d', label: '3D', icon: Move },
-            { mode: 'top', label: '俯视', icon: Eye },
-            { mode: 'front', label: '正视', icon: Eye },
-            { mode: 'side', label: '侧视', icon: Eye },
+            { mode: '3d' as const, label: '3D', icon: Move },
+            { mode: 'top' as const, label: '俯视', icon: Eye },
+            { mode: 'front' as const, label: '正视', icon: Eye },
+            { mode: 'side' as const, label: '侧视', icon: Eye },
           ].map(({ mode, label, icon: Icon }) => (
             <button
               key={mode}
-              onClick={() => handleViewMode(mode as any)}
+              onClick={() => handleViewMode(mode)}
               className={`flex items-center gap-1 px-3 py-1.5 rounded transition-all ${
                 viewMode === mode
                   ? 'bg-blue-500 text-white shadow'

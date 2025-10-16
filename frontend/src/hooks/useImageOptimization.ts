@@ -39,10 +39,10 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
   // 检测浏览器支持的图片格式
   const checkFormatSupport = useCallback(async () => {
     const checkAVIF = (): Promise<boolean> => {
-      return new Promise((resolve) => {
+      return new Promise<boolean>((resolve) => {
         const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => {
+        img.onload = (): void => resolve(true);
+        img.onerror = (): void => {
           setTimeout(() => resolve(false), 100);
         };
         img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpY2FzAAAAAAHAAAAAApbWFhZAAAAAA=' +
@@ -51,10 +51,10 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
     };
 
     const checkWebP = (): Promise<boolean> => {
-      return new Promise((resolve) => {
+      return new Promise<boolean>((resolve) => {
         const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => {
+        img.onload = (): void => resolve(true);
+        img.onerror = (): void => {
           setTimeout(() => resolve(false), 100);
         };
         img.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
@@ -111,7 +111,7 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
   }, []);
 
   // 更新图片源
-  const updateSrc = useCallback(async (newSrc: string) => {
+  const updateSrc = useCallback(async (newSrc: string): Promise<void> => {
     setState(prev => ({
       ...prev,
       isLoading: true,
@@ -127,7 +127,7 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
   }, [checkFormatSupport, generateOptimizedUrl]);
 
   // 处理图片加载成功
-  const handleLoad = useCallback(() => {
+  const handleLoad = useCallback((): void => {
     setState(prev => ({
       ...prev,
       isLoaded: true,
@@ -137,7 +137,7 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
   }, []);
 
   // 处理图片加载失败
-  const handleError = useCallback(() => {
+  const handleError = useCallback((): void => {
     setState(prev => ({
       ...prev,
       isLoaded: false,
@@ -148,10 +148,10 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
 
   // 预加载图片
   const preloadImage = useCallback((src: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error(`Failed to preload image: ${src}`));
+      img.onload = (): void => resolve();
+      img.onerror = (): void => reject(new Error(`Failed to preload image: ${src}`));
       img.src = src;
     });
   }, []);
@@ -164,7 +164,7 @@ export const useImageOptimization = (initialSrc: string, options: ImageOptimizat
 
     const baseUrl = baseSrc.split('?')[0];
     const query = baseSrc.includes('?') ? '?' + baseSrc.split('?')[1] : '';
-    const url = new URL(baseUrl, window.location.origin);
+    const url = new URL(baseUrl || '', window.location.origin);
     const pathname = url.pathname;
     const extension = pathname.split('.').pop()?.toLowerCase();
 
@@ -224,8 +224,8 @@ export const preloadImages = async (urls: string[]): Promise<void> => {
   const promises = urls.map(url => {
     return new Promise<void>((resolve, reject) => {
       const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error(`Failed to preload: ${url}`));
+      img.onload = (): void => resolve();
+      img.onerror = (): void => reject(new Error(`Failed to preload: ${url}`));
       img.src = url;
     });
   });
@@ -239,7 +239,7 @@ export const useBatchImageOptimization = (imageUrls: string[], options: ImageOpt
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   const [errorStates, setErrorStates] = useState<Record<string, boolean>>({});
 
-  const optimizeImages = useCallback(async () => {
+  const optimizeImages = useCallback(async (): Promise<void> => {
     const formatPromises = imageUrls.map(async (url) => {
       try {
         setLoadingStates(prev => ({ ...prev, [url]: true }));
@@ -247,20 +247,20 @@ export const useBatchImageOptimization = (imageUrls: string[], options: ImageOpt
 
         // 检测格式支持
         const checkAVIF = (): Promise<boolean> => {
-          return new Promise((resolve) => {
+          return new Promise<boolean>((resolve) => {
             const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => setTimeout(() => resolve(false), 100);
+            img.onload = (): void => resolve(true);
+            img.onerror = (): void => { setTimeout(() => resolve(false), 100); };
             img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpY2FzAAAAAAHAAAAAApbWFhZAAAAAA=' +
               'AAAAAAAAAAAAAAAAAAoAAFBhY3FwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
           });
         };
 
         const checkWebP = (): Promise<boolean> => {
-          return new Promise((resolve) => {
+          return new Promise<boolean>((resolve) => {
             const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => setTimeout(() => resolve(false), 100);
+            img.onload = (): void => resolve(true);
+            img.onerror = (): void => { setTimeout(() => resolve(false), 100); };
             img.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
           });
         };

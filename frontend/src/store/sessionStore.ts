@@ -15,11 +15,23 @@ import { updateSessionTitleIfNeeded } from '@/utils/titleGeneration';
 import { perfMonitor } from '@/utils/performanceMonitor';
 import { debugLog } from '@/lib/debug';
 
+// 类型安全的Store辅助类型
+type SetState<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void;
+type GetState<T> = () => T;
+
+// 会话更新函数类型
+type SessionUpdater = (session: ChatSession) => ChatSession;
+type MessageUpdater = (message: ChatMessage) => ChatMessage;
+
+// 状态类型定义
 interface SessionState {
   // 会话数据
   agentSessions: AgentSessionsMap;  // 按智能体分组的会话字典
   currentSession: ChatSession | null;
+}
 
+// Action类型定义
+interface SessionActions {
   // Actions - 会话管理
   createNewSession: (agentId: string) => ChatSession;
   deleteSession: (agentId: string, sessionId: string) => void;
@@ -31,7 +43,8 @@ interface SessionState {
   setAgentSessionsForAgent: (agentId: string, sessions: ChatSession[]) => void;
   bindSessionId: (agentId: string, oldId: string, newId: string) => void;
   setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => void;
-  updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => void;
+  updateSession: (agentId: string, sessionId: string, updater: SessionUpdater) => void;
+  updateSessionMessage: (agentId: string, sessionId: string, messageId: string, updater: MessageUpdater) => void;
 
   // Actions - 初始化
   initializeAgentSessions: () => void;
@@ -43,17 +56,26 @@ interface SessionState {
   getSessionById: (agentId: string, sessionId: string) => ChatSession | undefined;
   getAgentSessions: (agentId: string) => ChatSession[];
   getCurrentSession: () => ChatSession | null;
+  getSessionCount: (agentId?: string) => number;
+  getRecentSessions: (agentId: string, limit?: number) => ChatSession[];
+  hasSession: (agentId: string, sessionId: string) => boolean;
+
+  // Zustand store methods
+  getState: () => SessionStore;
 }
 
-export const useSessionStore = create<SessionState>()(
+// 完整的Store类型
+type SessionStore = SessionState & SessionActions;
+
+export const useSessionStore = create<SessionStore>()(
   persist(
-    (set, get) => ({
+    (set: SetState<SessionStore>, get: GetState<SessionStore>): SessionStore => ({
       // 初始状态
       agentSessions: {},
       currentSession: null,
 
       // 创建新会话
-      createNewSession: (agentId) => {
+      createNewSession: (agentId: string) => {
         return perfMonitor.measure('sessionStore.createNewSession', () => {
           const newSession: ChatSession = {
             id: `session_${Date.now()}`,
@@ -84,11 +106,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 删除会话
-      deleteSession: (agentId, sessionId) => {
+      deleteSession: (agentId: string, sessionId: string) => {
         perfMonitor.measure('sessionStore.deleteSession', () => {
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
-            const updatedSessions = existingSessions.filter((s) => s.id !== sessionId);
+            const updatedSessions = existingSessions.filter((s: ChatSession) => s.id !== sessionId);
 
             const updatedAgentSessions = {
               ...state.agentSessions,
@@ -112,7 +134,7 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 切换到指定会话
-      switchToSession: (agentId, sessionId) => {
+      switchToSession: (agentId: string, sessionId: string): void => {
         perfMonitor.measure('sessionStore.switchToSession', () => {
           const session = get().getSessionById(agentId, sessionId);
           if (session) {
@@ -125,11 +147,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 重命名会话
-      renameSession: (agentId, sessionId, title) => {
+      renameSession: (agentId: string, sessionId: string, title: string) => {
         perfMonitor.measure('sessionStore.renameSession', () => {
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
-            const updatedSessions = existingSessions.map((session) =>
+            const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId
                 ? { ...session, title, updatedAt: new Date() }
                 : session,
@@ -157,7 +179,7 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 清除指定智能体的所有会话
-      clearCurrentAgentSessions: (agentId) => {
+      clearCurrentAgentSessions: (agentId: string) => {
         set((state) => {
           const updatedAgentSessions = {
             ...state.agentSessions,
@@ -178,7 +200,7 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 设置指定智能体的会话列表
-      setAgentSessionsForAgent: (agentId, sessions) => {
+      setAgentSessionsForAgent: (agentId: string, sessions: ChatSession[]) => {
         perfMonitor.measure('sessionStore.setAgentSessionsForAgent', () => {
           set((state) => ({
             agentSessions: {
@@ -190,11 +212,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 绑定会话ID（将临时ID替换为服务器返回的ID）
-      bindSessionId: (agentId, oldId, newId) => {
+      bindSessionId: (agentId: string, oldId: string, newId: string) => {
         perfMonitor.measure('sessionStore.bindSessionId', () => {
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
-            const updatedSessions = existingSessions.map((session) =>
+            const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === oldId
                 ? { ...session, id: newId, updatedAt: new Date() }
                 : session,
@@ -222,11 +244,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 设置会话的消息列表
-      setSessionMessages: (agentId, sessionId, messages) => {
+      setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => {
         perfMonitor.measure('sessionStore.setSessionMessages', () => {
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
-            const updatedSessions = existingSessions.map((session) =>
+            const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId
                 ? { ...session, messages, updatedAt: new Date() }
                 : session,
@@ -252,11 +274,11 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 更新指定会话
-      updateSession: (agentId, sessionId, updater) => {
+      updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => {
         perfMonitor.measure('sessionStore.updateSession', () => {
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
-            const updatedSessions = existingSessions.map((session) =>
+            const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId ? updater(session) : session,
             );
 
@@ -280,7 +302,7 @@ export const useSessionStore = create<SessionState>()(
       },
 
       // 初始化会话字典（确保每个智能体都有空数组）
-      initializeAgentSessions: () => {
+      initializeAgentSessions: (): void => {
         set((state) => {
           // 如果已经初始化过，不做任何操作
           if (Object.keys(state.agentSessions).length > 0) {
@@ -288,12 +310,12 @@ export const useSessionStore = create<SessionState>()(
           }
 
           debugLog('🔧 初始化会话字典');
-          return { agentSessions: {} };
+          return { agentSessions: {}, currentSession: null };
         });
       },
 
       // 智能更新会话标题
-      updateSessionTitleIntelligently: (agentId, sessionId) => {
+      updateSessionTitleIntelligently: (agentId: string, sessionId: string): void => {
         perfMonitor.measure('sessionStore.updateSessionTitleIntelligently', () => {
           const session = get().getSessionById(agentId, sessionId);
           if (!session) {
@@ -312,32 +334,101 @@ export const useSessionStore = create<SessionState>()(
         });
       },
 
+      // 更新会话中的特定消息
+      updateSessionMessage: (agentId: string, sessionId: string, messageId: string, updater: MessageUpdater): void => {
+        set((state) => {
+          const existingSessions = state.agentSessions[agentId] || [];
+          const updatedSessions = existingSessions.map((session) => {
+            if (session.id !== sessionId) return session;
+
+            const updatedMessages = session.messages.map((message) =>
+              message.id === messageId ? updater(message) : message
+            );
+
+            return {
+              ...session,
+              messages: updatedMessages,
+              updatedAt: new Date(),
+            };
+          });
+
+          const updatedAgentSessions = {
+            ...state.agentSessions,
+            [agentId]: updatedSessions,
+          };
+
+          // 同步更新当前会话
+          const updatedCurrentSession =
+            state.currentSession?.id === sessionId
+              ? {
+                  ...state.currentSession,
+                  messages: updatedSessions.find(s => s.id === sessionId)?.messages || state.currentSession.messages,
+                  updatedAt: new Date(),
+                }
+              : state.currentSession;
+
+          return {
+            agentSessions: updatedAgentSessions,
+            currentSession: updatedCurrentSession,
+          };
+        });
+      },
+
       // 辅助方法：根据ID获取会话
-      getSessionById: (agentId, sessionId) => {
+      getSessionById: (agentId: string, sessionId: string): ChatSession | undefined => {
         const { agentSessions } = get();
         const sessions = agentSessions[agentId] || [];
-        return sessions.find((s) => s.id === sessionId);
+        return sessions.find((s: ChatSession) => s.id === sessionId);
       },
 
       // 辅助方法：获取指定智能体的所有会话
-      getAgentSessions: (agentId) => {
+      getAgentSessions: (agentId: string): ChatSession[] => {
         const { agentSessions } = get();
         return agentSessions[agentId] || [];
       },
 
       // 辅助方法：获取当前会话
-      getCurrentSession: () => {
+      getCurrentSession: (): ChatSession | null => {
         return get().currentSession;
       },
+
+      // 辅助方法：获取会话数量
+      getSessionCount: (agentId?: string): number => {
+        const { agentSessions } = get();
+        if (!agentId) {
+          return Object.values(agentSessions).reduce((total, sessions) => total + sessions.length, 0);
+        }
+        return agentSessions[agentId]?.length || 0;
+      },
+
+      // 辅助方法：获取最近的会话
+      getRecentSessions: (agentId: string, limit: number = 10): ChatSession[] => {
+        const sessions = get().getAgentSessions(agentId);
+        return sessions
+          .sort((a, b) => {
+            const aTime = typeof a.updatedAt === 'number' ? a.updatedAt : a.updatedAt.getTime();
+            const bTime = typeof b.updatedAt === 'number' ? b.updatedAt : b.updatedAt.getTime();
+            return bTime - aTime;
+          })
+          .slice(0, limit);
+      },
+
+      // 辅助方法：检查会话是否存在
+      hasSession: (agentId: string, sessionId: string): boolean => {
+        return get().getSessionById(agentId, sessionId) !== undefined;
+      },
+
+      // Zustand store method
+      getState: (): SessionStore => get(),
     }),
     {
       name: 'session-store',
-      partialize: (state) => ({
+      partialize: (state: SessionStore) => ({
         agentSessions: state.agentSessions,
         currentSession: state.currentSession,
       }),
-    },
-  ),
+    }
+  )
 );
 
 export default useSessionStore;

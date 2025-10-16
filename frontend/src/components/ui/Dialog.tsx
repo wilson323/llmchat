@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+;
+;
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -28,10 +30,10 @@ export const Dialog: React.FC<DialogProps> = ({
   initialFocus = 'confirm',
 }) => {
   const { t } = useI18n();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const confirmButtonRef = useRef<HTMLButtonElement>(null);
-  const cancelButtonRef = useRef<HTMLButtonElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = React.useRef(null);
+  const confirmButtonRef = React.useRef(null);
+  const cancelButtonRef = React.useRef(null);
+  const closeButtonRef = React.useRef(null);
 
   const resolvedTitle = title ?? t('确认操作');
   const resolvedConfirm = confirmText ?? t('确认');
@@ -55,7 +57,7 @@ export const Dialog: React.FC<DialogProps> = ({
   useFocusTrap({
     container: dialogRef.current,
     initialFocus: getInitialFocusElement(),
-    onEscape: onClose,
+    onEscape: onClose || (() => {}),
     enabled: open,
   });
 

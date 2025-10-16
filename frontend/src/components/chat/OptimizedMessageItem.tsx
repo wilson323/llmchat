@@ -74,8 +74,8 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   const { renderCount } = MessageItemPerfMonitor();
 
   const { t } = useI18n();
-  const messageRef = useRef(null);
-  const contentRef = useRef(null);
+  const messageRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   // Intersection Observer for lazy loading heavy components
   const [isVisible, setIsVisible] = useState(false);

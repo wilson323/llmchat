@@ -23,6 +23,9 @@ interface PreferenceState {
   getThemeMode: () => string;
   isStreamingEnabled: () => boolean;
   getLanguage: () => string;
+
+  // Zustand store methods
+  getState: () => PreferenceState;
 }
 
 // 默认偏好设置
@@ -43,13 +46,13 @@ const defaultPreferences: UserPreferences = {
 
 export const usePreferenceStore = create<PreferenceState>()(
   persist(
-    (set, get) => ({
+    (set, get: () => any) => ({
       // 初始状态
       preferences: defaultPreferences,
 
       // 更新偏好设置
-      updatePreferences: (newPreferences) => {
-        set((state) => ({
+      updatePreferences: (newPreferences: Partial<UserPreferences>) =>
+        set((state: any) => ({
           preferences: {
             ...state.preferences,
             ...newPreferences,
@@ -64,8 +67,7 @@ export const usePreferenceStore = create<PreferenceState>()(
               ...(newPreferences.autoThemeSchedule || {}),
             },
           },
-        }));
-      },
+        })),
 
       // 重置为默认设置
       resetPreferences: () => {
@@ -86,11 +88,14 @@ export const usePreferenceStore = create<PreferenceState>()(
       getLanguage: () => {
         return get().preferences.language;
       },
+
+      // Zustand store method
+      getState: () => get(),
     }),
     {
       name: 'preference-store',
-    },
-  ),
+    }
+  )
 );
 
 export default usePreferenceStore;

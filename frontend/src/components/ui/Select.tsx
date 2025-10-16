@@ -43,13 +43,13 @@ export const Select: React.FC<SelectProps> = ({ value, onValueChange, children, 
     <div className={`relative ${className}`}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
-          ? React.cloneElement(child, {
+          ? React.cloneElement(child as any, {
               isOpen,
               setIsOpen,
               selectedValue,
               onSelect: handleSelect,
-              placeholder,
-            })
+              ...(placeholder && { placeholder }),
+            } as any)
           : child,
       )}
     </div>
@@ -99,7 +99,7 @@ export const SelectContent: React.FC<SelectContentProps & {
     <div className={`absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto ${className}`}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
-          ? React.cloneElement(child, { onSelect })
+          ? React.cloneElement(child as any, { ...(onSelect && { onSelect }) } as any)
           : child,
       )}
     </div>

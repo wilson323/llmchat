@@ -6,10 +6,18 @@
 
 'use client';
 
+;
+;
+;
+;
+import { ChevronLeft, ChevronRight, Download, Grid3x3, Maximize2 } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { OptimizedImage } from './OptimizedImage';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
-import { ChevronLeft, ChevronRight, Download, Maximize2, Grid3x3 } from 'lucide-react';
+;
+;
+;
+;
 import { cn } from '@/lib/utils';
 
 interface ImageItem {
@@ -54,12 +62,12 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   enableDownload = true,
   enableFullscreen = true,
 }) => {
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
-  const [viewMode, setViewMode] = useState<'gallery' | 'viewer'>('gallery');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [viewMode, setViewMode] = useState('gallery');
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const viewerRef = useRef<HTMLDivElement | null>(null);
 
   // 当前选中的图片
   const selectedImage = useMemo(() => {

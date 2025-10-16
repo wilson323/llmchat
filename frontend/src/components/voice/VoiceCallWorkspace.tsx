@@ -1,15 +1,15 @@
+;
+;
+;
+;
+;
+;
+;
+;
+;
+import {AlertCircle, Bot, Loader2, Mic, Phone, PhoneOff, User, Volume2} from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AlertCircle,
-  Bot,
-  Loader2,
-  Mic,
-  Phone,
-  PhoneOff,
-  User,
-  Volume2,
-  type LucideIcon,
-} from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
 import { Agent } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { useChat } from '@/hooks/useChat';
@@ -17,41 +17,18 @@ import { useChatStore } from '@/store/chatStore';
 import { cn } from '@/lib/utils';
 import avatarImg from '@/img/4.png';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
+import type {
+  SpeechRecognition,
+  SpeechRecognitionEvent,
+} from '@/types/voice-api';
+import {
+  getSpeechRecognitionConstructor,
+  getAudioContextConstructor
+} from '@/types/voice-api';
 
 type CallStatus = 'idle' | 'connecting' | 'in-call' | 'ended';
 
-interface BrowserSpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface BrowserSpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onaudioend: ((this: BrowserSpeechRecognition, ev: Event) => any) | null;
-  onaudiostart: ((this: BrowserSpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: BrowserSpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: BrowserSpeechRecognition, ev: any) => any) | null;
-  onresult: ((this: BrowserSpeechRecognition, ev: BrowserSpeechRecognitionEvent) => any) | null;
-  onstart: ((this: BrowserSpeechRecognition, ev: Event) => any) | null;
-  start: () => void;
-  stop: () => void;
-}
-
-type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
-
-const getSpeechRecognition = (): SpeechRecognitionConstructor | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  return (
-    (window as any).SpeechRecognition ||
-    (window as any).webkitSpeechRecognition ||
-    null
-  );
-};
+// 使用标准化的语音识别类型，不再需要自定义接口
 
 const formatDuration = (milliseconds: number) => {
   const totalSeconds = Math.floor(milliseconds / 1000);
@@ -68,7 +45,7 @@ interface CallStatusMeta {
   label: string;
   helper: string;
   tone: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<LucideProps>;
   iconTone: string;
   helperTone: string;
 }
@@ -127,15 +104,15 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
   const { sendMessage } = useChat();
 
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
-  const [callDuration, setCallDuration] = useState(0);
-  const [listening, setListening] = useState(false);
-  const [volume, setVolume] = useState(0);
+  const [callDuration, setCallDuration] = useState<number>(0);
+  const [listening, setListening] = useState<boolean>(false);
+  const [volume, setVolume] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [lastUtterance, setLastUtterance] = useState('');
-  const [recognitionSupported, setRecognitionSupported] = useState(true);
+  const [interimTranscript, setInterimTranscript] = useState<string>('');
+  const [lastUtterance, setLastUtterance] = useState<string>('');
+  const [recognitionSupported, setRecognitionSupported] = useState<boolean>(true);
 
-  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -149,7 +126,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
   const conversationMessages = useMemo(
     () =>
       messages.filter(
-        (message) => typeof message.HUMAN === 'string' || typeof message.AI === 'string',
+        (message: any) => typeof message.HUMAN === 'string' || typeof message.AI === 'string',
       ),
     [messages],
   );
@@ -159,7 +136,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
   const StatusIcon = statusMeta.icon;
 
   useEffect(() => {
-    setRecognitionSupported(!!getSpeechRecognition());
+    setRecognitionSupported(!!getSpeechRecognitionConstructor());
   }, []);
 
   useEffect(() => {
@@ -232,7 +209,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
     }
 
     const assistantMessages = conversationMessages
-      .map((message, index) => ({ message, index }))
+      .map((message, index: number) => ({ message, index }))
       .filter(({ message }) => typeof message.AI === 'string' && message.AI.trim().length > 0);
 
     if (assistantMessages.length === 0) {
@@ -240,6 +217,8 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
     }
 
     const latest = assistantMessages[assistantMessages.length - 1];
+    if (!latest) return;
+
     const key = latest.message.id || `assistant-${latest.index}`;
 
     if (spokenMessageRef.current.has(key)) {
@@ -287,7 +266,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
     }
 
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       mediaStreamRef.current = null;
     }
 
@@ -317,7 +296,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
             if (summary) {
               renameSession(activeSession.id, summary);
             }
-            updateSession(agent.id, activeSession.id, (session) => ({
+            updateSession(agent.id, activeSession.id, (session: any) => ({
               ...session,
               metadata: {
                 ...(session.metadata || {}),
@@ -362,9 +341,9 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
 
-      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextCtor = getAudioContextConstructor();
       if (AudioContextCtor) {
-        const audioContext: AudioContext = new AudioContextCtor();
+        const audioContext = new AudioContextCtor() as unknown as AudioContext;
         audioContextRef.current = audioContext;
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
@@ -375,14 +354,16 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
-        const updateVolume = () => {
+        const updateVolume = (): void => {
           if (!analyserRef.current) {
             return;
           }
           analyserRef.current.getByteTimeDomainData(dataArray);
           let sumSquares = 0;
           for (let i = 0; i < dataArray.length; i += 1) {
-            const value = (dataArray[i] - 128) / 128;
+            const dataValue = dataArray[i];
+            if (dataValue === undefined) continue;
+            const value = (dataValue - 128) / 128;
             sumSquares += value * value;
           }
           const rms = Math.sqrt(sumSquares / dataArray.length);
@@ -393,19 +374,19 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
         updateVolume();
       }
 
-      const RecognitionCtor = getSpeechRecognition();
+      const RecognitionCtor = getSpeechRecognitionConstructor();
       if (!RecognitionCtor) {
         setRecognitionSupported(false);
         setError('当前浏览器暂不支持实时语音识别，建议使用最新版 Chrome。');
       } else {
-        const recognition: BrowserSpeechRecognition = new RecognitionCtor();
+        const recognition: SpeechRecognition = new RecognitionCtor();
         recognition.lang = 'zh-CN';
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => setListening(true);
-        recognition.onend = () => {
+        recognition.onstart = (): void => setListening(true);
+        recognition.onend = (): void => {
           setListening(false);
           if (callStatusRef.current === 'in-call') {
             try {
@@ -415,13 +396,14 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
             }
           }
         };
-        recognition.onerror = (event: any) => {
-          if (event?.error === 'aborted' || event?.error === 'no-speech') {
+        recognition.onerror = (event: Event): void => {
+          const recognitionError = event as any;
+          if (recognitionError?.error === 'aborted' || recognitionError?.error === 'no-speech') {
             return;
           }
-          setError(`语音识别出错：${event?.error ?? '未知错误'}`);
+          setError(`语音识别出错：${recognitionError?.error ?? '未知错误'}`);
         };
-        recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
           let interim = '';
           for (let i = event.resultIndex; i < event.results.length; i += 1) {
             const result = event.results[i];
@@ -458,7 +440,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
           createdSession.id,
           `语音通话 ${startedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`,
         );
-        updateSession(agent.id, createdSession.id, (session) => ({
+        updateSession(agent.id, createdSession.id, (session: any) => ({
           ...session,
           metadata: {
             ...(session.metadata || {}),
@@ -499,7 +481,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
     const endedAt = new Date();
     const durationMs = callStartRef.current ? Date.now() - callStartRef.current : callDuration;
     if (currentAgent?.id === agent.id && currentSession) {
-      updateSession(agent.id, currentSession.id, (session) => ({
+      updateSession(agent.id, currentSession.id, (session: any) => ({
         ...session,
         metadata: {
           ...(session.metadata || {}),
@@ -794,7 +776,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
             </div>
           ) : (
             <>
-              {conversationMessages.map((message, index) => {
+              {conversationMessages.map((message, index: number) => {
                 const isUser = typeof message.HUMAN === 'string';
                 const key = message.id || `${isUser ? 'user' : 'assistant'}-${index}`;
                 const content = isUser ? message.HUMAN : message.AI;

@@ -6,7 +6,7 @@ import { TimeSeriesData } from '@/services/slaApi';
 // ECharts系列类型定义
 interface SeriesOption {
   name: string;
-  type: string;
+  type: 'line' | 'bar' | 'area';
   data: number[];
   smooth?: boolean;
   symbol?: string;
@@ -19,7 +19,21 @@ interface SeriesOption {
   itemStyle?: {
     color: string;
   };
-  areaStyle?: any;
+  areaStyle?: {
+    color?: string | {
+      type: string;
+      x: number;
+      y: number;
+      x2: number;
+      y2: number;
+      colorStops?: Array<{
+        offset: number;
+        color: string;
+        opacity?: number;
+      }>;
+    };
+    opacity?: number;
+  };
   emphasis?: {
     disabled: boolean;
   };
@@ -201,7 +215,7 @@ export function PerformanceChart({
     };
 
     // 主数据系列
-    const series: SeriesOption = {
+    const series: any = {
       name: title,
       type: type === 'area' ? 'line' : type,
       data: values,
@@ -308,13 +322,10 @@ export function PerformanceChart({
   return (
     <div className={cn('rounded-lg border border-border/20 bg-card/50', className)}>
       <ReactECharts
-        option={chartOption}
+        option={chartOption as any}
         style={{ height }}
         notMerge={true}
         lazyUpdate={true}
-        opts={{
-          renderer: 'canvas',
-        }}
       />
     </div>
   );
@@ -332,7 +343,7 @@ export function ResponseTimeChart({ data, loading }: {
       type="area"
       unit="ms"
       height={200}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
       threshold={{
         value: 1000,
         label: '阈值 (1000ms)',
@@ -353,7 +364,7 @@ export function ErrorRateChart({ data, loading }: {
       type="line"
       unit="%"
       height={200}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
       threshold={{
         value: 5,
         label: '阈值 (5%)',
@@ -374,7 +385,7 @@ export function RequestVolumeChart({ data, loading }: {
       type="bar"
       unit="req/s"
       height={200}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
     />
   );
 }
@@ -390,7 +401,7 @@ export function CPUUsageChart({ data, loading }: {
       type="area"
       unit="%"
       height={200}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
       threshold={{
         value: 80,
         label: '阈值 (80%)',
@@ -411,7 +422,7 @@ export function MemoryUsageChart({ data, loading }: {
       type="area"
       unit="%"
       height={200}
-      loading={loading}
+      {...(loading !== undefined && { loading })}
       threshold={{
         value: 85,
         label: '阈值 (85%)',

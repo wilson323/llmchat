@@ -33,13 +33,13 @@ interface ComponentLoaderConfig {
  * 使用代码分割的Hook
  */
 export function useCodeSplitting<T>(
-  importFn: () => Promise<any>,
+  importFn: () => Promise<{ default: T } | T>,
   _componentName: string,
   _config: ComponentLoaderConfig = {},
 ): LoadResult<T> {
   const [loadResult, setLoadResult] = useState<LoadResult<T>>({
     state: LoadingState.IDLE,
-    retry: () => Promise.resolve(),
+    retry: async (): Promise<void> => { await Promise.resolve(); },
   });
 
   const loadComponent = useCallback(async () => {
@@ -47,7 +47,12 @@ export function useCodeSplitting<T>(
 
     try {
       const module = await importFn();
-      const component = module.default || module;
+      let component: T;
+      if (module && typeof module === 'object' && 'default' in module) {
+        component = (module as { default: T }).default;
+      } else {
+        component = module as T;
+      }
 
       setLoadResult({
         state: LoadingState.LOADED,

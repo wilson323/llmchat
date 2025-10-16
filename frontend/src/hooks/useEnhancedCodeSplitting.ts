@@ -40,9 +40,9 @@ export interface UseEnhancedCodeSplittingReturn {
   /** 是否有错误 */
   hasError: boolean;
   /** 错误信息 */
-  error?: Error;
+  error: Error | undefined;
   /** 加载时间（毫秒） */
-  loadTime?: number;
+  loadTime: number;
   /** 重试加载 */
   retry: () => Promise<void>;
   /** 预加载组件 */
@@ -72,12 +72,12 @@ export function useEnhancedCodeSplitting(
     preloadStrategy = 'idle',
   } = options;
 
-  const [state, setState] = useState<ComponentState>(ComponentState.IDLE);
+  const [state, setState] = useState(ComponentState.IDLE);
   const [error, setError] = useState<Error | undefined>();
   const [loadTime, setLoadTime] = useState<number | undefined>();
   const [retryCount, setRetryCount] = useState(0);
 
-  const mountedRef = useRef(false);
+  const mountedRef = useRef<boolean>(false);
   const loadStartTimeRef = useRef<number>(0);
 
   // 获取组件加载状态
@@ -91,8 +91,8 @@ export function useEnhancedCodeSplitting(
   // 加载组件
   const loadComponent = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) {
-return;
-}
+      return;
+    }
 
     const currentState = getComponentState();
     if (currentState === ComponentState.LOADED || currentState === ComponentState.LOADING) {
@@ -137,7 +137,7 @@ return;
   }, [componentName]);
 
   // 清除缓存
-  const clearCache = useCallback(() => {
+  const clearCache = useCallback((): void => {
     SimpleCodeSplitting.clearCache(componentName);
     setState(ComponentState.IDLE);
     setError(undefined);
@@ -145,7 +145,7 @@ return;
   }, [componentName]);
 
   // 获取性能统计
-  const getStats = useCallback(() => {
+  const getStats = useCallback((): { loadTime: number; retryCount: number; cacheHit: boolean } => {
     return {
       loadTime: loadTime || 0,
       retryCount,
@@ -156,8 +156,8 @@ return;
   // 自动预加载
   useEffect(() => {
     if (!mountedRef.current) {
-return;
-}
+      return;
+    }
 
     if (autoPreload && preloadStrategy === 'immediate') {
       loadComponent();
@@ -167,6 +167,8 @@ return;
       }, preloadDelay);
       return () => clearTimeout(timer);
     }
+
+    return undefined;
   }, [autoPreload, preloadDelay, preloadStrategy, loadComponent]);
 
   // 监听组件状态变化
@@ -191,7 +193,7 @@ return;
     isLoading: state === ComponentState.LOADING,
     hasError: state === ComponentState.ERROR,
     error,
-    loadTime,
+    loadTime: loadTime || 0,
     retry,
     preload,
     clearCache,

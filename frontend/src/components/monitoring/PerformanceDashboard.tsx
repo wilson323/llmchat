@@ -3,8 +3,16 @@
  * 实时显示前端性能指标
  */
 
+;
+;
+;
+;
+;
+;
+;
+;
+import {Activity, AlertTriangle, Cpu, HardDrive, X, Zap} from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Activity, Cpu, HardDrive, Zap, AlertTriangle } from 'lucide-react';
 import { IconButton } from '@/components/ui/IconButton';
 import {
   memoryMonitor,
@@ -22,7 +30,11 @@ interface PerformanceStats {
   requests: {
     totalRequests: number;
     averageDuration: number;
-    slowestRequests: Array<any>;
+    slowestRequests: Array<{
+      url: string;
+      duration: number;
+      timestamp: number;
+    }>;
     activeRequests: number;
   } | null;
   components: {
@@ -213,7 +225,7 @@ export const PerformanceDashboard: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">最慢请求:</span>
                     <span className="font-mono text-red-600">
-                      {stats.requests.slowestRequests.length > 0
+                      {stats.requests.slowestRequests.length > 0 && stats.requests.slowestRequests[0]
                         ? formatTime(stats.requests.slowestRequests[0].duration)
                         : 'N/A'
                       }
@@ -231,7 +243,7 @@ export const PerformanceDashboard: React.FC = () => {
                   <h3 className="font-medium">组件性能</h3>
                 </div>
                 <div className="space-y-2 text-sm max-h-40 overflow-y-auto">
-                  {Object.entries(stats.components).slice(0, 5).map(([name, data]) => (
+                  {Object.entries(stats.components).slice(0, 5).map(([name, data]: [string, { renders: number; averageRenderTime: number; isMounted: boolean }]) => (
                     <div key={name} className="flex justify-between items-center">
                       <span className="text-muted-foreground truncate flex-1 mr-2">
                         {name}

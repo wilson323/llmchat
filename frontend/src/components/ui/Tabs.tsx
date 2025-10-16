@@ -30,7 +30,7 @@ export const Tabs: React.FC<TabsProps> = ({ defaultValue, children, className = 
     <div className={`w-full ${className}`}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
-          ? React.cloneElement(child, { activeTab, setActiveTab })
+          ? React.cloneElement(child as any, { activeTab, setActiveTab })
           : child,
       )}
     </div>
@@ -47,7 +47,7 @@ export const TabsList: React.FC<TabsListProps & { activeTab?: string; setActiveT
     <div className={`flex space-x-1 border-b border-gray-200 dark:border-gray-700 ${className}`}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
-          ? React.cloneElement(child, { activeTab, setActiveTab })
+          ? React.cloneElement(child as any, { ...(activeTab !== undefined && { activeTab }), ...(setActiveTab && { setActiveTab }) } as any)
           : child,
       )}
     </div>

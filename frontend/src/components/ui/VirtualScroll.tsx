@@ -4,18 +4,19 @@
  */
 
 'use client';
+;
 import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 // import { performanceAnalyzer } from '@/utils/performanceAnalysis'; // 已删除，使用原生性能API
 
-export interface VirtualScrollItem<T = any> {
+export interface VirtualScrollItem<T = unknown> {
   index: number;
-  data: T;
+  data: T | undefined;
   key?: string;
   height?: number;
 }
 
-export interface VirtualScrollProps<T = any> {
+export interface VirtualScrollProps<T = unknown> {
   // 数据相关
   items: T[];
   itemKey?: (item: T, index: number) => string;
@@ -51,7 +52,7 @@ export interface VirtualScrollRef {
   getContainer: () => HTMLDivElement | null;
 }
 
-export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = any>({
+export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = unknown>({
   items,
   itemKey = (_item, index) => index.toString(),
   itemHeight,
@@ -70,13 +71,15 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
   hasMore = true,
 }: VirtualScrollProps<T>, ref: React.ForwardedRef<HTMLDivElement>) {
   const [_scrollTop, setScrollTop] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
   // 计算项目高度函数
   const getItemHeight = useCallback((index: number) => {
     if (typeof itemHeight === 'function') {
-      return itemHeight(items[index], index);
+      const item = items[index];
+      if (item === undefined) return estimatedItemHeight;
+      return itemHeight(item, index);
     }
     if (typeof itemHeight === 'number') {
       return itemHeight;
@@ -99,13 +102,16 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
 
   // 虚拟项目数据
   const virtualItemsData = useMemo(() => {
-    return virtualItems.map(({ index, key, start, size }) => ({
-      index,
-      key: key || itemKey(items[index], index),
-      data: items[index],
-      height: size,
-      start,
-    }));
+    return virtualItems.map(({ index, key, start, size }) => {
+      const item = items[index];
+      return {
+        index,
+        key: key || (item !== undefined ? itemKey(item, index) : `virtual-${index}`),
+        data: item,
+        height: size,
+        start,
+      };
+    });
   }, [virtualItems, items, itemKey]);
 
   // 滚动处理
@@ -146,11 +152,12 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
     const container = containerRef.current;
     if (container) {
       // Add custom methods to the container element
-      (container as any).scrollToItem = scrollToItem;
-      (container as any).scrollToTop = scrollToTopAction;
-      (container as any).getScrollTop = () => container.scrollTop || 0;
-      (container as any).getContainer = () => container;
-      return container;
+      const extendedContainer: any = container;
+      extendedContainer.scrollToItem = scrollToItem;
+      extendedContainer.scrollToTop = scrollToTopAction;
+      extendedContainer.getScrollTop = () => extendedContainer.scrollTop || 0;
+      extendedContainer.getContainer = () => extendedContainer;
+      return extendedContainer;
     }
     return document.createElement('div'); // Return empty div as fallback
   }, [scrollToItem, scrollToTopAction]);
@@ -244,14 +251,14 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
 });
 
 // 高阶组件版本
-export function withVirtualScroll<T = any>(
+export function withVirtualScroll<T = unknown>(
   Component: React.ComponentType<{ item: VirtualScrollItem<T> }>,
 ) {
-  const WrappedComponent = React.memo(function WithVirtualScroll({ items, ...props }: Omit<VirtualScrollProps<T>, 'renderItem'>) {
+  const WrappedComponent = React.memo(function WithVirtualScroll({ items, ...props }: any) {
     return (
       <VirtualScroll
         items={items}
-        renderItem={(item) => <Component item={item} {...(props as any)} />}
+        renderItem={(item: any) => <Component item={item} {...props} />}
         {...props}
       />
     );
@@ -263,11 +270,12 @@ export function withVirtualScroll<T = any>(
 
 // Hook版本，用于获取虚拟滚动控制
 export function useVirtualScrollControl() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToItem = useCallback((index: number) => {
-    if (containerRef.current) {
-      const _items = containerRef.current.querySelectorAll('[data-virtual-item]');
+    const container = containerRef.current;
+    if (container) {
+      const _items = container.querySelectorAll('[data-virtual-item]');
       const targetItem = _items[index];
       if (targetItem) {
         targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -276,15 +284,17 @@ export function useVirtualScrollControl() {
   }, []);
 
   const scrollToTop = useCallback(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
   const scrollToBottom = useCallback(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
         behavior: 'smooth',
       });
     }

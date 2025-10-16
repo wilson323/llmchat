@@ -3,6 +3,9 @@
  * 支持参数化配置和生产环境控制
  */
 
+;
+;
+;
 import { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -207,7 +210,7 @@ export const VisualizationDashboard: React.FC = () => {
   // 设置实时更新
   const setupRealtimeUpdates = useCallback(() => {
     if (!isFeatureEnabled('realTimeMonitoring')) {
-      return;
+      return () => {}; // 返回空的清理函数
     }
 
     const eventSource = new EventSource('/api/visualization/realtime');
@@ -248,6 +251,7 @@ export const VisualizationDashboard: React.FC = () => {
       const cleanup = setupRealtimeUpdates();
       return cleanup;
     }
+    return undefined;
   }, [config, setupRealtimeUpdates]);
 
   // 定期刷新数据
@@ -335,7 +339,7 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Title>功能开关</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-4">
-          {Object.entries(config?.features || {}).map(([key, value]) => (
+          {Object.entries(config?.features || {}).map(([key, value]: [string, boolean]) => (
             <div key={key} className="flex items-center space-x-2">
               <Switch
                 id={key}
@@ -343,12 +347,13 @@ export const VisualizationDashboard: React.FC = () => {
                 onCheckedChange={(checked: boolean) =>
                   updateConfig({
                     features: {
-                      dashboard: config?.features?.dashboard || false,
-                      realTimeMonitoring: config?.features?.realTimeMonitoring || false,
-                      queueManagement: config?.features?.queueManagement || false,
-                      performanceAnalytics: config?.features?.performanceAnalytics || false,
-                      alertManagement: config?.features?.alertManagement || false,
-                      systemHealth: config?.features?.systemHealth || false,
+                      dashboard: config?.features?.dashboard ?? true,
+                      realTimeMonitoring: config?.features?.realTimeMonitoring ?? true,
+                      queueManagement: config?.features?.queueManagement ?? true,
+                      performanceAnalytics: config?.features?.performanceAnalytics ?? true,
+                      alertManagement: config?.features?.alertManagement ?? true,
+                      systemHealth: config?.features?.systemHealth ?? true,
+                      ...config?.features,
                       [key]: checked,
                     },
                   })
@@ -508,7 +513,7 @@ export const VisualizationDashboard: React.FC = () => {
                 <span className="text-sm text-gray-600">最后更新</span>
                 <span className="text-sm">
                   {realtimeData.length > 0
-                    ? new Date(realtimeData[realtimeData.length - 1].timestamp).toLocaleTimeString()
+                    ? new Date(realtimeData[realtimeData.length - 1]!.timestamp).toLocaleTimeString()
                     : '无'
                   }
                 </span>
@@ -546,7 +551,7 @@ export const VisualizationDashboard: React.FC = () => {
                   time: label,
                   waiting: chartData.queue_waitingJobs?.datasets[0]?.data[index] || 0,
                   active: chartData.queue_activeJobs?.datasets[0]?.data[index] || 0,
-                }))}>
+                })) ?? []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
                   <YAxis />
@@ -572,7 +577,7 @@ export const VisualizationDashboard: React.FC = () => {
                   time: label,
                   cpu: chartData.system_cpu?.datasets[0]?.data[index] || 0,
                   memory: chartData.system_memoryUsage?.datasets[0]?.data[index] || 0,
-                }))}>
+                })) ?? []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
                   <YAxis />
