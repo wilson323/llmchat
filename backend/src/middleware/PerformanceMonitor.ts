@@ -42,13 +42,33 @@ interface PerformanceSummary {
 
 /**
  * 性能监控中间件
+ * 
+ * 性能优化：
+ * - 限制数据大小（最多1000条）
+ * - 定期清理旧数据（保留1小时）
+ * - 异步存储，不阻塞响应
  */
 export class PerformanceMonitor {
   private performanceData: PerformanceData[] = [];
-  private maxDataPoints = 10000; // 保留最近10000个请求的数据
-  private slowRequestThreshold = 5000; // 超过5秒的请求被视为慢请求
-  private summaryInterval = 60000; // 1分钟生成一次摘要
+  private readonly maxDataSize = 1000;           // ✅ 最多保留1000条（减少内存占用）
+  private readonly dataRetentionHours = 1;       // ✅ 保留1小时
+  private maxDataPoints = 10000;                 // 保留最近10000个请求的数据（遗留配置）
+  private slowRequestThreshold = 5000;           // 超过5秒的请求被视为慢请求
+  private summaryInterval = 60000;               // 1分钟生成一次摘要
   private lastSummaryTime = Date.now();
+  private cleanupInterval: NodeJS.Timeout;       // ✅ 定期清理定时器
+
+  constructor() {
+    // ✅ 启动定期清理（每分钟清理一次）
+    this.cleanupInterval = setInterval(() => {
+      this.cleanOldData();
+    }, 60000);
+    
+    // ✅ 进程退出前清理定时器
+    process.on('beforeExit', () => {
+      clearInterval(this.cleanupInterval);
+    });
+  }
 
   /**
    * 性能监控中间件
@@ -133,14 +153,15 @@ export class PerformanceMonitor {
   }
 
   /**
-   * 存储性能数据
+   * 存储性能数据（带大小限制）
    */
   private storePerformanceData(data: PerformanceData): void {
     this.performanceData.push(data);
 
-    // 限制数据点数量，避免内存泄漏
-    if (this.performanceData.length > this.maxDataPoints) {
-      this.performanceData = this.performanceData.slice(-this.maxDataPoints);
+    // ✅ 超过大小限制，移除最旧的数据
+    if (this.performanceData.length > this.maxDataSize) {
+      const removeCount = this.performanceData.length - this.maxDataSize;
+      this.performanceData.splice(0, removeCount);
     }
 
     // 定期生成摘要
@@ -252,13 +273,35 @@ export class PerformanceMonitor {
   }
 
   /**
-   * 清除旧数据
+   * 清理旧数据（基于时间）
+   */
+  private cleanOldData(): void {
+    const cutoffTime = Date.now() - (this.dataRetentionHours * 60 * 60 * 1000);
+    const beforeCount = this.performanceData.length;
+    
+    this.performanceData = this.performanceData.filter(
+      d => new Date(d.timestamp).getTime() > cutoffTime
+    );
+    
+    const removedCount = beforeCount - this.performanceData.length;
+    if (removedCount > 0) {
+      logger.debug(`PerformanceMonitor: 清理旧数据 ${removedCount} 条，剩余 ${this.performanceData.length} 条`);
+    }
+  }
+
+  /**
+   * 手动清除旧数据（兼容API）
    */
   public clearOldData(olderThanHours: number = 24): void {
     const cutoffTime = Date.now() - (olderThanHours * 60 * 60 * 1000);
+    const beforeCount = this.performanceData.length;
+    
     this.performanceData = this.performanceData.filter(
       d => new Date(d.timestamp).getTime() > cutoffTime,
     );
+    
+    const removedCount = beforeCount - this.performanceData.length;
+    logger.info(`PerformanceMonitor: 手动清理 ${removedCount} 条数据`);
   }
 }
 
