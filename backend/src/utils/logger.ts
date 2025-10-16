@@ -109,7 +109,7 @@ export const logger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: consoleFormat,
-    level: 'debug',
+    level: process.env.LOG_LEVEL || 'info', // ✅ 使用环境变量控制日志级别
   }));
 }
 

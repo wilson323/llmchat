@@ -94,12 +94,15 @@ export class MemoryOptimizationService extends EventEmitter {
   constructor(config: Partial<MemoryOptimizationConfig> = {}) {
     super();
 
+    // ✅ 修复：改为显式启用逻辑（只有设置为'true'才启用）
+    const isEnabled = process.env.MEMORY_OPTIMIZATION_ENABLED === 'true';
+
     this.config = {
       // 默认配置（已优化阈值避免死循环）
-      monitoringEnabled: process.env.MEMORY_OPTIMIZATION_ENABLED !== 'false',
+      monitoringEnabled: isEnabled,
       monitoringIntervalMs: 60000,     // 60秒（降低频率）
       historyRetentionMinutes: 60,     // 保留1小时历史
-      autoOptimizationEnabled: process.env.MEMORY_OPTIMIZATION_ENABLED !== 'false',
+      autoOptimizationEnabled: isEnabled,
       optimizationThreshold: 95,       // 95%堆内存使用率触发优化（提高阈值避免频繁触发）
       optimizationIntervalMs: 300000,  // 5分钟检查一次（降低频率）
       expiredDataCleanupMs: 600000,    // 10分钟清理一次
@@ -115,6 +118,14 @@ export class MemoryOptimizationService extends EventEmitter {
       },
       ...config
     };
+
+    // ✅ 如果禁用，记录并退出，不启动监控
+    if (!this.config.monitoringEnabled) {
+      logger.info('MemoryOptimizationService: 已禁用 (MEMORY_OPTIMIZATION_ENABLED != true)');
+      // 创建一个空的内存监控器以避免调用错误
+      this.memoryMonitor = new MemoryMonitor(this.config.alertThresholds);
+      return; // 不启动任何监控
+    }
 
     // 创建内存监控器
     this.memoryMonitor = new MemoryMonitor(this.config.alertThresholds);

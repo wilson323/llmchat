@@ -62,6 +62,7 @@ export class RedisConnectionPool extends EventEmitter {
   private responseTimes: number[] = [];
   private maintenanceInterval?: NodeJS.Timeout;
   private isShuttingDown = false;
+  private lastStatsTime = 0; // ✅ 用于记录上次统计日志时间
 
   constructor(config: RedisPoolConfig) {
     super();
@@ -142,7 +143,7 @@ export class RedisConnectionPool extends EventEmitter {
         const responseTime = Date.now() - startTime;
         this.updateResponseTime(responseTime);
 
-        logger.debug('RedisConnectionPool: New connection established');
+        // ✅ 移除高频debug日志，改用定时统计
         this.emit('connection:created', connection);
         resolve(connection);
       });
@@ -161,7 +162,7 @@ export class RedisConnectionPool extends EventEmitter {
 
       connection.on('close', () => {
         this.emit('connection:closed', connection);
-        logger.debug('RedisConnectionPool: Connection closed');
+        // ✅ 移除高频debug日志
         this.removeConnection(connection);
       });
 
@@ -188,7 +189,8 @@ export class RedisConnectionPool extends EventEmitter {
       this.stats.idle = Math.max(0, this.stats.idle - 1);
       this.stats.lastUsed = new Date();
 
-      logger.debug('RedisConnectionPool: Reusing idle connection');
+      // ✅ 改为定时统计
+      this.logStatsIfNeeded();
       return idleConnection;
     }
 
@@ -200,7 +202,8 @@ export class RedisConnectionPool extends EventEmitter {
         this.stats.active++;
         this.stats.lastUsed = new Date();
 
-        logger.debug('RedisConnectionPool: Using newly created connection');
+        // ✅ 改为定时统计
+        this.logStatsIfNeeded();
         return connection;
       }
 
@@ -209,6 +212,7 @@ export class RedisConnectionPool extends EventEmitter {
         this.activeConnections.add(connection);
         this.stats.active++;
         this.stats.lastUsed = new Date();
+        this.logStatsIfNeeded(); // ✅ 添加统计调用
         return connection;
       } catch (error) {
         logger.error('RedisConnectionPool: Failed to create new connection:', error);
@@ -233,7 +237,7 @@ export class RedisConnectionPool extends EventEmitter {
       });
 
       this.stats.waiting++;
-      logger.debug('RedisConnectionPool: Waiting for available connection');
+      // ✅ 移除高频debug日志，改用定时统计
     });
   }
 
@@ -261,14 +265,17 @@ export class RedisConnectionPool extends EventEmitter {
         this.stats.waiting--;
 
         waiting.resolve(connection);
-        logger.debug('RedisConnectionPool: Connection assigned to waiting request');
+        // ✅ 移除重复的debug日志
       }
-      logger.debug('RedisConnectionPool: Connection assigned to waiting request');
+      // ✅ 移除重复的debug日志
     } else {
       // 将连接标记为空闲
       this.stats.lastUsed = new Date();
-      logger.debug('RedisConnectionPool: Connection released to pool');
+      // ✅ 移除高频debug日志
     }
+    
+    // ✅ 添加定时统计
+    this.logStatsIfNeeded();
   }
 
   /**
@@ -334,6 +341,25 @@ export class RedisConnectionPool extends EventEmitter {
   }
 
   /**
+   * 记录连接池统计信息（降频：每分钟最多1次）
+   * ✅ 替代原来的高频debug日志
+   */
+  private logStatsIfNeeded(): void {
+    const now = Date.now();
+    if (now - this.lastStatsTime > 60000) { // 60秒
+      const stats = this.getStats();
+      logger.info('RedisConnectionPool stats', {
+        total: stats.total,
+        active: stats.active,
+        idle: stats.idle,
+        waiting: stats.waiting,
+        avgResponseTime: stats.avgResponseTime.toFixed(2) + 'ms',
+      });
+      this.lastStatsTime = now;
+    }
+  }
+
+  /**
    * 启动维护任务
    */
   private startMaintenance(): void {
@@ -355,7 +381,7 @@ export class RedisConnectionPool extends EventEmitter {
       if (connection && !this.activeConnections.has(connection) && this.stats.lastUsed) {
         const idleTime = now - this.stats.lastUsed.getTime();
         if (idleTime > idleTimeout && this.pool.length > this.config.minConnections!) {
-          logger.debug('RedisConnectionPool: Closing idle connection');
+          // ✅ 移除高频debug日志，维护操作不需要逐个记录
           connection.disconnect();
           this.removeConnection(connection);
         }
