@@ -1,0 +1,223 @@
+{
+  "fastgpt_simulation_config": {
+    "description": "FastGPT模拟配置 - 用于开发和测试环境",
+    "version": "1.0.0",
+    "created_at": "2025-10-14",
+    "environment": "development"
+  },
+  "fastgpt_instances": [
+    {
+      "id": "fastgpt-customer-service",
+      "name": "熵犇犇售后服务助手",
+      "description": "基于FastGPT的知识库问答助手，专门处理售后服务相关咨询",
+      "endpoint": "https://api.fastgpt.run/v1/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_1}",
+      "appId": "${FASTGPT_APP_ID_1}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.7,
+      "systemPrompt": "你是熵犇犇公司的专业售后服务助手，能够帮助用户解答产品使用、故障排除、维修保养等问题。请根据知识库信息提供准确、专业的回答。",
+      "capabilities": [
+        "knowledge_base_qa",
+        "product_support",
+        "troubleshooting",
+        "customer_service"
+      ],
+      "rateLimit": {
+        "requestsPerMinute": 60,
+        "tokensPerMinute": 40000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
+      "features": {
+        "supportsChatId": true,
+        "supportsStream": true,
+        "supportsDetail": true,
+        "supportsFiles": true,
+        "supportsImages": true,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": true,
+          "flowNodeStatus": true
+        }
+      },
+      "knowledge_base": {
+        "name": "产品售后服务知识库",
+        "description": "包含产品说明书、故障排查指南、维修手册等",
+        "document_count": 1250,
+        "last_updated": "2025-10-10"
+      },
+      "workflow": {
+        "name": "标准售后服务流程",
+        "steps": [
+          "问题理解与分类",
+          "知识库检索匹配",
+          "答案生成与验证",
+          "相关资源推荐"
+        ]
+      },
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2025-10-14T00:00:00Z"
+    },
+    {
+      "id": "fastgpt-order-system",
+      "name": "配单智能应用",
+      "description": "基于FastGPT的智能配单系统，处理订单配置和产品组合推荐",
+      "endpoint": "https://api.fastgpt.run/v1/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_2}",
+      "appId": "${FASTGPT_APP_ID_2}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.5,
+      "systemPrompt": "你是专业的配单智能助手，能够根据客户需求分析产品规格，推荐最优的产品组合配置，并提供详细的技术参数和价格信息。",
+      "capabilities": [
+        "order_configuration",
+        "product_recommendation",
+        "technical_analysis",
+        "pricing_calculation"
+      ],
+      "rateLimit": {
+        "requestsPerMinute": 45,
+        "tokensPerMinute": 35000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
+      "features": {
+        "supportsChatId": true,
+        "supportsStream": true,
+        "supportsDetail": true,
+        "supportsFiles": true,
+        "supportsImages": true,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": true,
+          "flowNodeStatus": true
+        }
+      },
+      "knowledge_base": {
+        "name": "产品规格与配单知识库",
+        "description": "包含产品技术规格、兼容性信息、价格体系、配单规则等",
+        "document_count": 890,
+        "last_updated": "2025-10-12"
+      },
+      "workflow": {
+        "name": "智能配单流程",
+        "steps": [
+          "需求分析与参数提取",
+          "产品库匹配查询",
+          "兼容性验证",
+          "配置方案生成",
+          "报价与优化建议"
+        ]
+      },
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2025-10-14T00:00:00Z"
+    },
+    {
+      "id": "fastgpt-requirement-analysis",
+      "name": "需求分析",
+      "description": "基于FastGPT的需求分析助手，帮助客户明确和细化项目需求",
+      "endpoint": "https://api.fastgpt.run/v1/chat/completions",
+      "apiKey": "${FASTGPT_API_KEY_3}",
+      "appId": "${FASTGPT_APP_ID_3}",
+      "model": "FastAI-4k",
+      "maxTokens": 4096,
+      "temperature": 0.6,
+      "systemPrompt": "你是专业的需求分析助手，能够帮助客户梳理项目需求，识别关键功能点，提供技术方案建议，并输出结构化的需求文档。",
+      "capabilities": [
+        "requirement_gathering",
+        "needs_analysis",
+        "technical_consulting",
+        "documentation_generation"
+      ],
+      "rateLimit": {
+        "requestsPerMinute": 50,
+        "tokensPerMinute": 38000
+      },
+      "provider": "fastgpt",
+      "isActive": true,
+      "features": {
+        "supportsChatId": true,
+        "supportsStream": true,
+        "supportsDetail": true,
+        "supportsFiles": true,
+        "supportsImages": true,
+        "streamingConfig": {
+          "enabled": true,
+          "endpoint": "same",
+          "statusEvents": true,
+          "flowNodeStatus": true
+        }
+      },
+      "knowledge_base": {
+        "name": "需求分析与技术方案知识库",
+        "description": "包含行业标准、技术规范、案例库、最佳实践等",
+        "document_count": 2100,
+        "last_updated": "2025-10-11"
+      },
+      "workflow": {
+        "name": "需求分析工作流",
+        "steps": [
+          "需求收集与整理",
+          "需求分类与优先级排序",
+          "技术可行性分析",
+          "方案设计与评估",
+          "文档输出与确认"
+        ]
+      },
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2025-10-14T00:00:00Z"
+    }
+  ],
+  "simulation_settings": {
+    "response_delay": {
+      "min": 500,
+      "max": 2000,
+      "unit": "milliseconds"
+    },
+    "error_simulation": {
+      "enabled": false,
+      "error_rate": 0.05,
+      "error_types": ["timeout", "rate_limit", "api_error"]
+    },
+    "cache_simulation": {
+      "enabled": true,
+      "cache_duration": 300,
+      "cache_hit_rate": 0.3
+    },
+    "usage_tracking": {
+      "enabled": true,
+      "track_tokens": true,
+      "track_requests": true,
+      "track_response_time": true
+    }
+  },
+  "monitoring": {
+    "health_check": {
+      "enabled": true,
+      "interval": 60,
+      "timeout": 10
+    },
+    "performance_monitoring": {
+      "enabled": true,
+      "metrics": ["response_time", "token_usage", "error_rate", "request_count"]
+    },
+    "alerting": {
+      "enabled": true,
+      "thresholds": {
+        "response_time": 5000,
+        "error_rate": 0.1,
+        "token_usage_per_minute": 50000
+      }
+    }
+  },
+  "development_notes": {
+    "api_key_replacement": "请将${FASTGPT_API_KEY_X}替换为实际的FastGPT API密钥",
+    "app_id_replacement": "请将${FASTGPT_APP_ID_X}替换为实际的FastGPT应用ID",
+    "endpoint_customization": "根据实际FastGPT部署地址调整endpoint配置",
+    "model_selection": "可根据需要选择不同的FastGPT模型（FastAI-4k, FastAI-16k等）",
+    "rate_limit_adjustment": "根据FastGPT服务套餐调整请求频率限制"
+  }
+}

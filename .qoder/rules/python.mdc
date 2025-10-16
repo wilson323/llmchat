@@ -1,9 +1,0 @@
----
-globs: *.py
----
-# Python 工程规范
-
-- Python 3.10+，类型注解必写（mypy 友好），Docstring 说明意图。
-- 保持函数短小、早返回；错误携带上下文信息。
-- 虚拟环境与依赖锁定（requirements.txt/poetry.lock）。
-- 禁止提交凭证；通过环境变量或密钥管理服务注入。
