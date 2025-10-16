@@ -229,9 +229,9 @@ export async function initDB(): Promise<void> {
   // ✅ T006: 连接池事件监听
   pool.on('connect', (client) => {
     logger.info('DB Pool: 新连接已建立', {
-      total: pool.totalCount,
-      idle: pool.idleCount,
-      waiting: pool.waitingCount,
+      total: pool!.totalCount,
+      idle: pool!.idleCount,
+      waiting: pool!.waitingCount,
     });
   });
 
@@ -244,8 +244,8 @@ export async function initDB(): Promise<void> {
 
   pool.on('remove', (client) => {
     logger.info('DB Pool: 连接已移除', {
-      total: pool.totalCount,
-      idle: pool.idleCount,
+      total: pool!.totalCount,
+      idle: pool!.idleCount,
     });
   });
 
@@ -258,7 +258,7 @@ export async function initDB(): Promise<void> {
 
   // ✅ T006: 定期报告连接池状态（每分钟）
   setInterval(() => {
-    if (pool.totalCount > 0) {
+    if (pool && pool.totalCount > 0) {
       logger.info('DB Pool Status', {
         total: pool.totalCount,
         idle: pool.idleCount,

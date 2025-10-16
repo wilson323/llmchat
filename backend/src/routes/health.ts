@@ -1,14 +1,18 @@
 /**
  * 增强版健康检查路由
- * 支持基础检查、详细检查、就绪检查、存活检查、性能监控
+ * 支持基础检查、详细检查、就绪检查、存活检查、性能监控、数据库连接池监控
  */
 
 import type { Request, Response} from 'express';
 import { Router, type Router as RouterType } from 'express';
 import { getPool } from '@/utils/db';
 import logger from '@/utils/logger';
+import DatabaseHealthService from '@/services/DatabaseHealthService';
 
 const router: RouterType = Router();
+
+// 初始化数据库健康检查服务
+const dbHealthService = DatabaseHealthService.getInstance();
 
 /**
  * 检查数据库健康状态
@@ -269,6 +273,72 @@ router.get('/performance', async (_req: Request, res: Response) => {
       status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Performance monitoring failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * 数据库连接池详细监控
+ * GET /health/database/pool
+ * 获取数据库连接池的详细状态和性能指标
+ */
+router.get('/database/pool', async (_req: Request, res: Response) => {
+  try {
+    const healthStatus = await dbHealthService.performHealthCheck();
+
+    res.status(healthStatus.healthy ? 200 : 503).json({
+      status: healthStatus.status,
+      timestamp: healthStatus.lastCheck,
+      healthy: healthStatus.healthy,
+      latency: `${healthStatus.latency}ms`,
+      pool: {
+        ...healthStatus.pool,
+        utilization: `${healthStatus.pool.utilizationPercent.toFixed(2)}%`,
+      },
+      performance: {
+        ...healthStatus.performance,
+        avgQueryTime: `${healthStatus.performance.avgQueryTime}ms`,
+        failureRate: healthStatus.performance.totalQueries > 0
+          ? `${((healthStatus.performance.failedQueries / healthStatus.performance.totalQueries) * 100).toFixed(2)}%`
+          : '0%',
+      },
+      ...(healthStatus.error && { error: healthStatus.error }),
+    });
+  } catch (error) {
+    logger.error('Database pool health check failed', { error });
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Database pool health check failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * 数据库连接池统计信息
+ * GET /health/database/stats
+ * 获取数据库连接池的统计信息
+ */
+router.get('/database/stats', async (_req: Request, res: Response) => {
+  try {
+    const poolStats = dbHealthService.getPoolStats();
+    const performanceStats = dbHealthService.getPerformanceStats();
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      pool: poolStats,
+      performance: performanceStats,
+      consecutiveFailures: dbHealthService.getConsecutiveFailures(),
+      healthy: dbHealthService.isHealthy(),
+    });
+  } catch (error) {
+    logger.error('Database stats retrieval failed', { error });
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Failed to retrieve database stats',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }

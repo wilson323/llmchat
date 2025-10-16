@@ -388,6 +388,12 @@ async function startServer() {
     await initDB();
     logger.info("✅ 数据库初始化完成");
 
+    // 启动数据库健康检查服务
+    const { default: DatabaseHealthService } = await import("./services/DatabaseHealthService");
+    const dbHealthService = DatabaseHealthService.getInstance();
+    dbHealthService.start();
+    logger.info("✅ 数据库健康检查服务已启动");
+
     // 初始化缓存服务
     await initCacheService();
 
