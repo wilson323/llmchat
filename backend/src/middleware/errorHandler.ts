@@ -103,7 +103,7 @@ function getErrorStatusCode(error: BaseError): number {
   
   // 401 Unauthorized - 未认证
   if (code === 'UNAUTHORIZED' || code === 'AUTHENTICATION_FAILED' || 
-      code === 'TOKEN_INVALID' || code === 'TOKEN_EXPIRED') {
+      code === 'AUTHENTICATION_ERROR' || code === 'TOKEN_INVALID' || code === 'TOKEN_EXPIRED') {
     return 401;
   }
   
