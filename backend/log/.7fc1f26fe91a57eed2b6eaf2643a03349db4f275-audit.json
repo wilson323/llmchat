@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "F:\\ss\\aa\\sssss\\llmchat\\backend\\log\\.7fc1f26fe91a57eed2b6eaf2643a03349db4f275-audit.json",
+    "files": [
+        {
+            "date": 1760592289188,
+            "name": "F:\\ss\\aa\\sssss\\llmchat\\backend\\log\\app-2025-10-16.log",
+            "hash": "81a0e603431fd296e36c172ba5000ebc8537eb76490d0ff56d6ffeba0fcb1827"
+        }
+    ],
+    "hashType": "sha256"
+}

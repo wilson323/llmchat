@@ -1,22 +1,24 @@
 /**
  * 日志脱敏工具
  * 用于在日志中屏蔽敏感信息
+ * 
+ * 统一使用logger.ts进行日志输出
  */
 
-import { StructuredLogger } from './StructuredLogger';
+import logger from './logger';
 
 export const safeLogger = {
-  info: (message: string, meta?: any) => {
-    console.log(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : '');
+  info: (message: string, meta?: unknown) => {
+    logger.info(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
-  error: (message: string, error?: any) => {
-    console.error(LogSanitizer.sanitize(message), error ? LogSanitizer.sanitizeObject(error) : '');
+  error: (message: string, error?: unknown) => {
+    logger.error(LogSanitizer.sanitize(message), error ? LogSanitizer.sanitizeObject(error) : undefined);
   },
-  warn: (message: string, meta?: any) => {
-    console.warn(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : '');
+  warn: (message: string, meta?: unknown) => {
+    logger.warn(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
-  debug: (message: string, meta?: any) => {
-    console.log(`[DEBUG] ${LogSanitizer.sanitize(message)}`, meta ? LogSanitizer.sanitizeObject(meta) : '');
+  debug: (message: string, meta?: unknown) => {
+    logger.debug(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
 };
 
@@ -44,12 +46,12 @@ export class LogSanitizer {
     return sanitized;
   }
 
-  static sanitizeObject(obj: any): any {
+  static sanitizeObject(obj: unknown): unknown {
     if (typeof obj !== 'object' || obj === null) {
       return this.sanitize(String(obj));
     }
 
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {

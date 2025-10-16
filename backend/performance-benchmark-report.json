@@ -1,0 +1,282 @@
+{
+  "auth.login": {
+    "stats": {
+      "count": 2,
+      "min": 14.026799999992363,
+      "max": 14.99529999999504,
+      "avg": 14.511049999993702,
+      "p95": 14.99529999999504,
+      "p99": 14.99529999999504,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "auth.login",
+        "responseTime": 14.026799999992363,
+        "timestamp": 1760592334016,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      },
+      {
+        "name": "auth.login",
+        "responseTime": 14.99529999999504,
+        "timestamp": 1760592334016,
+        "statusCode": 500,
+        "success": false,
+        "metadata": {
+          "statusCode": 500,
+          "success": false
+        }
+      }
+    ]
+  },
+  "auth.register": {
+    "stats": {
+      "count": 1,
+      "min": 2.9131000000052154,
+      "max": 2.9131000000052154,
+      "avg": 2.9131000000052154,
+      "p95": 2.9131000000052154,
+      "p99": 2.9131000000052154,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "auth.register",
+        "responseTime": 2.9131000000052154,
+        "timestamp": 1760592334020,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "auth.refresh": {
+    "stats": {
+      "count": 1,
+      "min": 2.6840999999985797,
+      "max": 2.6840999999985797,
+      "avg": 2.6840999999985797,
+      "p95": 2.6840999999985797,
+      "p99": 2.6840999999985797,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "auth.refresh",
+        "responseTime": 2.6840999999985797,
+        "timestamp": 1760592334025,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "agents.list": {
+    "stats": {
+      "count": 1,
+      "min": 3.1375999999872874,
+      "max": 3.1375999999872874,
+      "avg": 3.1375999999872874,
+      "p95": 3.1375999999872874,
+      "p99": 3.1375999999872874,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "agents.list",
+        "responseTime": 3.1375999999872874,
+        "timestamp": 1760592334029,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false,
+          "agentCount": 0
+        }
+      }
+    ]
+  },
+  "agents.status": {
+    "stats": {
+      "count": 1,
+      "min": 2.2864000000117812,
+      "max": 2.2864000000117812,
+      "avg": 2.2864000000117812,
+      "p95": 2.2864000000117812,
+      "p99": 2.2864000000117812,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "agents.status",
+        "responseTime": 2.2864000000117812,
+        "timestamp": 1760592334033,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "chat.completion": {
+    "stats": {
+      "count": 1,
+      "min": 2.618300000001909,
+      "max": 2.618300000001909,
+      "avg": 2.618300000001909,
+      "p95": 2.618300000001909,
+      "p99": 2.618300000001909,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "chat.completion",
+        "responseTime": 2.618300000001909,
+        "timestamp": 1760592334036,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false,
+          "agentId": "fastgpt",
+          "messageLength": 29
+        }
+      }
+    ]
+  },
+  "chat.history": {
+    "stats": {
+      "count": 1,
+      "min": 2.8021000000007916,
+      "max": 2.8021000000007916,
+      "avg": 2.8021000000007916,
+      "p95": 2.8021000000007916,
+      "p99": 2.8021000000007916,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "chat.history",
+        "responseTime": 2.8021000000007916,
+        "timestamp": 1760592334039,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false,
+          "sessionId": "test-session-1760592334037"
+        }
+      }
+    ]
+  },
+  "admin.stats": {
+    "stats": {
+      "count": 1,
+      "min": 2.031199999997625,
+      "max": 2.031199999997625,
+      "avg": 2.031199999997625,
+      "p95": 2.031199999997625,
+      "p99": 2.031199999997625,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "admin.stats",
+        "responseTime": 2.031199999997625,
+        "timestamp": 1760592334042,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "admin.audit": {
+    "stats": {
+      "count": 1,
+      "min": 2.029599999994389,
+      "max": 2.029599999994389,
+      "avg": 2.029599999994389,
+      "p95": 2.029599999994389,
+      "p99": 2.029599999994389,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "admin.audit",
+        "responseTime": 2.029599999994389,
+        "timestamp": 1760592334045,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "queue.stats": {
+    "stats": {
+      "count": 1,
+      "min": 1.9196999999985565,
+      "max": 1.9196999999985565,
+      "avg": 1.9196999999985565,
+      "p95": 1.9196999999985565,
+      "p99": 1.9196999999985565,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "queue.stats",
+        "responseTime": 1.9196999999985565,
+        "timestamp": 1760592334047,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false
+        }
+      }
+    ]
+  },
+  "queue.pause": {
+    "stats": {
+      "count": 1,
+      "min": 2.4799000000057276,
+      "max": 2.4799000000057276,
+      "avg": 2.4799000000057276,
+      "p95": 2.4799000000057276,
+      "p99": 2.4799000000057276,
+      "successRate": 0
+    },
+    "metrics": [
+      {
+        "name": "queue.pause",
+        "responseTime": 2.4799000000057276,
+        "timestamp": 1760592334050,
+        "statusCode": 404,
+        "success": false,
+        "metadata": {
+          "statusCode": 404,
+          "success": false,
+          "queueName": "chat-queue"
+        }
+      }
+    ]
+  }
+}

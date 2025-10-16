@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { performanceLogger } from '@/utils/StructuredLogger';
+import { logPerformance } from '@/utils/logger';
 
 export interface OptimizationOptions {
   enableCache?: boolean;
@@ -57,15 +57,13 @@ class ResponseOptimizer {
    * 记录性能指标
    */
   private logPerformanceMetrics(req: Request, res: Response, duration: number): void {
-    performanceLogger.logPerformance('api.response', duration, {
-      business: {
-        action: 'api_response',
-        method: req.method,
-        url: req.url,
-        statusCode: res.statusCode,
-        ...(res.get('Content-Length') && { contentLength: parseInt(res.get('Content-Length')!) }),
-        cacheHit: res.get('X-Cache') === 'HIT',
-      },
+    // 使用统一的logger.ts中的logPerformance方法
+    logPerformance('api.response', duration, {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      ...(res.get('Content-Length') && { contentLength: parseInt(res.get('Content-Length')!) }),
+      cacheHit: res.get('X-Cache') === 'HIT',
     });
 
     // 更新响应时间头

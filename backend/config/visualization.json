@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "refreshInterval": 5000,
+  "refreshInterval": 5900,
   "maxDataPoints": 1000,
   "features": {
     "dashboard": true,

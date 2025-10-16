@@ -1,8 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
-import { securityLogger, LogContext } from '@/utils/StructuredLogger';
+import logger, { logAudit } from '@/utils/logger';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
+
+/**
+ * 安全日志辅助函数 - 替代StructuredLogger的securityLogger
+ */
+function logSecurityEvent(event: string, details: Record<string, unknown>): void {
+  logAudit(event, {
+    ...details,
+    type: 'security',
+    severity: 'medium',
+  });
+}
 
 /**
  * 安全威胁检测结果
@@ -301,7 +312,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     // 检查请求大小
     const contentLength = req.get('Content-Length');
     if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) { // 10MB
-      securityLogger.logSecurityEvent('Request size limit exceeded', {
+      logSecurityEvent('Request size limit exceeded', {
         ...(req.ip && { ip: req.ip }),
         url: req.url,
         contentLength: parseInt(contentLength),
@@ -316,7 +327,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     // 检查Content-Type
     const contentType = req.get('Content-Type');
     if (req.method !== 'GET' && !contentType && req.body) {
-      securityLogger.logSecurityEvent('Missing Content-Type header', {
+      logSecurityEvent('Missing Content-Type header', {
         ...(req.ip && { ip: req.ip }),
         method: req.method,
         url: req.url,
@@ -331,7 +342,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     // 验证JSON请求体
     if (contentType?.includes('application/json') && req.body) {
       if (typeof req.body === 'string' && !SecurityUtils.isValidJSON(req.body)) {
-        securityLogger.logSecurityEvent('Invalid JSON in request body', {
+        logSecurityEvent('Invalid JSON in request body', {
           ...(req.ip && { ip: req.ip }),
           method: req.method,
           url: req.url,
@@ -346,7 +357,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
 
     next();
   } catch (error) {
-    securityLogger.logSecurityEvent('Request validation error', {
+    logSecurityEvent('Request validation error', {
       ...(req.ip && { ip: req.ip }),
       error: {
         name: 'ValidationError',
@@ -375,7 +386,7 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
   } as SecurityConfig;
 
   if (config.blockedIPs.includes(clientInfo.ip)) {
-    securityLogger.logSecurityEvent('Blocked IP attempted access', {
+    logSecurityEvent('Blocked IP attempted access', {
       ip: clientInfo.ip,
       ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
       url: req.url,
@@ -396,19 +407,15 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
 
   if (threats.length > 0) {
     // 记录安全威胁
-    const logContext: LogContext = {
-      security: {
-        ip: clientInfo.ip,
-        ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
-        suspicious: true,
-        threat: threats.map(t => t.type).join(', '),
-      },
-      business: {
-        detectedThreats: threats as any,
-      },
+    const logContext = {
+      ip: clientInfo.ip,
+      ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
+      suspicious: true,
+      threat: threats.map(t => t.type).join(', '),
+      detectedThreats: threats,
     };
 
-    securityLogger.logSecurityEvent('Security threats detected', logContext);
+    logSecurityEvent('Security threats detected', logContext);
 
     // 根据威胁严重程度决定处理方式
     const hasCriticalThreat = threats.some(t => t.severity === 'critical');
@@ -425,7 +432,7 @@ export const securityDetectionMiddleware = (req: Request, res: Response, next: N
 
   // 检测可疑用户代理
   if (clientInfo.isSuspicious && clientInfo.threatLevel > 2) {
-    securityLogger.logSecurityEvent('Suspicious user agent detected', {
+    logSecurityEvent('Suspicious user agent detected', {
       ip: clientInfo.ip,
       ...(clientInfo.userAgent && { userAgent: clientInfo.userAgent }),
       custom: {
@@ -484,7 +491,7 @@ export const corsMiddleware = cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
-      securityLogger.logSecurityEvent('CORS violation', {
+      logSecurityEvent('CORS violation', {
         origin,
         allowedOrigins,
       });
@@ -510,7 +517,7 @@ export const rateLimitMiddleware = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     const userAgent = req.get('User-Agent');
-    securityLogger.logSecurityEvent('Rate limit exceeded', {
+    logSecurityEvent('Rate limit exceeded', {
       ...(req.ip && { ip: req.ip }),
       url: req.url,
       ...(userAgent && { userAgent }),
@@ -534,7 +541,7 @@ export const strictRateLimitMiddleware = rateLimit({
   },
   handler: (req, res) => {
     const userAgent = req.get('User-Agent');
-    securityLogger.logSecurityEvent('Strict rate limit exceeded', {
+    logSecurityEvent('Strict rate limit exceeded', {
       ...(req.ip && { ip: req.ip }),
       url: req.url,
       ...(userAgent && { userAgent }),
