@@ -1,0 +1,182 @@
+{
+  "version": "1.0.0",
+  "description": "TypeScript 严格质量门禁配置",
+  "zeroTolerancePolicy": {
+    "enabled": true,
+    "description": "零容忍TypeScript错误政策 - 任何类型错误都会阻止合并",
+    "maxAllowedErrors": 0,
+    "maxAllowedWarnings": 5,
+    "blockMergeOnFailure": true
+  },
+  "strictMode": {
+    "required": true,
+    "compilerOptions": {
+      "strict": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "strictFunctionTypes": true,
+      "noImplicitReturns": true,
+      "noImplicitThis": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "exactOptionalPropertyTypes": true,
+      "noUncheckedIndexedAccess": true,
+      "noImplicitOverride": true
+    }
+  },
+  "projects": [
+    {
+      "name": "shared-types",
+      "path": "shared-types",
+      "required": true,
+      "description": "共享类型定义",
+      "strictMode": true,
+      "priority": "high"
+    },
+    {
+      "name": "backend",
+      "path": "backend",
+      "required": true,
+      "description": "后端服务",
+      "strictMode": true,
+      "priority": "high",
+      "additionalChecks": [
+        "node-compatibility",
+        "express-types"
+      ]
+    },
+    {
+      "name": "frontend",
+      "path": "frontend",
+      "required": true,
+      "description": "前端应用",
+      "strictMode": true,
+      "priority": "high",
+      "additionalChecks": [
+        "react-types",
+        "dom-types",
+        "component-props"
+      ]
+    }
+  ],
+  "errorCategories": {
+    "critical": {
+      "description": "关键错误 - 必须立即修复",
+      "types": [
+        "noImplicitAny",
+        "strictNullChecks",
+        "syntax",
+        "module"
+      ],
+      "blockMerge": true,
+      "weight": 50
+    },
+    "high": {
+      "description": "高级错误 - 强烈建议修复",
+      "types": [
+        "strictFunctionTypes",
+        "noImplicitReturns",
+        "exactOptionalPropertyTypes",
+        "noUncheckedIndexedAccess"
+      ],
+      "blockMerge": true,
+      "weight": 20
+    },
+    "medium": {
+      "description": "中级错误 - 建议修复",
+      "types": [
+        "noUnusedLocals",
+        "noUnusedParameters",
+        "propertyAccess"
+      ],
+      "blockMerge": false,
+      "weight": 5
+    },
+    "low": {
+      "description": "低级错误 - 可选修复",
+      "types": [
+        "style",
+        "naming",
+        "formatting"
+      ],
+      "blockMerge": false,
+      "weight": 1
+    }
+  },
+  "qualityMetrics": {
+    "scoreWeights": {
+      "typeAccuracy": 0.4,
+      "strictModeCompliance": 0.3,
+      "errorFree": 0.2,
+      "codeConsistency": 0.1
+    },
+    "gradeThresholds": {
+      "A+": 95,
+      "A": 90,
+      "B+": 85,
+      "B": 80,
+      "C+": 75,
+      "C": 70,
+      "D": 60,
+      "F": 0
+    }
+  },
+  "integration": {
+    "githubActions": {
+      "enabled": true,
+      "runOnPullRequest": true,
+      "runOnPush": true,
+      "branches": ["main", "develop"],
+      "blockMergeOnFailure": true
+    },
+    "preCommit": {
+      "enabled": true,
+      "script": ".husky/pre-commit-typescript",
+      "allowBypass": true,
+      "bypassMessage": "跳过TypeScript检查（不推荐）"
+    },
+    "prePush": {
+      "enabled": true,
+      "script": "pnpm run typescript:quality-gates",
+      "allowBypass": false
+    }
+  },
+  "reporting": {
+    "generateReports": true,
+    "reportFormats": ["json", "html", "markdown"],
+    "reportLocation": "reports/typescript/",
+    "includeMetrics": true,
+    "includeErrorDetails": true,
+    "includeRecommendations": true,
+    "retentionDays": 30
+  },
+  "exemptions": {
+    "testFiles": {
+      "pattern": "**/*.test.ts",
+      "strictMode": false,
+      "description": "测试文件可以稍微放宽要求"
+    },
+    "legacyCode": {
+      "pattern": ["**/legacy/**", "**/deprecated/**"],
+      "strictMode": false,
+      "description": "遗留代码暂时放宽要求"
+    },
+    "thirdParty": {
+      "pattern": ["**/node_modules/**", "**/dist/**"],
+      "excluded": true,
+      "description": "第三方代码和构建产物不检查"
+    }
+  },
+  "notifications": {
+    "onFailure": {
+      "github": true,
+      "email": false,
+      "slack": false
+    },
+    "onSuccess": {
+      "github": false,
+      "email": false,
+      "slack": false
+    }
+  }
+}

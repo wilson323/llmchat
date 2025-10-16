@@ -1,0 +1,45 @@
+# ESLint 全局排除配置
+
+# 构建产物
+dist/
+build/
+backend/dist/
+frontend/dist/
+shared-types/dist/
+
+# 依赖
+node_modules/
+
+# 测试覆盖率
+coverage/
+
+# 缓存
+.cache/
+.eslintcache
+.parcel-cache/
+
+# 临时文件
+tmp/
+temp/
+
+# 日志
+logs/
+*.log
+
+# 测试报告
+playwright-report/
+test-results/
+
+# 配置文件（某些不需要lint）
+*.config.js
+*.config.cjs
+*.config.mjs
+
+# IDE
+.vscode/
+.idea/
+
+# 其他
+public/
+static/
+

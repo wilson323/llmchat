@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+# TypeScript 严格质量门禁 pre-commit hook
+# 零容忍TypeScript错误政策
+
+echo "🔍 TypeScript Pre-commit 质量检查"
+echo "=================================="
+
+# 运行TypeScript质量门禁检查
+pnpm run typescript:quality-gates:basic
+
+# 检查结果
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript 质量检查失败!"
+  echo "🚨 零容忍政策: 不允许包含TypeScript错误的提交"
+  echo ""
+  echo "📋 请修复以下问题后重新提交:"
+  echo "1. 运行 'pnpm run typescript:quality-gates' 查看详细错误"
+  echo "2. 修复所有TypeScript类型错误"
+  echo "3. 确保代码符合项目类型安全标准"
+  echo ""
+  echo "💡 如需跳过此检查（不推荐）:"
+  echo "   git commit --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ TypeScript 质量检查通过!"
+echo "🎉 代码可以安全提交"
