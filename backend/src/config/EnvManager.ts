@@ -21,7 +21,7 @@ import { safeLogger } from '../utils/logSanitizer';
 export class EnvManager {
   private static instance: EnvManager;
   private config: Map<string, string>;
-  private readonly isInitialized = false;
+  private isInitialized = false;
 
   private constructor() {
     this.config = new Map();

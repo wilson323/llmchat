@@ -3,6 +3,7 @@ import { auditService } from '@/services/AuditService';
 import type { AuditAction, AuditStatus, ResourceType } from '@/types/audit';
 import logger from '@/utils/logger';
 import { ApiResponseHandler } from '@/utils/apiResponse';
+import type { AuditLogQueryValidation } from '@/types/validation';
 
 /**
  * 审计日志控制器
@@ -28,25 +29,23 @@ export class AuditController {
         orderDirection,
       } = req.query;
 
-      const queryParams: any = {};
+      const queryParams: Partial<AuditLogQueryValidation> = {};
 
       // 只添加非 undefined 的属性
       if (userId) {
         queryParams.userId = userId as string;
       }
       if (action) {
-        queryParams.action = Array.isArray(action)
-          ? (action as AuditAction[])
-          : (action as AuditAction);
+        queryParams.action = action as string;
       }
       if (resourceType) {
-        queryParams.resourceType = resourceType as ResourceType;
+        queryParams.resourceType = resourceType as string;
       }
       if (resourceId) {
         queryParams.resourceId = resourceId as string;
       }
       if (status) {
-        queryParams.status = status as AuditStatus;
+        queryParams.status = status as string;
       }
       if (startDate) {
         queryParams.startDate = new Date(startDate as string);
@@ -61,13 +60,13 @@ export class AuditController {
         queryParams.offset = parseInt(offset as string, 10);
       }
       if (orderBy) {
-        queryParams.orderBy = orderBy as 'timestamp' | 'action' | 'status';
+        queryParams.orderBy = orderBy as string;
       }
       if (orderDirection) {
         queryParams.orderDirection = orderDirection as 'ASC' | 'DESC';
       }
 
-      const result = await auditService.query(queryParams);
+      const result = await auditService.query(queryParams as any);
 
       ApiResponseHandler.sendSuccess(res, result, {
         message: '查询审计日志成功',

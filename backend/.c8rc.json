@@ -1,0 +1,30 @@
+{
+  "all": true,
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/__tests__/**",
+    "**/node_modules/**",
+    "**/*.d.ts",
+    "**/dist/**",
+    "**/coverage/**"
+  ],
+  "reporter": [
+    "html",
+    "text",
+    "lcov",
+    "json-summary"
+  ],
+  "check-coverage": true,
+  "lines": 95,
+  "functions": 95,
+  "branches": 90,
+  "statements": 95,
+  "report-dir": "./coverage",
+  "temp-directory": "./.nyc_output",
+  "skip-full": false,
+  "clean": true
+}
+

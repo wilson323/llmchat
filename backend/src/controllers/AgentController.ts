@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import Joi from 'joi';
+import Joi, { type ValidationError as JoiValidationError } from 'joi';
 
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';
@@ -12,9 +12,15 @@ import { HTTP_STATUS } from '@/constants/httpStatus';
 import type { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
+import type { 
+  JoiValidationResult, 
+  AgentConfigValidation, 
+  AgentImportValidation,
+  DifyConnectionValidation 
+} from '@/types/validation';
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
-  const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
+  const token = (auth ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',
@@ -216,17 +222,17 @@ export class AgentController {
   createAgent = async (req: Request, res: Response): Promise<void> => {
     try {
       await ensureAdminAuth(req);
-      const { error, value } = this.createAgentSchema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
+      const { error, value } = this.createAgentSchema.validate(req.body, { abortEarly: false }) as JoiValidationResult<AgentConfigValidation>;
       if (error) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d: any) => d.message).join('; '),
+          message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
       }
 
-      const created = await this.agentService.createAgent(value);
+      const created = await this.agentService.createAgent(value! as any);
       ApiResponseHandler.sendCreated(res, this.toSafeAgent(created), {
         message: '创建智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
@@ -344,7 +350,7 @@ export class AgentController {
         agentId: id,
         isValid,
         exists: !!config,
-        isActive: config?.isActive || false,
+        isActive: config?.isActive ?? false,
       }, {
         message: '验证智能体配置成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
@@ -378,11 +384,11 @@ export class AgentController {
         res.status(HTTP_STATUS.BAD_REQUEST).json({ code: 'INVALID_AGENT_ID', message: '智能体ID不能为空', timestamp: new Date().toISOString() });
         return;
       }
-      const { error, value } = this.updateAgentSchema.validate(req.body || {}, { abortEarly: false }) as { error?: any; value?: any };
+      const { error, value } = this.updateAgentSchema.validate(req.body ?? {}, { abortEarly: false }) as JoiValidationResult<Partial<AgentConfigValidation>>;
       if (error) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d: any) => d.message).join('; '),
+          message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
@@ -431,16 +437,16 @@ export class AgentController {
   importAgents = async (req: Request, res: Response): Promise<void> => {
     try {
       await ensureAdminAuth(req);
-      const { error, value } = this.importSchema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
+      const { error, value } = this.importSchema.validate(req.body, { abortEarly: false }) as JoiValidationResult<AgentImportValidation>;
       if (error) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d: any) => d.message).join('; '),
+          message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
       }
-      const agents = await this.agentService.importAgents((value).agents);
+      const agents = await this.agentService.importAgents(value!.agents as any);
       ApiResponseHandler.sendSuccess(res, agents.map((agent) => this.toSafeAgent(agent)), {
         message: '导入智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
@@ -475,17 +481,17 @@ export class AgentController {
         }),
       });
 
-      const { error, value } = schema.validate(req.body, { abortEarly: false }) as { error?: any; value?: any };
+      const { error, value } = schema.validate(req.body, { abortEarly: false }) as JoiValidationResult<DifyConnectionValidation>;
       if (error) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
-          message: error.details.map((d: any) => d.message).join('; '),
+          message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
         });
         return;
       }
 
-      const { provider, endpoint, apiKey, appId } = value as { provider: any; endpoint: any; apiKey: any; appId: any };
+      const { provider, endpoint, apiKey, appId } = value!;
 
       // 构造临时智能体配置用于API调用
       const tempAgent: AgentConfig = {
@@ -495,7 +501,7 @@ export class AgentController {
         provider: provider as 'fastgpt' | 'dify',
         endpoint,
         apiKey,
-        appId: appId || '',
+        appId: appId ?? '',
         model: '',
         isActive: true,
         capabilities: [],
@@ -569,8 +575,8 @@ export class AgentController {
           description: difyInfo.description,
           model: difyInfo.model,
           systemPrompt: '',
-          temperature: difyInfo.temperature || 0.7,
-          maxTokens: difyInfo.maxTokens || 4000,
+          temperature: difyInfo.temperature ?? 0.7,
+          maxTokens: difyInfo.maxTokens ?? 4000,
           capabilities: difyInfo.capabilities,
           features: difyInfo.features,
         };
