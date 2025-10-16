@@ -1,0 +1,88 @@
+﻿name:  Documentation Quality Gate
+
+on:
+  pull_request:
+    paths:
+      - '.claude/specs/**/*.md'
+      - '.specify/**/*.md'
+      - 'SPECIFICATION.md'
+      - 'TASK_LIST.md'
+  push:
+    branches:
+      - main
+    paths:
+      - '.claude/specs/**/*.md'
+
+jobs:
+  validate-docs:
+    name: 验证文档质量
+    runs-on: windows-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+      
+      - name: 验证文档一致性
+        id: consistency
+        run: node scripts/spec-validation/validate-consistency.js
+        continue-on-error: true
+      
+      - name: 检查需求覆盖率
+        id: coverage
+        run: node scripts/spec-validation/check-coverage.js
+        continue-on-error: true
+      
+      - name: 检测模糊术语
+        id: ambiguity
+        run: node scripts/spec-validation/detect-ambiguity.js
+        continue-on-error: true
+      
+      - name: 验证引用完整性
+        id: references
+        run: node scripts/spec-validation/verify-references.js
+        continue-on-error: true
+      
+      - name: 汇总验证结果
+        run: |
+          echo "##  文档质量验证结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.consistency.outcome }}" == "success" ]; then
+            echo " 一致性验证: 通过" >> $GITHUB_STEP_SUMMARY
+          else
+            echo " 一致性验证: 失败" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.coverage.outcome }}" == "success" ]; then
+            echo " 覆盖率检查: 通过" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "  覆盖率检查: 需改进" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.ambiguity.outcome }}" == "success" ]; then
+            echo " 模糊术语检测: 通过" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "  模糊术语检测: 需改进" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.references.outcome }}" == "success" ]; then
+            echo " 引用验证: 通过" >> $GITHUB_STEP_SUMMARY
+          else
+            echo " 引用验证: 失败" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: 检查严重问题
+        run: |
+          if [ "${{ steps.consistency.outcome }}" != "success" ] || [ "${{ steps.references.outcome }}" != "success" ]; then
+            echo " 文档存在严重问题，阻止合并"
+            exit 1
+          fi

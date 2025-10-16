@@ -1,10 +1,24 @@
-#!/usr/bin/env sh
+﻿#!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-echo "🚀 Phase 1 critical fixes - pre-commit checks disabled"
+# 检测文档变更
+CHANGED_DOCS=$(git diff --cached --name-only | grep -E '\.claude/specs/.*\.md$|\.specify/.*\.md$|SPECIFICATION\.md|TASK_LIST\.md')
 
-# 暂时跳过质量检查以确保关键修复能够提交
-echo "📝 Committing critical fixes to unblock development..."
-
-echo "✅ Critical fixes ready for commit"
-echo "⚠️  Quality checks will be re-enabled in next commit"
+if [ -n "$CHANGED_DOCS" ]; then
+  echo " 检测到文档变更，运行验证..."
+  
+  # 运行文档验证
+  npm run validate:docs:consistency || {
+    echo " 文档一致性验证失败，提交被阻止"
+    echo " 运行 npm run validate:docs:consistency 查看详情"
+    exit 1
+  }
+  
+  npm run validate:docs:references || {
+    echo " 引用完整性验证失败，提交被阻止"
+    echo " 运行 npm run validate:docs:references 查看详情"
+    exit 1
+  }
+  
+  echo " 文档验证通过"
+fi
