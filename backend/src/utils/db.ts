@@ -397,7 +397,7 @@ export async function initDB(): Promise<void> {
   // 🔄 自动运行数据库迁移（版本化管理）
   try {
     logger.info('🔄 开始检查数据库迁移...');
-    const migrationManager = new MigrationManager(pool!, 'backend/src/migrations');
+    const migrationManager = new MigrationManager(pool!, 'src/migrations');
     const result = await migrationManager.runMigrations();
     logger.info('✅ 数据库迁移完成', {
       executed: result.executed,

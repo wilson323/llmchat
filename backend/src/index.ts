@@ -203,13 +203,13 @@ app.use(asyncRequestLogger);
 app.get("/api/csrf-token", getCsrfToken);
 
 // CSRF 保护（排除 GET/健康检查/登录）
-// ⚠️ 测试环境临时禁用CSRF，完成测试后重新启用
-// app.use(
-//   csrfProtection({
-//     ignoreMethods: ["GET", "HEAD", "OPTIONS"],
-//     ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
-//   })
-// );
+// ✅ P0修复：重新启用CSRF保护（测试时按需禁用）
+app.use(
+  csrfProtection({
+    ignoreMethods: ["GET", "HEAD", "OPTIONS"],
+    ignorePaths: ["/health", "/api/auth/login", "/api/csrf-token"],
+  })
+);
 
 
 // 路由注册
