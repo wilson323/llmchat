@@ -1,0 +1,163 @@
+name: 🔍 PR Quality Review & Auto-Comment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  automated-review:
+    name: 🤖 Automated Code Review
+    runs-on: ubuntu-latest
+    
+    permissions:
+      pull-requests: write
+      contents: read
+      
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+      
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: 🔍 Run Quality Checks
+        id: quality_check
+        run: |
+          cd backend
+          
+          # ESLint检查
+          echo "Running ESLint..."
+          npx eslint src --format json > ../pr-eslint.json 2>&1 || true
+          
+          # TypeScript检查
+          echo "Running TypeScript..."
+          npx tsc --noEmit > ../pr-tsc.txt 2>&1 || true
+          
+          # 测试
+          echo "Running tests..."
+          npm test -- --passWithNoTests > ../pr-test.txt 2>&1 || true
+          
+          cd ..
+      
+      - name: 📊 Analyze Changes
+        id: analyze
+        run: |
+          # 统计修改的文件
+          FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          echo "files_changed=$FILES_CHANGED" >> $GITHUB_OUTPUT
+          
+          # 统计代码行数变化
+          LINES_ADDED=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{s+=$1} END {print s}')
+          LINES_REMOVED=$(git diff --numstat origin/${{ github.base_ref }}...HEAD | awk '{s+=$2} END {print s}')
+          echo "lines_added=${LINES_ADDED:-0}" >> $GITHUB_OUTPUT
+          echo "lines_removed=${LINES_REMOVED:-0}" >> $GITHUB_OUTPUT
+      
+      - name: 💬 Post Review Comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // 读取ESLint结果
+            let eslintIssues = 0;
+            try {
+              const eslintData = JSON.parse(fs.readFileSync('pr-eslint.json', 'utf8'));
+              eslintIssues = eslintData.reduce((sum, file) => sum + file.messages.length, 0);
+            } catch (e) {}
+            
+            // 读取TypeScript错误
+            let tsErrors = 0;
+            try {
+              const tscData = fs.readFileSync('pr-tsc.txt', 'utf8');
+              const match = tscData.match(/Found (\d+) error/);
+              tsErrors = match ? parseInt(match[1]) : 0;
+            } catch (e) {}
+            
+            // 读取测试结果
+            let testsPassed = 0;
+            let testsFailed = 0;
+            try {
+              const testData = fs.readFileSync('pr-test.txt', 'utf8');
+              const match = testData.match(/Tests:\s+(\d+)\s+failed,\s+(\d+)\s+passed/);
+              if (match) {
+                testsFailed = parseInt(match[1]);
+                testsPassed = parseInt(match[2]);
+              }
+            } catch (e) {}
+            
+            const filesChanged = '${{ steps.analyze.outputs.files_changed }}';
+            const linesAdded = '${{ steps.analyze.outputs.lines_added }}';
+            const linesRemoved = '${{ steps.analyze.outputs.lines_removed }}';
+            
+            // 计算质量分数
+            let qualityScore = 100;
+            qualityScore -= eslintIssues * 0.5;
+            qualityScore -= tsErrors * 2;
+            qualityScore -= testsFailed * 1;
+            qualityScore = Math.max(0, qualityScore).toFixed(1);
+            
+            // 生成评论
+            const body = `
+            ## 🤖 Automated Code Review
+            
+            ### 📊 Quality Metrics
+            
+            | Metric | Value | Status |
+            |--------|-------|--------|
+            | **Quality Score** | ${qualityScore}/100 | ${qualityScore >= 95 ? '🌟' : qualityScore >= 90 ? '✅' : qualityScore >= 80 ? '⚠️' : '❌'} |
+            | Files Changed | ${filesChanged} | - |
+            | Lines Added | +${linesAdded} | - |
+            | Lines Removed | -${linesRemoved} | - |
+            
+            ### 🔍 Code Quality Checks
+            
+            | Check | Result | Status |
+            |-------|--------|--------|
+            | ESLint | ${eslintIssues} issues | ${eslintIssues === 0 ? '✅ Perfect!' : eslintIssues < 10 ? '⚠️ Needs fixes' : '❌ Critical'} |
+            | TypeScript | ${tsErrors} errors | ${tsErrors === 0 ? '✅ Perfect!' : '❌ Must fix'} |
+            | Tests | ${testsPassed} passed, ${testsFailed} failed | ${testsFailed === 0 ? '✅ All pass!' : '⚠️ Some failures'} |
+            
+            ### 📋 Recommendations
+            
+            ${qualityScore >= 95 ? '🎉 **Excellent work!** This PR meets all quality standards.' : ''}
+            ${qualityScore >= 90 && qualityScore < 95 ? '👍 **Good job!** Minor improvements suggested.' : ''}
+            ${qualityScore >= 80 && qualityScore < 90 ? '⚠️ **Please address the issues** before merging.' : ''}
+            ${qualityScore < 80 ? '❌ **Critical issues found.** Please fix before proceeding.' : ''}
+            
+            ${eslintIssues > 0 ? '- 🔧 Run `npm run lint:fix` to auto-fix ESLint issues' : ''}
+            ${tsErrors > 0 ? '- 🔍 Run `npm run type-check` to see TypeScript errors' : ''}
+            ${testsFailed > 0 ? '- 🧪 Run `npm test` to see test failures' : ''}
+            
+            ---
+            <sub>🤖 Automated by GitHub Actions | [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})</sub>
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+      
+      - name: 📤 Upload Review Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-review-${{ github.event.pull_request.number }}
+          path: |
+            pr-*.json
+            pr-*.txt
+          retention-days: 30
+

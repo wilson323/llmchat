@@ -1,0 +1,44 @@
+# CODEOWNERS文件 - 定义代码审查责任人
+# 当PR涉及这些文件时，自动请求相应的审查者
+
+# 默认所有者
+* @wilson323
+
+# 后端核心代码
+/backend/src/controllers/ @wilson323
+/backend/src/services/ @wilson323
+/backend/src/middleware/ @wilson323
+
+# 前端核心代码
+/frontend/src/components/ @wilson323
+/frontend/src/store/ @wilson323
+/frontend/src/services/ @wilson323
+
+# 配置和基础设施
+/config/ @wilson323
+/.github/ @wilson323
+/scripts/ @wilson323
+
+# 数据库和迁移
+/backend/src/migrations/ @wilson323
+/backend/src/utils/db.ts @wilson323
+
+# 安全相关
+/backend/src/utils/secure*.ts @wilson323
+/backend/src/middleware/*Auth*.ts @wilson323
+/backend/src/services/Auth*.ts @wilson323
+
+# 测试文件
+**/__tests__/ @wilson323
+**/test/ @wilson323
+*.test.ts @wilson323
+*.spec.ts @wilson323
+
+# 文档
+*.md @wilson323
+/docs/ @wilson323
+
+# 依赖管理
+package.json @wilson323
+pnpm-lock.yaml @wilson323
+
