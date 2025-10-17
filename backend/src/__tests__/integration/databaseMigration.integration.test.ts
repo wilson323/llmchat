@@ -209,8 +209,8 @@ describe('Database Migration Integration Tests', () => {
         const beforeInsert = new Date();
 
         await client.query(
-          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-          ['timestamp@example.com', 'hashed_password', 'Timestamp User']
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+          ['timestamp@example.com', 'test-salt', 'hashed_password', 'Timestamp User']
         );
 
         const result = await client.query(
@@ -238,8 +238,8 @@ describe('Database Migration Integration Tests', () => {
         // 插入测试数据
         const testEmail = 'index@example.com';
         await client.query(
-          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-          [testEmail, 'hashed_password', 'Index User']
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+          [testEmail, 'test-salt', 'hashed_password', 'Index User']
         );
 
         // 检查查询是否使用了索引
@@ -270,8 +270,8 @@ describe('Database Migration Integration Tests', () => {
 
         for (let i = 0; i < batchSize; i++) {
           await client.query(
-            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-            [`user${i}@performance.com`, 'hashed_password', `Performance User ${i}`]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+            [`user${i}@performance.com`, 'test-salt', 'hashed_password', `Performance User ${i}`]
           );
 
           // 每100条提交一次以避免事务过大
@@ -441,8 +441,8 @@ describe('Database Migration Integration Tests', () => {
       try {
         // 使用原有的列创建记录（不使用新列）
         await client.query(
-          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-          ['compat@example.com', 'hashed_password', 'Compatibility User']
+          'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+          ['compat@example.com', 'test-salt', 'hashed_password', 'Compatibility User']
         );
 
         // 验证记录可以被正常查询

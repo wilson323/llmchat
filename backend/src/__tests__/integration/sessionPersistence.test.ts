@@ -17,6 +17,7 @@ jest.mock('@/utils/logger');
 
 describe('Session Persistence Verification', () => {
   let pool: Pool;
+  let testUserId: number;
   
   beforeAll(async () => {
     await dbTestSetup.beforeAll();
@@ -25,6 +26,13 @@ describe('Session Persistence Verification', () => {
   
   beforeEach(async () => {
     await dbTestSetup.beforeEach();
+    
+    // 创建测试用户（chat_sessions的外键依赖）
+    const userResult = await pool.query(
+      'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      ['test-user', 'salt', 'hash', 'test@example.com', true, 'user', 'active']
+    );
+    testUserId = userResult.rows[0].id;
   });
   
   afterAll(async () => {
@@ -107,7 +115,7 @@ describe('Session Persistence Verification', () => {
         `INSERT INTO chat_sessions (id, title, user_id, agent_id) 
          VALUES ($1, $2, $3, $4) 
          RETURNING id`,
-        [testSession.id, testSession.title, testSession.user_id, testSession.agent_id]
+        [testSession.id, testSession.title, testUserId, testSession.agent_id]
       );
 
       expect(insertResult.rows[0]?.id).toBe(testSession.id);
@@ -134,7 +142,7 @@ describe('Session Persistence Verification', () => {
       await pool.query(
         `INSERT INTO chat_sessions (id, title, user_id, agent_id) 
          VALUES ($1, $2, $3, $4)`,
-        [testSessionId, 'Test Session', 'test-user', 'test-agent']
+        [testSessionId, 'Test Session', testUserId, 'test-agent']
       );
 
       // 创建消息

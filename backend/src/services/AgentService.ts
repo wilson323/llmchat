@@ -27,7 +27,7 @@ export interface AgentStatus {
  * AgentService类 - 智能体服务适配器
  */
 export class AgentService {
-  private configService: AgentConfigService;
+  private readonly configService: AgentConfigService;
 
   constructor() {
     this.configService = new AgentConfigService();

@@ -156,8 +156,8 @@ describe('Database Performance Benchmarking', () => {
         const userData = TestDataFactory.createUser({ email: `warmup${i}@example.com` });
         await testDbEnv.withTransaction(async (client) => {
           await client.query(
-            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-            [userData.email, userData.password_hash, userData.role]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+            [userData.email, 'test-salt', userData.password_hash, userData.role]
           );
         });
       }
@@ -285,8 +285,8 @@ describe('Database Performance Benchmarking', () => {
           });
 
           return client.query(
-            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-            [userData.email, userData.password_hash, userData.role]
+            'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+            [userData.email, 'test-salt', userData.password_hash, userData.role]
           );
         });
 
@@ -423,8 +423,8 @@ describe('Database Performance Benchmarking', () => {
           await testDbEnv.withTransaction(async (client) => {
             // 第一层：创建用户
             const userResult = await client.query(
-              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3) RETURNING id',
-              [`nested${i}@example.com`, 'hashed_password', `Nested User ${i}`]
+              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id',
+              [`nested${i}@example.com`, 'test-salt', 'hashed_password', `Nested User ${i}`]
             );
             const userId = userResult.rows[0].id;
 
@@ -486,8 +486,8 @@ describe('Database Performance Benchmarking', () => {
           await testDbEnv.withTransaction(async (client) => {
             // 插入一些数据
             await client.query(
-              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3)',
-              [`rollback${i}@example.com`, 'hashed_password', `Rollback User ${i}`]
+              'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
+              [`rollback${i}@example.com`, 'test-salt', 'hashed_password', `Rollback User ${i}`]
             );
 
             // 故意触发回滚

@@ -7,7 +7,7 @@
 
 import { ChatProxyService } from './ChatProxyService';
 import { ChatSessionService } from './ChatSessionService';
-import { AgentConfigService } from './AgentConfigService';
+import type { AgentConfigService } from './AgentConfigService';
 import type { AgentConfig, ChatResponse as APIChatResponse } from '@/types';
 import logger from '@/utils/logger';
 
@@ -40,11 +40,11 @@ export interface ChatResponse {
  * ChatService类 - 聊天服务适配器
  */
 export class ChatService {
-  private chatProxy: ChatProxyService;
-  private sessionService: ChatSessionService;
+  private readonly chatProxy: ChatProxyService;
+  private readonly sessionService: ChatSessionService;
 
   constructor(
-    private agentService: AgentConfigService
+    private readonly agentService: AgentConfigService
   ) {
     this.chatProxy = new ChatProxyService(agentService);
     this.sessionService = new ChatSessionService();

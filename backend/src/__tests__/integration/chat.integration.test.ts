@@ -46,8 +46,8 @@ describe('Chat Integration Tests', () => {
       // Step 1: 创建测试用户并登录
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -102,8 +102,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -140,8 +140,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -170,8 +170,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -207,8 +207,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -238,8 +238,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -270,8 +270,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -307,8 +307,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
@@ -372,8 +372,8 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const testUser = await createTestUser();
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [testUser.id, testUser.email, testUser.passwordHash, true]
+        'INSERT INTO users (username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [testUser.email, 'salt', testUser.passwordHash, testUser.email, true, 'user', 'active']
       );
       testUserId = testUser.id;
       authToken = generateToken(testUser.id);
