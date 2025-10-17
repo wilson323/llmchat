@@ -117,7 +117,7 @@ class DatabaseOptimizer {
   /**
    * 优化查询
    */
-  async optimizeQuery(query: string, params: any[] = []): Promise<OptimizationResult> {
+  async optimizeQuery(query: string, params: unknown[] = []): Promise<OptimizationResult> {
     const startTime = performance.now();
     const result: OptimizationResult = {
       queryTime: 0,
@@ -369,7 +369,7 @@ export function databaseOptimizationMiddleware(
   const queryOptimizations: OptimizationResult[] = [];
 
   // 拦截JSON响应
-  res.json = function(this: Response, data: any) {
+  res.json = function(this: Response, data: unknown) {
     // 添加优化信息到响应中（如果在开发环境）
     if (process.env.NODE_ENV === 'development' && queryOptimizations.length > 0) {
       if (data && typeof data === 'object') {
@@ -384,7 +384,7 @@ export function databaseOptimizationMiddleware(
   // const originalQuery = req.db?.query;
   // if (originalQuery) {
   //   // 包装查询方法
-  //   req.db.query = async function(query: string, params?: any[]) {
+  //   req.db.query = async function(query: string, params?: unknown[]) {
   //     const optimization = await databaseOptimizer.optimizeQuery(query, params);
   //     queryOptimizations.push(optimization);
 

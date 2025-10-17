@@ -44,6 +44,11 @@ describe('Database Integration Tests', () => {
     });
 
     it('should get database statistics', async () => {
+      // 确保数据库为空状态
+      await pool.query('DELETE FROM chat_messages WHERE TRUE');
+      await pool.query('DELETE FROM chat_sessions WHERE TRUE');
+      await pool.query('DELETE FROM users WHERE TRUE');
+      
       const stats = await testDbEnv.getDatabaseStats();
       expect(stats).toBeDefined();
       expect(stats.users).toBe(0);
@@ -94,6 +99,7 @@ describe('Database Integration Tests', () => {
     });
 
     it('should rollback transaction on error', async () => {
+      const uniqueUsername = `rollback-test-${Date.now()}`;
       let errorThrown = false;
 
       try {
@@ -101,7 +107,7 @@ describe('Database Integration Tests', () => {
           // 插入用户
           await client.query(
             'INSERT INTO users (username, password_salt, password_hash, role) VALUES ($1, $2, $3, $4)',
-            ['testuser', 'testsalt'.repeat(8), 'hashed_password', 'user']
+            [uniqueUsername, 'testsalt'.repeat(8), 'hashed_password', 'user']
           );
 
           // 故意抛出错误触发回滚
@@ -112,7 +118,7 @@ describe('Database Integration Tests', () => {
       }
 
       expect(errorThrown).toBe(true);
-      await DatabaseAssertions.assertNotExists('users', 'username = $1', ['testuser']);
+      await DatabaseAssertions.assertNotExists('users', 'username = $1', [uniqueUsername]);
     });
 
     it('should handle nested operations in transaction', async () => {
@@ -185,12 +191,12 @@ describe('Database Integration Tests', () => {
     });
 
     it('should enforce unique email constraint', async () => {
-      const email = 'duplicate@example.com';
+      const email = `unique-test-${Date.now()}@example.com`;
 
       // 插入第一个用户
       await testDbEnv.withTransaction(async (client) => {
         await TestDataFactory.insertUser(client, {
-          username: email,
+          username: `user1-${Date.now()}`,
           email: email,
           role: 'User 1'
         });
@@ -200,7 +206,7 @@ describe('Database Integration Tests', () => {
       await expect(
         testDbEnv.withTransaction(async (client) => {
           await TestDataFactory.insertUser(client, {
-            username: email,
+            username: `user2-${Date.now()}`,
             email: email,
             role: 'User 2'
           });

@@ -266,7 +266,7 @@ export class SecurityUtils {
   /**
    * 清理和验证输入
    */
-  static sanitizeInput(input: any): any {
+  static sanitizeInput(input: unknown): unknown {
     if (typeof input === 'string') {
       // 移除潜在的危险字符
       return input
@@ -281,7 +281,7 @@ export class SecurityUtils {
     }
 
     if (typeof input === 'object' && input !== null) {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(input)) {
         sanitized[key] = this.sanitizeInput(value);
       }

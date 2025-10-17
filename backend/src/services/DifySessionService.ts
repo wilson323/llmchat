@@ -56,7 +56,7 @@ export interface DifyMessageDetail extends DifyMessage {
       completion_tokens: number;
       total_tokens: number;
     };
-    retriever_resources: any[];
+    retriever_resources: Array<Record<string, unknown>>;
   };
 }
 
@@ -174,7 +174,7 @@ export class DifySessionService {
         has_more: response.data.has_more || false,
         limit: response.data.limit || 20,
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 会话列表查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -222,7 +222,7 @@ export class DifySessionService {
         has_more: response.data.has_more || false,
         limit: response.data.limit || 20,
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 会话消息查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -265,7 +265,7 @@ export class DifySessionService {
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 消息详情查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -305,7 +305,7 @@ export class DifySessionService {
         agentId: agent.id,
         conversationId,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 会话删除失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -351,7 +351,7 @@ export class DifySessionService {
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 消息反馈提交失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -395,7 +395,7 @@ export class DifySessionService {
       });
 
       return response.data.data || [];
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Dify 建议问题查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
@@ -443,7 +443,7 @@ export class DifySessionService {
         conversationId,
         newName: name,
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.warn('Dify 会话重命名失败（API 可能不支持）', {
         component: 'DifySessionService',
         agentId: agent.id,

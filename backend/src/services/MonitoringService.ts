@@ -810,7 +810,7 @@ export class MonitoringService extends EventEmitter {
    */
   private getMetricValue(metrics: MonitoringMetrics, metricPath: string): number | null {
     const parts = metricPath.split('.');
-    let value: any = metrics;
+    let value: unknown = metrics;
 
     for (const part of parts) {
       if (value && typeof value === 'object' && part in value) {
@@ -1331,10 +1331,10 @@ export class MonitoringService extends EventEmitter {
   public healthCheck(): {
     healthy: boolean;
     issues: string[];
-    details: any;
+    details: Record<string, unknown>;
   } {
     const issues: string[] = [];
-    const details: any = {};
+    const details: Record<string, unknown> = {};
 
     // 检查服务状态
     if (!this.isRunning) {

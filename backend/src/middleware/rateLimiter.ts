@@ -20,7 +20,7 @@ export const rateLimiterMiddleware = async (
     const key = req.ip || 'anonymous';
     await rateLimiter.consume(key);
     next();
-  } catch (rejRes: any) {
+  } catch (rejRes) {
     const remainingPoints = rejRes?.remainingPoints || 0;
     const msBeforeNext = rejRes?.msBeforeNext || 60000;
 

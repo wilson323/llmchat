@@ -277,7 +277,7 @@ class CacheMiddlewareManager {
   /**
    * 反序列化响应数据
    */
-  private deserializeResponse(data: string): any {
+  private deserializeResponse(data: string): unknown {
     try {
       return JSON.parse(data);
     } catch (error) {
@@ -396,14 +396,14 @@ class CacheMiddlewareManager {
     const self = this;
 
     // 拦截json方法
-    res.json = (data: any) => {
+    res.json = (data: unknown) => {
       // 存储响应数据用于缓存
-      (res as any).responseData = data;
+      (res as {responseData?: unknown}).responseData = data;
       return originalJson.call(res, data);
     };
 
     // 拦截end方法
-    res.end = function(this: Response, ...args: any[]) {
+    res.end = function(this: Response, ...args: Parameters<Response['end']>) {
       const endTime = performance.now();
       const responseTime = endTime - startTime;
 

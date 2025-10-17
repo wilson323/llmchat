@@ -134,8 +134,10 @@ class RateLimiterManager {
         logger.warn('RateLimiter: Redis连接关闭，降级到内存模式');
       });
 
-    } catch (error: any) {
-      logger.error('RateLimiter: Redis初始化失败', { error: error.message });
+    } catch (error) {
+      logger.error('RateLimiter: Redis初始化失败', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       this.redis = null;
       this.isRedisAvailable = false;
     }
@@ -154,7 +156,7 @@ class RateLimiterManager {
     let limiter: RateLimiterRedis | RateLimiterMemory;
 
     if (this.isRedisAvailable && this.redis) {
-      const redisOptions: any = {
+      const redisOptions = {
         storeClient: this.redis,
         points: config.points,
         duration: config.duration,
@@ -168,7 +170,7 @@ class RateLimiterManager {
       limiter = new RateLimiterRedis(redisOptions);
       logger.debug('创建Redis RateLimiter', { config });
     } else {
-      const memoryOptions: any = {
+      const memoryOptions = {
         points: config.points,
         duration: config.duration,
       };
@@ -264,9 +266,9 @@ export function createRateLimiter(options: RateLimitOptions = {}) {
 
       next();
 
-    } catch (rejRes: any) {
+    } catch (rejRes) {
       // 限流触发
-      handleRateLimitExceeded(req, res, rejRes, config);
+      handleRateLimitExceeded(req, res, rejRes as {remainingPoints: number; msBeforeNext: number}, config);
     }
   };
 }
@@ -340,7 +342,7 @@ function setRateLimitHeaders(
 function handleRateLimitExceeded(
   req: Request,
   res: Response,
-  rejRes: any,
+  rejRes: {remainingPoints: number; msBeforeNext: number},
   config: RateLimitConfig,
 ): void {
   const msBeforeNext = rejRes?.msBeforeNext || 60000;

@@ -683,7 +683,7 @@ async function createTestTables(pool: Pool): Promise<void> {
       password_hash TEXT NOT NULL,
       role TEXT DEFAULT 'user',
       status TEXT DEFAULT 'active',
-      email VARCHAR(255),
+      email VARCHAR(255) UNIQUE,
       email_verified BOOLEAN DEFAULT false,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

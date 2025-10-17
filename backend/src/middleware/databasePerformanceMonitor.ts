@@ -21,7 +21,7 @@ export interface DatabasePerformanceMetrics {
   /** 查询语句 */
   query?: string;
   /** 参数 */
-  params?: any[];
+  params?: unknown[];
   /** 查询类型 */
   queryType?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'CREATE' | 'DROP' | 'ALTER' | undefined;
   /** 影响行数 */
@@ -88,7 +88,7 @@ class DatabasePerformanceMonitor {
   /**
    * 开始监控查询
    */
-  startQuery(requestId: string, query?: string, params?: any[]): DatabasePerformanceMetrics {
+  startQuery(requestId: string, query?: string, params?: unknown[]): DatabasePerformanceMetrics {
     const metrics: DatabasePerformanceMetrics = {
       requestId,
       startTime: performance.now(),
@@ -382,7 +382,7 @@ export function databasePerformanceMonitorMiddleware(
 
   // 拦截响应结束事件
   const originalEnd = res.end;
-  res.end = function(this: Response, ...args: any[]) {
+  res.end = function(this: Response, ...args: Parameters<typeof originalEnd>) {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
@@ -404,10 +404,10 @@ export function databasePerformanceMonitorMiddleware(
 /**
  * 查询监控装饰器
  */
-export function monitorQuery(target: any, propertyName: string, descriptor: PropertyDescriptor): void {
-  const method = descriptor.value;
+export function monitorQuery(target: object, propertyName: string, descriptor: PropertyDescriptor): void {
+  const method = descriptor.value as (...args: unknown[]) => Promise<unknown>;
 
-  descriptor.value = async function(...args: any[]) {
+  descriptor.value = async function(...args: unknown[]) {
     const requestId = `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const query = typeof args[0] === 'string' ? args[0] : undefined;
     const params = Array.isArray(args[1]) ? args[1] : undefined;

@@ -194,7 +194,7 @@ export class FastGPTSessionService {
           params: options.params || {},
           headers,
         });
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         // 若 404，尝试 /v1 回退
         const status = error?.response?.status;
@@ -309,7 +309,7 @@ export class FastGPTSessionService {
     this.historyDetailPolicy.notifyInvalidation();
   }
 
-  private normalizeHistorySummary(item: any): FastGPTChatHistorySummary {
+  private normalizeHistorySummary(item: Record<string, unknown>): FastGPTChatHistorySummary {
     const chatId = item?.chatId || item?.id || item?._id || item?.historyId || item?.history_id || '';
     const title = item?.title || item?.name || item?.latestQuestion || item?.latest_question || '未命名对话';
     const createdAt = item?.createTime || item?.create_time || item?.createdAt || item?.created_at || item?.time || new Date().toISOString();
@@ -328,7 +328,7 @@ export class FastGPTSessionService {
     };
   }
 
-  private normalizeHistoryMessage(entry: any): FastGPTChatHistoryMessage {
+  private normalizeHistoryMessage(entry: Record<string, unknown>): FastGPTChatHistoryMessage {
     const dataId = entry?.dataId || entry?.data_id || entry?._id || entry?.id;
     const roleRaw = entry?.role || entry?.obj || entry?.type;
     const role = typeof roleRaw === 'string' ? roleRaw.toLowerCase() : '';
@@ -356,7 +356,7 @@ export class FastGPTSessionService {
     };
   }
 
-  private normalizeHistoryDetail(payload: any): FastGPTChatHistoryDetail {
+  private normalizeHistoryDetail(payload: Record<string, unknown>): FastGPTChatHistoryDetail {
     const data = payload?.data ?? payload;
     const list = data?.list || data?.messages || data?.history || data?.chatHistoryList || data?.detail || [];
     const title = data?.title || data?.historyName || data?.history_title;
@@ -618,7 +618,7 @@ export class FastGPTSessionService {
 
       const rawData = payload?.data;
       const sessions = Array.isArray(rawData?.list || rawData)
-        ? (rawData.list || rawData).map((item: any) => this.normalizeHistorySummary(item))
+        ? (rawData.list || rawData).map((item: Record<string, unknown>) => this.normalizeHistorySummary(item))
         : [];
 
       // 如果远程API不支持增强功能，则使用本地过滤和排序
@@ -699,8 +699,8 @@ export class FastGPTSessionService {
     const sortOrder = params?.sortOrder || 'desc';
 
     filteredSessions.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number | Date;
+      let bValue: string | number | Date;
 
       switch (sortBy) {
         case 'createdAt':
@@ -855,7 +855,7 @@ export class FastGPTSessionService {
     const result = await this.listHistoriesEnhanced(agentId, options.filters);
     const sessions = result.data;
 
-    let exportData: any;
+    let exportData: string;
     let filename: string;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
@@ -909,7 +909,7 @@ export class FastGPTSessionService {
     };
 
     for (const session of sessions) {
-      const sessionData: any = {
+      const sessionData: Record<string, unknown> = {
         chatId: session.chatId,
         title: session.title,
         createdAt: session.createdAt,
@@ -1009,7 +1009,7 @@ export class FastGPTSessionService {
     agentId: string,
     sessionId: string,
     eventType: SessionEventType,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
     context?: {
       userId?: string;
       userAgent?: string;

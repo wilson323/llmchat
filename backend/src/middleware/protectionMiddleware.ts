@@ -77,7 +77,7 @@ export function protectedApiMiddleware() {
     try {
       // 伦理防火墙检查（API）
       try {
-        const payload: { action: string; content: any; sensitive: boolean } & Partial<{ resourceId: string }> = {
+        const payload: { action: string; content: unknown; sensitive: boolean } & Partial<{ resourceId: string }> = {
           action: `${req.method} ${req.path}`,
           content: req.body,
           sensitive: req.path.includes('/admin') || req.path.includes('/export') || req.method === 'DELETE',
@@ -182,7 +182,7 @@ export function protectedChatMiddleware() {
     try {
       // 伦理防火墙检查（Chat）
       try {
-        const payload: { action: string; content: any; sensitive: boolean } & Partial<{ resourceId: string }> = {
+        const payload: { action: string; content: unknown; sensitive: boolean } & Partial<{ resourceId: string }> = {
           action: 'chat.handle',
           content: req.body,
           sensitive: false,

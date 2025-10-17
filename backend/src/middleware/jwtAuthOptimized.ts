@@ -455,7 +455,7 @@ export function createJWTHealthCheck() {
     },
 
     checkAllMiddleware: () => {
-      const results: any[] = [];
+      const results: Array<{id: string; stats: unknown; tokenCache: unknown}> = [];
 
       for (const [id, { tokenCache, stats }] of globalStats.entries()) {
         results.push({

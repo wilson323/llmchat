@@ -9,6 +9,17 @@ import logger from '@/utils/logger';
 import type { QueueOptions} from '@/types/queue';
 import { MessagePriority } from '@/types/queue';
 
+// 队列事件类型
+interface QueueEvent {
+  jobId: string;
+  type: 'job:completed' | 'job:failed' | 'job:progress';
+  data?: {
+    result?: unknown;
+    error?: string;
+    progress?: number;
+  };
+}
+
 export interface QueueMiddlewareConfig {
   queueName: string;
   jobType: string;
@@ -42,12 +53,12 @@ class QueueMiddlewareManager {
 
   private setupEventListeners(): void {
     // 监听队列事件
-    this.queueManager.on('queue:*:events', (event: any) => {
+    this.queueManager.on('queue:*:events', (event: QueueEvent) => {
       this.handleQueueEvent(event);
     });
   }
 
-  private handleQueueEvent(event: any): void {
+  private handleQueueEvent(event: QueueEvent): void {
     const pending = this.pendingRequests.get(event.jobId);
     if (!pending) {
       return;
@@ -230,7 +241,7 @@ class QueueMiddlewareManager {
     return 5000; // 5秒
   }
 
-  private sanitizeHeaders(headers: any): Record<string, string> {
+  private sanitizeHeaders(headers: Record<string, unknown>): Record<string, string> {
     const sanitized: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(headers)) {
@@ -315,7 +326,7 @@ class QueueMiddlewareManager {
   public async handleBulkAdd(
     queueManager: QueueManager,
     queueName: string,
-    jobs: any[],
+    jobs: Array<{id: string; name: string; data: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -347,7 +358,7 @@ class QueueMiddlewareManager {
   public async handleBulkRemove(
     queueManager: QueueManager,
     queueName: string,
-    jobs: any[],
+    jobs: Array<{id: string; name: string; data: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -378,7 +389,7 @@ class QueueMiddlewareManager {
   public async handleBulkRetry(
     queueManager: QueueManager,
     queueName: string,
-    jobs: any[],
+    jobs: Array<{id: string; name: string; data: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {

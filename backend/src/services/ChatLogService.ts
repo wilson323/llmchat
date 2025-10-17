@@ -11,9 +11,9 @@ interface NormalLogEntry {
   agentId: string;
   provider: string;
   endpoint: string;
-  requestMeta?: Record<string, any> | undefined;
-  rawResponse?: any | undefined;
-  normalizedResponse?: any | undefined;
+  requestMeta?: Record<string, unknown> | undefined;
+  rawResponse?: unknown | undefined;
+  normalizedResponse?: unknown | undefined;
 }
 
 interface StreamLogEntry {
@@ -24,7 +24,7 @@ interface StreamLogEntry {
   endpoint?: string | undefined;
   chatId?: string | undefined;
   eventType: string;
-  data: any;
+  data: unknown;
 }
 
 export class ChatLogService {
@@ -108,9 +108,9 @@ export class ChatLogService {
     agentId: string;
     provider: string;
     endpoint: string;
-    requestMeta?: Record<string, any>;
-    rawResponse?: any;
-    normalizedResponse?: any;
+    requestMeta?: Record<string, unknown>;
+    rawResponse?: unknown;
+    normalizedResponse?: unknown;
   }) {
     if (!this.enabled || !this.recordNormal) {
       return;
@@ -146,7 +146,7 @@ export class ChatLogService {
     provider?: string;
     endpoint?: string;
     eventType: string;
-    data: any;
+    data: unknown;
   }) {
     if (!this.enabled || !this.recordStream) {
       return;
@@ -168,7 +168,7 @@ export class ChatLogService {
       this.appendDb(level, JSON.stringify(entry));
       const obsPayload: {
         agentId: string;
-        payload: any;
+        payload: unknown;
         timestamp: string;
         provider?: string;
         endpoint?: string;

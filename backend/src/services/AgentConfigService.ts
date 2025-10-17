@@ -768,8 +768,8 @@ export class AgentConfigService {
     differences: Array<{
       id: string;
       field: string;
-      dbValue: any;
-      fileValue: any;
+      dbValue: unknown;
+      fileValue: unknown;
     }>;
   }> {
     // 获取数据库中的配置
@@ -807,8 +807,8 @@ export class AgentConfigService {
     const differences: Array<{
       id: string;
       field: string;
-      dbValue: any;
-      fileValue: any;
+      dbValue: unknown;
+      fileValue: unknown;
     }> = [];
 
     for (const [id, dbConfig] of dbConfigMap) {
@@ -1042,7 +1042,7 @@ export class AgentConfigService {
   }
 
   private validateAgentConfig(
-    config: any,
+    config: Record<string, unknown>,
     existingId?: string,
     collection: Map<string, AgentConfig> = this.agents,
   ): config is AgentConfig {

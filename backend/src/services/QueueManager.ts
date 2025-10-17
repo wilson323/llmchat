@@ -642,15 +642,15 @@ export class QueueManager extends EventEmitter {
    */
   public async batchAddJobs(
     queueName: string,
-    jobs: Array<{ type: string; data: any; options?: QueueOptions }>
+    jobs: Array<{ type: string; data: unknown; options?: QueueOptions }>
   ): Promise<{
     successful: Array<{ id: string; index: number }>;
-    failed: Array<{ index: number; error: string; data: any }>;
+    failed: Array<{ index: number; error: string; data: unknown }>;
     total: number;
     duration: number;
   }> {
     const batchOperations = jobs.map(job => {
-      const operation: any = {
+      const operation: {type: string; data: unknown; options?: QueueOptions} = {
         type: job.type,
         data: job.data
       };
@@ -705,7 +705,7 @@ export class QueueManager extends EventEmitter {
     jobIds: string[]
   ): Promise<{
     successful: Array<{ id: string; index: number }>;
-    failed: Array<{ index: number; error: string; data: any }>;
+    failed: Array<{ index: number; error: string; data: unknown }>;
     total: number;
     duration: number;
   }> {
@@ -747,7 +747,7 @@ export class QueueManager extends EventEmitter {
     options: { resetAttempts?: boolean } = {}
   ): Promise<{
     successful: Array<{ id: string; index: number }>;
-    failed: Array<{ index: number; error: string; data: any }>;
+    failed: Array<{ index: number; error: string; data: unknown }>;
     total: number;
     duration: number;
   }> {
@@ -1225,7 +1225,7 @@ export class QueueManager extends EventEmitter {
     return (maxPriority - priority) * priorityWeight + timestamp;
   }
 
-  private calculateRetryDelay(attempt: number, backoff: any): number {
+  private calculateRetryDelay(attempt: number, backoff: {strategy: string; baseDelay?: number; maxDelay?: number; factor?: number}): number {
     switch (backoff.strategy) {
       case BackoffStrategy.FIXED:
         return backoff.delay;
@@ -1315,7 +1315,7 @@ export class QueueManager extends EventEmitter {
   /**
    * 获取连接池统计信息
    */
-  public getConnectionPoolStats(): any {
+  public getConnectionPoolStats(): Record<string, unknown> {
     const stats = this.connectionPool.getStats();
     return {
       pool: {
@@ -1416,7 +1416,7 @@ export class QueueManager extends EventEmitter {
     freedMemoryMB?: number;
     durationMs?: number;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
   }> {
     if (!this.memoryOptimizationService) {
       return {

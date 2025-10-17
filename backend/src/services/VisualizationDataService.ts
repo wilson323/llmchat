@@ -11,7 +11,7 @@ import { EventEmitter } from 'events';
 export interface RealtimeDataUpdate {
   timestamp: number;
   type: 'queue' | 'system' | 'performance' | 'alert';
-  data: any;
+  data: unknown;
 }
 
 export interface ChartData {
@@ -290,7 +290,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 计算吞吐量
    */
-  private calculateThroughput(completedJobs: any[]): number {
+  private calculateThroughput(completedJobs: Array<{finishedOn?: number}>): number {
     if (completedJobs.length === 0) return 0;
     const now = Date.now();
     const oneMinuteAgo = now - 60000;
@@ -301,7 +301,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 计算错误率
    */
-  private calculateErrorRate(completedJobs: any[], failedJobs: any[]): number {
+  private calculateErrorRate(completedJobs: unknown[], failedJobs: unknown[]): number {
     const total = completedJobs.length + failedJobs.length;
     if (total === 0) return 0;
     return (failedJobs.length / total) * 100;
@@ -310,7 +310,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 计算成功率
    */
-  private calculateSuccessRate(poolStats: any): number {
+  private calculateSuccessRate(poolStats: {commandsProcessed: number; errors: number}): number {
     const total = poolStats.commandsProcessed + poolStats.errors;
     if (total === 0) return 100;
     return (poolStats.commandsProcessed / total) * 100;
@@ -319,7 +319,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 更新历史数据
    */
-  private updateHistory(key: string, data: any): void {
+  private updateHistory(key: string, data: unknown): void {
     const history = this.dataHistory.get(key) || [];
     history.push(data);
 
@@ -414,7 +414,7 @@ class VisualizationDataService extends EventEmitter {
    * 获取图表数据
    */
   public getChartData(type: 'queue' | 'system' | 'redis', metric: string, timeRange?: number): ChartData {
-    let history: any[] = [];
+    let history: unknown[] = [];
 
     switch (type) {
       case 'queue':
@@ -440,7 +440,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 提取数据集
    */
-  private extractDatasets(history: any[], metric: string, type: string): Array<any> {
+  private extractDatasets(history: unknown[], metric: string, type: string): Array<unknown> {
     if (type === 'queue' && Array.isArray(history[0])) {
       // 队列数据是数组的数组
       const queueNames = history[0].map((item: QueueStatsSnapshot) => item.queueName);

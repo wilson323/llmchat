@@ -89,7 +89,7 @@ export class PerformanceMonitor {
       const originalSend = res.send;
       const errors: string[] = [];
 
-      res.send = function (this: Response, data: any) {
+      res.send = function (this: Response, data: unknown) {
         // 记录响应结束时间
         const endTime = performance.now();
         const duration = endTime - startTime;

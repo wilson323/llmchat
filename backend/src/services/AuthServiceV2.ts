@@ -135,7 +135,7 @@ export class AuthServiceV2 {
       this.redis.on('error', (err: Error) => {
         logger.error('Redis错误，将降级到内存模式', { error: err.message });
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Redis初始化失败，使用内存模式', { error: error.message });
       this.redis = null;
     }
@@ -258,7 +258,7 @@ export class AuthServiceV2 {
       };
 
       return { valid: true, user };
-    } catch (error: any) {
+    } catch (error) {
       if (error.name === 'TokenExpiredError') {
         return { valid: false, error: 'TOKEN_EXPIRED' };
       }
@@ -299,7 +299,7 @@ export class AuthServiceV2 {
       await this.redis.del(`${SESSION_PREFIX}${payload.sub}`);
 
       logger.info('✅ 登出成功', { userId: payload.sub, jti: payload.jti });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('登出失败', { error: error.message });
     }
   }
@@ -338,7 +338,7 @@ export class AuthServiceV2 {
         user,
         expiresIn: this.tokenTTL,
       };
-    } catch (error: any) {
+    } catch (error) {
       logger.error('Token刷新失败', { error: error.message });
       throw new AuthenticationError({
         message: 'Refresh Token 无效或已过期',
@@ -605,7 +605,7 @@ export class AuthServiceV2 {
         createdAt: new Date().toISOString(),
       });
       await this.redis.setex(`${SESSION_PREFIX}${userId}`, this.tokenTTL, sessionData);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('会话存储失败', { userId, error: error.message });
     }
   }

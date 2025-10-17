@@ -96,7 +96,7 @@ export class DatabaseTestEnvironment {
           password_hash TEXT NOT NULL,
           role TEXT DEFAULT 'user',
           status TEXT DEFAULT 'active',
-          email VARCHAR(255),
+          email VARCHAR(255) UNIQUE,
           email_verified BOOLEAN DEFAULT false,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -109,7 +109,7 @@ export class DatabaseTestEnvironment {
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
           title TEXT,
           agent_id TEXT NOT NULL,
-          user_id TEXT,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
@@ -119,7 +119,7 @@ export class DatabaseTestEnvironment {
       await client.query(`
         CREATE TABLE IF NOT EXISTS chat_messages (
           id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-          session_id TEXT NOT NULL,
+          session_id TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
           role TEXT NOT NULL,
           content TEXT NOT NULL,
           metadata JSONB DEFAULT '{}',
@@ -206,12 +206,38 @@ export class DatabaseTestEnvironment {
     try {
       // 按依赖关系顺序清理数据（从子表到父表）
       await client.query('DELETE FROM chat_messages WHERE TRUE');
-      await client.query('DELETE FROM chat_geo_events WHERE TRUE');
+      
+      // 清理chat_geo_events（如果表存在）
+      try {
+        await client.query('DELETE FROM chat_geo_events WHERE TRUE');
+      } catch (e) {
+        // 表可能不存在，忽略错误
+      }
+      
       await client.query('DELETE FROM chat_sessions WHERE TRUE');
-      await client.query('DELETE FROM usage_stats WHERE TRUE');
-      await client.query('DELETE FROM audit_logs WHERE TRUE');
-      await client.query('DELETE FROM users WHERE username != \'admin\''); // 保留admin用户
-      await client.query('DELETE FROM agent_configs WHERE source = \'test\''); // 只删除测试数据
+      
+      // 清理usage_stats（如果表存在）
+      try {
+        await client.query('DELETE FROM usage_stats WHERE TRUE');
+      } catch (e) {
+        // 表可能不存在，忽略错误
+      }
+      
+      // 清理audit_logs（如果表存在）
+      try {
+        await client.query('DELETE FROM audit_logs WHERE TRUE');
+      } catch (e) {
+        // 表可能不存在，忽略错误
+      }
+      
+      await client.query('DELETE FROM users WHERE TRUE'); // 完全清空用户表
+      
+      // 清理agent_configs测试数据（如果表存在）
+      try {
+        await client.query('DELETE FROM agent_configs WHERE source = \'test\'');
+      } catch (e) {
+        // 表可能不存在，忽略错误
+      }
 
       logger.info('测试数据清理完成', {
         component: 'dbTestUtils',

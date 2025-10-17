@@ -68,11 +68,11 @@ export class ChatSessionService {
 
     try {
       const result = await getPool().query(
-        `INSERT INTO chat_sessions_enhanced 
-         (user_id, agent_id, title, context, settings) 
-         VALUES ($1, $2, $3, $4, $5) 
+        `INSERT INTO chat_sessions 
+         (user_id, agent_id, title) 
+         VALUES ($1, $2, $3) 
          RETURNING *`,
-        [userId, agentId, title, JSON.stringify(context || {}), JSON.stringify(settings || {})]
+        [userId, agentId, title]
       );
 
       const session = this.mapRowToSession(result.rows[0]);
@@ -105,10 +105,10 @@ export class ChatSessionService {
   async getUserSessions(userId: number, agentId?: string): Promise<ChatSession[]> {
     try {
       const query = agentId
-        ? `SELECT * FROM chat_sessions_enhanced 
+        ? `SELECT * FROM chat_sessions 
            WHERE user_id = $1 AND agent_id = $2 AND status = 'active'
            ORDER BY updated_at DESC`
-        : `SELECT * FROM chat_sessions_enhanced 
+        : `SELECT * FROM chat_sessions 
            WHERE user_id = $1 AND status = 'active'
            ORDER BY updated_at DESC`;
 
@@ -136,7 +136,7 @@ export class ChatSessionService {
   async getSession(sessionId: string, userId: number): Promise<ChatSession | null> {
     try {
       const result = await getPool().query(
-        `SELECT * FROM chat_sessions_enhanced 
+        `SELECT * FROM chat_sessions 
          WHERE id = $1 AND user_id = $2`,
         [sessionId, userId]
       );
@@ -165,7 +165,7 @@ export class ChatSessionService {
   async addMessage(sessionId: string, message: ChatMessage): Promise<void> {
     try {
       await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET messages = messages || $1::jsonb,
              message_count = message_count + 1,
              last_message_at = CURRENT_TIMESTAMP
@@ -201,7 +201,7 @@ export class ChatSessionService {
     try {
       const messagesJson = JSON.stringify(messages);
       await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET messages = messages || $1::jsonb,
              message_count = message_count + $2,
              last_message_at = CURRENT_TIMESTAMP
@@ -233,7 +233,7 @@ export class ChatSessionService {
   async updateSessionTitle(sessionId: string, userId: number, title: string): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET title = $1 
          WHERE id = $2 AND user_id = $3
          RETURNING id`,
@@ -268,7 +268,7 @@ export class ChatSessionService {
   async deleteSession(sessionId: string, userId: number): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET status = 'deleted' 
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
@@ -302,7 +302,7 @@ export class ChatSessionService {
   async archiveSession(sessionId: string, userId: number): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET status = 'archived' 
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
@@ -344,7 +344,7 @@ export class ChatSessionService {
       const result = await getPool().query(
         `SELECT *, 
          ts_rank(search_vector, plainto_tsquery('english', $2)) as rank
-         FROM chat_sessions_enhanced
+         FROM chat_sessions
          WHERE user_id = $1
            AND status = 'active'
            AND search_vector @@ plainto_tsquery('english', $2)
@@ -405,7 +405,7 @@ export class ChatSessionService {
 
     try {
       await getPool().query(
-        `UPDATE chat_sessions_enhanced 
+        `UPDATE chat_sessions 
          SET ${updates.join(', ')}
          WHERE id = $${paramIndex}`,
         values
@@ -440,7 +440,7 @@ export class ChatSessionService {
            COUNT(*) FILTER (WHERE status = 'archived') as archived_sessions,
            COALESCE(SUM(message_count), 0) as total_messages,
            COALESCE(SUM(token_usage), 0) as total_tokens
-         FROM chat_sessions_enhanced
+         FROM chat_sessions
          WHERE user_id = $1 AND status != 'deleted'`,
         [userId]
       );
