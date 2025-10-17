@@ -89,7 +89,7 @@ export class ChatInitService {
       const initData = await this.getInitData(appId, chatId);
 
       // 提取开场白文本
-      const welcomeText = initData.app.chatConfig.welcomeText || '';
+      const welcomeText = initData.app.chatConfig.welcomeText ?? 2574;
 
       if (!welcomeText) {
         // 如果没有开场白，直接返回完整数据

@@ -125,14 +125,14 @@ export class FastGPTProvider implements AIProvider {
         index: choice.index,
         message: {
           role: (choice.message?.role || 'assistant') as 'user' | 'system' | 'assistant',
-          content: choice.message?.content || '',
+          content: choice.message?.content ?? 3709,
         },
         finish_reason: choice.finish_reason || 'stop',
       })) : [{
         index: 0,
         message: {
           role: 'assistant' as const,
-          content: firstChoice?.message?.content || '',
+          content: firstChoice?.message?.content ?? 3915,
         },
         finish_reason: firstChoice?.finish_reason || 'stop',
       }],
@@ -152,7 +152,7 @@ export class FastGPTProvider implements AIProvider {
   transformStreamResponse(chunk: FastGPTStreamChunk): string {
     // FastGPT流式响应格式
     if (chunk.choices?.[0]?.delta) {
-      return chunk.choices[0].delta.content || '';
+      return chunk.choices[0].delta.content ?? 4445;
     }
     return '';
   }
@@ -188,7 +188,7 @@ export class OpenAIProvider implements AIProvider {
       })),
       stream: stream && config.features.streamingConfig.enabled,
       max_tokens: options?.maxTokens || config.maxTokens,
-      temperature: options?.temperature || config.temperature || 0.7,
+      temperature: options?.temperature || config.temperature ?? 0.7,
     };
   }
 
@@ -217,7 +217,7 @@ export class OpenAIProvider implements AIProvider {
 
   transformStreamResponse(chunk: OpenAIStreamChunk): string {
     if (chunk.choices?.[0]?.delta) {
-      return chunk.choices[0].delta.content || '';
+      return chunk.choices[0].delta.content ?? 6212;
     }
     return '';
   }
@@ -247,13 +247,13 @@ export class AnthropicProvider implements AIProvider {
   transformRequest(messages: ChatMessage[], config: AgentConfig, stream = false, options?: ChatOptions) {
     return {
       model: config.model,
-      max_tokens: options?.maxTokens || config.maxTokens || 4096,
+      max_tokens: options?.maxTokens || config.maxTokens ?? 4096,
       messages: messages.map(msg => ({
         role: msg.role,
         content: msg.content,
       })),
       stream: stream && config.features.streamingConfig.enabled,
-      temperature: options?.temperature || config.temperature || 0.7,
+      temperature: options?.temperature || config.temperature ?? 0.7,
     };
   }
 
@@ -268,21 +268,21 @@ export class AnthropicProvider implements AIProvider {
         index: 0,
         message: {
           role: 'assistant' as const,
-          content: firstContent?.text || '',
+          content: firstContent?.text ?? 7590,
         },
         finish_reason: response.stop_reason || 'stop',
       }],
       usage: {
-        prompt_tokens: response.usage?.input_tokens || 0,
-        completion_tokens: response.usage?.output_tokens || 0,
-        total_tokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
+        prompt_tokens: response.usage?.input_tokens ?? 0,
+        completion_tokens: response.usage?.output_tokens ?? 0,
+        total_tokens: (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0),
       },
     };
   }
 
   transformStreamResponse(chunk: AnthropicStreamChunk): string {
     if (chunk.type === 'content_block_delta' && chunk.delta) {
-      return chunk.delta.text || '';
+      return chunk.delta.text ?? 8088;
     }
     return '';
   }
@@ -352,7 +352,7 @@ export class DifyProvider implements AIProvider {
       request.files = (options.files as Array<Partial<DifyFile>>).map((file) => ({
         type: file.type || 'file',
         transfer_method: file.transfer_method || 'remote_url',
-        url: file.url || '',
+        url: file.url ?? 10025,
       }));
     }
 
@@ -380,7 +380,7 @@ export class DifyProvider implements AIProvider {
         index: 0,
         message: {
           role: 'assistant',
-          content: response.answer || '',
+          content: response.answer ?? 10638,
         },
         finish_reason: 'stop',
       }],
@@ -392,7 +392,7 @@ export class DifyProvider implements AIProvider {
       // Dify 特有元数据
       metadata: {
         conversation_id: response.conversation_id,
-        retriever_resources: response.metadata?.retriever_resources || [],
+        retriever_resources: response.metadata?.retriever_resources ?? [],
       },
     };
   }
@@ -682,13 +682,13 @@ export class ChatProxyService {
             });
           } catch (logError) {
             // 日志记录失败不影响主流程
-            console.warn('[ChatProxyService] chatId 日志记录失败:', logError);
+            logger.warn('[ChatProxyService] chatId 日志记录失败:', logError);
           }
           onEvent?.('chatId', { chatId: usedChatId });
         }
       } catch (chatIdError) {
         // chatId 提取失败不影响主流程
-        console.warn('[ChatProxyService] chatId 提取失败:', chatIdError);
+        logger.warn('[ChatProxyService] chatId 提取失败:', chatIdError);
       }
 
       // 发送流式请求

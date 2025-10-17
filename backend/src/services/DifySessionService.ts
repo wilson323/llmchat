@@ -157,7 +157,7 @@ export class DifySessionService {
         headers: this.buildHeaders(agent),
         params: {
           user: params?.user || 'default-user',
-          limit: params?.limit || 20,
+          limit: params?.limit ?? 20,
           ...(params?.last_id && { last_id: params.last_id }),
         },
       });
@@ -165,14 +165,14 @@ export class DifySessionService {
       logger.info('Dify 会话列表查询成功', {
         component: 'DifySessionService',
         agentId: agent.id,
-        count: response.data.data?.length || 0,
+        count: response.data.data?.length ?? 0,
         hasMore: response.data.has_more,
       });
 
       return {
-        data: response.data.data || [],
+        data: response.data.data ?? [],
         has_more: response.data.has_more || false,
-        limit: response.data.limit || 20,
+        limit: response.data.limit ?? 20,
       };
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -207,7 +207,7 @@ export class DifySessionService {
         params: {
           conversation_id: params.conversation_id,
           user: params.user || 'default-user',
-          limit: params.limit || 20,
+          limit: params.limit ?? 20,
           ...(params.first_id && { first_id: params.first_id }),
         },
       });
@@ -216,13 +216,13 @@ export class DifySessionService {
         component: 'DifySessionService',
         agentId: agent.id,
         conversationId: params.conversation_id,
-        count: response.data.data?.length || 0,
+        count: response.data.data?.length ?? 0,
       });
 
       return {
-        data: response.data.data || [],
+        data: response.data.data ?? [],
         has_more: response.data.has_more || false,
-        limit: response.data.limit || 20,
+        limit: response.data.limit ?? 20,
       };
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -401,10 +401,10 @@ export class DifySessionService {
         component: 'DifySessionService',
         agentId: agent.id,
         messageId,
-        count: response.data.data?.length || 0,
+        count: response.data.data?.length ?? 0,
       });
 
-      return response.data.data || [];
+      return response.data.data ?? [];
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       const errStatus = (error as {response?: {status?: number}})?.response?.status;

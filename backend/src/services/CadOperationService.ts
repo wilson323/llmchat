@@ -321,7 +321,7 @@ export class CadOperationService {
               entity.position.x,
               entity.position.y,
               entity.height,
-              entity.rotation || 0,
+              entity.rotation ?? 0,
               entity.text,
             );
             break;

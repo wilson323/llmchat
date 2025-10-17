@@ -252,7 +252,7 @@ class CacheMiddlewareManager {
     }
 
     // 使用默认TTL
-    return this.config.defaultTtl || 300;
+    return this.config.defaultTtl ?? 300;
   }
 
   /**
@@ -403,7 +403,8 @@ class CacheMiddlewareManager {
     };
 
     // 拦截end方法
-    res.end = function(this: Response, chunk?: unknown, encoding?: unknown, cb?: unknown): Response {
+    const originalEndTyped = originalEnd as (chunk?: unknown, encoding?: unknown, cb?: unknown) => Response;
+    res.end = function(this: Response, ...args: [chunk?: unknown, encoding?: unknown, cb?: unknown]): Response {
       const endTime = performance.now();
       const responseTime = endTime - startTime;
 
@@ -412,7 +413,7 @@ class CacheMiddlewareManager {
         const responseData = self.serializeResponse(res);
         if (responseData) {
           const ttl = self.calculateTtl(req, res);
-          const shouldCompress = responseData.length > (self.config.compressThreshold || 1024);
+          const shouldCompress = responseData.length > (self.config.compressThreshold ?? 1024);
 
           const cacheOptions: {
             ttl: number;
@@ -456,7 +457,7 @@ class CacheMiddlewareManager {
       res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
 
       // 调用原始end方法
-      return originalEnd.apply(res, endArgs as any);
+      return originalEndTyped.apply(res, args);
     };
 
     next();

@@ -13,6 +13,7 @@
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import type { Express } from 'express';
+import { logger } from '@/utils/logger';
 
 /**
  * 初始化Sentry
@@ -23,7 +24,7 @@ export function initSentry(_app: Express): void {
     const dsn = process.env.SENTRY_DSN;
 
     if (!dsn) {
-      console.warn('Sentry DSN未配置，错误追踪已禁用');
+      logger.warn('Sentry DSN未配置，错误追踪已禁用');
       return;
     }
 
@@ -90,9 +91,9 @@ export function initSentry(_app: Express): void {
       },
     });
 
-    console.log('Sentry错误追踪已启用（后端）');
+    logger.debug('Sentry错误追踪已启用（后端）');
   } else {
-    console.log('Sentry错误追踪已禁用（开发环境）');
+    logger.debug('Sentry错误追踪已禁用（开发环境）');
   }
 }
 

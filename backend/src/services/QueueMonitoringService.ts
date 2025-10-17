@@ -288,7 +288,7 @@ export class QueueMonitoringService extends EventEmitter {
    * 清理过期的指标数据
    */
   cleanupOldMetrics(): void {
-    const retentionMs = (this.monitoringConfig.metricsRetentionDays || 7) * 24 * 60 * 60 * 1000;
+    const retentionMs = (this.monitoringConfig.metricsRetentionDays ?? 7) * 24 * 60 * 60 * 1000;
     const cutoffTime = Date.now() - retentionMs;
 
     let totalCleaned = 0;
@@ -338,53 +338,53 @@ export class QueueMonitoringService extends EventEmitter {
     queueConfig: QueueConfig
   ): Promise<void> {
     try {
-      const thresholds = this.monitoringConfig.alertThresholds || {};
+      const thresholds = this.monitoringConfig.alertThresholds ?? {};
       const alerts: QueueAlert[] = [];
 
       // 检查队列大小告警
-      if ((metrics.stats.total || 0) > (thresholds.queueSize || 800)) {
+      if ((metrics.stats.total ?? 0) > (thresholds.queueSize ?? 800)) {
         alerts.push({
           type: 'queue_size',
-          severity: (metrics.stats.total || 0) > (thresholds.queueSize || 800) * 1.2 ? 'critical' : 'medium',
-          message: `队列大小过大: ${metrics.stats.total || 0}`,
-          value: metrics.stats.total || 0,
-          threshold: thresholds.queueSize || 800,
+          severity: (metrics.stats.total ?? 0) > (thresholds.queueSize ?? 800) * 1.2 ? 'critical' : 'medium',
+          message: `队列大小过大: ${metrics.stats.total ?? 0}`,
+          value: metrics.stats.total ?? 0,
+          threshold: thresholds.queueSize ?? 800,
           timestamp: new Date()
         });
       }
 
       // 检查错误率告警
-      if (metrics.stats.errorRate > (thresholds.errorRate || 0.15)) {
+      if (metrics.stats.errorRate > (thresholds.errorRate ?? 0.15)) {
         alerts.push({
           type: 'error_rate',
-          severity: metrics.stats.errorRate > (thresholds.errorRate || 0.15) * 1.2 ? 'critical' : 'medium',
+          severity: metrics.stats.errorRate > (thresholds.errorRate ?? 0.15) * 1.2 ? 'critical' : 'medium',
           message: `错误率过高: ${Math.round(metrics.stats.errorRate * 100)}%`,
           value: metrics.stats.errorRate,
-          threshold: thresholds.errorRate || 0.15,
+          threshold: thresholds.errorRate ?? 0.15,
           timestamp: new Date()
         });
       }
 
       // 检查处理时间告警
-      if (metrics.stats.avgProcessingTime > (thresholds.processingTime || 45000)) {
+      if (metrics.stats.avgProcessingTime > (thresholds.processingTime ?? 45000)) {
         alerts.push({
           type: 'processing_time',
-          severity: metrics.stats.avgProcessingTime > (thresholds.processingTime || 45000) * 1.2 ? 'critical' : 'medium',
+          severity: metrics.stats.avgProcessingTime > (thresholds.processingTime ?? 45000) * 1.2 ? 'critical' : 'medium',
           message: `处理时间过长: ${Math.round(metrics.stats.avgProcessingTime / 1000)}s`,
           value: metrics.stats.avgProcessingTime,
-          threshold: thresholds.processingTime || 45000,
+          threshold: thresholds.processingTime ?? 45000,
           timestamp: new Date()
         });
       }
 
       // 检查内存使用告警
-      if (metrics.performance.memoryUsage > (thresholds.memoryUsage || 0.85)) {
+      if (metrics.performance.memoryUsage > (thresholds.memoryUsage ?? 0.85)) {
         alerts.push({
           type: 'memory_usage',
-          severity: metrics.performance.memoryUsage > (thresholds.memoryUsage || 0.85) * 1.1 ? 'critical' : 'medium',
+          severity: metrics.performance.memoryUsage > (thresholds.memoryUsage ?? 0.85) * 1.1 ? 'critical' : 'medium',
           message: `内存使用过高: ${Math.round(metrics.performance.memoryUsage * 100)}%`,
           value: metrics.performance.memoryUsage,
-          threshold: thresholds.memoryUsage || 0.85,
+          threshold: thresholds.memoryUsage ?? 0.85,
           timestamp: new Date()
         });
       }
@@ -472,7 +472,7 @@ export class QueueMonitoringService extends EventEmitter {
       // 计算P95
       processingTimes.sort((a, b) => a - b);
       const p95Index = Math.floor(processingTimes.length * 0.95);
-      return processingTimes[p95Index] || 0;
+      return processingTimes[p95Index] ?? 0;
     } catch (error: any) {
       logger.warn('⚠️ [QueueMonitoringService] P95处理时间计算失败', {
         queueName,
@@ -526,7 +526,7 @@ export class QueueMonitoringService extends EventEmitter {
       // 计算P99
       processingTimes.sort((a, b) => a - b);
       const p99Index = Math.floor(processingTimes.length * 0.99);
-      return processingTimes[p99Index] || 0;
+      return processingTimes[p99Index] ?? 0;
     } catch (error: any) {
       logger.warn('⚠️ [QueueMonitoringService] P99处理时间计算失败', {
         queueName,

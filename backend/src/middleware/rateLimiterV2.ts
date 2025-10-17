@@ -156,7 +156,7 @@ class RateLimiterManager {
     let limiter: RateLimiterRedis | RateLimiterMemory;
 
     if (this.isRedisAvailable && this.redis) {
-      const redisOptions: Record<string, unknown> = {
+      const redisOptions: any = {
         storeClient: this.redis,
         points: config.points,
         duration: config.duration,
@@ -170,7 +170,7 @@ class RateLimiterManager {
       limiter = new RateLimiterRedis(redisOptions);
       logger.debug('创建Redis RateLimiter', { config });
     } else {
-      const memoryOptions: Record<string, unknown> = {
+      const memoryOptions: any = {
         points: config.points,
         duration: config.duration,
       };
@@ -345,7 +345,7 @@ function handleRateLimitExceeded(
   rejRes: {remainingPoints: number; msBeforeNext: number},
   config: RateLimitConfig,
 ): void {
-  const msBeforeNext = rejRes?.msBeforeNext || 60000;
+  const msBeforeNext = rejRes?.msBeforeNext ?? 60000;
   const retryAfter = Math.round(msBeforeNext / 1000);
 
   // 设置响应头

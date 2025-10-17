@@ -7,6 +7,7 @@ import { Router, NextFunction } from 'express';
 import type VisualizationController from '@/controllers/VisualizationController';
 import { authenticateJWT } from '@/middleware/jwtAuth';
 import { rateLimiterMiddleware } from '@/middleware/rateLimiter';
+import { logger } from '@/utils/logger';
 
 const router = Router() as any;
 
@@ -89,7 +90,7 @@ router.get('/health', apiRateLimit,
 
 // 错误处理中间件
 router.use((error: Error, req: Request, res: Response, next: any) => {
-  console.error('Visualization route error:', error);
+  logger.error('Visualization route error:', error);
   res.status(500).json({
     success: false,
     error: 'Internal server error',

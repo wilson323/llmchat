@@ -92,8 +92,8 @@ class DatabasePerformanceMonitor {
     const metrics: DatabasePerformanceMetrics = {
       requestId,
       startTime: performance.now(),
-      query: query || '',
-      params: params || [],
+      query: query ?? 2295,
+      params: params ?? [],
       queryType: this.extractQueryType(query),
     };
 
@@ -121,7 +121,7 @@ class DatabasePerformanceMonitor {
 
     metrics.endTime = performance.now();
     metrics.duration = metrics.endTime - metrics.startTime;
-    metrics.rowCount = rowCount || 0;
+    metrics.rowCount = rowCount ?? 0;
     metrics.isSlowQuery = metrics.duration > this.slowQueryThreshold;
     if (error?.message) {
       metrics.error = error.message;
@@ -248,7 +248,7 @@ class DatabasePerformanceMonitor {
     return this.completedQueries
       .filter(query => query.isSlowQuery)
       .slice(-limit)
-      .sort((a, b) => (b.duration || 0) - (a.duration || 0));
+      .sort((a, b) => (b.duration ?? 0) - (a.duration ?? 0));
   }
 
   /**
@@ -382,7 +382,8 @@ export function databasePerformanceMonitorMiddleware(
 
   // 拦截响应结束事件
   const originalEnd = res.end;
-  res.end = function(this: Response, chunk?: unknown, encoding?: unknown, cb?: unknown): Response {
+  const originalEndTyped = originalEnd as (chunk?: unknown, encoding?: unknown, cb?: unknown) => Response;
+  res.end = function(this: Response, ...args: [chunk?: unknown, encoding?: unknown, cb?: unknown]): Response {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
@@ -395,7 +396,7 @@ export function databasePerformanceMonitorMiddleware(
       duration: `${duration.toFixed(2)}ms`,
     });
 
-    return originalEnd.apply(this, endArgs as any);
+    return originalEndTyped.apply(this, args);
   };
 
   next();

@@ -18,6 +18,7 @@ import path from 'path';
 import * as ts from 'typescript';
 import crypto from 'crypto';
 // import { glob } from 'glob';
+import { logger } from '@/utils/logger';
 
 // 临时函数，直到我们安装glob包
 const globSync = (pattern: string, options?: any): string[] => {
@@ -162,9 +163,9 @@ class EnterpriseCodeFixer {
    * 安全修复处理入口
    */
   async safeFixFiles(files: string[]): Promise<FixResult[]> {
-    console.log('🔒 启动企业级安全代码修复...');
-    console.log(`📁 处理文件数: ${files.length}`);
-    console.log(`⚙️  修复模式: ${this.config.mode}`);
+    logger.debug('🔒 启动企业级安全代码修复...');
+    logger.debug(`📁 处理文件数: ${files.length}`);
+    logger.debug(`⚙️  修复模式: ${this.config.mode}`);
 
     const allResults: FixResult[] = [];
 
@@ -177,7 +178,7 @@ class EnterpriseCodeFixer {
         const results = await this.safeFixFile(file);
         allResults.push(...results);
       } catch (error: any) {
-        console.error(`❌ 文件处理失败: ${file} - ${error instanceof Error ? error.message : String(error)}`);
+        logger.error(`❌ 文件处理失败: ${file} - ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
     }
@@ -192,7 +193,7 @@ class EnterpriseCodeFixer {
    * 预检查 - 验证处理条件
    */
   private async preFlightCheck(files: string[]): Promise<void> {
-    console.log('🔍 执行预检查...');
+    logger.debug('🔍 执行预检查...');
 
     for (const file of files) {
       // 检查文件存在性
@@ -203,7 +204,7 @@ class EnterpriseCodeFixer {
       // 检查文件大小
       const stats = fs.statSync(file);
       if (stats.size > this.config.maxFileSize) {
-        console.log(`⚠️ 跳过文件: ${file} (大小 ${this.formatSize(stats.size)} > ${this.formatSize(this.config.maxFileSize)})`);
+        logger.debug(`⚠️ 跳过文件: ${file} (大小 ${this.formatSize(stats.size)} > ${this.formatSize(this.config.maxFileSize)})`);
         continue;
       }
 
@@ -215,19 +216,19 @@ class EnterpriseCodeFixer {
 
       // 检查文件类型
       if (!this.isValidTypeScriptFile(file)) {
-        console.log(`⚠️ 跳过非TypeScript文件: ${file}`);
+        logger.debug(`⚠️ 跳过非TypeScript文件: ${file}`);
         continue;
       }
     }
 
-    console.log('✅ 预检查通过');
+    logger.debug('✅ 预检查通过');
   }
 
   /**
    * 安全修复单个文件
    */
   private async safeFixFile(filePath: string): Promise<FixResult[]> {
-    console.log(`🔧 处理文件: ${filePath}`);
+    logger.debug(`🔧 处理文件: ${filePath}`);
 
     // 创建TypeScript程序
     const program = ts.createProgram([filePath], ts.getDefaultCompilerOptions());
@@ -240,7 +241,7 @@ class EnterpriseCodeFixer {
 
     // 分析问题
     const issues = this.analyzeIssues(sourceFile);
-    console.log(`📊 发现问题: ${issues.length} 个`);
+    logger.debug(`📊 发现问题: ${issues.length} 个`);
 
     const results: FixResult[] = [];
 
@@ -252,7 +253,7 @@ class EnterpriseCodeFixer {
 
       // 检查是否应该自动修复
       if (this.config.mode === 'auto-fix' && !ruleConfig.autoFix) {
-        console.log(`⚠️ 跳过问题: ${issue.message} (规则 ${issue.ruleId} 不支持自动修复)`);
+        logger.debug(`⚠️ 跳过问题: ${issue.message} (规则 ${issue.ruleId} 不支持自动修复)`);
         continue;
       }
 
@@ -318,7 +319,7 @@ class EnterpriseCodeFixer {
 
     // 验证修复条件
     if (!fixer.validate(issue.node, sourceFile)) {
-      console.log(`⚠️ 修复验证失败: ${issue.message}`);
+      logger.debug(`⚠️ 修复验证失败: ${issue.message}`);
       return null;
     }
 
@@ -336,7 +337,7 @@ class EnterpriseCodeFixer {
 
     // 风险检查
     if (impact.breakingRisk === 'high') {
-      console.log(`🚨 高风险修复: ${issue.message} - 需要人工确认`);
+      logger.debug(`🚨 高风险修复: ${issue.message} - 需要人工确认`);
       return null;
     }
 
@@ -410,7 +411,7 @@ class EnterpriseCodeFixer {
       fs.writeFileSync(filePath, fixedContent);
       fs.unlinkSync(tempFile);
 
-      console.log(`✅ 修复成功: ${filePath} - ${issue.message}`);
+      logger.debug(`✅ 修复成功: ${filePath} - ${issue.message}`);
       return true;
 
     } catch (error: any) {
@@ -423,10 +424,10 @@ class EnterpriseCodeFixer {
       if (fs.existsSync(backupFile)) {
         fs.copyFileSync(backupFile, filePath);
         fs.unlinkSync(backupFile);
-        console.log(`🔄 已回滚: ${filePath}`);
+        logger.debug(`🔄 已回滚: ${filePath}`);
       }
 
-      console.error(`修复失败: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error(`修复失败: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }
@@ -510,9 +511,9 @@ class EnterpriseCodeFixer {
    * 生成报告
    */
   private generateReport(results: FixResult[]): void {
-    console.log('\n' + '='.repeat(60));
-    console.log('📊 企业级代码修复报告');
-    console.log('='.repeat(60));
+    logger.debug('\n' + '='.repeat(60));
+    logger.debug('📊 企业级代码修复报告');
+    logger.debug('='.repeat(60));
 
     const stats = {
       total: results.length,
@@ -523,42 +524,42 @@ class EnterpriseCodeFixer {
       lowRisk: results.filter(r => r.impact.breakingRisk === 'low').length,
     };
 
-    console.log('📈 修复统计:');
-    console.log(`   总问题数: ${stats.total}`);
-    console.log(`   修复成功: ${stats.fixed}`);
-    console.log(`   修复失败: ${stats.failed}`);
-    console.log(`   高风险: ${stats.highRisk}`);
-    console.log(`   中风险: ${stats.mediumRisk}`);
-    console.log(`   低风险: ${stats.lowRisk}`);
+    logger.debug('📈 修复统计:');
+    logger.debug(`   总问题数: ${stats.total}`);
+    logger.debug(`   修复成功: ${stats.fixed}`);
+    logger.debug(`   修复失败: ${stats.failed}`);
+    logger.debug(`   高风险: ${stats.highRisk}`);
+    logger.debug(`   中风险: ${stats.mediumRisk}`);
+    logger.debug(`   低风险: ${stats.lowRisk}`);
 
     if (results.length > 0) {
-      console.log('\n📋 详细修复记录:');
+      logger.debug('\n📋 详细修复记录:');
 
       results.forEach((result, index) => {
-        console.log(`\n${index + 1}. ${result.issue.message}`);
-        console.log(`   文件: ${result.issue.file}:${result.issue.line}`);
-        console.log(`   严重性: ${result.issue.severity}`);
-        console.log(`   状态: ${result.fixed ? '✅ 已修复' : '❌ 未修复'}`);
+        logger.debug(`\n${index + 1}. ${result.issue.message}`);
+        logger.debug(`   文件: ${result.issue.file}:${result.issue.line}`);
+        logger.debug(`   严重性: ${result.issue.severity}`);
+        logger.debug(`   状态: ${result.fixed ? '✅ 已修复' : '❌ 未修复'}`);
 
-        console.log('   影响分析:');
-        console.log(`     语义变化: ${result.impact.semanticChange}`);
-        console.log(`     性能影响: ${result.impact.performanceImpact}`);
-        console.log(`     可读性变化: ${result.impact.readabilityChange}`);
-        console.log(`     破坏风险: ${result.impact.breakingRisk}`);
-        console.log(`     置信度: ${result.impact.confidenceLevel}%`);
-        console.log(`     描述: ${result.impact.changeDescription}`);
+        logger.debug('   影响分析:');
+        logger.debug(`     语义变化: ${result.impact.semanticChange}`);
+        logger.debug(`     性能影响: ${result.impact.performanceImpact}`);
+        logger.debug(`     可读性变化: ${result.impact.readabilityChange}`);
+        logger.debug(`     破坏风险: ${result.impact.breakingRisk}`);
+        logger.debug(`     置信度: ${result.impact.confidenceLevel}%`);
+        logger.debug(`     描述: ${result.impact.changeDescription}`);
 
         if (this.config.mode === 'dry-run') {
-          console.log('   修复预览:');
-          console.log(`     原始: ${result.preview.original}`);
-          console.log(`     修复: ${result.preview.fixed}`);
+          logger.debug('   修复预览:');
+          logger.debug(`     原始: ${result.preview.original}`);
+          logger.debug(`     修复: ${result.preview.fixed}`);
         }
       });
     }
 
-    console.log('\n' + '='.repeat(60));
-    console.log('🔒 安全修复完成');
-    console.log('='.repeat(60));
+    logger.debug('\n' + '='.repeat(60));
+    logger.debug('🔒 安全修复完成');
+    logger.debug('='.repeat(60));
   }
 
   /**
@@ -607,7 +608,7 @@ class BackupManager {
     fs.writeFileSync(backupPath, backupContent);
     fs.writeFileSync(`${backupPath}.info`, JSON.stringify(backupInfo, null, 2));
 
-    console.log(`📦 备份创建: ${backupPath}`);
+    logger.debug(`📦 备份创建: ${backupPath}`);
   }
 
   private calculateChecksum(content: string): string {
@@ -864,8 +865,8 @@ async function main() {
     },
   };
 
-  console.log('🏢 企业级安全TypeScript代码修复工具');
-  console.log('=====================================');
+  logger.debug('🏢 企业级安全TypeScript代码修复工具');
+  logger.debug('=====================================');
 
   const fixer = new EnterpriseCodeFixer(config);
 
@@ -873,7 +874,7 @@ async function main() {
   const files = findTargetFiles(config.filePatterns, config.excludePatterns);
 
   if (files.length === 0) {
-    console.log('ℹ️ 未找到目标文件');
+    logger.debug('ℹ️ 未找到目标文件');
     return;
   }
 
@@ -882,11 +883,11 @@ async function main() {
 
   // 输出结果统计
   const fixedCount = results.filter(r => r.fixed).length;
-  console.log(`\n🎯 修复完成: ${fixedCount}/${results.length}`);
+  logger.debug(`\n🎯 修复完成: ${fixedCount}/${results.length}`);
 
   if (config.mode === 'dry-run' && results.length > 0) {
-    console.log('\n💡 提示: 使用 --mode fix 应用修复');
-    console.log('⚠️  警告: 首次使用请仔细审查每个修复');
+    logger.debug('\n💡 提示: 使用 --mode fix 应用修复');
+    logger.debug('⚠️  警告: 首次使用请仔细审查每个修复');
   }
 }
 
@@ -907,7 +908,7 @@ function findTargetFiles(patterns: string[], excludePatterns: string[]): string[
 // 执行
 if (require.main === module) {
   main().catch(error => {
-    console.error('❌ 企业级代码修复失败:', error);
+    logger.error('❌ 企业级代码修复失败:', error);
     process.exit(1);
   });
 }

@@ -6,6 +6,7 @@
 import type { Request } from 'express';
 import { LogSanitizer } from './logSanitizer';
 import { promises as fs } from 'fs';
+import { logger } from '@/utils/logger';
 
 export interface FileValidationOptions {
   maxSize?: number;
@@ -153,7 +154,7 @@ export class SecureUpload {
   static logUpload(filename: string, userId: string, success: boolean): void {
     const sanitizedFilename = LogSanitizer.sanitize(filename);
     const status = success ? 'SUCCESS' : 'FAILED';
-    console.log(`File upload ${status}: ${sanitizedFilename} by user ${userId}`);
+    logger.debug(`File upload ${status}: ${sanitizedFilename} by user ${userId}`);
   }
 
   static generateSecurePath(userId: string, filename: string): string {
@@ -202,7 +203,7 @@ export class SecureUpload {
 
       return { safe: true };
     } catch (error: any) {
-      console.error('Malware scan failed:', error);
+      logger.error('Malware scan failed:', error);
       return { safe: false, threat: 'Scan failed' };
     }
   }

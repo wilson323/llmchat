@@ -62,7 +62,7 @@ export class DatabaseTestEnvironment {
 
       logger.info('测试数据库环境初始化完成', {
         component: 'dbTestUtils',
-        poolSize: this.testPool?.totalCount || 0,
+        poolSize: this.testPool?.totalCount ?? 0,
       });
     } catch (error: any) {
       logger.error('测试数据库环境初始化失败', {

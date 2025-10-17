@@ -292,7 +292,7 @@ export class DifyInitService {
       // 转换文件上传配置
       const fileUpload = params.file_upload ? {
         enabled: params.file_upload.enabled,
-        allowedTypes: params.file_upload.allowed_file_extensions || [],
+        allowedTypes: params.file_upload.allowed_file_extensions ?? [],
       } : undefined;
 
       logger.info('✅ Dify应用信息获取成功', {

@@ -38,7 +38,7 @@ export class ChatLogService {
 
   constructor() {
     const cfg = loadAppConfig();
-    const cfgLog = cfg.logging || {};
+    const cfgLog = cfg.logging ?? {};
 
     // 默认开启，允许通过配置文件/环境变量关闭
     this.enabled =

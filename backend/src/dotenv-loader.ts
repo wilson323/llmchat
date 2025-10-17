@@ -9,6 +9,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { logger } from '@/utils/logger';
 
 // 尝试多个可能的 .env 文件路径
 const envCandidates = [
@@ -26,17 +27,17 @@ for (const envPath of envCandidates) {
     if (!result.error) {
       loaded = true;
       loadedPath = envPath;
-      console.log('[DOTENV] ✓ 环境变量已加载:', envPath);
+      logger.debug('[DOTENV] ✓ 环境变量已加载:', envPath);
       break;
     }
   }
 }
 
 if (!loaded) {
-  console.error('[DOTENV] ✗ 无法加载环境变量！');
-  console.error('[DOTENV] 尝试的路径:');
-  envCandidates.forEach(p => console.error(`  - ${p} (${fs.existsSync(p) ? '存在' : '不存在'})`));
-  console.error('[DOTENV] 当前工作目录:', process.cwd());
+  logger.error('[DOTENV] ✗ 无法加载环境变量！');
+  logger.error('[DOTENV] 尝试的路径:');
+  envCandidates.forEach(p => logger.error(`  - ${p} (${fs.existsSync(p) ? '存在' : '不存在'})`));
+  logger.error('[DOTENV] 当前工作目录:', process.cwd());
   process.exit(1);
 }
 
@@ -45,12 +46,12 @@ const requiredEnvVars = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAM
 const missingVars = requiredEnvVars.filter(v => !process.env[v]);
 
 if (missingVars.length > 0) {
-  console.error('[DOTENV] ✗ 缺少必需的环境变量:', missingVars.join(', '));
-  console.error('[DOTENV] 已加载文件:', loadedPath);
+  logger.error('[DOTENV] ✗ 缺少必需的环境变量:', missingVars.join(', '));
+  logger.error('[DOTENV] 已加载文件:', loadedPath);
   process.exit(1);
 }
 
-console.log('[DOTENV] ✓ 所有必需环境变量已就绪');
-console.log('[DOTENV] ✓ DB_HOST =', process.env.DB_HOST);
-console.log('[DOTENV] ✓ DB_PORT =', process.env.DB_PORT);
+logger.debug('[DOTENV] ✓ 所有必需环境变量已就绪');
+logger.debug('[DOTENV] ✓ DB_HOST =', process.env.DB_HOST);
+logger.debug('[DOTENV] ✓ DB_PORT =', process.env.DB_PORT);
 

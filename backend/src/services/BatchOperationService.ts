@@ -23,15 +23,13 @@ export interface BatchOperation {
 export interface BatchOperationResult {
   successful: Array<{
     id?: string;
-    type?: string;
-    data?: unknown;
-    options?: QueueOptions;
-    updates?: unknown;
+    result?: unknown;
+    index: number;
   }>;
   failed: Array<{
     index: number;
     error: string;
-    data: unknown;
+    data: any;
   }>;
   total: number;
   duration: number;
@@ -39,7 +37,7 @@ export interface BatchOperationResult {
 
 export interface BatchAddOperation {
   type: string;
-  data: unknown;
+  data: any;
   options?: QueueOptions;
   priority?: number;
   delay?: number;
@@ -69,7 +67,7 @@ export class BatchOperationService {
     enableTransactions?: boolean;
   } = {}) {
     this.connectionPool = connectionPool;
-    this.batchSize = options.batchSize || 100;
+    this.batchSize = options.batchSize ?? 100;
     this.enablePipelining = options.enablePipelining ?? true;
     this.enableTransactions = options.enableTransactions ?? false;
   }
@@ -147,13 +145,13 @@ export class BatchOperationService {
               name: operation.type,
               data: operation.data,
               opts: {
-                priority: operation.priority || 5,
-                delay: operation.delay || 0,
-                attempts: operation.options?.attempts || 3,
+                priority: operation.priority ?? 5,
+                delay: operation.delay ?? 0,
+                attempts: operation.options?.attempts ?? 3,
                 removeOnComplete: operation.options?.removeOnComplete ?? true,
                 removeOnFail: operation.options?.removeOnFail ?? true,
                 backoff: operation.options?.backoff || BackoffStrategy.EXPONENTIAL,
-                metadata: operation.options?.metadata || {}
+                metadata: operation.options?.metadata ?? {}
               },
               createdAt: new Date(),
               attemptsMade: 0

@@ -59,7 +59,7 @@ export class ProductPreviewController {
         code: 'DOUBAO_IMAGE_GENERATE_FAILED',
         message: errResp?.response?.data?.message ?? errResp?.message ?? '生成现场预览失败',
         timestamp: new Date().toISOString(),
-        details: process.env.NODE_ENV === 'development' ? errResp?.response?.data ?? err : undefined,
+        details: (process.env.NODE_ENV === 'development' ? errResp?.response?.data ?? err : undefined) as any,
       };
       res.status(500).json(apiError);
     }

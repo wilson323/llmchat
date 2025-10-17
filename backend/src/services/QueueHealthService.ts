@@ -104,7 +104,7 @@ export class QueueHealthService {
           queueConfiguration: configIssues.length === 0 ? 'pass' : 'fail'
         },
         metrics: {
-          totalJobs: stats.total || 0,
+          totalJobs: stats.total ?? 0,
           waitingJobs: stats.waiting,
           activeJobs: stats.active,
           completedJobs: stats.completed,
@@ -181,9 +181,9 @@ export class QueueHealthService {
   /**
    * 检查队列大小
    */
-  private async checkQueueSize(queueName: string, stats: {waiting: number; delayed: number}): Promise<{ healthy: boolean; message: string }> {
+  private async checkQueueSize(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
     try {
-      const maxSize = this.healthConfig.maxQueueSize || 1000;
+      const maxSize = this.healthConfig.maxQueueSize ?? 1000;
       const currentSize = stats.total;
 
       if (currentSize > maxSize) {
@@ -208,9 +208,9 @@ export class QueueHealthService {
   /**
    * 检查处理时间
    */
-  private async checkProcessingTime(queueName: string, stats: {processing?: number}): Promise<{ healthy: boolean; message: string }> {
+  private async checkProcessingTime(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
     try {
-      const maxTime = this.healthConfig.maxProcessingTime || 60000;
+      const maxTime = this.healthConfig.maxProcessingTime ?? 60000;
       const avgTime = stats.avgProcessingTime;
 
       if (avgTime > maxTime) {
@@ -235,9 +235,9 @@ export class QueueHealthService {
   /**
    * 检查错误率
    */
-  private async checkErrorRate(queueName: string, stats: {failed: number; completed: number}): Promise<{ healthy: boolean; message: string }> {
+  private async checkErrorRate(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
     try {
-      const maxErrorRate = this.healthConfig.maxErrorRate || 0.1;
+      const maxErrorRate = this.healthConfig.maxErrorRate ?? 0.1;
       const currentErrorRate = stats.errorRate;
 
       if (currentErrorRate > maxErrorRate) {
@@ -264,7 +264,7 @@ export class QueueHealthService {
    */
   private async checkMemoryUsage(queueName: string): Promise<{ healthy: boolean; message: string }> {
     try {
-      const maxUsage = this.healthConfig.maxMemoryUsage || 0.8;
+      const maxUsage = this.healthConfig.maxMemoryUsage ?? 0.8;
 
       // 获取Redis内存使用情况
       const memoryInfo = await this.redis.info('memory');
@@ -355,7 +355,7 @@ export class QueueHealthService {
   /**
    * 检查过期作业
    */
-  private async checkStaleJobs(queueName: string, stats: Record<string, unknown>): Promise<{ healthy: boolean; message: string }> {
+  private async checkStaleJobs(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
     try {
       const now = Date.now();
       const staleThreshold = 24 * 60 * 60 * 1000; // 24小时
@@ -458,7 +458,7 @@ export class QueueHealthService {
       issues.push('重试延迟配置无效');
     }
 
-    if ((queueConfig.visibilityTimeout || 0) < 0) {
+    if ((queueConfig.visibilityTimeout ?? 0) < 0) {
       issues.push('可见性超时配置无效');
     }
 

@@ -174,8 +174,8 @@ export async function waitFor(
   condition: () => boolean | Promise<boolean>,
   options?: { timeout?: number; interval?: number }
 ): Promise<void> {
-  const timeout = options?.timeout || 5000;
-  const interval = options?.interval || 100;
+  const timeout = options?.timeout ?? 5000;
+  const interval = options?.interval ?? 100;
   const startTime = Date.now();
   
   while (Date.now() - startTime < timeout) {

@@ -17,6 +17,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { logger } from '@/utils/logger';
 
 interface SecureConfigOptions {
   backupDir: string;
@@ -91,7 +92,7 @@ class SecureConfigManager {
 
         // 5. 安全写入
         await this.writeJSONFile(filePath, result.config);
-        console.log('✅ config/agents.json processed successfully');
+        logger.debug('✅ config/agents.json processed successfully');
       }
 
       return {
@@ -141,7 +142,7 @@ class SecureConfigManager {
     // 保存备份信息
     this.backups.set(filePath, backupInfo);
 
-    console.log(`📦 Secure backup created: ${backupPath}`);
+    logger.debug(`📦 Secure backup created: ${backupPath}`);
     return backupInfo;
   }
 
@@ -153,7 +154,7 @@ class SecureConfigManager {
       const content = fs.readFileSync(filePath, 'utf-8');
       return JSON.parse(content);
     } catch (error: any) {
-      console.error(`❌ Failed to parse JSON file ${filePath}:`, error);
+      logger.error(`❌ Failed to parse JSON file ${filePath}:`, error);
       return null;
     }
   }
@@ -340,7 +341,7 @@ class SecureConfigManager {
     }
 
     fs.writeFileSync(filePath, backupContent, 'utf-8');
-    console.log(`🔄 Restored from backup: ${backupInfo.backupPath}`);
+    logger.debug(`🔄 Restored from backup: ${backupInfo.backupPath}`);
   }
 
   /**
@@ -364,31 +365,31 @@ class SecureConfigManager {
    * 生成安全报告
    */
   generateReport(): void {
-    console.log('\n' + '='.repeat(60));
-    console.log('🛡️ 安全配置管理报告');
-    console.log('='.repeat(60) + '\n');
+    logger.debug('\n' + '='.repeat(60));
+    logger.debug('🛡️ 安全配置管理报告');
+    logger.debug('='.repeat(60) + '\n');
 
-    console.log('✅ 配置处理完成，遵循安全原则:\n');
+    logger.debug('✅ 配置处理完成，遵循安全原则:\n');
 
-    console.log('🔒 安全措施:');
-    console.log('   - 禁止使用正则表达式进行结构化数据处理');
-    console.log('   - 使用类型安全的JSON解析器');
-    console.log('   - 实现完整性校验和原子操作');
-    console.log('   - 提供安全的备份和回滚机制\n');
+    logger.debug('🔒 安全措施:');
+    logger.debug('   - 禁止使用正则表达式进行结构化数据处理');
+    logger.debug('   - 使用类型安全的JSON解析器');
+    logger.debug('   - 实现完整性校验和原子操作');
+    logger.debug('   - 提供安全的备份和回滚机制\n');
 
-    console.log('📁 备份文件:');
+    logger.debug('📁 备份文件:');
     for (const [filePath, backupInfo] of this.backups) {
-      console.log(`   ${filePath} -> ${backupInfo.backupPath}`);
-      console.log(`   校验和: ${backupInfo.checksum.substring(0, 16)}...`);
+      logger.debug(`   ${filePath} -> ${backupInfo.backupPath}`);
+      logger.debug(`   校验和: ${backupInfo.checksum.substring(0, 16)}...`);
     }
-    console.log();
+    logger.debug();
 
-    console.log('⚠️ 重要提醒:');
-    console.log('   - 备份文件包含敏感信息，请妥善保管');
-    console.log('   - 建议在生产环境中使用环境变量管理');
-    console.log('   - 定期轮换API密钥和敏感配置\n');
+    logger.debug('⚠️ 重要提醒:');
+    logger.debug('   - 备份文件包含敏感信息，请妥善保管');
+    logger.debug('   - 建议在生产环境中使用环境变量管理');
+    logger.debug('   - 定期轮换API密钥和敏感配置\n');
 
-    console.log('='.repeat(60) + '\n');
+    logger.debug('='.repeat(60) + '\n');
   }
 }
 
@@ -397,26 +398,26 @@ async function main() {
   const manager = new SecureConfigManager();
 
   try {
-    console.log('🛡️ 开始安全配置处理...\n');
+    logger.debug('🛡️ 开始安全配置处理...\n');
 
     const result = await manager.processAgentsConfig();
 
     if (result.valid) {
-      console.log('✅ 配置处理成功完成');
+      logger.debug('✅ 配置处理成功完成');
       if (result.warnings.length > 0) {
-        console.log('\n⚠️ 警告:');
-        result.warnings.forEach(warning => console.log(`   - ${warning}`));
+        logger.debug('\n⚠️ 警告:');
+        result.warnings.forEach(warning => logger.debug(`   - ${warning}`));
       }
     } else {
-      console.log('❌ 配置处理失败');
-      result.errors.forEach(error => console.log(`   - ${error}`));
+      logger.debug('❌ 配置处理失败');
+      result.errors.forEach(error => logger.debug(`   - ${error}`));
       process.exit(1);
     }
 
     manager.generateReport();
 
   } catch (error: any) {
-    console.error('❌ 安全配置处理失败:', error);
+    logger.error('❌ 安全配置处理失败:', error);
     process.exit(1);
   }
 }

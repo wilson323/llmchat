@@ -14,6 +14,7 @@
 import * as ts from 'typescript';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '@/utils/logger';
 
 interface TypeSafetyIssue {
   file: string;
@@ -383,46 +384,46 @@ function main() {
   const args = process.argv.slice(2);
   const dryRun = !args.includes('--fix');
 
-  console.log('🔍 Type Safety Enhancement Tool');
-  console.log(`Mode: ${dryRun ? 'Dry Run' : 'Fix Mode'}`);
-  console.log('');
+  logger.debug('🔍 Type Safety Enhancement Tool');
+  logger.debug(`Mode: ${dryRun ? 'Dry Run' : 'Fix Mode'}`);
+  logger.debug('');
 
   const configPath = path.join(process.cwd(), 'tsconfig.json');
 
   if (!fs.existsSync(configPath)) {
-    console.error('❌ tsconfig.json not found');
+    logger.error('❌ tsconfig.json not found');
     process.exit(1);
   }
 
   const enhancer = new TypeSafetyEnhancer(configPath);
 
-  console.log('📊 Analyzing project...');
+  logger.debug('📊 Analyzing project...');
   const result = enhancer.analyze({ dryRun });
 
-  console.log(`Found ${result.issues.length} type safety issues`);
-  console.log('');
+  logger.debug(`Found ${result.issues.length} type safety issues`);
+  logger.debug('');
 
   // Display summary
   const summary = enhancer.generateSummary();
-  console.log('📈 Summary:');
-  console.log(`   Errors: ${summary.errors}`);
-  console.log(`   Warnings: ${summary.warnings}`);
-  console.log(`   Info: ${summary.info}`);
-  console.log('');
+  logger.debug('📈 Summary:');
+  logger.debug(`   Errors: ${summary.errors}`);
+  logger.debug(`   Warnings: ${summary.warnings}`);
+  logger.debug(`   Info: ${summary.info}`);
+  logger.debug('');
 
   // Generate report
   const report = enhancer.generateReport();
   const reportPath = path.join(process.cwd(), 'type-safety-report.md');
 
   if (dryRun) {
-    console.log('📝 Generating detailed report...');
+    logger.debug('📝 Generating detailed report...');
     fs.writeFileSync(reportPath, report);
-    console.log(`✅ Report saved to: ${reportPath}`);
+    logger.debug(`✅ Report saved to: ${reportPath}`);
   } else {
-    console.log('🔧 Fix mode not implemented yet');
-    console.log('📝 Generating detailed report instead...');
+    logger.debug('🔧 Fix mode not implemented yet');
+    logger.debug('📝 Generating detailed report instead...');
     fs.writeFileSync(reportPath, report);
-    console.log(`✅ Report saved to: ${reportPath}`);
+    logger.debug(`✅ Report saved to: ${reportPath}`);
   }
 
   // Exit with error code if there are error-level issues

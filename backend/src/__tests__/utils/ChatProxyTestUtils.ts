@@ -98,7 +98,7 @@ export function createChatProxyServiceWithMockHTTP(
   const originalClient = (service as any).httpClient;
   (service as any).httpClient = {
     ...mockHTTPClient,
-    defaults: originalClient?.defaults || {},
+    defaults: originalClient?.defaults ?? {},
     interceptors: originalClient?.interceptors || { request: [], response: [] },
   };
 
@@ -250,7 +250,7 @@ export function createChatProxyServiceWithCustomAgent(
   const originalClient = (service as any).httpClient;
   (service as any).httpClient = {
     ...mockHTTPClient,
-    defaults: originalClient?.defaults || {},
+    defaults: originalClient?.defaults ?? {},
     interceptors: originalClient?.interceptors || { request: [], response: [] },
   };
 

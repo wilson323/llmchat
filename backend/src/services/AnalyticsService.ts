@@ -243,7 +243,7 @@ export class AnalyticsService {
           }
           const agentKey = agent.id;
           const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
-          const count = Number(row.count || 0);
+          const count = Number(row.count ?? 0);
           perDay.set(agentKey, (perDay.get(agentKey) ?? 0) + count);
           dayMap.set(dayKey, perDay);
           agentTotalsMap.set(agentKey, (agentTotalsMap.get(agentKey) ?? 0) + count);
@@ -273,7 +273,7 @@ export class AnalyticsService {
         const dayKey = row.day.toISOString().slice(0, 10);
         const agentKey = row.agent_id;
         const perDay = dayMap.get(dayKey) ?? new Map<string, number>();
-        const count = Number(row.count || 0);
+        const count = Number(row.count ?? 0);
         perDay.set(agentKey, (perDay.get(agentKey) ?? 0) + count);
         dayMap.set(dayKey, perDay);
         agentTotalsMap.set(agentKey, (agentTotalsMap.get(agentKey) ?? 0) + count);
@@ -385,7 +385,7 @@ export class AnalyticsService {
           if (!agent) {
             return;
           }
-          const count = Number(row.count || 0);
+          const count = Number(row.count ?? 0);
           countMap.set(agent.id, (countMap.get(agent.id) ?? 0) + count);
         });
       } catch (error: any) {
@@ -406,7 +406,7 @@ export class AnalyticsService {
       });
 
       pgRows.forEach((row) => {
-        countMap.set(row.agent_id, Number(row.count || 0));
+        countMap.set(row.agent_id, Number(row.count ?? 0));
       });
     }
 

@@ -41,21 +41,21 @@ export class QueueOperationsService {
       data: data as Record<string, unknown>,
       opts: {
         priority: options.priority || MessagePriority.NORMAL,
-        delay: options.delay || 0,
-        maxAttempts: options.maxAttempts || 3,
-        timeout: options.timeout || 30000,
-        metadata: options.metadata || {}
+        delay: options.delay ?? 0,
+        maxAttempts: options.maxAttempts ?? 3,
+        timeout: options.timeout ?? 30000,
+        metadata: options.metadata ?? {}
       },
       attemptsMade: 0,
       status: JobStatus.WAITING,
       createdAt: new Date(),
-      scheduledAt: new Date(Date.now() + (options.delay || 0))
+      scheduledAt: new Date(Date.now() + (options.delay ?? 0))
     };
 
     const serializedJob = JSON.stringify(job);
 
     try {
-      if ((job.opts.delay || 0) > 0) {
+      if ((job.opts.delay ?? 0) > 0) {
         // 延迟作业 - 添加到延迟队列
         await this.redis.zadd(`${queueName}:delayed`, job.scheduledAt!.getTime(), jobId);
         await this.redis.hset(`${queueName}:jobs`, jobId, serializedJob);

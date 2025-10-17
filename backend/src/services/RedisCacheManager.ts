@@ -638,8 +638,8 @@ export class RedisCacheManager {
     }
 
     const lockKey = `lock:${this.generateKey(key)}`;
-    const retry = options.retry || 0;
-    const delay = options.delay || 100;
+    const retry = options.retry ?? 0;
+    const delay = options.delay ?? 100;
 
     for (let attempt = 0; attempt <= retry; attempt++) {
       try {

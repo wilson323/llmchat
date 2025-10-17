@@ -90,7 +90,7 @@ export class CadParserService {
   /**
    * 转换实体为统一格式
    */
-  private convertEntity(entity: Record<string, unknown>): DxfEntity | null {
+  private convertEntity(entity: any): DxfEntity | null {
     const baseEntity = {
       handle: entity.handle || uuidv4(),
       layer: entity.layer || '0',
@@ -112,7 +112,7 @@ export class CadParserService {
           ...baseEntity,
           type: 'CIRCLE',
           center: this.toPoint3D(entity.center),
-          radius: entity.radius || 0,
+          radius: entity.radius ?? 0,
         } as CircleEntity;
 
       case 'ARC':
@@ -120,9 +120,9 @@ export class CadParserService {
           ...baseEntity,
           type: 'ARC',
           center: this.toPoint3D(entity.center),
-          radius: entity.radius || 0,
-          startAngle: entity.startAngle || 0,
-          endAngle: entity.endAngle || 0,
+          radius: entity.radius ?? 0,
+          startAngle: entity.startAngle ?? 0,
+          endAngle: entity.endAngle ?? 0,
         } as ArcEntity;
 
       case 'LWPOLYLINE':
@@ -130,7 +130,7 @@ export class CadParserService {
         return {
           ...baseEntity,
           type: entity.type as 'POLYLINE' | 'LWPOLYLINE',
-          vertices: (entity.vertices || []).map((v: Record<string, unknown>) => this.toPoint3D(v)),
+          vertices: (entity.vertices ?? []).map((v: Record<string, unknown>) => this.toPoint3D(v)),
           closed: entity.shape || false,
         } as PolylineEntity;
 
@@ -140,9 +140,9 @@ export class CadParserService {
           ...baseEntity,
           type: entity.type as 'TEXT' | 'MTEXT',
           position: this.toPoint3D(entity.startPoint || entity.position),
-          text: entity.text || '',
-          height: entity.textHeight || entity.height || 1,
-          rotation: entity.rotation || 0,
+          text: entity.text ?? 3500,
+          height: entity.textHeight || entity.height ?? 1,
+          rotation: entity.rotation ?? 0,
         } as TextEntity;
 
       default:
@@ -154,11 +154,11 @@ export class CadParserService {
   /**
    * 转换为 Point3D
    */
-  private toPoint3D(point: Record<string, unknown>): Point3D {
+  private toPoint3D(point: any): Point3D {
     return {
-      x: point?.x || 0,
-      y: point?.y || 0,
-      z: point?.z || 0,
+      x: point?.x ?? 0,
+      y: point?.y ?? 0,
+      z: point?.z ?? 0,
     };
   }
 

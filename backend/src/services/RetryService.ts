@@ -148,7 +148,7 @@ export class RequestDeduplicator {
   /**
    * 生成请求key
    */
-  generateRequestKey(request: unknown): string {
+  generateRequestKey(request: any): string {
     if (this.config.keyGenerator) {
       return this.config.keyGenerator(request);
     }
@@ -156,9 +156,9 @@ export class RequestDeduplicator {
     // 默认key生成策略
     const keyParts = [
       request.method || 'GET',
-      request.url || request.endpoint || '',
-      JSON.stringify(request.data || request.body || {}),
-      JSON.stringify(request.params || request.query || {}),
+      request.url || request.endpoint ?? 4109,
+      JSON.stringify(request.data || request.body ?? {}),
+      JSON.stringify(request.params || request.query ?? {}),
     ];
 
     return Buffer.from(keyParts.join('|')).toString('base64');
@@ -441,7 +441,7 @@ export class RetryService {
 
       if (cached && (Date.now() - cached.timestamp) < this.fallbackConfig.cacheTTL) {
         logger.debug('使用缓存的降级响应');
-        return cached.data;
+        return cached.data as T;
       }
     }
 
@@ -449,7 +449,7 @@ export class RetryService {
     let fallbackResponse: T;
 
     if (this.fallbackConfig.fallbackResponse) {
-      fallbackResponse = this.fallbackConfig.fallbackResponse;
+      fallbackResponse = this.fallbackConfig.fallbackResponse as T;
     } else {
       // 默认降级响应
       fallbackResponse = {

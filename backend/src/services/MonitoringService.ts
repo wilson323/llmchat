@@ -470,10 +470,10 @@ export class MonitoringService extends EventEmitter {
 
         // 从stats中提取throughput和processingTime（如果可用）
         if ('throughput' in stats) {
-          totalThroughput += (stats).throughput || 0;
+          totalThroughput += (stats).throughput ?? 0;
         }
         if ('avgProcessingTime' in stats) {
-          totalProcessingTime += (stats).avgProcessingTime || 0;
+          totalProcessingTime += (stats).avgProcessingTime ?? 0;
         }
 
         queueCount++;
@@ -814,7 +814,7 @@ export class MonitoringService extends EventEmitter {
 
     for (const part of parts) {
       if (value && typeof value === 'object' && part in value) {
-        value = value[part];
+        value = (value as any)[part];
       } else {
         return null;
       }
@@ -1053,7 +1053,7 @@ export class MonitoringService extends EventEmitter {
       timestamp: Date.now(),
       acknowledged: false,
       resolved: false,
-      tags: alertData.tags || {}
+      tags: alertData.tags ?? {}
     };
 
     this.activeAlerts.set(alertData.ruleId, alert);
@@ -1254,7 +1254,7 @@ export class MonitoringService extends EventEmitter {
     return {
       timestamp: Date.now(),
       duration: Date.now() - this.stats.startTime,
-      metrics: currentMetrics || {} as MonitoringMetrics,
+      metrics: currentMetrics ?? {} as MonitoringMetrics,
       alerts: activeAlerts,
       systemHealth,
       recommendations
@@ -1321,7 +1321,7 @@ export class MonitoringService extends EventEmitter {
       configuredRules: this.alertRules.size,
       metricsHistorySize: this.metricsHistory.length,
       alertHistorySize: this.alertHistory.length,
-      lastMetricsTime: this.stats.lastMetricsTime || 0
+      lastMetricsTime: this.stats.lastMetricsTime ?? 0
     };
   }
 

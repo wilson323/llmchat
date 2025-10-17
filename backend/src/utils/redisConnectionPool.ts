@@ -124,7 +124,7 @@ export class RedisConnectionPool extends EventEmitter {
         host: this.config.host,
         port: this.config.port,
         password: this.config.password,
-        db: this.config.db || 0,
+        db: this.config.db ?? 0,
         keyPrefix: this.config.keyPrefix || 'llmchat:',
         enableOfflineQueue: this.config.enableOfflineQueue,
         maxRetriesPerRequest: this.config.maxRetriesPerRequest,

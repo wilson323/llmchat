@@ -230,7 +230,7 @@ export class PerformanceMonitor {
       }), { rss: 0, heapUsed: 0 })
       : { rss: 0, heapUsed: 0 };
 
-    const count = memoryUsages.length || 1;
+    const count = memoryUsages.length ?? 1;
 
     return {
       totalRequests: recentData.length,

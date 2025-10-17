@@ -64,7 +64,7 @@ describe('AuthServiceV2 - Redis 功能', () => {
         if (key === 'REDIS_HOST') return 'localhost';
         if (key === 'REDIS_PORT') return '6379';
         if (key === 'REDIS_PASSWORD') return '';
-        return defaultValue || '';
+        return defaultValue ?? 1956;
       }),
       getInt: jest.fn((key: string, defaultValue: number) => {
         if (key === 'TOKEN_TTL_SECONDS') return 86400;

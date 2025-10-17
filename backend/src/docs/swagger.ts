@@ -1,5 +1,6 @@
 import type { Application, Request, Response, RequestHandler } from "express";
 import { loadOptionalModule } from "@/utils/loadOptionalModule";
+import { logger } from '@/utils/logger';
 const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
@@ -50,11 +51,11 @@ export async function setupSwagger(app: Application): Promise<void> {
       res.send(specs);
     });
 
-    console.log('✅ Swagger API文档已启用');
-    console.log('📄 访问地址: http://localhost:3001/api-docs');
+    logger.debug('✅ Swagger API文档已启用');
+    logger.debug('📄 访问地址: http://localhost:3001/api-docs');
   } catch (error: any) {
-    console.warn('⚠️ Swagger依赖未安装，API文档功能已禁用');
-    console.warn(
+    logger.warn('⚠️ Swagger依赖未安装，API文档功能已禁用');
+    logger.warn(
       '💡 运行以下命令安装: pnpm add -D swagger-jsdoc swagger-ui-express @types/swagger-jsdoc @types/swagger-ui-express',
     );
   }

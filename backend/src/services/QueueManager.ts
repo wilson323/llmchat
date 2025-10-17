@@ -64,7 +64,7 @@ export class QueueManager extends EventEmitter {
       host: config.redis.host,
       port: config.redis.port,
       ...(config.redis.password && { password: config.redis.password }),
-      db: config.redis.db || 0,
+      db: config.redis.db ?? 0,
       keyPrefix: config.redis.keyPrefix || 'queue:',
       maxConnections: 20,
       minConnections: 5,
@@ -83,7 +83,7 @@ export class QueueManager extends EventEmitter {
       host: config.redis.host,
       port: config.redis.port,
       ...(config.redis.password && { password: config.redis.password }),
-      db: config.redis.db || 0,
+      db: config.redis.db ?? 0,
       keyPrefix: config.redis.keyPrefix || 'queue:',
       enableReadyCheck: false,
       maxRetriesPerRequest: null,
@@ -91,7 +91,7 @@ export class QueueManager extends EventEmitter {
 
     // 初始化批量操作服务
     this.batchOperationService = new BatchOperationService(this.connectionPool, {
-      batchSize: config.batchSize || 100,
+      batchSize: config.batchSize ?? 100,
       enablePipelining: config.enablePipelining ?? true,
       enableTransactions: config.enableTransactions ?? false
     });
@@ -343,13 +343,13 @@ export class QueueManager extends EventEmitter {
       data: data as Record<string, unknown>,
       opts: {
         priority: options.priority || queue.defaultPriority,
-        delay: options.delay || 0,
+        delay: options.delay ?? 0,
         attempts: options.attempts || queue.maxRetries,
         removeOnComplete: options.removeOnComplete ?? true,
         removeOnFail: options.removeOnFail ?? true,
         backoff: (options.backoff as any)?.strategy || BackoffStrategy.EXPONENTIAL,
-        metadata: options.metadata || {},
-        deadLetterQueue: options.deadLetterQueue || queue.deadLetterQueue || ''
+        metadata: options.metadata ?? {},
+        deadLetterQueue: options.deadLetterQueue || queue.deadLetterQueue ?? 10691
       },
       createdAt: new Date(),
       attemptsMade: 0
@@ -364,7 +364,7 @@ export class QueueManager extends EventEmitter {
       maxAttempts: job.opts.attempts!,
       delay: job.opts.delay!,
       createdAt: job.createdAt,
-      metadata: job.opts.metadata || {}
+      metadata: job.opts.metadata ?? {}
     };
 
     // 使用连接池存储任务数据
@@ -795,7 +795,7 @@ export class QueueManager extends EventEmitter {
         stats[queueName] = {
           ...queueStats,
           ...batchStats[queueName],
-          processing: this.processing.get(queueName)?.size || 0,
+          processing: this.processing.get(queueName)?.size ?? 0,
           throughput: queueStats.throughput,
           avgProcessingTime: queueStats.avgProcessingTime,
           errorRate: queueStats.errorRate,
@@ -1209,7 +1209,7 @@ export class QueueManager extends EventEmitter {
       stats.completed = completed;
       stats.failed = failed;
       stats.delayed = delayed;
-      stats.processing = this.processing.get(queueName)?.size || 0;
+      stats.processing = this.processing.get(queueName)?.size ?? 0;
     } finally {
       this.releaseRedisConnection(redis);
     }
@@ -1225,7 +1225,7 @@ export class QueueManager extends EventEmitter {
     return (maxPriority - priority) * priorityWeight + timestamp;
   }
 
-  private calculateRetryDelay(attempt: number, backoff: {strategy: string; baseDelay?: number; maxDelay?: number; factor?: number}): number {
+  private calculateRetryDelay(attempt: number, backoff: any): number {
     switch (backoff.strategy) {
       case BackoffStrategy.FIXED:
         return backoff.delay;
@@ -1235,8 +1235,8 @@ export class QueueManager extends EventEmitter {
 
       case BackoffStrategy.EXPONENTIAL:
         return Math.min(
-          backoff.delay * Math.pow(backoff.multiplier || 2, attempt - 1),
-          backoff.maxDelay || 30000
+          backoff.delay * Math.pow(backoff.multiplier ?? 2, attempt - 1),
+          backoff.maxDelay ?? 30000
         );
 
       case BackoffStrategy.CUSTOM:
@@ -1274,7 +1274,7 @@ export class QueueManager extends EventEmitter {
       jobId: event.jobId,
       queueName,
       timestamp: event.timestamp,
-      data: event.data || {}
+      data: event.data ?? {}
     };
 
     // 使用连接池发布事件
@@ -1632,7 +1632,7 @@ export class QueueManager extends EventEmitter {
     const redis = await this.getRedisConnection();
     try {
       const queues = await redis.smembers('queues');
-      return queues || [];
+      return queues ?? [];
     } finally {
       this.releaseRedisConnection(redis);
     }

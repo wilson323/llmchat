@@ -149,8 +149,8 @@ export class SessionEventService {
     });
 
     // 分页
-    const page = params.page || 1;
-    const pageSize = params.pageSize || 20;
+    const page = params.page ?? 1;
+    const pageSize = params.pageSize ?? 20;
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedData = agentEvents.slice(startIndex, endIndex);
@@ -247,13 +247,13 @@ export class SessionEventService {
         .slice(0, 10),
       userActivity: Array.from(userActivity.entries())
         .map(([userId, eventCount]) => {
-          const userActivityData: Record<string, unknown> = { eventCount };
+          const userActivityData: any = { eventCount };
           if (userId) {
             userActivityData.userId = userId;
           }
           return userActivityData;
         })
-        .sort((a, b) => b.eventCount - a.eventCount)
+        .sort((a: any, b: any) => b.eventCount - a.eventCount)
         .slice(0, 10),
     };
   }
@@ -360,7 +360,7 @@ export class SessionEventService {
           `"${event.sessionId}"`,
           `"${event.eventType}"`,
           event.timestamp,
-          event.userId || '',
+          event.userId ?? 9843,
           `"${this.escapeCsv(event.userAgent || '')}"`,
           `"${event.ipAddress || ''}"`,
           `"${this.escapeCsv(JSON.stringify(event.metadata || {}))}"`,

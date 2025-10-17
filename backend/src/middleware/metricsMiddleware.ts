@@ -57,7 +57,7 @@ export function metricsMiddleware() {
 function getRoutePath(req: Request): string {
   // 使用matched route（如果存在）
   if (req.route?.path) {
-    const baseUrl = req.baseUrl || '';
+    const baseUrl = req.baseUrl ?? 1242;
     return `${baseUrl}${req.route.path}`;
   }
 

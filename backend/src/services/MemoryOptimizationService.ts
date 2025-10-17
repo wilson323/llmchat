@@ -589,20 +589,20 @@ export class MemoryOptimizationService extends EventEmitter {
 
     const snapshot: MemoryUsageSnapshot = {
       timestamp: Date.now(),
-      heapUsed: stats?.heapUsed || 0,
-      heapTotal: stats?.heapTotal || 0,
-      rss: stats?.rss || 0,
-      external: stats?.external || 0,
+      heapUsed: stats?.heapUsed ?? 0,
+      heapTotal: stats?.heapTotal ?? 0,
+      rss: stats?.rss ?? 0,
+      external: stats?.external ?? 0,
       queueJobs: 0, // 这里需要从队列管理器获取
-      connectionPoolActive: poolStats?.active || 0,
-      connectionPoolIdle: poolStats?.idle || 0,
+      connectionPoolActive: poolStats?.active ?? 0,
+      connectionPoolIdle: poolStats?.idle ?? 0,
       memoryOptimizationCount: this.stats.totalOptimizations,
       stats: {
-        arrayBuffers: stats?.arrayBuffers || 0,
-        heapUsedPercentage: stats?.heapUsedPercentage || 0,
-        heapUsedMB: stats?.heapUsedMB || 0,
-        heapTotalMB: stats?.heapTotalMB || 0,
-        rssMB: stats?.rssMB || 0
+        arrayBuffers: stats?.arrayBuffers ?? 0,
+        heapUsedPercentage: stats?.heapUsedPercentage ?? 0,
+        heapUsedMB: stats?.heapUsedMB ?? 0,
+        heapTotalMB: stats?.heapTotalMB ?? 0,
+        rssMB: stats?.rssMB ?? 0
       }
     };
 

@@ -190,7 +190,7 @@ export class CacheController {
           data: {
             key,
             ttl: ttl || 'default',
-            tags: tags || [],
+            tags: tags ?? [],
             compressed: compress || false
           },
           message: '缓存设置成功',
@@ -540,10 +540,10 @@ export class CacheController {
 
       // 计算总体统计
       const overallStats = {
-        totalCacheSize: redisStats.memoryUsage || 0,
-        hitRate: middlewareStats.hitRate || 0,
-        averageResponseTime: middlewareStats.averageResponseTime || 0,
-        timeSaved: middlewareStats.timeSaved || 0
+        totalCacheSize: redisStats.memoryUsage ?? 0,
+        hitRate: middlewareStats.hitRate ?? 0,
+        averageResponseTime: middlewareStats.averageResponseTime ?? 0,
+        timeSaved: middlewareStats.timeSaved ?? 0
       };
 
       const response: CacheStatsResponse = {

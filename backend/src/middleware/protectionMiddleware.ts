@@ -118,7 +118,7 @@ export function protectedApiMiddleware() {
         res.status(429).json({
           code: 'RATE_LIMIT_EXCEEDED',
           message: '请求过于频繁，请稍后再试',
-          retryAfter: rateLimitResult.retryAfter || 60,
+          retryAfter: rateLimitResult.retryAfter ?? 60,
           requestId: context.requestId,
           timestamp: new Date().toISOString(),
         });
@@ -286,17 +286,17 @@ async function checkRateLimit(req: Request, protectionService: { multiDimensionR
       is: (type: string) => false, // 简化实现
       param: (name: string) => (req as Request & { params?: Record<string, unknown> }).params?.[name],
       query: (name: string) => (req as Request & { query?: Record<string, unknown> }).query?.[name],
-      cookies: (req as Request & { cookies?: Record<string, unknown> }).cookies || {},
-      signedCookies: (req as Request & { signedCookies?: Record<string, unknown> }).signedCookies || {},
-      body: (req as Request & { body?: unknown }).body || {},
-      files: (req as Request & { files?: unknown }).files || {},
+      cookies: (req as Request & { cookies?: Record<string, unknown> }).cookies ?? {},
+      signedCookies: (req as Request & { signedCookies?: Record<string, unknown> }).signedCookies ?? {},
+      body: (req as Request & { body?: unknown }).body ?? {},
+      files: (req as Request & { files?: unknown }).files ?? {},
       protocol: req.protocol || 'http',
       secure: req.secure || false,
       xhr: req.xhr || false,
       subdomains: [],
       originalUrl: req.originalUrl || req.url,
-      baseUrl: req.baseUrl || '',
-      url: req.url || '',
+      baseUrl: req.baseUrl ?? 10387,
+      url: req.url ?? 10417,
       app: (req as Request & { app?: unknown }).app,
       // 添加必要的Express Request属性
       headers: req.headers,
@@ -327,7 +327,7 @@ async function checkRateLimit(req: Request, protectionService: { multiDimensionR
         resetTime?: Date;
       } = {
         allowed: false,
-        reason: `维度限制触发: ${failedResult?.remaining || 0}`,
+        reason: `维度限制触发: ${failedResult?.remaining ?? 0}`,
         ...(failedResult?.retryAfter !== undefined && { retryAfter: failedResult.retryAfter }),
         ...(failedResult?.remaining !== undefined && { remaining: failedResult.remaining }),
         ...(failedResult?.resetTime !== undefined && { resetTime: failedResult.resetTime }),

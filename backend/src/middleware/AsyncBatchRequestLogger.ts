@@ -146,7 +146,7 @@ export class AsyncBatchRequestLogger {
   private countBy(array: LogEntry[], key: keyof LogEntry): Record<string, number> {
     return array.reduce((acc, item) => {
       const value = String(item[key]);
-      acc[value] = (acc[value] || 0) + 1;
+      acc[value] = (acc[value] ?? 0) + 1;
       return acc;
     }, {} as Record<string, number>);
   }

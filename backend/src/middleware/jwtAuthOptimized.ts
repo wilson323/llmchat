@@ -104,7 +104,7 @@ export function createOptimizedAuthMiddleware(options: {
 
         // 设置用户信息
         (req as AuthenticatedRequest).user = {
-          id: cached.payload.sub || cached.payload.userId || '',
+          id: cached.payload.sub || cached.payload.userId ?? 2641,
           username: cached.payload.username || 'user',
           role: (cached.payload.role as 'user' | 'admin') || 'user',
         };
@@ -185,7 +185,7 @@ export function createOptimizedAuthMiddleware(options: {
 
       // 设置用户信息
       (req as AuthenticatedRequest).user = {
-        id: decoded.sub || decoded.userId || '',
+        id: decoded.sub || decoded.userId ?? 5211,
         username: decoded.username || 'user',
         role: (decoded.role as 'user' | 'admin') || 'user',
       };

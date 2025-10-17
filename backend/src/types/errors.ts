@@ -1021,8 +1021,8 @@ export function createErrorFromUnknown(error: unknown, context?: {
         networkParams.requestId = context.requestId;
       }
 
-      const { url: _url, method: _method, statusCode: _statusCode, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context || {};
-      if (Object.keys(restContext || {}).length > 0) {
+      const { url: _url, method: _method, statusCode: _statusCode, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context ?? {};
+      if (Object.keys(restContext ?? {}).length > 0) {
         networkParams.context = restContext as JsonValue;
       }
 
@@ -1059,8 +1059,8 @@ export function createErrorFromUnknown(error: unknown, context?: {
         validationParams.requestId = context.requestId;
       }
 
-      const { field: _field, value: _value, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context || {};
-      if (Object.keys(restContext || {}).length > 0) {
+      const { field: _field, value: _value, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context ?? {};
+      if (Object.keys(restContext ?? {}).length > 0) {
         validationParams.context = restContext as JsonValue;
       }
 
@@ -1088,7 +1088,7 @@ export function createErrorFromUnknown(error: unknown, context?: {
         authParams.requestId = context.requestId;
       }
 
-      const { severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context || {};
+      const { severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context ?? {};
       return new AuthenticationError({
         ...authParams,
         ...restContext,
@@ -1125,8 +1125,8 @@ export function createErrorFromUnknown(error: unknown, context?: {
         authzParams.requestId = context.requestId;
       }
 
-      const { resource: _resource, action: _action, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context || {};
-      if (Object.keys(restContext || {}).length > 0) {
+      const { resource: _resource, action: _action, severity: _severity, userId: _userId, requestId: _requestId, ...restContext } = context ?? {};
+      if (Object.keys(restContext ?? {}).length > 0) {
         authzParams.context = restContext as JsonValue;
       }
 
@@ -1165,8 +1165,8 @@ export function createErrorFromUnknown(error: unknown, context?: {
       systemParams.requestId = context.requestId;
     }
 
-    const { component: _component, operation: _operation, severity: _severity, userId: _userId, requestId: _requestId, originalError: _originalError, ...restContext } = context || {};
-    if (Object.keys(restContext || {}).length > 0) {
+    const { component: _component, operation: _operation, severity: _severity, userId: _userId, requestId: _requestId, originalError: _originalError, ...restContext } = context ?? {};
+    if (Object.keys(restContext ?? {}).length > 0) {
       systemParams.context = restContext as JsonValue;
     }
 
@@ -1205,8 +1205,8 @@ export function createErrorFromUnknown(error: unknown, context?: {
     unknownSystemParams.requestId = context.requestId;
   }
 
-  const { component: _comp, operation: _oper, severity: _sev, userId: _uid, requestId: _rid, originalError: _origErr, ...restContextUnknown } = context || {};
-  if (Object.keys(restContextUnknown || {}).length > 0) {
+  const { component: _comp, operation: _oper, severity: _sev, userId: _uid, requestId: _rid, originalError: _origErr, ...restContextUnknown } = context ?? {};
+  if (Object.keys(restContextUnknown ?? {}).length > 0) {
     unknownSystemParams.context = restContextUnknown as JsonValue;
   }
 

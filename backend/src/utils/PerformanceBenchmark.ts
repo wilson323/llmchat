@@ -83,7 +83,7 @@ export class PerformanceBenchmark {
 
     return {
       count: endpointMetrics.length,
-      min: responseTimes[0] || 0,
+      min: responseTimes[0] ?? 0,
       max: responseTimes[responseTimes.length - 1] || 0,
       avg: responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
       p95: this.getPercentile(responseTimes, 0.95),

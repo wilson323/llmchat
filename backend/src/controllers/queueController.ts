@@ -115,9 +115,9 @@ export class QueueController {
 
       const queueConfig: QueueConfig = {
         name,
-        concurrency: concurrency || 5,
-        maxRetries: maxRetries || 3,
-        retryDelay: retryDelay || 1000,
+        concurrency: concurrency ?? 5,
+        maxRetries: maxRetries ?? 3,
+        retryDelay: retryDelay ?? 1000,
         backoffMultiplier: 2,
         removeOnComplete: 100,
         removeOnFail: 50,
@@ -379,13 +379,13 @@ export class QueueController {
         jobs.map(async (job: {id: string; type?: string; data?: unknown; options?: unknown; jobId?: string}) => {
           switch (operation) {
             case 'add':
-              return await this.getQueueManager().addJob(queueName, job.type, job.data, job.options);
+              return await this.getQueueManager().addJob(queueName, job.type || 'unknown', job.data, job.options as any);
 
             case 'remove':
-              return await this.getQueueManager().removeJob(queueName, job.jobId);
+              return await this.getQueueManager().removeJob(queueName, job.jobId ?? 9684);
 
             case 'retry':
-              return await this.getQueueManager().retryJob(queueName, job.jobId);
+              return await this.getQueueManager().retryJob(queueName, job.jobId ?? 9799);
 
             default:
               throw new ValidationError({ message: `Invalid operation: ${operation}` });

@@ -292,12 +292,12 @@ export class MockQueueManager extends EventEmitter {
       throw new Error(`Job ${jobId} not found`);
     }
 
-    job.attempts = (job.attempts || 0) + 1;
+    job.attempts = (job.attempts ?? 0) + 1;
     const errorMessage = typeof error === 'string' ? error : error.message;
     job.errorMessage = errorMessage;
 
     const queueName = job.id.split('-')[0];
-    if (job.attempts >= (job.maxAttempts || 3)) {
+    if (job.attempts >= (job.maxAttempts ?? 3)) {
       job.failedAt = new Date();
       await this.updateJobStatus(jobId, QueueJobStatus.FAILED, errorMessage);
 

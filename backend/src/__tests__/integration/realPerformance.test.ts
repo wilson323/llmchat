@@ -354,7 +354,7 @@ describe('Real Performance Benchmark Tests', () => {
                           performanceResults.concurrentHealth?.requestsPerSecond > 200 ? 'B' : 'C';
 
     console.log(`  健康检查响应: ${healthCheckGrade}级 (${performanceResults.healthCheck}ms)`);
-    console.log(`  并发处理能力: ${concurrentGrade}级 (${performanceResults.concurrentHealth?.requestsPerSecond || 0} req/s)`);
+    console.log(`  并发处理能力: ${concurrentGrade}级 (${performanceResults.concurrentHealth?.requestsPerSecond ?? 0} req/s)`);
 
     const totalTests = Object.keys(performanceResults).length;
     console.log(`\n✅ 总计完成 ${totalTests} 项性能基准测试`);

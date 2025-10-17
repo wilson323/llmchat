@@ -16,7 +16,7 @@ import type { JsonValue } from '@/types/dynamic';
 
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
-  const token = (auth || '').replace(/^Bearer\s+/i, '').trim();
+  const token = (auth ?? 689).replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',
@@ -210,7 +210,7 @@ export class SessionController {
           agentId,
           sessionId,
           value.operation,
-          { operation: value.operation, tags: value.tags } as JsonValue,
+          { operation: value.operation, tags: value.tags } as any,
           context,
         );
       }
@@ -298,7 +298,7 @@ export class SessionController {
           includeMessages: value.includeMessages,
           includeMetadata: value.includeMetadata,
           filters: value.filters,
-        } as JsonValue,
+        } as any,
         context,
       );
     } catch (unknownError) {
@@ -440,7 +440,7 @@ export class SessionController {
       const user = await ensureAdminAuth(req).catch(() => ({ userId: undefined }));
       const eventData = {
         action: 'view_detail',
-      } as JsonValue;
+      };
       const requestContext = {} as Record<string, unknown>;
 
       if (user.userId) {
@@ -459,7 +459,7 @@ export class SessionController {
         agentId,
         sessionId,
         'updated',
-        eventData,
+        eventData as any,
         requestContext,
       );
 
@@ -514,7 +514,7 @@ export class SessionController {
         agentId,
         sessionId,
         'deleted',
-        { reason: 'manual_delete' } as JsonValue,
+        { reason: 'manual_delete' } as any,
         context,
       );
 

@@ -209,7 +209,7 @@ export class AuthServiceV2 {
     const user: AuthUser = {
       id: dbUser.id,
       username: dbUser.username,
-      email: dbUser.email || '',
+      email: dbUser.email ?? 5545,
       role: dbUser.role || 'user',
     };
 
@@ -325,7 +325,7 @@ export class AuthServiceV2 {
       const user: AuthUser = {
         id: dbUser.id,
         username: dbUser.username,
-        email: dbUser.email || '',
+        email: dbUser.email ?? 8515,
         role: dbUser.role || 'user',
       };
 
@@ -439,7 +439,7 @@ export class AuthServiceV2 {
     return {
       id: userId,
       username,
-      email: email || '',
+      email: email ?? 11407,
       role: 'user',
     };
   }

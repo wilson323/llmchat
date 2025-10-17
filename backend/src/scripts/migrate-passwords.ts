@@ -22,6 +22,7 @@ import '../dotenv-loader'; // 加载环境变量
 import bcrypt from 'bcrypt';
 import { withClient } from '../utils/db';
 import logger from '../utils/logger';
+import { logger } from '@/utils/logger';
 
 const SALT_ROUNDS = 12;
 
@@ -41,7 +42,7 @@ class PasswordMigrator {
    * 执行迁移
    */
   async migrate(): Promise<void> {
-    console.log('🔐 开始密码迁移...\n');
+    logger.debug('🔐 开始密码迁移...\n');
 
     try {
       // 1. 检查数据库连接
@@ -54,15 +55,15 @@ class PasswordMigrator {
       const users = await this.getUsersToMigrate();
 
       if (users.length === 0) {
-        console.log('✅ 没有需要迁移的用户\n');
+        logger.debug('✅ 没有需要迁移的用户\n');
         return;
       }
 
-      console.log(`📊 找到 ${users.length} 个需要迁移的用户\n`);
+      logger.debug(`📊 找到 ${users.length} 个需要迁移的用户\n`);
 
       // 4. 用户确认
       if (!await this.confirmMigration(users.length)) {
-        console.log('❌ 迁移已取消\n');
+        logger.debug('❌ 迁移已取消\n');
         return;
       }
 
@@ -76,26 +77,26 @@ class PasswordMigrator {
       this.generateReport();
 
     } catch (error: any) {
-      console.error('\n❌ 迁移失败:', error.message);
+      logger.error('\n❌ 迁移失败:', error.message);
       if (error.stack) {
-        console.error('\n堆栈跟踪:');
-        console.error(error.stack);
+        logger.error('\n堆栈跟踪:');
+        logger.error(error.stack);
       }
       process.exit(1);
     }
   }
 
   private async checkConnection(): Promise<void> {
-    console.log('🔍 检查数据库连接...');
+    logger.debug('🔍 检查数据库连接...');
 
     await withClient(async (client) => {
       const { rows } = await client.query('SELECT NOW()');
-      console.log(`✅ 数据库连接正常 (${rows[0].now})\n`);
+      logger.debug(`✅ 数据库连接正常 (${rows[0].now})\n`);
     });
   }
 
   private async checkRequiredFields(): Promise<void> {
-    console.log('🔍 检查必需字段...');
+    logger.debug('🔍 检查必需字段...');
 
     await withClient(async (client) => {
       // 检查password_hash字段
@@ -112,12 +113,12 @@ class PasswordMigrator {
         throw new Error('users表缺少password_hash字段，请先运行数据库迁移');
       }
 
-      console.log('✅ 必需字段检查通过\n');
+      logger.debug('✅ 必需字段检查通过\n');
     });
   }
 
   private async getUsersToMigrate(): Promise<Array<UserRow>> {
-    console.log('🔍 查询需要迁移的用户...');
+    logger.debug('🔍 查询需要迁移的用户...');
 
     const users = await withClient(async (client) => {
       const { rows } = await client.query<UserRow>(`
@@ -135,24 +136,24 @@ class PasswordMigrator {
   }
 
   private async confirmMigration(count: number): Promise<boolean> {
-    console.log('⚠️  警告:');
-    console.log(`   - 即将迁移 ${count} 个用户的密码`);
-    console.log('   - 明文密码将被bcrypt哈希替换');
-    console.log('   - 此操作不可逆\n');
+    logger.debug('⚠️  警告:');
+    logger.debug(`   - 即将迁移 ${count} 个用户的密码`);
+    logger.debug('   - 明文密码将被bcrypt哈希替换');
+    logger.debug('   - 此操作不可逆\n');
 
     // 自动模式（CI/CD环境）
     if (process.env.AUTO_CONFIRM === 'true') {
-      console.log('✅ 自动确认模式：继续迁移\n');
+      logger.debug('✅ 自动确认模式：继续迁移\n');
       return true;
     }
 
     // 交互模式
-    console.log('💡 如需继续，请设置环境变量 AUTO_CONFIRM=true\n');
+    logger.debug('💡 如需继续，请设置环境变量 AUTO_CONFIRM=true\n');
     return false;
   }
 
   private async migrateUsers(users: Array<UserRow>): Promise<void> {
-    console.log('🔄 开始迁移用户密码...\n');
+    logger.debug('🔄 开始迁移用户密码...\n');
 
     for (const user of users) {
       try {
@@ -173,7 +174,7 @@ class PasswordMigrator {
       }
     }
 
-    console.log('\n'); // 换行
+    logger.debug('\n'); // 换行
   }
 
   private async migrateUser(user: UserRow): Promise<void> {
@@ -204,7 +205,7 @@ class PasswordMigrator {
   }
 
   private async verifyMigration(): Promise<void> {
-    console.log('🔍 验证迁移结果...');
+    logger.debug('🔍 验证迁移结果...');
 
     await withClient(async (client) => {
       // 检查是否还有未迁移的用户
@@ -219,43 +220,43 @@ class PasswordMigrator {
       const unmigrated = parseInt(rows[0].count, 10);
 
       if (unmigrated > 0) {
-        console.log(`⚠️  仍有 ${unmigrated} 个用户未迁移\n`);
+        logger.debug(`⚠️  仍有 ${unmigrated} 个用户未迁移\n`);
       } else {
-        console.log('✅ 所有用户密码已成功迁移\n');
+        logger.debug('✅ 所有用户密码已成功迁移\n');
       }
     });
   }
 
   private generateReport(): void {
-    console.log('='.repeat(60));
-    console.log('📊 密码迁移报告');
-    console.log('='.repeat(60));
-    console.log();
+    logger.debug('='.repeat(60));
+    logger.debug('📊 密码迁移报告');
+    logger.debug('='.repeat(60));
+    logger.debug();
 
-    console.log(`✅ 成功迁移: ${this.migratedCount} 个用户`);
-    console.log(`⏭️  跳过: ${this.skippedCount} 个用户`);
-    console.log(`❌ 失败: ${this.errorCount} 个用户`);
-    console.log();
+    logger.debug(`✅ 成功迁移: ${this.migratedCount} 个用户`);
+    logger.debug(`⏭️  跳过: ${this.skippedCount} 个用户`);
+    logger.debug(`❌ 失败: ${this.errorCount} 个用户`);
+    logger.debug();
 
     if (this.migratedCount > 0) {
-      console.log('🔧 后续步骤:');
-      console.log('   1. 验证用户可以正常登录');
-      console.log('   2. 运行迁移007删除password_plain列');
-      console.log('   3. 更新AuthController使用AuthServiceV2');
-      console.log('   4. 部署到生产环境');
-      console.log();
+      logger.debug('🔧 后续步骤:');
+      logger.debug('   1. 验证用户可以正常登录');
+      logger.debug('   2. 运行迁移007删除password_plain列');
+      logger.debug('   3. 更新AuthController使用AuthServiceV2');
+      logger.debug('   4. 部署到生产环境');
+      logger.debug();
     }
 
     if (this.errorCount > 0) {
-      console.log('⚠️  注意:');
-      console.log('   - 部分用户迁移失败，请检查日志');
-      console.log('   - 失败的用户可能无法登录');
-      console.log('   - 建议联系管理员重置密码');
-      console.log();
+      logger.debug('⚠️  注意:');
+      logger.debug('   - 部分用户迁移失败，请检查日志');
+      logger.debug('   - 失败的用户可能无法登录');
+      logger.debug('   - 建议联系管理员重置密码');
+      logger.debug();
     }
 
-    console.log('='.repeat(60));
-    console.log();
+    logger.debug('='.repeat(60));
+    logger.debug();
   }
 }
 
@@ -268,7 +269,7 @@ async function main() {
 // 仅当直接运行时执行
 if (require.main === module) {
   main().catch(error => {
-    console.error('❌ 脚本执行失败:', error);
+    logger.error('❌ 脚本执行失败:', error);
     process.exit(1);
   });
 }

@@ -172,7 +172,7 @@ export class DatabaseHealthService extends EventEmitter {
         totalConnections: pool.totalCount,
         idleConnections: pool.idleCount,
         waitingRequests: pool.waitingCount,
-        maxConnections: pool.options.max || 50,
+        maxConnections: pool.options.max ?? 50,
         utilizationPercent: 0,
       };
 

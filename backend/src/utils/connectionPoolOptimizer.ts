@@ -160,10 +160,10 @@ export class ConnectionPoolOptimizer {
     try {
       const pool = this.getPool();
       const poolStats = pool as any;
-      this.stats.totalCount = poolStats.totalCount || 0;
-      this.stats.idleCount = poolStats.idleCount || 0;
-      this.stats.activeCount = poolStats.activeCount || 0;
-      this.stats.waitingCount = poolStats.waitingCount || 0;
+      this.stats.totalCount = poolStats.totalCount ?? 0;
+      this.stats.idleCount = poolStats.idleCount ?? 0;
+      this.stats.activeCount = poolStats.activeCount ?? 0;
+      this.stats.waitingCount = poolStats.waitingCount ?? 0;
 
       // 计算复用率
       if (this.stats.totalRequests > 0) {
@@ -264,9 +264,9 @@ export class ConnectionPoolOptimizer {
 
     // 基于等待队列长度调整最大连接数
     if (stats.waitingCount > 10) {
-      config.max = Math.min(100, (stats.totalCount || 20) * 2);
+      config.max = Math.min(100, (stats.totalCount ?? 20) * 2);
     } else if (stats.waitingCount > 5) {
-      config.max = Math.min(50, (stats.totalCount || 20) * 1.5);
+      config.max = Math.min(50, (stats.totalCount ?? 20) * 1.5);
     }
 
     // 基于活跃连接数调整最小连接数

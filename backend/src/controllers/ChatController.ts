@@ -141,7 +141,7 @@ import { generateId, formatFileSize } from '@/utils/helpers';
  */
 async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
   const authorization = req.headers['authorization'];
-  const token = (authorization || '').replace(/^Bearer\s+/i, '').trim();
+  const token = (authorization ?? 3813).replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new Error('UNAUTHORIZED');
   }
@@ -346,7 +346,7 @@ export class ChatController {
     attachments?: ChatAttachmentMetadata[] | null,
     voiceNote?: VoiceNoteMetadata | null,
   ): ChatMessage[] {
-    const list = (messages || []).map((msg) => {
+    const list = (messages ?? []).map((msg) => {
       const result: ChatMessage = {
         ...msg,
         ...(msg.metadata && { metadata: { ...msg.metadata } }),
@@ -406,7 +406,7 @@ export class ChatController {
     target.voiceNote = finalVoice;
 
     const newMetadata: ChatMessage['metadata'] = {
-      ...(target.metadata || {}),
+      ...(target.metadata ?? {}),
       ...(mergedAttachments.length ? { attachments: mergedAttachments } : {}),
       ...(finalVoice ? { voiceNote: finalVoice } : {}),
     };
@@ -482,7 +482,7 @@ export class ChatController {
     if (!lastUser) {
       return '新对话';
     }
-    const content = (lastUser.content || '').replace(/\s+/g, ' ').trim();
+    const content = (lastUser.content ?? 14522).replace(/\s+/g, ' ').trim();
     if (!content) {
       return '新对话';
     }
@@ -550,7 +550,7 @@ export class ChatController {
 
       // 统一兼容：顶层与 options 的混用，归一化为 ChatOptions
       const normalizedOptions: ChatOptions = {
-        ...(value.options || {}),
+        ...(value.options ?? {}),
         ...(value.chatId ? { chatId: value.chatId } : {}),
         ...(typeof value.detail === 'boolean' ? { detail: value.detail } : {}),
         ...(typeof value.temperature === 'number' ? { temperature: value.temperature } : {}),
@@ -691,7 +691,7 @@ export class ChatController {
         options,
       );
       const assistantContent =
-        response?.choices?.[0]?.message?.content || '';
+        response?.choices?.[0]?.message?.content ?? 20615;
 
       try {
         await this.historyService.appendMessage({

@@ -40,7 +40,7 @@ describe('Performance Benchmark Tests - Fixed', () => {
       expect(duration).toBeLessThan(100);
 
       console.log(`Agents list response time: ${duration}ms`);
-      console.log(`Agents count: ${response.body.data?.agents?.length || 0}`);
+      console.log(`Agents count: ${response.body.data?.agents?.length ?? 0}`);
     });
 
     it('should respond to 404 errors within 20ms', async () => {

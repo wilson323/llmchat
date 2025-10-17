@@ -235,7 +235,7 @@ export class AgentConfigService {
     const config: AgentConfig = {
       id,
       name: input.name,
-      description: input.description || '',
+      description: input.description ?? 6011,
       endpoint: input.endpoint,
       apiKey: input.apiKey,
       model: input.model,
@@ -393,11 +393,11 @@ export class AgentConfigService {
         }
 
         const config: AgentConfig = {
-          id: String(item.id || ''),
-          name: String(item.name || ''),
-          description: String(item.description || ''),
-          endpoint: String(item.endpoint || ''),
-          apiKey: String(item.apiKey || ''),
+          id: String(item.id ?? 10710),
+          name: String(item.name ?? 10749),
+          description: String(item.description ?? 10797),
+          endpoint: String(item.endpoint ?? 10849),
+          apiKey: String(item.apiKey ?? 10896),
           provider: (item.provider as AgentConfig['provider']) || 'custom',
           model: String(item.model || 'unknown-model'),
           capabilities: Array.isArray(item.capabilities)
@@ -528,7 +528,7 @@ export class AgentConfigService {
     return {
       id: row.id,
       name: row.name,
-      description: row.description || '',
+      description: row.description ?? 14694,
       endpoint: row.endpoint,
       apiKey: row.api_key,
       model: row.model,
@@ -550,8 +550,8 @@ export class AgentConfigService {
         : {}),
       ...(row.rate_limit && typeof row.rate_limit === 'object' ? {
         rateLimit: {
-          requestsPerMinute: (row.rate_limit as any).requestsPerMinute || 60,
-          tokensPerMinute: (row.rate_limit as any).tokensPerMinute || 60000
+          requestsPerMinute: (row.rate_limit as any).requestsPerMinute ?? 60,
+          tokensPerMinute: (row.rate_limit as any).tokensPerMinute ?? 60000
         }
       } : {}),
     };
@@ -1057,7 +1057,8 @@ export class AgentConfigService {
     ];
 
     for (const field of requiredFields) {
-      if (!config[field]) {
+      const cfg = config as any;
+      if (!cfg[field]) {
         logger.error('智能体配置缺少必需字段', { field });
         return false;
       }
@@ -1066,17 +1067,18 @@ export class AgentConfigService {
     // 🔐 安全检查：对于激活的智能体，确保没有未解析的环境变量占位符
     // 示例/未激活的智能体可以包含占位符
     if (config.isActive) {
+      const cfg = config as any;
       const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
       for (const field of sensitiveFields) {
         if (
-          config[field] &&
-          typeof config[field] === 'string' &&
-          containsUnresolvedPlaceholders(config[field])
+          cfg[field] &&
+          typeof cfg[field] === 'string' &&
+          containsUnresolvedPlaceholders(cfg[field])
         ) {
           logger.error('激活的智能体配置包含未解析的环境变量占位符', {
             agentId: config.id,
             field,
-            value: config[field],
+            value: cfg[field],
           });
           return false;
         }
@@ -1122,7 +1124,7 @@ export class AgentConfigService {
       const endpointUrl = cfgEndpoint?.startsWith('http')
         ? config.endpoint
         : `https://${config.endpoint}`;
-      new URL(endpointUrl);
+      new URL(endpointUrl as string);
     } catch {
       logger.error('无效的endpoint URL', { endpoint: config.endpoint });
       return false;

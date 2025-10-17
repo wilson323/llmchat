@@ -268,7 +268,7 @@ router.use((error: any, req: Request, res: Response, next: NextFunction) => {
     });
   }
 
-  return res.status((error).status || 500).json({
+  return res.status((error).status ?? 500).json({
     success: false,
     message: error.message || 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? error.stack : undefined

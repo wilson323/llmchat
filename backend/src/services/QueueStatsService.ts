@@ -224,7 +224,7 @@ export class QueueStatsService {
 
       jobs.forEach(job => {
         const priority = job.opts?.priority || MessagePriority.NORMAL;
-        distribution[priority] = (distribution[priority] || 0) + 1;
+        distribution[priority] = (distribution[priority] ?? 0) + 1;
       });
 
       return distribution;

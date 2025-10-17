@@ -77,7 +77,7 @@ export class DashScopeService {
     this.config = {
       model: config.model || 'qwen-max',
       baseURL: config.baseURL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      timeout: config.timeout || 60000,
+      timeout: config.timeout ?? 60000,
       apiKey: config.apiKey,
     };
 

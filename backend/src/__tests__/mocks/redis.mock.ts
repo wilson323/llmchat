@@ -87,7 +87,7 @@ export class MockRedisClient {
   
   constructor(config?: { delay?: number; shouldFail?: boolean }) {
     this.store = new MemoryStore();
-    this.delay = config?.delay || 1;
+    this.delay = config?.delay ?? 1;
     this.shouldFail = config?.shouldFail || false;
   }
   

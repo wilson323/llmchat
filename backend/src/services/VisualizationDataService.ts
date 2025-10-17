@@ -7,6 +7,7 @@ import type QueueManager from '@/services/QueueManager';
 import type MonitoringService from '@/services/MonitoringService';
 import type RedisConnectionPool from '@/utils/redisConnectionPool';
 import { EventEmitter } from 'events';
+import { logger } from '@/utils/logger';
 
 export interface RealtimeDataUpdate {
   timestamp: number;
@@ -119,7 +120,7 @@ class VisualizationDataService extends EventEmitter {
       try {
         await this.collectAllData();
       } catch (error: any) {
-        console.error('Error collecting realtime data:', error);
+        logger.error('Error collecting realtime data:', error);
       }
     }, intervalMs);
   }
@@ -294,7 +295,7 @@ class VisualizationDataService extends EventEmitter {
     if (completedJobs.length === 0) return 0;
     const now = Date.now();
     const oneMinuteAgo = now - 60000;
-    const recentJobs = completedJobs.filter(job => job.finishedOn >= oneMinuteAgo);
+    const recentJobs = completedJobs.filter(job => job.finishedOn && job.finishedOn >= oneMinuteAgo);
     return recentJobs.length;
   }
 
@@ -310,7 +311,7 @@ class VisualizationDataService extends EventEmitter {
   /**
    * 计算成功率
    */
-  private calculateSuccessRate(poolStats: {commandsProcessed: number; errors: number}): number {
+  private calculateSuccessRate(poolStats: any): number {
     const total = poolStats.commandsProcessed + poolStats.errors;
     if (total === 0) return 100;
     return (poolStats.commandsProcessed / total) * 100;
@@ -343,7 +344,7 @@ class VisualizationDataService extends EventEmitter {
         try {
           callback(update);
         } catch (error: any) {
-          console.error('Error in subscriber callback:', error);
+          logger.error('Error in subscriber callback:', error);
         }
       });
     }
@@ -428,12 +429,12 @@ class VisualizationDataService extends EventEmitter {
         break;
     }
 
-    const labels = history.map(item => new Date(item.timestamp).toLocaleTimeString());
+    const labels = history.map(item => new Date((item as any).timestamp).toLocaleTimeString());
     const datasets = this.extractDatasets(history, metric, type);
 
     return {
       labels,
-      datasets,
+      datasets: datasets as any,
     };
   }
 
@@ -446,8 +447,8 @@ class VisualizationDataService extends EventEmitter {
       const queueNames = history[0].map((item: QueueStatsSnapshot) => item.queueName);
       return queueNames.map((queueName: string, index: number) => ({
         label: queueName,
-        data: history.map((snapshot: QueueStatsSnapshot[]) => {
-          const queueStat = snapshot.find(stat => stat.queueName === queueName);
+        data: history.map((snapshot: any) => {
+          const queueStat = snapshot.find((stat: any) => stat.queueName === queueName);
           return queueStat ? (queueStat as any)[metric] || 0 : 0;
         }),
         backgroundColor: this.getColorForIndex(index),
@@ -459,8 +460,9 @@ class VisualizationDataService extends EventEmitter {
       return [{
         label: metric,
         data: history.map(item => {
-          if (typeof item === 'object' && metric in item) {
-            return typeof item[metric] === 'object' ? item[metric].percentage || item[metric].value || 0 : item[metric];
+          if (typeof item === 'object' && item && metric in item) {
+            const itemObj = item as any;
+            return typeof itemObj[metric] === 'object' ? itemObj[metric].percentage || itemObj[metric].value || 0 : itemObj[metric];
           }
           return 0;
         }),

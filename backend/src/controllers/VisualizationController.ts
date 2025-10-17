@@ -9,6 +9,7 @@ import VisualizationDataService from '@/services/VisualizationDataService';
 import type QueueManager from '@/services/QueueManager';
 import type MonitoringService from '@/services/MonitoringService';
 import type RedisConnectionPool from '@/utils/redisConnectionPool';
+import { logger } from '@/utils/logger';
 
 export class VisualizationController {
   private readonly configService: VisualizationConfigService;
@@ -64,7 +65,7 @@ export class VisualizationController {
         data: config,
       });
     } catch (error: any) {
-      console.error('Error getting visualization config:', error);
+      logger.error('Error getting visualization config:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get visualization config',
@@ -122,7 +123,7 @@ export class VisualizationController {
         data: updatedConfig,
       });
     } catch (error: any) {
-      console.error('Error updating visualization config:', error);
+      logger.error('Error updating visualization config:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to update visualization config',
@@ -155,7 +156,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting dashboard data:', error);
+      logger.error('Error getting dashboard data:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get dashboard data',
@@ -176,7 +177,7 @@ export class VisualizationController {
         return;
       }
 
-      const { queueName, timeRange } = req.query || {};
+      const { queueName, timeRange } = req.query ?? {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       let stats;
@@ -194,7 +195,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting queue stats:', error);
+      logger.error('Error getting queue stats:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get queue stats',
@@ -215,7 +216,7 @@ export class VisualizationController {
         return;
       }
 
-      const { timeRange } = req.query || {};
+      const { timeRange } = req.query ?? {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       const stats = this.dataService.getSystemHistory(limit);
@@ -230,7 +231,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting system stats:', error);
+      logger.error('Error getting system stats:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get system stats',
@@ -251,7 +252,7 @@ export class VisualizationController {
         return;
       }
 
-      const { timeRange } = req.query || {};
+      const { timeRange } = req.query ?? {};
       const limit = timeRange ? parseInt(timeRange as string) : undefined;
 
       const stats = this.dataService.getRedisHistory(limit);
@@ -266,7 +267,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting Redis stats:', error);
+      logger.error('Error getting Redis stats:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get Redis stats',
@@ -313,7 +314,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting chart data:', error);
+      logger.error('Error getting chart data:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get chart data',
@@ -363,7 +364,7 @@ export class VisualizationController {
         unsubscribe();
       });
     } catch (error: any) {
-      console.error('Error setting up realtime updates:', error);
+      logger.error('Error setting up realtime updates:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to setup realtime updates',
@@ -411,7 +412,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error applying preset:', error);
+      logger.error('Error applying preset:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to apply preset',
@@ -438,7 +439,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error getting presets:', error);
+      logger.error('Error getting presets:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get presets',
@@ -485,7 +486,7 @@ export class VisualizationController {
           result = await this.queueManager.clearQueue(queueName);
           break;
         case 'retry':
-          result = await this.queueManager.retryFailedJobs(queueName, options?.limit || 10);
+          result = await this.queueManager.retryFailedJobs(queueName, options?.limit ?? 10);
           break;
         case 'stats':
           result = await this.queueManager.getQueueStats(queueName);
@@ -502,7 +503,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error performing queue action:', error);
+      logger.error('Error performing queue action:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to perform queue action',
@@ -528,7 +529,7 @@ export class VisualizationController {
         },
       });
     } catch (error: any) {
-      console.error('Error in health check:', error);
+      logger.error('Error in health check:', error);
       res.status(500).json({
         success: false,
         error: 'Health check failed',

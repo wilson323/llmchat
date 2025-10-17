@@ -109,7 +109,7 @@ export class QueryCache {
   private generateCacheKey(query: string, params?: any[]): string {
     const keyData = {
       query: query.trim().toLowerCase(),
-      params: params || [],
+      params: params ?? [],
     };
 
     const keyString = JSON.stringify(keyData);
@@ -177,8 +177,8 @@ export class QueryCache {
       lastAccessAt: now,
       key: cacheKey,
       query,
-      params: options.params || [],
-      tags: options.tags || [],
+      params: options.params ?? [],
+      tags: options.tags ?? [],
       size,
     };
 

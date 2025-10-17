@@ -149,7 +149,7 @@ class VisualizationConfigService {
         this.config = { ...this.getDefaultConfig(), ...loadedConfig };
       }
     } catch (error: any) {
-      console.warn('Failed to load visualization config:', error);
+      logger.warn('Failed to load visualization config:', error);
       this.config = this.getDefaultConfig();
     }
     return this.config;
@@ -166,7 +166,7 @@ class VisualizationConfigService {
       this.config = updatedConfig;
       return true;
     } catch (error: any) {
-      console.error('Failed to save visualization config:', error);
+      logger.error('Failed to save visualization config:', error);
       return false;
     }
   }

@@ -94,7 +94,7 @@ export class SmartCacheService {
 
           // 回填到内存缓存
           if (config.enableMemoryCache) {
-            this.setToMemory(fullKey, cached, config.memoryTtl || 30);
+            this.setToMemory(fullKey, cached, config.memoryTtl ?? 30);
           }
 
           return cached as T;
@@ -142,7 +142,7 @@ export class SmartCacheService {
 
     // 存储到内存缓存
     if (config.enableMemoryCache) {
-      this.setToMemory(fullKey, value, config.memoryTtl || 30);
+      this.setToMemory(fullKey, value, config.memoryTtl ?? 30);
     }
 
     // 更新标签索引
@@ -336,7 +336,7 @@ export class SmartCacheService {
       if (cacheService.isConnected()) {
         // 获取Redis中所有键的数量
         const dbsize = await cacheService.dbsize();
-        redisSize = dbsize || 0;
+        redisSize = dbsize ?? 0;
       }
     } catch (error: any) {
       logger.warn('获取Redis缓存大小失败', { error });

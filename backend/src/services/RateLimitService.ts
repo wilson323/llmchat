@@ -92,7 +92,7 @@ export class SlidingWindowRateLimiter {
     metrics.lastRequestTime = new Date();
 
     // 计算当前速率
-    const timeDiff = (now - (metrics.windowRecords[0]?.timestamp || now)) / 1000 || 1;
+    const timeDiff = (now - (metrics.windowRecords[0]?.timestamp || now)) / 1000 ?? 1;
     metrics.currentRate = currentCount / timeDiff;
     metrics.peakRate = Math.max(metrics.peakRate, metrics.currentRate);
 
@@ -381,13 +381,13 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       if (!result.allowed) {
         // 请求被限制
         res.set({
-          'Retry-After': (result.retryAfter || 60).toString(),
+          'Retry-After': (result.retryAfter ?? 60).toString(),
         });
 
         res.status(429).json({
           code: 'RATE_LIMIT_EXCEEDED',
           message: '请求过于频繁，请稍后再试',
-          retryAfter: result.retryAfter || 60,
+          retryAfter: result.retryAfter ?? 60,
           resetTime: result.resetTime.toISOString(),
           timestamp: new Date().toISOString(),
         });
@@ -438,13 +438,13 @@ export function createMultiDimensionRateLimitMiddleware(
             'X-RateLimit-Limit': configs.ip?.maxRequests.toString() || '100',
             'X-RateLimit-Remaining': failedResult.remaining.toString(),
             'X-RateLimit-Reset': failedResult.resetTime.toISOString(),
-            'Retry-After': (failedResult.retryAfter || 60).toString(),
+            'Retry-After': (failedResult.retryAfter ?? 60).toString(),
           });
 
           res.status(429).json({
             code: 'RATE_LIMIT_EXCEEDED',
             message: '请求过于频繁，请稍后再试',
-            retryAfter: failedResult.retryAfter || 60,
+            retryAfter: failedResult.retryAfter ?? 60,
             resetTime: failedResult.resetTime.toISOString(),
             timestamp: new Date().toISOString(),
           });

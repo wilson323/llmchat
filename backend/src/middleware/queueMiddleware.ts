@@ -114,8 +114,8 @@ class QueueMiddlewareManager {
         // 准备队列选项
         const queueOptions: QueueOptions = {
           priority: config.priority || MessagePriority.NORMAL,
-          delay: config.delay || 0,
-          attempts: config.attempts || 3,
+          delay: config.delay ?? 0,
+          attempts: config.attempts ?? 3,
           metadata: {
             ...config.metadata,
             originalRequest: {
@@ -180,7 +180,7 @@ class QueueMiddlewareManager {
     config: QueueMiddlewareConfig
   ): Promise<void> {
     try {
-      const result = await this.waitForJobCompletion(jobId, config.timeout || 30000);
+      const result = await this.waitForJobCompletion(jobId, config.timeout ?? 30000);
 
       res.json({
         success: true,
@@ -207,7 +207,7 @@ class QueueMiddlewareManager {
     this.handleAsyncResponse(res, jobId, config);
 
     // 可选：在后台处理完成时发送通知（邮件、WebSocket等）
-    this.waitForJobCompletion(jobId, config.timeout || 30000)
+    this.waitForJobCompletion(jobId, config.timeout ?? 30000)
       .then(result => {
         logger.info(`Hybrid mode: Job ${jobId} completed`, result);
         // 这里可以添加通知逻辑
@@ -273,7 +273,7 @@ class QueueMiddlewareManager {
           status: job.finishedOn ? 'completed' :
                  job.failedAt ? 'failed' :
                  job.processedOn ? 'processing' : 'queued',
-          progress: job.progress || 0
+          progress: job.progress ?? 0
         };
 
         // 只在有值时添加可选属性
@@ -299,7 +299,7 @@ class QueueMiddlewareManager {
             status: job.finishedOn ? 'completed' :
                    job.failedAt ? 'failed' :
                    job.processedOn ? 'processing' : 'queued',
-            progress: job.progress || 0
+            progress: job.progress ?? 0
           };
 
           // 只在有值时添加可选属性
@@ -332,7 +332,7 @@ class QueueMiddlewareManager {
   ): Promise<void> {
     try {
       const results = await Promise.allSettled(
-        jobs.map(job => queueManager.addJob(queueName, job.type, job.data, job.options))
+        jobs.map(job => queueManager.addJob(queueName, job.type || 'unknown', job.data, job.options as any))
       );
 
       const successful = results.filter(r => r.status === 'fulfilled').length;
@@ -364,7 +364,7 @@ class QueueMiddlewareManager {
   ): Promise<void> {
     try {
       const results = await Promise.allSettled(
-        jobs.map(job => queueManager.removeJob(queueName, job.jobId))
+        jobs.map(job => queueManager.removeJob(queueName, job.jobId ?? 9891))
       );
 
       const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
@@ -395,7 +395,7 @@ class QueueMiddlewareManager {
   ): Promise<void> {
     try {
       const results = await Promise.allSettled(
-        jobs.map(job => queueManager.retryJob(queueName, job.jobId))
+        jobs.map(job => queueManager.retryJob(queueName, job.jobId ?? 10808))
       );
 
       const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;

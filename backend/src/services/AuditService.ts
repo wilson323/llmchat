@@ -299,15 +299,15 @@ export class AuditService {
     const rows = result.logs.map((log) => [
       log.id,
       log.timestamp.toISOString(),
-      log.userId || '',
-      log.username || '',
+      log.userId ?? 6472,
+      log.username ?? 6496,
       log.action,
-      log.resourceType || '',
-      log.resourceId || '',
+      log.resourceType ?? 6540,
+      log.resourceId ?? 6570,
       log.status,
-      log.ipAddress || '',
-      log.userAgent || '',
-      log.errorMessage || '',
+      log.ipAddress ?? 6616,
+      log.userAgent ?? 6643,
+      log.errorMessage ?? 6670,
     ]);
 
     const csv = [headers, ...rows]

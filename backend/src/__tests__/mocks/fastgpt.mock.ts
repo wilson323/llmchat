@@ -78,7 +78,7 @@ export class MockFastGPTClient {
   private shouldFail: boolean;
   
   constructor(config?: { delay?: number; shouldFail?: boolean }) {
-    this.delay = config?.delay || 10;
+    this.delay = config?.delay ?? 10;
     this.shouldFail = config?.shouldFail || false;
   }
   
