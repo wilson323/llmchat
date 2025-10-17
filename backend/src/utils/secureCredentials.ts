@@ -60,7 +60,7 @@ export class SecureCredentialsManager {
         iv: iv.toString('base64'),
         algorithm: this.ALGORITHM,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[SecureCredentialsManager] Encryption failed', { error });
       throw new Error('Failed to encrypt sensitive data');
     }
@@ -83,7 +83,7 @@ export class SecureCredentialsManager {
       ]);
 
       return decrypted.toString('utf8');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[SecureCredentialsManager] Decryption failed', { error });
       throw new Error('Failed to decrypt sensitive data');
     }
@@ -146,7 +146,7 @@ export class SecureCredentialsManager {
     try {
       this.deriveKey();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[SecureCredentialsManager] Encryption not available', { error });
       return false;
     }

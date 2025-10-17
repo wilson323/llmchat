@@ -96,7 +96,7 @@ export class QueueMonitoringService extends EventEmitter {
 
       // 立即收集一次指标
       this.collectQueueMetrics(queueName, queueConfig);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueMonitoringService] 开始监控失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -209,7 +209,7 @@ export class QueueMonitoringService extends EventEmitter {
       this.emit('metrics:updated', metrics);
 
       return metrics;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueMonitoringService] 收集队列指标失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -420,7 +420,7 @@ export class QueueMonitoringService extends EventEmitter {
           alerts: alerts.map(a => ({ type: a.type, severity: a.severity, message: a.message }))
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueMonitoringService] 告警条件检查失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -473,7 +473,7 @@ export class QueueMonitoringService extends EventEmitter {
       processingTimes.sort((a, b) => a - b);
       const p95Index = Math.floor(processingTimes.length * 0.95);
       return processingTimes[p95Index] || 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueMonitoringService] P95处理时间计算失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -527,7 +527,7 @@ export class QueueMonitoringService extends EventEmitter {
       processingTimes.sort((a, b) => a - b);
       const p99Index = Math.floor(processingTimes.length * 0.99);
       return processingTimes[p99Index] || 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueMonitoringService] P99处理时间计算失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -565,7 +565,7 @@ export class QueueMonitoringService extends EventEmitter {
       }, {} as { used: number; total: number });
 
       return memoryStats.used / memoryStats.total;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueMonitoringService] 内存使用率获取失败', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });

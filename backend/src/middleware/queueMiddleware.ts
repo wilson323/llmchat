@@ -152,7 +152,7 @@ class QueueMiddlewareManager {
             this.handleAsyncResponse(res, jobId, config);
         }
 
-      } catch (error) {
+      } catch (error: any) {
         logger.error('QueueMiddleware: Error queuing request:', error);
         next(error);
       }
@@ -188,7 +188,7 @@ class QueueMiddlewareManager {
         data: result
       });
 
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         message: 'Request processing failed',
@@ -317,7 +317,7 @@ class QueueMiddlewareManager {
 
       return null;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueMiddleware: Error getting job status:', error);
       return null;
     }
@@ -326,7 +326,7 @@ class QueueMiddlewareManager {
   public async handleBulkAdd(
     queueManager: QueueManager,
     queueName: string,
-    jobs: Array<{id: string; name: string; data: unknown}>,
+    jobs: Array<{id: string; name: string; data: unknown; type?: string; jobId?: string; options?: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -349,7 +349,7 @@ class QueueMiddlewareManager {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Bulk add error:', error);
       next(error);
     }
@@ -358,7 +358,7 @@ class QueueMiddlewareManager {
   public async handleBulkRemove(
     queueManager: QueueManager,
     queueName: string,
-    jobs: Array<{id: string; name: string; data: unknown}>,
+    jobs: Array<{id: string; name: string; data: unknown; type?: string; jobId?: string; options?: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -380,7 +380,7 @@ class QueueMiddlewareManager {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Bulk remove error:', error);
       next(error);
     }
@@ -389,7 +389,7 @@ class QueueMiddlewareManager {
   public async handleBulkRetry(
     queueManager: QueueManager,
     queueName: string,
-    jobs: Array<{id: string; name: string; data: unknown}>,
+    jobs: Array<{id: string; name: string; data: unknown; type?: string; jobId?: string; options?: unknown}>,
     res: Response,
     next: NextFunction
   ): Promise<void> {
@@ -411,7 +411,7 @@ class QueueMiddlewareManager {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Bulk retry error:', error);
       next(error);
     }

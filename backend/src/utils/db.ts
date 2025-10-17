@@ -136,7 +136,7 @@ export async function initDB(): Promise<void> {
         Object.assign(rawPg, configPg);
         logger.info('[initDB] 配置文件加载成功');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] 配置文件加载失败，使用环境变量', { error });
     }
   }
@@ -288,7 +288,7 @@ export async function initDB(): Promise<void> {
     try {
       await client.query('ALTER TABLE users DROP COLUMN IF EXISTS password_plain;');
       logger.info('[initDB] ✅ 已移除不安全的明文密码列');
-    } catch (error) {
+    } catch (error: any) {
       // 列可能不存在，忽略错误
       logger.info('[initDB] 明文密码列不存在或已移除');
     }
@@ -307,7 +307,7 @@ export async function initDB(): Promise<void> {
         await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;');
         logger.info('[initDB] ✅ 添加email列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] email列添加失败', { error });
     }
 
@@ -323,7 +323,7 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;');
         logger.info('[initDB] ✅ 添加email_verified列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] email_verified列添加失败', { error });
     }
 
@@ -339,7 +339,7 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0;');
         logger.info('[initDB] ✅ 添加failed_login_attempts列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] failed_login_attempts列添加失败', { error });
     }
 
@@ -355,7 +355,7 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加locked_until列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] locked_until列添加失败', { error });
     }
 
@@ -371,7 +371,7 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加last_login_at列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] last_login_at列添加失败', { error });
     }
 
@@ -387,7 +387,7 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(45);');
         logger.info('[initDB] ✅ 添加last_login_ip列');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[initDB] last_login_ip列添加失败', { error });
     }
 
@@ -539,7 +539,7 @@ export async function initDB(): Promise<void> {
     logger.info('🌱 开始种子智能体数据...');
     await seedAgentsFromFile();
     logger.info('✅ 智能体数据种子完成');
-  } catch (error) {
+  } catch (error: any) {
     logger.error('❌ 智能体数据种子失败', { error });
     // 不抛出异常，允许服务继续启动
   }
@@ -554,7 +554,7 @@ export async function initDB(): Promise<void> {
       skipped: result.skipped,
       totalTimeMs: result.totalTime
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.warn('⚠️  数据库迁移失败，使用现有表结构', { error });
     // 不抛出异常，允许服务继续启动
   }
@@ -704,3 +704,4 @@ async function seedAgentsFromFile(): Promise<void> {
     logger.info(`✅ [seedAgentsFromFile] 智能体种子完成，共处理 ${resolvedAgents.length} 个智能体`);
   });
 }
+

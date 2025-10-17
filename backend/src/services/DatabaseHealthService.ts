@@ -206,7 +206,7 @@ export class DatabaseHealthService extends EventEmitter {
 
       return this.healthStatus;
 
-    } catch (error) {
+    } catch (error: any) {
       this.consecutiveFailures++;
 
       this.healthStatus = {
@@ -426,4 +426,5 @@ export class DatabaseHealthService extends EventEmitter {
 
 // 导出单例实例
 export default DatabaseHealthService;
+
 

@@ -163,7 +163,7 @@ export class DifyInitService {
       logger.debug('✅ Dify Info API调用成功', { agentId: agent.id });
       return response.data;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ Dify Info API调用失败', {
         agentId: agent.id,
         error: error instanceof Error ? error.message : error,
@@ -205,7 +205,7 @@ export class DifyInitService {
       logger.debug('✅ Dify Parameters API调用成功', { agentId: agent.id });
       return response.data;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ Dify Parameters API调用失败', {
         agentId: agent.id,
         error: error instanceof Error ? error.message : error,
@@ -348,7 +348,7 @@ export class DifyInitService {
 
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ Dify应用信息获取失败', {
         endpoint,
         error: error instanceof Error ? error.message : error,
@@ -389,3 +389,4 @@ export class DifyInitService {
     }
   }
 }
+

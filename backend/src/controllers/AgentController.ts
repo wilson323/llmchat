@@ -150,7 +150,7 @@ export class AgentController {
         ...(req.requestId ? { requestId: req.requestId } : {}),
         metadata: { extra: { total: agents.length } },
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取智能体列表失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENTS_FAILED',
@@ -203,7 +203,7 @@ export class AgentController {
         message: '获取智能体信息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取智能体信息失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENT_FAILED',
@@ -237,7 +237,7 @@ export class AgentController {
         message: '创建智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }
@@ -274,7 +274,7 @@ export class AgentController {
         message: '获取智能体状态成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('检查智能体状态失败', { error: error as Error });
       const apiError: ApiError = {
         code: 'GET_AGENT_STATUS_FAILED',
@@ -306,7 +306,7 @@ export class AgentController {
         message: '智能体配置已重新加载',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }
@@ -355,7 +355,7 @@ export class AgentController {
         message: '验证智能体配置成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('验证智能体配置失败', { error: error as Error });
 
       const apiError: ApiError = {
@@ -399,7 +399,7 @@ export class AgentController {
         message: '更新智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }
@@ -425,7 +425,7 @@ export class AgentController {
         message: '删除智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }
@@ -451,7 +451,7 @@ export class AgentController {
         message: '导入智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }
@@ -586,7 +586,7 @@ export class AgentController {
         message: '获取智能体信息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (handleAdminAuthError(error, res)) {
         return;
       }

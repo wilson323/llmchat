@@ -268,7 +268,7 @@ class CacheMiddlewareManager {
 
       // 如果没有缓存的数据，返回null
       return null;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('序列化响应数据失败', { error });
       return null;
     }
@@ -280,7 +280,7 @@ class CacheMiddlewareManager {
   private deserializeResponse(data: string): unknown {
     try {
       return JSON.parse(data);
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('反序列化响应数据失败', { error });
       return null;
     }
@@ -403,7 +403,7 @@ class CacheMiddlewareManager {
     };
 
     // 拦截end方法
-    res.end = function(this: Response, ...args: Parameters<Response['end']>) {
+    res.end = function(this: Response, chunk?: unknown, encoding?: unknown, cb?: unknown): Response {
       const endTime = performance.now();
       const responseTime = endTime - startTime;
 

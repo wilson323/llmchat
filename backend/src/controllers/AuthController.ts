@@ -112,11 +112,11 @@ export class AuthController { // [L10]
         data: { valid: true, user: result.user }, // [L106]
         timestamp: new Date().toISOString(), // [L107]
       }); // [L108]
-    } catch (error) { // [L109]
+    } catch (error: unknown) { // [L109]
       logger.error('Token验证失败', { error }); // [L110]
       res.status(500).json({ // [L111]
         code: 'VERIFY_ERROR', // [L112]
-        message: error?.message ?? 'Token验证失败', // [L113]
+        message: error instanceof Error ? error.message : 'Token验证失败', // [L113]
         data: null, // [L114]
         timestamp: new Date().toISOString(), // [L115]
       }); // [L116]
@@ -158,12 +158,13 @@ export class AuthController { // [L10]
         data: { token: result.token, refreshToken: result.refreshToken, expiresIn: result.expiresIn }, // [L151]
         timestamp: new Date().toISOString(), // [L152]
       }); // [L153]
-    } catch (error) { // [L154]
+    } catch (error: unknown) { // [L154]
       logger.error('Token刷新失败', { error }); // [L155]
-      const statusCode = error?.code === 'REFRESH_TOKEN_INVALID' ? 401 : 500; // [L156]
+      const typedError = error as {code?: string; message?: string};
+      const statusCode = typedError?.code === 'REFRESH_TOKEN_INVALID' ? 401 : 500; // [L156]
       res.status(statusCode).json({ // [L157]
-        code: error?.code ?? 'REFRESH_ERROR', // [L158]
-        message: error?.message ?? 'Token刷新失败', // [L159]
+        code: typedError?.code ?? 'REFRESH_ERROR', // [L158]
+        message: typedError?.message ?? 'Token刷新失败', // [L159]
         data: null, // [L160]
         timestamp: new Date().toISOString(), // [L161]
       }); // [L162]
@@ -205,12 +206,13 @@ export class AuthController { // [L10]
         data: null, // [L187]
         timestamp: new Date().toISOString(), // [L188]
       }); // [L189]
-    } catch (error) { // [L190]
+    } catch (error: unknown) { // [L190]
       logger.error('用户登出失败', { error }); // [L191]
-      const statusCode = error?.code === 'AUTHENTICATION_REQUIRED' ? 401 : 500; // [L192]
+      const typedError = error as {code?: string; message?: string};
+      const statusCode = typedError?.code === 'AUTHENTICATION_REQUIRED' ? 401 : 500; // [L192]
       res.status(statusCode).json({ // [L193]
-        code: error?.code ?? 'LOGOUT_ERROR', // [L194]
-        message: error?.message ?? '登出失败', // [L195]
+        code: typedError?.code ?? 'LOGOUT_ERROR', // [L194]
+        message: typedError?.message ?? '登出失败', // [L195]
         data: null, // [L196]
         timestamp: new Date().toISOString(), // [L197]
       }); // [L198]
@@ -269,12 +271,13 @@ export class AuthController { // [L10]
         data: null,
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('修改密码失败', { error });
-      const statusCode = error?.code === 'INVALID_CREDENTIALS' ? 400 : 500;
+      const typedError = error as {code?: string; message?: string};
+      const statusCode = typedError?.code === 'INVALID_CREDENTIALS' ? 400 : 500;
       res.status(statusCode).json({
-        code: error?.code ?? 'CHANGE_PASSWORD_ERROR',
-        message: error?.message ?? '密码修改失败',
+        code: typedError?.code ?? 'CHANGE_PASSWORD_ERROR',
+        message: typedError?.message ?? '密码修改失败',
         data: null,
         timestamp: new Date().toISOString(),
       });
@@ -314,12 +317,13 @@ export class AuthController { // [L10]
         data: { user },
         timestamp: new Date().toISOString(),
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('用户注册失败', { error });
-      const statusCode = error?.code === 'USER_ALREADY_EXISTS' ? 409 : 500;
+      const typedError = error as {code?: string; message?: string};
+      const statusCode = typedError?.code === 'USER_ALREADY_EXISTS' ? 409 : 500;
       res.status(statusCode).json({
-        code: error?.code ?? 'REGISTER_ERROR',
-        message: error?.message ?? '注册失败',
+        code: typedError?.code ?? 'REGISTER_ERROR',
+        message: typedError?.message ?? '注册失败',
         data: null,
         timestamp: new Date().toISOString(),
       });

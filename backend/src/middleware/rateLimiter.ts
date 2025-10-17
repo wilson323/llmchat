@@ -20,9 +20,10 @@ export const rateLimiterMiddleware = async (
     const key = req.ip || 'anonymous';
     await rateLimiter.consume(key);
     next();
-  } catch (rejRes) {
-    const remainingPoints = rejRes?.remainingPoints || 0;
-    const msBeforeNext = rejRes?.msBeforeNext || 60000;
+  } catch (rejRes: unknown) {
+    const r = rejRes as {remainingPoints?: number; msBeforeNext?: number};
+    const remainingPoints = r?.remainingPoints ?? 0;
+    const msBeforeNext = r?.msBeforeNext ?? 60000;
 
     res.set({
       'Retry-After': Math.round(msBeforeNext / 1000),

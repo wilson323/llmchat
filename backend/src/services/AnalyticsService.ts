@@ -95,7 +95,7 @@ export class AnalyticsService {
           ],
         );
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[AnalyticsService] recordAgentRequest failed', { error });
     }
   }
@@ -249,7 +249,7 @@ export class AnalyticsService {
           agentTotalsMap.set(agentKey, (agentTotalsMap.get(agentKey) ?? 0) + count);
           agentsWithActivity.add(agentKey);
         });
-      } catch (error) {
+      } catch (error: any) {
         logger.warn('[AnalyticsService] Mongo 聚合失败，回退到 PostgreSQL 统计', { error });
       }
     }
@@ -388,7 +388,7 @@ export class AnalyticsService {
           const count = Number(row.count || 0);
           countMap.set(agent.id, (countMap.get(agent.id) ?? 0) + count);
         });
-      } catch (error) {
+      } catch (error: any) {
         logger.warn('[AnalyticsService] Mongo 聚合失败，使用 PostgreSQL 计数', { error });
       }
     }
@@ -431,3 +431,4 @@ export class AnalyticsService {
     };
   }
 }
+

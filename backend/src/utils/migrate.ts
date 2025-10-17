@@ -134,7 +134,7 @@ export class MigrationManager {
       }
 
       return migrations;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('加载迁移脚本失败', { component: 'MigrationManager', error });
       throw error;
     }
@@ -176,7 +176,7 @@ export class MigrationManager {
           logger.info(`迁移成功: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
           });
-        } catch (error) {
+        } catch (error: any) {
           await client.query('ROLLBACK');
           logger.error(`迁移失败: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
@@ -240,7 +240,7 @@ export class MigrationManager {
           logger.info(`回滚成功: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
           });
-        } catch (error) {
+        } catch (error: any) {
           await client.query('ROLLBACK');
           logger.error(`回滚失败: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
@@ -312,3 +312,4 @@ export class MigrationManager {
 export function createMigrationManager(pool: Pool, migrationsDir?: string): MigrationManager {
   return new MigrationManager(pool, migrationsDir);
 }
+

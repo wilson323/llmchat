@@ -63,7 +63,7 @@ export class VisualizationController {
         success: true,
         data: config,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting visualization config:', error);
       res.status(500).json({
         success: false,
@@ -121,7 +121,7 @@ export class VisualizationController {
         success: true,
         data: updatedConfig,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating visualization config:', error);
       res.status(500).json({
         success: false,
@@ -154,7 +154,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting dashboard data:', error);
       res.status(500).json({
         success: false,
@@ -193,7 +193,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting queue stats:', error);
       res.status(500).json({
         success: false,
@@ -229,7 +229,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting system stats:', error);
       res.status(500).json({
         success: false,
@@ -265,7 +265,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting Redis stats:', error);
       res.status(500).json({
         success: false,
@@ -312,7 +312,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting chart data:', error);
       res.status(500).json({
         success: false,
@@ -362,7 +362,7 @@ export class VisualizationController {
       req.on('aborted', () => {
         unsubscribe();
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error setting up realtime updates:', error);
       res.status(500).json({
         success: false,
@@ -410,7 +410,7 @@ export class VisualizationController {
           config,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error applying preset:', error);
       res.status(500).json({
         success: false,
@@ -437,7 +437,7 @@ export class VisualizationController {
           current: this.configService.getConfig(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting presets:', error);
       res.status(500).json({
         success: false,
@@ -501,7 +501,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error performing queue action:', error);
       res.status(500).json({
         success: false,
@@ -527,7 +527,7 @@ export class VisualizationController {
           timestamp: Date.now(),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in health check:', error);
       res.status(500).json({
         success: false,

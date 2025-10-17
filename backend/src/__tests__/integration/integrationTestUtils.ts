@@ -323,7 +323,7 @@ export function verifyTestToken(token: string): any {
       issuer: 'llmchat-backend-test',
       audience: 'llmchat-frontend-test'
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof jwt.TokenExpiredError) {
       throw error; // 直接重新抛出TokenExpiredError
     }

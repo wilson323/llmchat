@@ -49,7 +49,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting queues:', error);
       next(error);
     }
@@ -96,7 +96,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting queue:', error);
       next(error);
     }
@@ -135,7 +135,7 @@ export class QueueController {
         data: queueConfig
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error creating queue:', error);
       next(error);
     }
@@ -163,7 +163,7 @@ export class QueueController {
         message: `Queue ${queueName} paused successfully`
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error pausing queue:', error);
       next(error);
     }
@@ -191,7 +191,7 @@ export class QueueController {
         message: `Queue ${queueName} resumed successfully`
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error resuming queue:', error);
       next(error);
     }
@@ -244,7 +244,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error adding job:', error);
       next(error);
     }
@@ -279,7 +279,7 @@ export class QueueController {
         data: job
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting job:', error);
       next(error);
     }
@@ -314,7 +314,7 @@ export class QueueController {
         message: `Job ${jobId} removed successfully`
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error removing job:', error);
       next(error);
     }
@@ -349,7 +349,7 @@ export class QueueController {
         message: `Job ${jobId} queued for retry`
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error retrying job:', error);
       next(error);
     }
@@ -376,7 +376,7 @@ export class QueueController {
       }
 
       const results = await Promise.allSettled(
-        jobs.map(async (job: {id: string}) => {
+        jobs.map(async (job: {id: string; type?: string; data?: unknown; options?: unknown; jobId?: string}) => {
           switch (operation) {
             case 'add':
               return await this.getQueueManager().addJob(queueName, job.type, job.data, job.options);
@@ -408,7 +408,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error in bulk operation:', error);
       next(error);
     }
@@ -435,7 +435,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error cleaning queue:', error);
       next(error);
     }
@@ -485,7 +485,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting queue stats:', error);
       next(error);
     }
@@ -511,7 +511,7 @@ export class QueueController {
         data: status
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting health status:', error);
       next(error);
     }
@@ -573,7 +573,7 @@ export class QueueController {
         data: metrics
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error getting metrics:', error);
       next(error);
     }
@@ -600,7 +600,7 @@ export class QueueController {
         }
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueController: Error updating queue config:', error);
       next(error);
     }

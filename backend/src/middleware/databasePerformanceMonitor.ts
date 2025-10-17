@@ -382,7 +382,7 @@ export function databasePerformanceMonitorMiddleware(
 
   // 拦截响应结束事件
   const originalEnd = res.end;
-  res.end = function(this: Response, ...args: Parameters<typeof originalEnd>) {
+  res.end = function(this: Response, chunk?: unknown, encoding?: unknown, cb?: unknown): Response {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
@@ -419,11 +419,12 @@ export function monitorQuery(target: object, propertyName: string, descriptor: P
       const result = await method.apply(this, args);
 
       // 结束监控
-      const rowCount = result?.rowCount || result?.rows?.length;
+      const r = result as {rowCount?: number; rows?: unknown[]};
+      const rowCount = r?.rowCount ?? r?.rows?.length;
       databasePerformanceMonitor.endQuery(requestId, rowCount);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       // 记录错误
       databasePerformanceMonitor.endQuery(requestId, undefined, error as Error);
       throw error;

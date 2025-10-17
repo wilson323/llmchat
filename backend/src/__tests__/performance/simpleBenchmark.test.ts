@@ -41,7 +41,7 @@ describe('Simple Performance Benchmarks', () => {
 
         expect(response.status).toBeLessThan(500);
 
-      } catch (error) {
+      } catch (error: any) {
         const end = performance.now();
         const responseTime = end - start;
 
@@ -76,7 +76,7 @@ describe('Simple Performance Benchmarks', () => {
 
         expect(response.status).toBeLessThan(500);
 
-      } catch (error) {
+      } catch (error: any) {
         const end = performance.now();
         const responseTime = end - start;
 
@@ -215,7 +215,7 @@ describe('Simple Performance Benchmarks', () => {
       );
 
       console.log('\n💾 Benchmark data saved to: simple-performance-benchmark-report.json');
-    } catch (error) {
+    } catch (error: any) {
       console.log('⚠️  Could not save report to file:', (error as Error).message);
     }
   });

@@ -91,7 +91,7 @@ export class BatchOperationService {
         // 逐个添加
         await this.batchAddSequential(queueName, operations, successful, failed);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`BatchOperationService: Error in batch add jobs for queue ${queueName}:`, error);
       failed.push({
         index: 0,
@@ -193,7 +193,7 @@ export class BatchOperationService {
             }
 
             successful.push({ id: jobId, index: globalIndex });
-          } catch (error) {
+          } catch (error: any) {
             failed.push({
               index: globalIndex,
               error: error instanceof Error ? error.message : 'Unknown error',
@@ -290,7 +290,7 @@ export class BatchOperationService {
       } finally {
         this.connectionPool.release(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`BatchOperationService: Error in batch remove jobs for queue ${queueName}:`, error);
       failed.push({
         index: 0,
@@ -390,7 +390,7 @@ export class BatchOperationService {
       } finally {
         this.connectionPool.release(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`BatchOperationService: Error in batch retry jobs for queue ${queueName}:`, error);
       failed.push({
         index: 0,

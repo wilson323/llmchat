@@ -602,7 +602,7 @@ export class ChatProxyService {
         // 直接执行请求（向后兼容）
         return await protectedOperation();
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('智能体请求失败', { agentId, error });
       throw new ExternalServiceError({
         message: `智能体请求失败: ${getErrorMessage(error)}`,
@@ -724,7 +724,7 @@ export class ChatProxyService {
         // 直接执行流式请求（向后兼容）
         await protectedOperation();
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('智能体流式请求失败', { agentId, error });
       onStatus?.({
         type: 'error',

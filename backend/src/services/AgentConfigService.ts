@@ -460,7 +460,7 @@ export class AgentConfigService {
       this.agents = map;
       this.lastLoadTime = Date.now();
       return Array.from(map.values());
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置', {
         error,
       });
@@ -700,7 +700,7 @@ export class AgentConfigService {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('从文件回填智能体失败', { error });
     }
 
@@ -750,7 +750,7 @@ export class AgentConfigService {
         JSON.stringify(config, null, 2),
         'utf-8',
       );
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('写入智能体快照失败', { error });
     } finally {
       this.snapshotWriting = false;
@@ -786,7 +786,7 @@ export class AgentConfigService {
 
       // 对于示例智能体使用静默模式，不记录环境变量警告
       fileConfigs = deepReplaceEnvVariables(fileConfigs, true);
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[AgentConfigService] 读取配置文件失败', { error });
       fileConfigs = [];
     }
@@ -922,7 +922,7 @@ export class AgentConfigService {
           this.agents.delete(config.id);
           deletedIds.push(config.id);
           logger.info(`[AgentConfigService] 已删除废弃配置: ${config.id}`);
-        } catch (error) {
+        } catch (error: any) {
           logger.error(`[AgentConfigService] 删除废弃配置失败: ${config.id}`, {
             error,
           });
@@ -938,7 +938,7 @@ export class AgentConfigService {
         deletedCount: deletedIds.length,
         deletedIds,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[AgentConfigService] 清理废弃配置失败', { error });
       return {
         deletedCount: 0,
@@ -970,7 +970,7 @@ export class AgentConfigService {
       await this.writeSnapshotToFile();
 
       logger.info('[AgentConfigService] 每日清理任务完成');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[AgentConfigService] 每日清理任务失败', { error });
     }
   }
@@ -1042,7 +1042,7 @@ export class AgentConfigService {
   }
 
   private validateAgentConfig(
-    config: Record<string, unknown>,
+    config: AgentConfig | Record<string, unknown>,
     existingId?: string,
     collection: Map<string, AgentConfig> = this.agents,
   ): config is AgentConfig {
@@ -1083,7 +1083,8 @@ export class AgentConfigService {
       }
     }
 
-    if (collection.has(config.id) && config.id !== existingId) {
+    const cfgId = (config as {id?: string}).id;
+    if (cfgId && collection.has(cfgId) && cfgId !== existingId) {
       logger.error('智能体ID重复', { agentId: config.id });
       return false;
     }
@@ -1110,13 +1111,15 @@ export class AgentConfigService {
       'dashscope',
       'custom',
     ];
-    if (!validProviders.includes(config.provider)) {
+    const cfgProvider = (config as {provider?: string}).provider;
+    if (!cfgProvider || !validProviders.includes(cfgProvider)) {
       logger.error('不支持的provider', { provider: config.provider });
       return false;
     }
 
     try {
-      const endpointUrl = config.endpoint.startsWith('http')
+      const cfgEndpoint = (config as {endpoint?: string}).endpoint;
+      const endpointUrl = cfgEndpoint?.startsWith('http')
         ? config.endpoint
         : `https://${config.endpoint}`;
       new URL(endpointUrl);
@@ -1140,3 +1143,4 @@ export class AgentConfigService {
     };
   }
 }
+

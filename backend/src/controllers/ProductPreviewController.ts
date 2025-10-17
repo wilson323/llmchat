@@ -52,13 +52,14 @@ export class ProductPreviewController {
         message: '生成现场预览成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('调用豆包图片生成接口失败', { error: err });
+      const errResp = (err as {response?: {data?: {message?: string}}; message?: string});
       const apiError: ApiError = {
         code: 'DOUBAO_IMAGE_GENERATE_FAILED',
-        message: err?.response?.data?.message || err?.message || '生成现场预览失败',
+        message: errResp?.response?.data?.message ?? errResp?.message ?? '生成现场预览失败',
         timestamp: new Date().toISOString(),
-        details: process.env.NODE_ENV === 'development' ? err?.response?.data || err : undefined,
+        details: process.env.NODE_ENV === 'development' ? errResp?.response?.data ?? err : undefined,
       };
       res.status(500).json(apiError);
     }

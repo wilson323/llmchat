@@ -108,7 +108,7 @@ class DatabaseOptimizer {
       this.isInitialized = true;
       logger.info('✅ 数据库性能优化器初始化完成');
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ 数据库性能优化器初始化失败', { error });
       throw error;
     }
@@ -183,7 +183,7 @@ class DatabaseOptimizer {
 
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('查询优化失败', { query, error });
       result.queryTime = performance.now() - startTime;
       return result;
@@ -326,7 +326,7 @@ ${this.generateComprehensiveRecommendations()}
 
       logger.info('✅ 自动优化完成');
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ 自动优化失败', { error });
     }
   }
@@ -373,7 +373,7 @@ export function databaseOptimizationMiddleware(
     // 添加优化信息到响应中（如果在开发环境）
     if (process.env.NODE_ENV === 'development' && queryOptimizations.length > 0) {
       if (data && typeof data === 'object') {
-        (data)._queryOptimizations = queryOptimizations;
+        (data as Record<string, unknown>)._queryOptimizations = queryOptimizations;
       }
     }
 

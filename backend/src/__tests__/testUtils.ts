@@ -104,7 +104,7 @@ function authRoutes(router: Router): void {
           error: 'Invalid credentials'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -136,7 +136,7 @@ function authRoutes(router: Router): void {
           }
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -162,7 +162,7 @@ function authRoutes(router: Router): void {
           token: 'refreshed-test-token'
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -177,7 +177,7 @@ function authRoutes(router: Router): void {
         success: true,
         message: 'Logged out successfully'
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -206,7 +206,7 @@ function authRoutes(router: Router): void {
           fullName: 'Test User'
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -237,7 +237,7 @@ function chatRoutes(router: Router): void {
         success: true,
         data: session
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -271,7 +271,7 @@ function chatRoutes(router: Router): void {
         success: true,
         data: sessions
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -301,7 +301,7 @@ function chatRoutes(router: Router): void {
         success: true,
         data: session
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -318,7 +318,7 @@ function chatRoutes(router: Router): void {
         success: true,
         message: 'Session deleted successfully'
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -359,7 +359,7 @@ function chatRoutes(router: Router): void {
           }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -381,7 +381,7 @@ function chatRoutes(router: Router): void {
           lastActivity: new Date().toISOString()
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -428,7 +428,7 @@ function agentRoutes(router: Router): void {
         success: true,
         data: agents
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -463,7 +463,7 @@ function agentRoutes(router: Router): void {
         success: true,
         data: agent
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof Error && error.message && error.message.includes('not found')) {
         return res.status(404).json({
           success: false,
@@ -495,7 +495,7 @@ function agentRoutes(router: Router): void {
           lastError: null
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -512,7 +512,7 @@ function agentRoutes(router: Router): void {
         reloadedAt: new Date().toISOString(),
         agentCount: 2
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -544,7 +544,7 @@ function queueRoutes(router: Router): void {
         success: true,
         data: stats
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -585,7 +585,7 @@ function queueRoutes(router: Router): void {
         success: true,
         data: health
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -602,7 +602,7 @@ function queueRoutes(router: Router): void {
         success: true,
         message: `Queue ${queueName} has been paused`
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -619,7 +619,7 @@ function queueRoutes(router: Router): void {
         success: true,
         message: `Queue ${queueName} has been resumed`
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -636,7 +636,7 @@ function queueRoutes(router: Router): void {
         success: true,
         message: `Queue ${queueName} has been cleared`
       });
-    } catch (error) {
+    } catch (error: any) {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -704,7 +704,7 @@ async function createTestTables(pool: Pool): Promise<void> {
   try {
     await pool.query(createUsersTable);
     await pool.query(createSessionsTable);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating test tables:', error);
     throw error;
   }
@@ -716,7 +716,7 @@ async function createTestTables(pool: Pool): Promise<void> {
 export async function cleanupTestDatabase(testDb: TestDatabase): Promise<void> {
   try {
     await testDb.cleanup();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error cleaning up test database:', error);
   }
 }

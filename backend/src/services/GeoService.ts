@@ -146,7 +146,7 @@ export class GeoService {
         province,
         city: record.city || null,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[GeoService] lookup failed', { error });
       return {
         country: 'UNKNOWN',
@@ -162,3 +162,4 @@ export class GeoService {
 }
 
 export const geoService = new GeoService();
+

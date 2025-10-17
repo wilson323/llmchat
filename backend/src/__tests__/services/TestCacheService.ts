@@ -96,7 +96,7 @@ export class TestCacheService {
       this.updateHitRate();
 
       return item.value as T;
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return null;
     }
@@ -120,7 +120,7 @@ export class TestCacheService {
       this.stats.sets++;
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return false;
     }
@@ -141,7 +141,7 @@ export class TestCacheService {
       }
 
       return Promise.resolve(0);
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return Promise.resolve(0);
     }
@@ -166,7 +166,7 @@ export class TestCacheService {
       }
 
       return Promise.resolve(1);
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return Promise.resolve(0);
     }
@@ -186,7 +186,7 @@ export class TestCacheService {
 
       item.expiry = Date.now() + seconds * 1000;
       return Promise.resolve(1);
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return Promise.resolve(0);
     }
@@ -210,7 +210,7 @@ export class TestCacheService {
 
       const remaining = Math.floor((item.expiry - Date.now()) / 1000);
       return Promise.resolve(remaining > 0 ? remaining : this.TTL_KEY_NOT_EXIST);
-    } catch (error) {
+    } catch (error: any) {
       this.stats.errors++;
       return Promise.resolve(this.TTL_KEY_NOT_EXIST);
     }

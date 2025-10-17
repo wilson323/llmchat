@@ -185,7 +185,7 @@ describe('FastGPTSessionService Enhanced Features', () => {
         expect(stats.averageMessagesPerSession).toBeGreaterThanOrEqual(0);
         expect(Array.isArray(stats.topTags)).toBe(true);
         expect(Array.isArray(stats.recentActivity)).toBe(true);
-      } catch (error) {
+      } catch (error: any) {
         // 预期会失败，因为没有真实的FastGPT配置
         expect(error).toBeDefined();
       }
@@ -208,7 +208,7 @@ describe('FastGPTSessionService Enhanced Features', () => {
     it('应该优雅地处理无效的智能体ID', async () => {
       try {
         await sessionService.listHistoriesEnhanced('invalid-agent-id');
-      } catch (error) {
+      } catch (error: any) {
         expect(error).toBeDefined();
         // 预期会抛出关于智能体不存在的错误
       }
@@ -263,7 +263,7 @@ describe('FastGPTSessionService Integration Tests', () => {
       expect(typeof result.total).toBe('number');
       expect(typeof result.page).toBe('number');
       expect(typeof result.pageSize).toBe('number');
-    } catch (error) {
+    } catch (error: any) {
       console.warn('集成测试失败 - 可能是网络或配置问题:', error);
       // 在CI环境中不因为外部依赖失败而导致测试失败
     }
@@ -289,7 +289,7 @@ describe('FastGPTSessionService Integration Tests', () => {
       expect(typeof result.success).toBe('number');
       expect(typeof result.failed).toBe('number');
       expect(Array.isArray(result.errors)).toBe(true);
-    } catch (error) {
+    } catch (error: any) {
       console.warn('批量操作测试失败:', error);
     }
   });
@@ -306,3 +306,4 @@ console.log('   6. ✅ 错误处理机制');
 console.log('');
 console.log('🚀 要运行集成测试，请设置环境变量 RUN_INTEGRATION_TESTS=true');
 console.log('🔧 要测试真实FastGPT连接，请设置环境变量 TEST_FASTGPT_AGENT_ID');
+

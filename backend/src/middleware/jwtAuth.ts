@@ -81,7 +81,7 @@ export function authenticateJWT() {
       });
 
       next();
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof jwt.TokenExpiredError) {
         safeLogger.warn('JWT token 已过期', {
           component: 'jwtAuth',
@@ -130,3 +130,4 @@ export function authenticateJWT() {
     }
   };
 }
+

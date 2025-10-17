@@ -34,7 +34,7 @@ export class PasswordService {
 
       const hash = hashBuffer.toString('hex');
       return `scrypt$${salt}$${hash}`;
-    } catch (error) {
+    } catch (error: any) {
       throw new SystemError({
         message: 'Password hashing failed',
         code: 'PASSWORD_HASH_ERROR',
@@ -73,7 +73,7 @@ export class PasswordService {
       }
 
       return timingSafeEqual(derivedKey, storedKey);
-    } catch (error) {
+    } catch (error: any) {
       throw new SystemError({
         message: 'Password verification failed',
         code: 'PASSWORD_VERIFY_ERROR',
@@ -179,3 +179,4 @@ export class PasswordService {
 
 // 导出单例实例
 export const passwordService = new PasswordService();
+

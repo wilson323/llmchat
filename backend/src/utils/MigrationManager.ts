@@ -138,7 +138,7 @@ export class MigrationManager {
 
       logger.info(`[Migration] ✅ 迁移 ${migration.version} 完成 (${executionTime}ms)`);
       return executionTime;
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`[Migration] ❌ 迁移 ${migration.version} 失败`, { error });
       throw error;
     }
@@ -195,7 +195,7 @@ export class MigrationManager {
       });
 
       return { executed, skipped, totalTime };
-    } catch (error) {
+    } catch (error: any) {
       // 回滚事务
       await client.query('ROLLBACK');
       logger.error('[Migration] ❌ 迁移执行失败，已回滚', { error });
@@ -275,4 +275,5 @@ export class MigrationManager {
 }
 
 export default MigrationManager;
+
 

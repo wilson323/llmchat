@@ -62,7 +62,7 @@ export interface CacheQueryRequest {
 // 缓存统计响应接口
 export interface CacheStatsResponse {
   /** Redis缓存统计 */
-  redisStats: Record<string, unknown>;
+  redisStats: Record<string, unknown> | RedisCacheStats;
   /** 中间件统计 */
   middlewareStats: CacheMiddlewareStats;
   /** 总体统计 */
@@ -138,7 +138,7 @@ export class CacheController {
           timestamp: new Date().toISOString()
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取缓存失败', { key: req.params.key, error });
       next(error);
     }
@@ -202,7 +202,7 @@ export class CacheController {
           error: '缓存设置失败'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('设置缓存失败', { key: req.body.key, error });
       next(error);
     }
@@ -238,7 +238,7 @@ export class CacheController {
           error: '缓存不存在或删除失败'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('删除缓存失败', { key: req.params.key, error });
       next(error);
     }
@@ -269,7 +269,7 @@ export class CacheController {
         },
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('检查缓存存在性失败', { key: req.params.key, error });
       next(error);
     }
@@ -340,7 +340,7 @@ export class CacheController {
         message: `批量操作完成，成功 ${successCount}/${operations.length}`,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('批量设置缓存失败', { error });
       next(error);
     }
@@ -382,7 +382,7 @@ export class CacheController {
         message: `批量删除完成，成功 ${successCount}/${keys.length}`,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('批量删除缓存失败', { error });
       next(error);
     }
@@ -414,7 +414,7 @@ export class CacheController {
         message: `按标签删除完成，删除了 ${deletedCount} 个缓存`,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('按标签删除缓存失败', { tags: req.body.tags, error });
       next(error);
     }
@@ -464,7 +464,7 @@ export class CacheController {
         },
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('查询缓存失败', { query: req.query, error });
       next(error);
     }
@@ -489,7 +489,7 @@ export class CacheController {
         message: `清空缓存完成，删除了 ${deletedCount} 个缓存`,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('清空缓存失败', { pattern: req.query.pattern, error });
       next(error);
     }
@@ -523,7 +523,7 @@ export class CacheController {
         message: `缓存预热完成，成功 ${results.success}/${data.length}`,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存预热失败', { error });
       next(error);
     }
@@ -558,7 +558,7 @@ export class CacheController {
         data: response,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取缓存统计失败', { error });
       next(error);
     }
@@ -578,7 +578,7 @@ export class CacheController {
         message: '缓存统计已重置',
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('重置缓存统计失败', { error });
       next(error);
     }
@@ -596,7 +596,7 @@ export class CacheController {
         data: config,
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取缓存配置失败', { error });
       next(error);
     }
@@ -617,7 +617,7 @@ export class CacheController {
         message: '缓存配置已更新',
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('更新缓存配置失败', { error });
       next(error);
     }
@@ -644,7 +644,7 @@ export class CacheController {
         },
         timestamp: new Date().toISOString()
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存健康检查失败', { error });
       next(error);
     }

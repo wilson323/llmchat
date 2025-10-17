@@ -1227,7 +1227,7 @@ export function wrapAsyncHandler<T extends any[], R>(
   return async (...args: T): Promise<R> => {
     try {
       return await handler(...args);
-    } catch (error) {
+    } catch (error: any) {
       const typedError = createErrorFromUnknown(error, options);
       throw typedError;
     }
@@ -1257,3 +1257,4 @@ export function createErrorResponse(error: BaseError): {
     body: error.toApiError(),
   };
 }
+

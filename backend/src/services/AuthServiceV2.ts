@@ -135,8 +135,8 @@ export class AuthServiceV2 {
       this.redis.on('error', (err: Error) => {
         logger.error('Redis错误，将降级到内存模式', { error: err.message });
       });
-    } catch (error) {
-      logger.error('Redis初始化失败，使用内存模式', { error: error.message });
+    } catch (error: any) {
+      logger.error('Redis初始化失败，使用内存模式', { error: error instanceof Error ? error.message : String(error) });
       this.redis = null;
     }
   }
@@ -258,8 +258,8 @@ export class AuthServiceV2 {
       };
 
       return { valid: true, user };
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
+    } catch (error: any) {
+      if ((error as {name?: string}).name === 'TokenExpiredError') {
         return { valid: false, error: 'TOKEN_EXPIRED' };
       }
       if (error.name === 'JsonWebTokenError') {
@@ -299,8 +299,8 @@ export class AuthServiceV2 {
       await this.redis.del(`${SESSION_PREFIX}${payload.sub}`);
 
       logger.info('✅ 登出成功', { userId: payload.sub, jti: payload.jti });
-    } catch (error) {
-      logger.error('登出失败', { error: error.message });
+    } catch (error: any) {
+      logger.error('登出失败', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -338,8 +338,8 @@ export class AuthServiceV2 {
         user,
         expiresIn: this.tokenTTL,
       };
-    } catch (error) {
-      logger.error('Token刷新失败', { error: error.message });
+    } catch (error: any) {
+      logger.error('Token刷新失败', { error: error instanceof Error ? error.message : String(error) });
       throw new AuthenticationError({
         message: 'Refresh Token 无效或已过期',
         code: 'REFRESH_TOKEN_INVALID',
@@ -559,7 +559,7 @@ export class AuthServiceV2 {
           logger.warn('账号已锁定', { userId, lockUntil });
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       // ✅ 兼容模式：登录失败追踪不可用时不影响核心功能
       logger.debug('handleFailedLogin skipped (compatibility mode)');
     }
@@ -573,7 +573,7 @@ export class AuthServiceV2 {
           [userId],
         ).catch(() => {}); // ✅ 字段不存在时静默失败
       });
-    } catch (error) {
+    } catch (error: any) {
       // ✅ 兼容模式：重置失败次数不可用时不影响核心功能
       logger.debug('resetFailedAttempts skipped (compatibility mode)');
     }
@@ -587,7 +587,7 @@ export class AuthServiceV2 {
           [ip || null, userId],
         ).catch(() => {}); // ✅ 字段不存在时静默失败
       });
-    } catch (error) {
+    } catch (error: any) {
       // ✅ 兼容模式：最后登录时间追踪不可用时不影响核心功能
       logger.debug('updateLastLogin skipped (compatibility mode)');
     }
@@ -605,8 +605,8 @@ export class AuthServiceV2 {
         createdAt: new Date().toISOString(),
       });
       await this.redis.setex(`${SESSION_PREFIX}${userId}`, this.tokenTTL, sessionData);
-    } catch (error) {
-      logger.error('会话存储失败', { userId, error: error.message });
+    } catch (error: any) {
+      logger.error('会话存储失败', { userId, error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -675,3 +675,4 @@ export function getAuthService(): AuthServiceV2 {
   }
   return authServiceInstance;
 }
+

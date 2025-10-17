@@ -337,7 +337,7 @@ async function initializeVisualizationSystem(): Promise<void> {
     const queueManager = QueueManager.getInstance(queueManagerConfig);
 
     await initializeVisualizationSystemWithQueueManager(queueManager);
-  } catch (error) {
+  } catch (error: any) {
     logger.error("可视化系统初始化失败:", error);
     throw error;
   }
@@ -375,7 +375,7 @@ async function initializeVisualizationSystemWithQueueManager(queueManager: Queue
     initializeVisualizationRoutes(visualizationController);
 
     logger.info("可视化系统初始化完成");
-  } catch (error) {
+  } catch (error: any) {
     logger.error("可视化系统初始化失败:", error);
     throw error;
   }
@@ -441,7 +441,7 @@ async function startServer() {
 
       queueManager = QueueManager.getInstance(queueManagerConfig);
       logger.info("✅ QueueManager实例已获取");
-    } catch (error) {
+    } catch (error: any) {
       logger.warn("⚠️ QueueManager初始化失败，将以降级模式运行:", error);
       logger.info("📝 提示: 队列服务对核心功能不是必需的，应用可以正常运行");
     }
@@ -454,7 +454,7 @@ async function startServer() {
       } else {
         logger.warn("⚠️ 跳过可视化系统初始化（QueueManager未初始化）");
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn("⚠️ 可视化系统初始化失败，将以降级模式运行:", error);
       logger.info("📝 提示: 可视化系统对核心功能不是必需的，应用可以正常运行");
     }
@@ -483,7 +483,7 @@ async function startServer() {
 
     // 启动定时任务
     startScheduledTasks();
-  } catch (error) {
+  } catch (error: any) {
     logger.error("服务器启动失败", { error });
     process.exit(1);
   }
@@ -515,7 +515,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   try {
     await shutdownQueueService();
     logger.info("✓ 队列服务已关闭");
-  } catch (error) {
+  } catch (error: any) {
     logger.error("✗ 队列服务关闭失败:", error);
   }
 
@@ -524,7 +524,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     try {
       visualizationController.cleanup();
       logger.info("✓ 可视化系统已清理");
-    } catch (error) {
+    } catch (error: any) {
       logger.error("✗ 可视化系统清理失败:", error);
     }
   }
@@ -558,7 +558,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     const pool = getPool();
     await pool.end();
     logger.info("✓ 数据库连接池已关闭");
-  } catch (error) {
+  } catch (error: any) {
     logger.error("关闭数据库连接池失败", { error });
   }
 
@@ -570,7 +570,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
       await cacheService.disconnect();
       logger.info("✓ Redis 连接已关闭");
     }
-  } catch (error) {
+  } catch (error: any) {
     logger.error("关闭 Redis 连接失败", { error });
   }
 
@@ -600,3 +600,4 @@ process.on("SIGINT", () => {
 
 export { app };
 export default app;
+

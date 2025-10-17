@@ -315,7 +315,7 @@ export class MemoryMonitor extends EventEmitter {
 
         this.emit('optimization:automatic', result);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryMonitor: Automatic optimization failed', error);
       this.emit('optimization:failed', error);
     }
@@ -358,7 +358,7 @@ export class MemoryMonitor extends EventEmitter {
       this.emit('optimization:completed', result);
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryMonitor: Memory optimization failed', error);
       throw error;
     }

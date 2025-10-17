@@ -140,7 +140,7 @@ async function main() {
         process.exit(1);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('\n❌ 迁移失败:', error instanceof Error ? error.message : String(error));
     console.error('');
     process.exit(1);
@@ -150,3 +150,4 @@ async function main() {
 }
 
 main();
+

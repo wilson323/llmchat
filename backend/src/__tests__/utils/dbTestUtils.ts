@@ -64,7 +64,7 @@ export class DatabaseTestEnvironment {
         component: 'dbTestUtils',
         poolSize: this.testPool?.totalCount || 0,
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('测试数据库环境初始化失败', {
         component: 'dbTestUtils',
         error: error instanceof Error ? error.message : String(error),
@@ -155,7 +155,7 @@ export class DatabaseTestEnvironment {
       logger.info('数据库索引创建完成', {
         component: 'dbTestUtils',
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('创建数据库索引时出现警告', {
         component: 'dbTestUtils',
         error: error instanceof Error ? error.message : String(error),
@@ -188,7 +188,7 @@ export class DatabaseTestEnvironment {
       const result = await callback(client);
       await client.query('COMMIT');
       return result;
-    } catch (error) {
+    } catch (error: any) {
       await client.query('ROLLBACK');
       throw error;
     } finally {
@@ -242,7 +242,7 @@ export class DatabaseTestEnvironment {
       logger.info('测试数据清理完成', {
         component: 'dbTestUtils',
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('测试数据清理失败', {
         component: 'dbTestUtils',
         error: error instanceof Error ? error.message : String(error),
@@ -268,7 +268,7 @@ export class DatabaseTestEnvironment {
     for (const cleaner of this.testDataCleaners) {
       try {
         await cleaner.cleanup();
-      } catch (error) {
+      } catch (error: any) {
         logger.warn('数据清理器执行失败', {
           component: 'dbTestUtils',
           error: error instanceof Error ? error.message : String(error),

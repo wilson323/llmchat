@@ -206,7 +206,7 @@ export class DatabaseQueryOptimizer {
       `, [tableName]);
 
       return result.rows.map(row => row.indexname);
-    } catch (error) {
+    } catch (error: any) {
       logger.warn(`获取表 ${tableName} 索引失败`, { error });
       return [];
     }
@@ -396,7 +396,7 @@ export class DatabaseQueryOptimizer {
     try {
       await client.query(indexSql);
       logger.info('索引创建成功', { sql: indexSql });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('索引创建失败', { sql: indexSql, error });
       throw error;
     } finally {

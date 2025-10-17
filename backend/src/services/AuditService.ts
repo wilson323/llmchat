@@ -81,7 +81,7 @@ export class AuditService {
       });
 
       return auditLog;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to create audit log', {
         component: 'AuditService',
         error,
@@ -191,7 +191,7 @@ export class AuditService {
         pageSize: limit,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to query audit logs', {
         component: 'AuditService',
         error,
@@ -342,7 +342,7 @@ export class AuditService {
       });
 
       return deletedCount;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to cleanup old audit logs', {
         component: 'AuditService',
         error,
@@ -451,7 +451,7 @@ export class AuditService {
         actionCounts,
         topUsers,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get audit statistics', {
         component: 'AuditService',
         error,
@@ -511,3 +511,4 @@ export class AuditService {
 
 // 导出单例
 export const auditService = new AuditService();
+

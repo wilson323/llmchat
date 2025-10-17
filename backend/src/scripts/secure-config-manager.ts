@@ -100,7 +100,7 @@ class SecureConfigManager {
         warnings: result.warnings,
       };
 
-    } catch (error) {
+    } catch (error: any) {
       return {
         valid: false,
         errors: [`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
@@ -152,7 +152,7 @@ class SecureConfigManager {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       return JSON.parse(content);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Failed to parse JSON file ${filePath}:`, error);
       return null;
     }
@@ -304,7 +304,7 @@ class SecureConfigManager {
         warnings,
       };
 
-    } catch (error) {
+    } catch (error: any) {
       errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return { valid: false, errors, warnings };
     }
@@ -415,7 +415,7 @@ async function main() {
 
     manager.generateReport();
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 安全配置处理失败:', error);
     process.exit(1);
   }

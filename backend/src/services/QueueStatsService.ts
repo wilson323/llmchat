@@ -84,7 +84,7 @@ export class QueueStatsService {
       };
 
       return stats;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueStatsService] 获取队列统计失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -163,7 +163,7 @@ export class QueueStatsService {
       });
 
       return jobs;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueStatsService] 获取队列作业列表失败', {
         queueName,
         status,
@@ -200,7 +200,7 @@ export class QueueStatsService {
       });
 
       return stats;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueStatsService] 批量获取队列统计失败', {
         queueNames,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -228,7 +228,7 @@ export class QueueStatsService {
       });
 
       return distribution;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueStatsService] 获取优先级分布失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -267,7 +267,7 @@ export class QueueStatsService {
       });
 
       return distribution;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueStatsService] 获取类型分布失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -308,7 +308,7 @@ export class QueueStatsService {
       }
 
       return latestTimestamp > 0 ? new Date(latestTimestamp) : null;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueStatsService] 获取最后活动时间失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -333,7 +333,7 @@ export class QueueStatsService {
       );
 
       return completedJobs.length;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueStatsService] 计算吞吐量失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -368,7 +368,7 @@ export class QueueStatsService {
 
       const totalProcessed = (completedCount as number) + (failedCount as number);
       return totalProcessed > 0 ? (failedCount as number) / totalProcessed : 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueStatsService] 计算错误率失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -417,7 +417,7 @@ export class QueueStatsService {
       });
 
       return validJobs > 0 ? totalProcessingTime / validJobs : 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ [QueueStatsService] 计算平均处理时间失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'

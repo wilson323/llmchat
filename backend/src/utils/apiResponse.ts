@@ -353,7 +353,7 @@ export class ApiResponseHandler {
   static safeJsonStringify(data: JsonValue): string {
     try {
       return JSON.stringify(data, null, 2);
-    } catch (error) {
+    } catch (error: any) {
       // 记录序列化错误
       createErrorFromUnknown(error, {
         component: 'ApiResponseHandler',

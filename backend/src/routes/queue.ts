@@ -43,7 +43,7 @@ const adminRateLimit = rateLimit({
 router.get('/', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getQueues(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -55,7 +55,7 @@ router.get('/', queueRateLimit, async (req, res, next) => {
 router.get('/:queueName', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getQueue(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -67,7 +67,7 @@ router.get('/:queueName', queueRateLimit, async (req, res, next) => {
 router.post('/', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.createQueue(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -79,7 +79,7 @@ router.post('/', adminRateLimit, async (req, res, next) => {
 router.post('/:queueName/pause', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.pauseQueue(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -91,7 +91,7 @@ router.post('/:queueName/pause', adminRateLimit, async (req, res, next) => {
 router.post('/:queueName/resume', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.resumeQueue(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -103,7 +103,7 @@ router.post('/:queueName/resume', adminRateLimit, async (req, res, next) => {
 router.post('/:queueName/clean', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.cleanQueue(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -115,7 +115,7 @@ router.post('/:queueName/clean', adminRateLimit, async (req, res, next) => {
 router.put('/:queueName/config', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.updateQueueConfig(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -129,7 +129,7 @@ router.put('/:queueName/config', adminRateLimit, async (req, res, next) => {
 router.post('/:queueName/jobs', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.addJob(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -141,7 +141,7 @@ router.post('/:queueName/jobs', queueRateLimit, async (req, res, next) => {
 router.get('/:queueName/jobs/:jobId', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getJob(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -153,7 +153,7 @@ router.get('/:queueName/jobs/:jobId', queueRateLimit, async (req, res, next) => 
 router.delete('/:queueName/jobs/:jobId', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.removeJob(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -165,7 +165,7 @@ router.delete('/:queueName/jobs/:jobId', adminRateLimit, async (req, res, next) 
 router.post('/:queueName/jobs/:jobId/retry', adminRateLimit, async (req, res, next) => {
   try {
     await queueController.retryJob(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -177,7 +177,7 @@ router.post('/:queueName/jobs/:jobId/retry', adminRateLimit, async (req, res, ne
 router.post('/:queueName/jobs/bulk', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.bulkJobs(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -191,7 +191,7 @@ router.post('/:queueName/jobs/bulk', queueRateLimit, async (req, res, next) => {
 router.get('/:queueName/stats', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getQueueStats(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -203,7 +203,7 @@ router.get('/:queueName/stats', queueRateLimit, async (req, res, next) => {
 router.get('/:queueName/metrics', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getMetrics(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -215,7 +215,7 @@ router.get('/:queueName/metrics', queueRateLimit, async (req, res, next) => {
 router.get('/health', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getHealthStatus(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -227,7 +227,7 @@ router.get('/health', queueRateLimit, async (req, res, next) => {
 router.get('/status', queueRateLimit, async (req, res, next) => {
   try {
     await queueController.getHealthStatus(req, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });
@@ -245,7 +245,7 @@ router.get('/job/:jobId/status', queueRateLimit, async (req, res, next) => {
     const modifiedReq = req as Request;
     modifiedReq.params = { ...req.params, queueName: 'chat-processing' };
     await queueController.getJob(modifiedReq, res, next);
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 });

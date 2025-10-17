@@ -85,7 +85,7 @@ export function initOpenTelemetry(): NodeSDK | null {
     });
 
     return sdk;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('OpenTelemetry 初始化失败', { error });
     return null;
   }
@@ -108,3 +108,4 @@ export async function shutdownOpenTelemetry(): Promise<void> {
     logger.info('OpenTelemetry 已手动关闭');
   }
 }
+

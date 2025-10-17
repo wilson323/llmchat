@@ -11,7 +11,7 @@ export async function loadOptionalModule<T>(moduleName: string): Promise<T | nul
   try {
     const module = await import(moduleName);
     return module.default || module;
-  } catch (error) {
+  } catch (error: any) {
     return null;
   }
 }

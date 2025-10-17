@@ -100,7 +100,7 @@ export class SmartCacheService {
           return cached as T;
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('SmartCache: Redis获取失败，回源数据', {
         key: fullKey,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -133,7 +133,7 @@ export class SmartCacheService {
       if (cacheService.isConnected()) {
         await cacheService.set(fullKey, value, { ttl: config.ttl });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('SmartCache: Redis存储失败', {
         key: fullKey,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -173,7 +173,7 @@ export class SmartCacheService {
       if (cacheService.isConnected()) {
         await cacheService.del(fullKey);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('SmartCache: Redis删除失败', {
         key: fullKey,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -338,7 +338,7 @@ export class SmartCacheService {
         const dbsize = await cacheService.dbsize();
         redisSize = dbsize || 0;
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('获取Redis缓存大小失败', { error });
     }
 
@@ -407,4 +407,5 @@ export const CacheConfigs = {
     tags: ['users'],
   } as CacheConfig,
 };
+
 

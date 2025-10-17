@@ -414,7 +414,7 @@ export class QueueManager extends EventEmitter {
 
       try {
         return JSON.parse(jobData);
-      } catch (error) {
+      } catch (error: any) {
         logger.error(`QueueManager: Failed to parse job ${jobId}:`, error);
         return null;
       }
@@ -588,7 +588,7 @@ export class QueueManager extends EventEmitter {
         if (jobData) {
           try {
             jobs.push(JSON.parse(jobData));
-          } catch (error) {
+          } catch (error: any) {
             logger.error(`QueueManager: Failed to parse job data:`, error);
           }
         }
@@ -1058,7 +1058,7 @@ export class QueueManager extends EventEmitter {
         this.releaseRedisConnection(redis);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       const processingTime = Date.now() - startTime;
       const err = error as Error;
 
@@ -1290,7 +1290,7 @@ export class QueueManager extends EventEmitter {
     try {
       const event = JSON.parse(message);
       this.emit(channel, event);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueManager: Failed to parse queue event:', error);
     }
   }
@@ -1446,7 +1446,7 @@ export class QueueManager extends EventEmitter {
           afterMemory: `${(report.afterStats.heapUsed / 1024 / 1024).toFixed(2)}MB`
         }
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueManager: Manual memory optimization failed', error);
       return {
         success: false,
@@ -1556,7 +1556,7 @@ export class QueueManager extends EventEmitter {
       this.memoryOptimizationService.updateConfig(config);
       logger.info('QueueManager: Memory optimization configuration updated', config);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('QueueManager: Failed to update memory optimization config', error);
       return false;
     }
@@ -1661,7 +1661,7 @@ export class QueueManager extends EventEmitter {
       } finally {
         this.releaseRedisConnection(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`QueueManager: Failed to clear queue ${queueName}:`, error);
       return false;
     }
@@ -1705,7 +1705,7 @@ export class QueueManager extends EventEmitter {
       } finally {
         this.releaseRedisConnection(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`QueueManager: Failed to retry failed jobs in queue ${queueName}:`, error);
       return 0;
     }
@@ -1740,7 +1740,7 @@ export class QueueManager extends EventEmitter {
       } finally {
         this.releaseRedisConnection(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`QueueManager: Failed to get completed jobs from queue ${queueName}:`, error);
       return [];
     }
@@ -1775,7 +1775,7 @@ export class QueueManager extends EventEmitter {
       } finally {
         this.releaseRedisConnection(redis);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`QueueManager: Failed to get failed jobs from queue ${queueName}:`, error);
       return [];
     }

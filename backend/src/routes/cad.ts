@@ -56,7 +56,7 @@ const upload = multer({
       }
 
       cb(null, true);
-    } catch (error) {
+    } catch (error: any) {
       safeLogger.error('[CAD Route] File validation error', {
         filename: file.originalname,
         error: error instanceof Error ? error.message : String(error),
@@ -102,3 +102,4 @@ router.post('/:fileId/execute', authenticateJWT(), cadController.executeCadOpera
 router.get('/:fileId/export', authenticateJWT(), cadController.exportDxf);
 
 export default router;
+

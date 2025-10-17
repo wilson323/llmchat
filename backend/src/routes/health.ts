@@ -31,7 +31,7 @@ async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency?: numb
       healthy: result.rows.length > 0,
       latency,
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       healthy: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -64,7 +64,7 @@ async function checkRedisHealth(): Promise<{ healthy: boolean; latency?: number;
       healthy: pingResult,
       latency,
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       healthy: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -88,7 +88,7 @@ async function checkAgentsHealth(): Promise<{ healthy: boolean; activeCount?: nu
       healthy: activeCount > 0,
       activeCount,
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       healthy: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -212,7 +212,7 @@ router.get('/startup', async (_req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       message: 'Service startup complete',
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(503).json({
       status: 'starting',
       timestamp: new Date().toISOString(),
@@ -269,7 +269,7 @@ router.get('/performance', async (_req: Request, res: Response) => {
         health: dbHealth,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Performance health check failed', { error });
     res.status(500).json({
       status: 'error',
@@ -308,7 +308,7 @@ router.get('/database/pool', async (_req: Request, res: Response) => {
       },
       ...(healthStatus.error && { error: healthStatus.error }),
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Database pool health check failed', { error });
     res.status(500).json({
       status: 'error',
@@ -337,7 +337,7 @@ router.get('/database/stats', async (_req: Request, res: Response) => {
       consecutiveFailures: dbHealthService.getConsecutiveFailures(),
       healthy: dbHealthService.isHealthy(),
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Database stats retrieval failed', { error });
     res.status(500).json({
       status: 'error',
@@ -366,7 +366,7 @@ router.get('/redis', async (_req: Request, res: Response) => {
       latency: `${healthStatus.latency}ms`,
       ...(healthStatus.error && { error: healthStatus.error }),
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Redis health check failed', { error });
     res.status(500).json({
       status: 'error',
@@ -392,7 +392,7 @@ router.get('/redis/ping', async (_req: Request, res: Response) => {
       latency: `${status.latency}ms`,
       timestamp: status.lastCheck,
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Redis ping failed', { error });
     res.status(500).json({
       pong: false,
@@ -403,3 +403,4 @@ router.get('/redis/ping', async (_req: Request, res: Response) => {
 
 export default router;
 export { router as healthRoutes };
+

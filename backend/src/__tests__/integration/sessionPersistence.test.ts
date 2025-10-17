@@ -107,7 +107,7 @@ describe('Session Persistence Verification', () => {
       const testSession = {
         id: `test-session-${Date.now()}`,
         title: 'Test Session',
-        user_id: 'test-user',
+        user_id: testUserId,
         agent_id: 'test-agent',
       };
 
@@ -211,7 +211,7 @@ describe('Session Persistence Verification', () => {
       await pool.query(
         `INSERT INTO chat_sessions (id, title, user_id, agent_id) 
          VALUES ($1, $2, $3, $4)`,
-        [testSessionId, 'Concurrent Test', 'test-user', 'test-agent']
+        [testSessionId, 'Concurrent Test', testUserId, 'test-agent']
       );
 
       // 并发更新标题
@@ -262,7 +262,7 @@ describe('Session Persistence Verification', () => {
       await pool.query(
         `INSERT INTO chat_sessions (id, title, user_id, agent_id) 
          VALUES ($1, $2, $3, $4)`,
-        [testSessionId, 'Pagination Test', 'test-user', 'test-agent']
+        [testSessionId, 'Pagination Test', testUserId, 'test-agent']
       );
 
       // 创建多条消息
@@ -309,7 +309,7 @@ describe('Session Persistence Verification', () => {
         pool.query(`
           INSERT INTO chat_sessions (id, user_id, agent_id) 
           VALUES ($1, $2, $3)
-        `, [`incomplete-${Date.now()}`, 'test-user', 'test-agent'])
+        `, [`incomplete-${Date.now()}`, testUserId, 'test-agent'])
       ).rejects.toThrow();
     });
 
@@ -320,7 +320,7 @@ describe('Session Persistence Verification', () => {
       await pool.query(
         `INSERT INTO chat_sessions (id, title, user_id, agent_id) 
          VALUES ($1, $2, $3, $4)`,
-        [testSessionId, 'Timestamp Test', 'test-user', 'test-agent']
+        [testSessionId, 'Timestamp Test', testUserId, 'test-agent']
       );
 
       // 读取时间戳

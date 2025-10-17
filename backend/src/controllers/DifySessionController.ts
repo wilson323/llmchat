@@ -46,7 +46,7 @@ export class DifySessionController {
         return;
       }
 
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = {};
       if (user) {
         params.user = user as string;
       }
@@ -63,7 +63,7 @@ export class DifySessionController {
         message: '获取 Dify 会话列表成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取 Dify 会话列表失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -138,7 +138,7 @@ export class DifySessionController {
         message: '获取 Dify 会话消息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取 Dify 会话消息失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -208,7 +208,7 @@ export class DifySessionController {
         message: '获取 Dify 消息详情成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取 Dify 消息详情失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -278,7 +278,7 @@ export class DifySessionController {
         message: '会话删除成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('删除 Dify 会话失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -351,7 +351,7 @@ export class DifySessionController {
         message: '反馈提交成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('提交 Dify 消息反馈失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -421,7 +421,7 @@ export class DifySessionController {
         message: '获取建议问题成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取 Dify 建议问题失败', {
         component: 'DifySessionController',
         error: error instanceof Error ? error.message : String(error),
@@ -434,3 +434,4 @@ export class DifySessionController {
     }
   }
 }
+

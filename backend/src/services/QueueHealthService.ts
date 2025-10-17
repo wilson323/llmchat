@@ -134,7 +134,7 @@ export class QueueHealthService {
       }
 
       return healthStatus;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueHealthService] 健康检查失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -169,7 +169,7 @@ export class QueueHealthService {
       });
 
       return healthStatuses;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueHealthService] 批量健康检查失败', {
         queueNames,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -197,7 +197,7 @@ export class QueueHealthService {
         healthy: true,
         message: `队列大小正常: ${currentSize}/${maxSize}`
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `队列大小检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -224,7 +224,7 @@ export class QueueHealthService {
         healthy: true,
         message: `处理时间正常: ${Math.round(avgTime / 1000)}s/${Math.round(maxTime / 1000)}s`
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `处理时间检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -251,7 +251,7 @@ export class QueueHealthService {
         healthy: true,
         message: `错误率正常: ${Math.round(currentErrorRate * 100)}%/${Math.round(maxErrorRate * 100)}%`
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `错误率检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -310,7 +310,7 @@ export class QueueHealthService {
         healthy: true,
         message: `Redis内存使用正常: ${Math.round(currentUsage * 100)}%/${Math.round(maxUsage * 100)}%`
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `内存使用检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -344,7 +344,7 @@ export class QueueHealthService {
         healthy: true,
         message: 'Redis连接正常'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `Redis连接检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -393,7 +393,7 @@ export class QueueHealthService {
         healthy: true,
         message: totalStaleJobs > 0 ? `发现少量过期作业: ${totalStaleJobs}个` : '无过期作业'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `过期作业检查失败: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -427,7 +427,7 @@ export class QueueHealthService {
         healthy: true,
         message: '未检测到死锁'
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         healthy: false,
         message: `死锁检测失败: ${error instanceof Error ? error.message : 'Unknown error'}`

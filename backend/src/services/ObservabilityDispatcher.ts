@@ -92,7 +92,7 @@ export class ObservabilityDispatcher {
         for (const slice of chunks) {
           try {
             await this.sendToExporter(exporter, slice);
-          } catch (error) {
+          } catch (error: any) {
             logger.warn('[ObservabilityDispatcher] Export failed', { exporterType: exporter.type, error });
           }
         }
@@ -181,3 +181,4 @@ function chunk<T>(items: T[], size: number): T[][] {
   }
   return result;
 }
+

@@ -147,7 +147,7 @@ async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
   }
   try {
     return await authService.profile(token);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
       throw new Error('TOKEN_EXPIRED');
     }
@@ -1912,3 +1912,4 @@ export class ChatController {
     return 'INTERNAL_ERROR';
   }
 }
+

@@ -179,7 +179,7 @@ export class ConnectionPoolOptimizer {
         总请求数: this.stats.totalRequests,
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('更新连接池统计失败', { error });
     }
   }
@@ -203,7 +203,7 @@ export class ConnectionPoolOptimizer {
 
       logger.debug('连接池健康检查通过', { responseTime: `${responseTime.toFixed(2)}ms` });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('连接池健康检查失败', { error });
     }
   }
@@ -234,7 +234,7 @@ export class ConnectionPoolOptimizer {
       pool.on('remove', () => {
         logger.info('连接池连接已移除');
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('设置连接池事件监听失败', { error });
     }
   }
@@ -334,7 +334,7 @@ export class ConnectionPoolOptimizer {
         connectionTimeoutMillis: poolOptions.options?.connectionTimeoutMillis,
         maxUses: poolOptions.options?.maxUses,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取连接池配置失败', { error });
       return {};
     }
@@ -442,7 +442,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
       // 重新初始化（这里需要重新调用initDB）
       logger.info('✅ 连接池清理完成');
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ 连接池清理失败', { error });
       throw error;
     }
@@ -476,7 +476,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
 
       logger.info(`✅ 连接池预热完成，预热连接数: ${connectionCount}`);
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ 连接池预热失败', { error });
       throw error;
     }
@@ -504,7 +504,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
             const client = await pool.connect();
             await client.query('SELECT 1, pg_sleep(0.1)');
             client.release();
-          } catch (error) {
+          } catch (error: any) {
             // 记录失败但不抛出异常
           }
         })()

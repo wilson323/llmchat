@@ -136,7 +136,7 @@ export class DashScopeService {
       });
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[DashScopeService] 请求失败', { error });
       throw this.handleError(error);
     }
@@ -208,7 +208,7 @@ export class DashScopeService {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[DashScopeService] 流式请求失败', { error });
       throw this.handleError(error);
     }
@@ -266,9 +266,10 @@ export class DashScopeService {
 
       await this.chatCompletion(testMessages, { maxTokens: 10 });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[DashScopeService] 健康检查失败', { error });
       return false;
     }
   }
 }
+

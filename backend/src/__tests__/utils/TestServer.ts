@@ -70,7 +70,7 @@ export async function waitForPortAvailable(port: number, timeout = 5000): Promis
       });
 
       return; // 端口可用
-    } catch (error) {
+    } catch (error: any) {
       if ((error as any).code !== 'EADDRINUSE') {
         throw error;
       }

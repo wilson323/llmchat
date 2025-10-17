@@ -194,7 +194,7 @@ export class FastGPTSessionService {
           params: options.params || {},
           headers,
         });
-      } catch (error) {
+      } catch (error: any) {
         lastError = error;
         // 若 404，尝试 /v1 回退
         const status = error?.response?.status;
@@ -310,21 +310,22 @@ export class FastGPTSessionService {
   }
 
   private normalizeHistorySummary(item: Record<string, unknown>): FastGPTChatHistorySummary {
-    const chatId = item?.chatId || item?.id || item?._id || item?.historyId || item?.history_id || '';
-    const title = item?.title || item?.name || item?.latestQuestion || item?.latest_question || '未命名对话';
-    const createdAt = item?.createTime || item?.create_time || item?.createdAt || item?.created_at || item?.time || new Date().toISOString();
+    const data = item as Record<string, any>;
+    const chatId = data?.chatId || data?.id || data?._id || data?.historyId || data?.history_id || '';
+    const title = data?.title || data?.name || data?.latestQuestion || data?.latest_question || '未命名对话';
+    const createdAt = data?.createTime || data?.create_time || data?.createdAt || data?.created_at || data?.time || new Date().toISOString();
     const updatedAt =
-      item?.updateTime || item?.update_time || item?.updatedAt || item?.updated_at || item?.lastUpdateTime || item?.last_update_time || createdAt;
+      data?.updateTime || data?.update_time || data?.updatedAt || data?.updated_at || data?.lastUpdateTime || data?.last_update_time || createdAt;
 
     return {
       chatId: String(chatId),
-      appId: item?.appId || item?.app_id,
+      appId: (data?.appId || data?.app_id) as string | undefined,
       title: String(title),
       createdAt: typeof createdAt === 'number' ? new Date(createdAt).toISOString() : String(createdAt),
       updatedAt: typeof updatedAt === 'number' ? new Date(updatedAt).toISOString() : String(updatedAt),
-      messageCount: Number(item?.messageCount || item?.msgCount || item?.totalMessages || item?.total || 0),
-      tags: Array.isArray(item?.tags) ? item.tags : undefined,
-      raw: item,
+      messageCount: Number(data?.messageCount || data?.msgCount || data?.totalMessages || data?.total || 0),
+      tags: Array.isArray(data?.tags) ? data.tags as string[] : undefined,
+      raw: data,
     };
   }
 
@@ -357,12 +358,12 @@ export class FastGPTSessionService {
   }
 
   private normalizeHistoryDetail(payload: Record<string, unknown>): FastGPTChatHistoryDetail {
-    const data = payload?.data ?? payload;
+    const data = (payload?.data ?? payload) as Record<string, any>;
     const list = data?.list || data?.messages || data?.history || data?.chatHistoryList || data?.detail || [];
     const title = data?.title || data?.historyName || data?.history_title;
 
     const messages: FastGPTChatHistoryMessage[] = Array.isArray(list)
-      ? list.map((item) => this.normalizeHistoryMessage(item))
+      ? list.map((item) => this.normalizeHistoryMessage(item as Record<string, unknown>))
       : [];
 
     const chatId = data?.chatId || data?.historyId || data?.id || data?.chat_id || data?.history_id;
@@ -636,7 +637,7 @@ export class FastGPTSessionService {
         hasNext: (params?.page || 1) * (params?.pageSize || 20) < (rawData?.total || sessions.length),
         hasPrev: (params?.page || 1) > 1,
       };
-    } catch (error) {
+    } catch (error: any) {
       // 如果增强API不可用，回退到基础API并应用本地处理
       logger.warn('增强版会话API不可用，使用基础API + 本地处理', { error });
       const allSessions = await this.listHistories(agentId, { page: 1, pageSize: 1000 });
@@ -803,7 +804,7 @@ export class FastGPTSessionService {
         }
 
         results.success++;
-      } catch (error) {
+      } catch (error: any) {
         results.failed++;
         const errorMsg = `会话 ${sessionId} 操作失败: ${getErrorMessage(error)}`;
         results.errors.push(errorMsg);
@@ -855,7 +856,7 @@ export class FastGPTSessionService {
     const result = await this.listHistoriesEnhanced(agentId, options.filters);
     const sessions = result.data;
 
-    let exportData: string;
+    let exportData: string | Buffer;
     let filename: string;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
@@ -929,7 +930,7 @@ export class FastGPTSessionService {
           // 这里需要获取会话详情，但需要知道agentId
           // 暂时跳过，实际实现时需要传入agentId
           logger.debug('获取会话的详细消息', { chatId: session.chatId });
-        } catch (error) {
+        } catch (error: any) {
           logger.warn('获取会话消息失败', { chatId: session.chatId, error });
         }
       }
@@ -1024,7 +1025,7 @@ export class FastGPTSessionService {
         metadata,
         context,
       );
-    } catch (error) {
+    } catch (error: any) {
       logger.error('记录会话事件失败', { error });
       // 事件记录失败不应该影响主要功能
     }
@@ -1039,7 +1040,7 @@ export class FastGPTSessionService {
   ): Promise<PaginatedResponse<SessionEvent>> {
     try {
       return await this.eventService.queryEvents(agentId, params);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('查询会话事件失败', { error });
       // 返回空结果而不是抛出错误
       return {
@@ -1121,3 +1122,4 @@ export class FastGPTSessionService {
 }
 
 export type { FastGPTChatHistorySummary };
+

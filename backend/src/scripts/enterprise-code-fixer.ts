@@ -176,7 +176,7 @@ class EnterpriseCodeFixer {
       try {
         const results = await this.safeFixFile(file);
         allResults.push(...results);
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ 文件处理失败: ${file} - ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
@@ -413,7 +413,7 @@ class EnterpriseCodeFixer {
       console.log(`✅ 修复成功: ${filePath} - ${issue.message}`);
       return true;
 
-    } catch (error) {
+    } catch (error: any) {
       // 清理临时文件
       if (fs.existsSync(tempFile)) {
         fs.unlinkSync(tempFile);
@@ -498,7 +498,7 @@ class EnterpriseCodeFixer {
         success: errors.length === 0,
         errors,
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         success: false,
         errors: [error instanceof Error ? error.message : '未知错误'],

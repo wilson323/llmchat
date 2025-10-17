@@ -118,7 +118,7 @@ class VisualizationDataService extends EventEmitter {
     this.updateInterval = setInterval(async () => {
       try {
         await this.collectAllData();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error collecting realtime data:', error);
       }
     }, intervalMs);
@@ -342,7 +342,7 @@ class VisualizationDataService extends EventEmitter {
       subscribers.forEach(callback => {
         try {
           callback(update);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error in subscriber callback:', error);
         }
       });

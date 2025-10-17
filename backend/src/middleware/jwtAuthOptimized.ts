@@ -145,7 +145,7 @@ export function createOptimizedAuthMiddleware(options: {
             audience: 'llmchat-frontend-test'
           }) as JWTPayload;
         }
-      } catch (error) {
+      } catch (error: any) {
         stats.validationErrors++;
         updateAverageValidationTime(stats, startTime);
 
@@ -194,7 +194,7 @@ export function createOptimizedAuthMiddleware(options: {
       logCacheMiss('cache_miss', decoded);
 
       next();
-    } catch (error) {
+    } catch (error: any) {
       stats.validationErrors++;
       updateAverageValidationTime(stats, startTime);
 
@@ -405,7 +405,7 @@ export async function warmupJWTCache(commonTokens: string[]): Promise<void> {
         userId: decoded.sub || decoded.userId,
         username: decoded.username
       });
-    } catch (error) {
+    } catch (error: any) {
       safeLogger.warn('JWT缓存预热失败', {
         component: 'jwtAuthOptimized',
         error: error instanceof Error ? error.message : String(error)
@@ -455,11 +455,12 @@ export function createJWTHealthCheck() {
     },
 
     checkAllMiddleware: () => {
-      const results: Array<{id: string; stats: unknown; tokenCache: unknown}> = [];
+      const results: Array<Record<string, unknown>> = [];
 
       for (const [id, { tokenCache, stats }] of globalStats.entries()) {
         results.push({
           middlewareId: id,
+          id: id,
           ...getStatsSummary(stats, tokenCache)
         });
       }

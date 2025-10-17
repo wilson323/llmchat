@@ -53,7 +53,7 @@ describe('T018: 认证系统单元测试', () => {
       const { getPool } = await import('@/utils/db');
       const pool = getPool();
       await pool.query('DELETE FROM users WHERE username = $1', [testUser.username]);
-    } catch (error) {
+    } catch (error: any) {
       // 忽略清理错误
     }
     
@@ -409,4 +409,5 @@ describe('T018: 认证系统单元测试', () => {
     });
   });
 });
+
 

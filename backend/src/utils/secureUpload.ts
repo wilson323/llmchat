@@ -201,7 +201,7 @@ export class SecureUpload {
       }
 
       return { safe: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Malware scan failed:', error);
       return { safe: false, threat: 'Scan failed' };
     }

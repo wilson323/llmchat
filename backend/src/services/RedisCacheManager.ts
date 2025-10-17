@@ -221,7 +221,7 @@ export class RedisCacheManager {
           maxMemorySize: `${(this.config.maxMemorySize / 1024 / 1024).toFixed(2)}MB`,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ Redis缓存管理器初始化失败', { error });
       this.stats.errors++;
     }
@@ -267,7 +267,7 @@ export class RedisCacheManager {
           data: compressed,
           size: compressed.length,
         };
-      } catch (error) {
+      } catch (error: any) {
         logger.warn('数据压缩失败，使用原始数据', { error, size });
       }
     }
@@ -290,7 +290,7 @@ export class RedisCacheManager {
     try {
       const decompressed = decompress(item.data as Buffer);
       return JSON.parse(decompressed.toString('utf8'));
-    } catch (error) {
+    } catch (error: any) {
       logger.error('数据解压失败', { error });
       return null;
     }
@@ -412,7 +412,7 @@ export class RedisCacheManager {
             logger.debug('🔥 Redis缓存命中', { key: key.substring(0, 50) });
             return this.decompressData(redisItem);
           }
-        } catch (error) {
+        } catch (error: any) {
           logger.error('Redis缓存读取失败', { key, error });
           this.stats.errors++;
         }
@@ -422,7 +422,7 @@ export class RedisCacheManager {
       this.updateStats();
       logger.debug('❌ 缓存未命中', { key: key.substring(0, 50) });
       return null;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存获取失败', { key, error });
       this.stats.errors++;
       return null;
@@ -474,7 +474,7 @@ export class RedisCacheManager {
         try {
           const serialized = JSON.stringify(cacheItem);
           await this.redis.setex(fullKey, ttl, serialized);
-        } catch (error) {
+        } catch (error: any) {
           logger.error('Redis缓存写入失败', { key, error });
           this.stats.errors++;
           return false;
@@ -491,7 +491,7 @@ export class RedisCacheManager {
         strategy: options.strategy
       });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存设置失败', { key, error });
       this.stats.errors++;
       return false;
@@ -524,7 +524,7 @@ export class RedisCacheManager {
         try {
           const result = await this.redis.del(fullKey);
           redisDeleted = result > 0;
-        } catch (error) {
+        } catch (error: any) {
           logger.error('Redis缓存删除失败', { key, error });
           this.stats.errors++;
         }
@@ -538,7 +538,7 @@ export class RedisCacheManager {
       }
 
       return false;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存删除失败', { key, error });
       this.stats.errors++;
       return false;
@@ -570,7 +570,7 @@ export class RedisCacheManager {
             const result = await this.redis.del(keys);
             deletedCount += result;
           }
-        } catch (error) {
+        } catch (error: any) {
           logger.error('Redis批量删除失败', { tag, error });
           this.stats.errors++;
         }
@@ -583,7 +583,7 @@ export class RedisCacheManager {
       }
 
       return deletedCount;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('按标签删除缓存失败', { tag, error });
       this.stats.errors++;
       return 0;
@@ -619,7 +619,7 @@ export class RedisCacheManager {
       await this.set(key, result, options);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('getOrSet fallback执行失败', { key, error });
       return null;
     }
@@ -683,7 +683,7 @@ export class RedisCacheManager {
         if (attempt < retry) {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('分布式锁获取失败', { key, attempt, error });
         this.stats.errors++;
       }
@@ -705,7 +705,7 @@ export class RedisCacheManager {
       this.lockPromises.delete(`lock:${this.generateKey(key)}`);
       logger.debug('🔓 分布式锁释放', { key: key.substring(0, 50) });
       return result;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('分布式锁释放失败', { key, error });
       return false;
     }
@@ -734,7 +734,7 @@ export class RedisCacheManager {
         await this.getOrSet(key, fallback, options);
         this.prewarmedKeys.add(key);
         this.stats.prewarmedHits++;
-      } catch (error) {
+      } catch (error: any) {
         logger.error('缓存预热失败', { key, error });
       }
     });
@@ -818,7 +818,7 @@ export class RedisCacheManager {
         const start = Date.now();
         await this.redis.ping();
         details.redis.latency = Date.now() - start;
-      } catch (error) {
+      } catch (error: any) {
         details.redis.connected = false;
       }
     }
@@ -947,7 +947,7 @@ ${this.generateRecommendations()}
       }
 
       return false;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('检查缓存存在性失败', { key, error });
       this.stats.errors++;
       return false;
@@ -964,7 +964,7 @@ ${this.generateRecommendations()}
         return ttl;
       }
       return -1;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取缓存TTL失败', { key, error });
       this.stats.errors++;
       return -1;
@@ -1004,14 +1004,14 @@ ${this.generateRecommendations()}
         try {
           const redisKeys = await this.redis.keys(fullPattern);
           keys.push(...redisKeys);
-        } catch (error) {
+        } catch (error: any) {
           logger.error('获取Redis键列表失败', { pattern, error });
           this.stats.errors++;
         }
       }
 
       return [...new Set(keys)]; // 去重
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取键列表失败', { pattern, error });
       this.stats.errors++;
       return [];
@@ -1039,7 +1039,7 @@ ${this.generateRecommendations()}
             const tagPattern = `${this.config.keyPrefix}:*:${tag}`;
             const redisKeys = await this.redis.keys(tagPattern);
             keys.push(...redisKeys);
-          } catch (error) {
+          } catch (error: any) {
             logger.error('获取标签键列表失败', { tag, error });
             this.stats.errors++;
           }
@@ -1047,7 +1047,7 @@ ${this.generateRecommendations()}
       }
 
       return [...new Set(keys)]; // 去重
-    } catch (error) {
+    } catch (error: any) {
       logger.error('根据标签获取键列表失败', { tags, error });
       this.stats.errors++;
       return [];
@@ -1120,7 +1120,7 @@ ${this.generateRecommendations()}
       this.protectionCache.clear();
       this.stats.redisConnected = false;
       logger.info('Redis缓存管理器已停止');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('停止Redis缓存管理器失败', { error });
     }
   }
@@ -1154,7 +1154,7 @@ ${this.generateRecommendations()}
         } else {
           failed++;
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('预热缓存项失败', { key: item.key, error });
         failed++;
       }
@@ -1201,7 +1201,7 @@ ${this.generateRecommendations()}
         try {
           const redisDeleted = await this.redis.del(pattern);
           deletedCount += redisDeleted;
-        } catch (error) {
+        } catch (error: any) {
           logger.error('清空Redis缓存失败', { pattern, error });
           this.stats.errors++;
         }
@@ -1209,7 +1209,7 @@ ${this.generateRecommendations()}
 
       this.stats.dels += deletedCount;
       logger.info('缓存清空完成', { pattern, deletedCount });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('清空缓存失败', { pattern, error });
       this.stats.errors++;
     }

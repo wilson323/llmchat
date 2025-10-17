@@ -137,7 +137,7 @@ export class RequestDeduplicator {
       metrics.totalDuration = Date.now() - startTime;
       this.requestMetrics.set(key, metrics);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       metrics.error = error as Error;
       metrics.totalDuration = Date.now() - startTime;
       this.requestMetrics.set(key, metrics);
@@ -286,7 +286,7 @@ export class RetryService {
           totalDelay,
           fallbackUsed: false,
         };
-      } catch (error) {
+      } catch (error: any) {
         lastError = error as Error;
 
         // 检查是否应该重试

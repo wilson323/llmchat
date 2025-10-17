@@ -110,7 +110,7 @@ export async function getConfigHealth(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 获取配置健康状态失败', {
       error: errorMessage,
@@ -215,7 +215,7 @@ export async function compareConfigSnapshot(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 配置快照对比失败', {
       error: errorMessage,
@@ -301,7 +301,7 @@ export async function cleanupObsoleteConfigs(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 清理废弃配置失败', {
       error: errorMessage,
@@ -389,7 +389,7 @@ export async function getConfigDetails(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 获取配置详情失败', {
       error: errorMessage,
@@ -1169,7 +1169,7 @@ export async function getAdminStats(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 获取统计数据失败', {
       error: errorMessage,
@@ -1268,7 +1268,7 @@ export async function getAdminMetrics(
     };
 
     return res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('[AdminController] 获取指标数据失败', {
       error: errorMessage,
@@ -1284,3 +1284,4 @@ export async function getAdminMetrics(
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
   }
 }
+

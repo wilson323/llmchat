@@ -58,7 +58,7 @@ export class SecureJWT {
       // Test token creation
       const testPayload = { test: 'validation' };
       jwt.sign(testPayload, config.secret, { algorithm: config.algorithm });
-    } catch (error) {
+    } catch (error: any) {
       errors.push(`JWT configuration error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
@@ -110,7 +110,7 @@ export class SecureJWT {
       }) as JWTPayload;
 
       return decoded;
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof jwt.TokenExpiredError) {
         throw new Error('Token expired');
       } else if (error instanceof jwt.JsonWebTokenError) {

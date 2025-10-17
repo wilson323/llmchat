@@ -362,7 +362,7 @@ export class MemoryOptimizationService extends EventEmitter {
       this.emit('optimization:completed', { reason, report });
       return report;
 
-    } catch (error) {
+    } catch (error: any) {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
@@ -398,7 +398,7 @@ export class MemoryOptimizationService extends EventEmitter {
         aggressive: true,
         force: true
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Emergency optimization failed', error);
     }
   }
@@ -411,7 +411,7 @@ export class MemoryOptimizationService extends EventEmitter {
 
     try {
       await this.performOptimization('preventive', { aggressive: false });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Preventive optimization failed', error);
     }
   }
@@ -437,7 +437,7 @@ export class MemoryOptimizationService extends EventEmitter {
       }
 
       return 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Connection pool optimization failed', error);
       return 0;
     }
@@ -465,7 +465,7 @@ export class MemoryOptimizationService extends EventEmitter {
       this.stats.cleanupOperations++;
 
       return freedMemory;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Data cleanup failed', error);
       return 0;
     }
@@ -541,7 +541,7 @@ export class MemoryOptimizationService extends EventEmitter {
       }
 
       return freedMemory;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Historical data cleanup failed', error);
       return 0;
     }
@@ -574,7 +574,7 @@ export class MemoryOptimizationService extends EventEmitter {
       freedMemory += 0.5; // 估算值
 
       return freedMemory;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MemoryOptimizationService: Aggressive optimization failed', error);
       return 0;
     }

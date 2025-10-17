@@ -448,7 +448,7 @@ export class MockQueueManager extends EventEmitter {
         try {
           // 模拟成功完成
           await this.completeJob(nextJob.id, { processed: true });
-        } catch (error) {
+        } catch (error: any) {
           // 模拟失败
           await this.failJob(nextJob.id, error as Error);
         }

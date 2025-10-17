@@ -103,7 +103,7 @@ export class CacheService {
       this.connected = true;
 
       logger.info('✓ Redis 缓存服务已启动', { prefix: this.prefix, defaultTTL: this.defaultTTL });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Redis 连接失败', { error });
       this.client = null;
       this.connected = false;
@@ -150,7 +150,7 @@ export class CacheService {
       this.updateHitRate();
 
       return JSON.parse(value) as T;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存读取失败', { key, error });
       this.stats.errors++;
       return null;
@@ -180,7 +180,7 @@ export class CacheService {
         this.stats.sets++;
         return true;
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存写入失败', { key, error });
       this.stats.errors++;
       return false;
@@ -200,7 +200,7 @@ export class CacheService {
       const result = await this.client.del(fullKey);
       this.stats.dels++;
       return result > 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存删除失败', { key, error });
       this.stats.errors++;
       return false;
@@ -226,7 +226,7 @@ export class CacheService {
       const result = await this.client.del(keys);
       this.stats.dels += result;
       return result;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('批量删除缓存失败', { pattern, error });
       this.stats.errors++;
       return 0;
@@ -245,7 +245,7 @@ export class CacheService {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.exists(fullKey);
       return result > 0;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('检查缓存存在失败', { key, error });
       return false;
     }
@@ -263,7 +263,7 @@ export class CacheService {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.expire(fullKey, ttl);
       return result === 1;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('设置缓存过期时间失败', { key, ttl, error });
       return false;
     }
@@ -287,7 +287,7 @@ export class CacheService {
       }
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('缓存递增失败', { key, error });
       this.stats.errors++;
       return 0;
@@ -316,7 +316,7 @@ export class CacheService {
       await this.set(key, value, options);
 
       return value;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('getOrSet fallback 执行失败', { key, error });
       return null;
     }
@@ -376,7 +376,7 @@ export class CacheService {
     try {
       const result = await this.client.ping();
       return result === 'PONG';
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Redis ping 失败', { error });
       return false;
     }
@@ -393,7 +393,7 @@ export class CacheService {
     try {
       const size = await this.client.dbsize();
       return size;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('获取Redis dbsize失败', { error });
       return 0;
     }
@@ -489,3 +489,4 @@ export function Cacheable(key: string, ttl = 300) {
 }
 
 export default CacheService;
+

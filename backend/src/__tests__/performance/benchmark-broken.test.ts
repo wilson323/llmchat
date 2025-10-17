@@ -47,7 +47,7 @@ describe('Performance Benchmark Tests', () => {
         // Response validation
         expect([200, 401]).toContain(response.status); // Success or invalid credentials
 
-      } catch (error) {
+      } catch (error: any) {
         const end = performance.now();
         const responseTime = end - start;
 

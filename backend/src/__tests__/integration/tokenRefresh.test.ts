@@ -36,7 +36,7 @@ describe('Token Refresh Mechanism Tests', () => {
       const loginResult = await authService.login(testUsername, testPassword);
       testToken = loginResult.token;
       testRefreshToken = loginResult.refreshToken || '';
-    } catch (error) {
+    } catch (error: any) {
       // 如果用户不存在，创建用户（这里简化处理）
       logger.error('测试用户登录失败', { error });
     }
@@ -186,4 +186,5 @@ describe('Token Refresh Mechanism Tests', () => {
     });
   });
 });
+
 

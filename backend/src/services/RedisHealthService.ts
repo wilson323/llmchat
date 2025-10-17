@@ -166,7 +166,7 @@ export class RedisHealthService extends EventEmitter {
 
       return this.healthStatus;
 
-    } catch (error) {
+    } catch (error: any) {
       this.consecutiveFailures++;
 
       this.healthStatus = {
@@ -278,4 +278,5 @@ export class RedisHealthService extends EventEmitter {
 
 // 导出单例实例
 export default RedisHealthService;
+
 

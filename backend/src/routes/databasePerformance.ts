@@ -85,7 +85,7 @@ router.get('/performance/overview', async (req: Request, res: Response): Promise
       data: overview,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('获取数据库性能概览失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -113,7 +113,7 @@ router.get('/performance/pool', async (req: Request, res: Response): Promise<voi
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('获取连接池详细信息失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -153,7 +153,7 @@ router.get('/performance/cache', async (req: Request, res: Response): Promise<vo
       data: cacheDetails,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('获取查询缓存详细信息失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -194,7 +194,7 @@ router.get('/performance/slow-queries', async (req: Request, res: Response): Pro
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('获取慢查询列表失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -241,7 +241,7 @@ router.post('/performance/analyze-query', async (req: Request, res: Response): P
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('查询分析失败', { error, query: req.body.query });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -268,7 +268,7 @@ router.get('/performance/report', async (req: Request, res: Response): Promise<v
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('生成性能报告失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -294,7 +294,7 @@ router.post('/performance/auto-optimize', async (req: Request, res: Response): P
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('执行自动优化失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -333,7 +333,7 @@ router.post('/performance/warmup-pool', async (req: Request, res: Response): Pro
     });
     return;
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('预热连接池失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -374,7 +374,7 @@ router.post('/performance/test-pool', async (req: Request, res: Response): Promi
     });
     return;
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('测试连接池性能失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -419,7 +419,7 @@ router.delete('/performance/cache', async (req: Request, res: Response): Promise
     });
     return;
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('清理查询缓存失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -466,7 +466,7 @@ router.post('/performance/reset-stats', async (req: Request, res: Response): Pro
     });
     return;
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('重置性能统计失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
@@ -514,7 +514,7 @@ router.put('/performance/config', async (req: Request, res: Response): Promise<v
     });
     return;
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('更新优化配置失败', { error });
     res.status(500).json({
       code: 'INTERNAL_ERROR',

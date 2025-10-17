@@ -94,7 +94,7 @@ function decryptPasswordIfNeeded(password: string | EncryptedData, isEncrypted?:
   if (isEncrypted && typeof password === 'object' && SecureCredentialsManager.validateEncryptedData(password)) {
     try {
       return SecureCredentialsManager.decryptDatabasePassword(password);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[secureDb] Failed to decrypt database password', { error });
       throw new Error('Failed to decrypt database password');
     }
@@ -209,7 +209,7 @@ export function validateSecureConfig(config: SecurePgConfig): boolean {
     }
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('[secureDb] Configuration validation failed', { error });
     return false;
   }

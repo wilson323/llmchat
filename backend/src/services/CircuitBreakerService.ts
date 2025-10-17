@@ -92,7 +92,7 @@ export class CircuitBreaker {
       this.events?.onSuccess?.(responseTime, this.getMetrics());
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       this.onFailure(error as Error);
       this.events?.onFailure?.(error as Error, this.getMetrics());
       throw error;

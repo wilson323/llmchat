@@ -23,7 +23,7 @@ export async function analyzeApiErrorResponses() {
     console.log('❌ 404响应格式 (不存在的智能体):');
     console.log(JSON.stringify(response.body, null, 2));
     console.log('');
-  } catch (error) {
+  } catch (error: any) {
     console.error('404测试失败:', error);
   }
 
@@ -38,7 +38,7 @@ export async function analyzeApiErrorResponses() {
     console.log('❌ 400响应格式 (无效JSON):');
     console.log(JSON.stringify(response.body, null, 2));
     console.log('');
-  } catch (error) {
+  } catch (error: any) {
     console.error('400测试失败:', error);
   }
 
@@ -51,7 +51,7 @@ export async function analyzeApiErrorResponses() {
     console.log('❌ 404响应格式 (OPTIONS请求):');
     console.log(JSON.stringify(response.body, null, 2));
     console.log('');
-  } catch (error) {
+  } catch (error: any) {
     console.error('OPTIONS测试失败:', error);
   }
 
@@ -65,7 +65,7 @@ export async function analyzeApiErrorResponses() {
     console.log('❌ 401响应格式 (无效token):');
     console.log(JSON.stringify(response.body, null, 2));
     console.log('');
-  } catch (error) {
+  } catch (error: any) {
     console.error('401测试失败:', error);
   }
 }

@@ -253,7 +253,7 @@ export async function cleanupTestData(pool: any, userId?: string): Promise<void>
       await pool.query('DELETE FROM chat_sessions WHERE user_id = $1', [userId]);
       await pool.query('DELETE FROM users WHERE id = $1', [userId]);
     }
-  } catch (error) {
+  } catch (error: any) {
     // 忽略清理错误
     console.warn('Cleanup warning:', error);
   }
@@ -304,4 +304,5 @@ export const assertions = {
   errorMessage: assertErrorMessage,
   apiResponse: assertApiResponse
 };
+
 

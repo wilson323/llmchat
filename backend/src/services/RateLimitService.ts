@@ -395,7 +395,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
       }
 
       next();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('限流中间件错误', { error });
       // 出错时允许请求通过，避免影响正常服务
       next();
@@ -453,7 +453,7 @@ export function createMultiDimensionRateLimitMiddleware(
       }
 
       next();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('多维度限流中间件错误', { error });
       next();
     }

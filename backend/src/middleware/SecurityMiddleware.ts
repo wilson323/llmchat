@@ -356,7 +356,7 @@ export const requestValidationMiddleware = (req: Request, res: Response, next: N
     }
 
     next();
-  } catch (error) {
+  } catch (error: any) {
     logSecurityEvent('Request validation error', {
       ...(req.ip && { ip: req.ip }),
       error: {

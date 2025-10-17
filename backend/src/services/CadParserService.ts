@@ -81,7 +81,7 @@ export class CadParserService {
         layers: Array.from(layersSet),
         bounds,
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[CadParserService] DXF 解析失败', { error });
       throw new Error(`DXF 文件解析失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
@@ -246,3 +246,4 @@ export class CadParserService {
     return results;
   }
 }
+

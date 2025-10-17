@@ -74,7 +74,7 @@ export class QueueOperationsService {
       });
 
       return jobId;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业添加失败', {
         queueName,
         jobId,
@@ -96,7 +96,7 @@ export class QueueOperationsService {
 
       const job: QueueJob = JSON.parse(jobData);
       return job;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 获取作业失败', {
         queueName,
         jobId,
@@ -128,7 +128,7 @@ export class QueueOperationsService {
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业删除失败', {
         queueName,
         jobId,
@@ -202,7 +202,7 @@ export class QueueOperationsService {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业状态更新失败', {
         queueName,
         jobId,
@@ -237,7 +237,7 @@ export class QueueOperationsService {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业重试次数增加失败', {
         queueName,
         jobId,
@@ -282,7 +282,7 @@ export class QueueOperationsService {
 
       const job: QueueJob = JSON.parse(jobData);
       return job;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 获取下一个作业失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -334,7 +334,7 @@ export class QueueOperationsService {
       });
 
       return job;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业获取失败', {
         queueName,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -377,7 +377,7 @@ export class QueueOperationsService {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ [QueueOperationsService] 作业释放失败', {
         queueName,
         jobId,

@@ -107,7 +107,7 @@ export class RedisConnectionPool extends EventEmitter {
 
       await Promise.all(promises);
       logger.info(`RedisConnectionPool: Pool initialized with ${this.pool.length} connections`);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('RedisConnectionPool: Failed to initialize pool:', error);
       throw error;
     }
@@ -214,7 +214,7 @@ export class RedisConnectionPool extends EventEmitter {
         this.stats.lastUsed = new Date();
         this.logStatsIfNeeded(); // ✅ 添加统计调用
         return connection;
-      } catch (error) {
+      } catch (error: any) {
         logger.error('RedisConnectionPool: Failed to create new connection:', error);
         throw error;
       }
@@ -398,7 +398,7 @@ export class RedisConnectionPool extends EventEmitter {
       await connection.ping();
       this.release(connection);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('RedisConnectionPool: Health check failed:', error);
       return false;
     }

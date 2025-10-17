@@ -77,7 +77,7 @@ export function loadAppConfig(): AppConfig {
       }
 
       return config;
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[AppConfig] Failed to parse configuration', { file, error });
     }
   }
@@ -115,7 +115,7 @@ function parseHeadersEnv(headers?: string | null): Record<string, string> | unde
         return acc;
       }, {});
     }
-  } catch (error) {
+  } catch (error: any) {
     logger.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env', { error });
   }
   return undefined;
@@ -128,3 +128,4 @@ function parseNumberEnv(value: string | undefined, fallback: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
+

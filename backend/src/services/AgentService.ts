@@ -53,7 +53,7 @@ export class AgentService {
         agents
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[AgentService] 同步失败', {
         error: error instanceof Error ? error.message : String(error)
       });
@@ -119,7 +119,7 @@ export class AgentService {
         responseTime: 100
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('[AgentService] 状态检查失败', {
         error: error instanceof Error ? error.message : String(error),
         agentId
@@ -141,4 +141,5 @@ export class AgentService {
     await this.configService.reloadAgents();
   }
 }
+
 

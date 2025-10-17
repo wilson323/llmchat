@@ -113,7 +113,7 @@ describe('Database Integration Tests', () => {
           // 故意抛出错误触发回滚
           throw new Error('Intentional error for rollback test');
         });
-      } catch (error) {
+      } catch (error: any) {
         errorThrown = true;
       }
 

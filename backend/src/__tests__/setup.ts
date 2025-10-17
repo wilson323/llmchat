@@ -58,7 +58,7 @@ afterAll(async () => {
     if (pool) {
       await pool.end();
     }
-  } catch (error) {
+  } catch (error: any) {
     // 忽略清理错误
   }
 });

@@ -72,7 +72,7 @@ export class AuditController {
         message: '查询审计日志成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to query audit logs', {
         component: 'AuditController',
         error,
@@ -103,7 +103,7 @@ export class AuditController {
 
       const { limit, offset, startDate, endDate } = req.query;
 
-      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
+      const options: {limit?: number; offset?: number; startDate?: Date; endDate?: Date} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -123,7 +123,7 @@ export class AuditController {
         message: '获取用户审计日志成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get user audit logs', {
         component: 'AuditController',
         error,
@@ -155,7 +155,7 @@ export class AuditController {
 
       const { limit, offset } = req.query;
 
-      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
+      const options: {limit?: number; offset?: number; startDate?: Date; endDate?: Date} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -173,7 +173,7 @@ export class AuditController {
         message: '获取资源审计日志成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get resource audit logs', {
         component: 'AuditController',
         error,
@@ -204,7 +204,7 @@ export class AuditController {
         message: '获取最近审计日志成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get recent audit logs', {
         component: 'AuditController',
         error,
@@ -226,7 +226,7 @@ export class AuditController {
     try {
       const { limit, offset, startDate, endDate } = req.query;
 
-      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
+      const options: {limit?: number; offset?: number; startDate?: Date; endDate?: Date} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -246,7 +246,7 @@ export class AuditController {
         message: '获取失败审计日志成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get failed audit logs', {
         component: 'AuditController',
         error,
@@ -306,7 +306,7 @@ export class AuditController {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="audit_logs.csv"');
       res.send(csv);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to export audit logs', {
         component: 'AuditController',
         error,
@@ -342,7 +342,7 @@ export class AuditController {
         message: '获取审计统计成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get audit statistics', {
         component: 'AuditController',
         error,
@@ -358,3 +358,4 @@ export class AuditController {
 }
 
 export const auditController = new AuditController();
+

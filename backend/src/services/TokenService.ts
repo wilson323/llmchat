@@ -84,7 +84,7 @@ export class TokenService {
     if (this.redis.status !== 'ready') {
       try {
         await this.redis.connect();
-      } catch (error) {
+      } catch (error: any) {
         throw new SystemError({
           message: 'Failed to connect to Redis',
           code: 'REDIS_CONNECTION_ERROR',
@@ -185,7 +185,7 @@ export class TokenService {
       await this.updateLastAccessed(tokenKey);
 
       return payload;
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof jwt.JsonWebTokenError) {
         logger.warn('Invalid JWT token', {
           component: 'TokenService',
@@ -356,7 +356,7 @@ export class TokenService {
         username: user.username as string,
         role: user.role as 'admin' | 'user',
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to fetch user info from database', {
         component: 'TokenService',
         userId,
@@ -399,3 +399,4 @@ export class TokenService {
     logger.info('TokenService Redis connection closed', { component: 'TokenService' });
   }
 }
+

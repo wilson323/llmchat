@@ -258,7 +258,7 @@ export class MonitoringService extends EventEmitter {
         system: systemMetrics
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Failed to get current metrics', error);
       throw error;
     }
@@ -416,7 +416,7 @@ export class MonitoringService extends EventEmitter {
 
       this.emit('metrics:collected', completeMetrics);
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Failed to collect metrics', error);
       this.emit('metrics:error', error);
     }
@@ -490,7 +490,7 @@ export class MonitoringService extends EventEmitter {
         avgProcessingTime: queueCount > 0 ? totalProcessingTime / queueCount : 0
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Failed to collect queue metrics', error);
       return {
         totalQueues: 0,
@@ -532,7 +532,7 @@ export class MonitoringService extends EventEmitter {
         external: memUsage.external
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Failed to collect memory metrics', error);
       const memUsage = process.memoryUsage();
       return {
@@ -556,7 +556,7 @@ export class MonitoringService extends EventEmitter {
       let loadAverage: number[] = [0, 0, 0];
       try {
         loadAverage = require('os').loadavg();
-      } catch (error) {
+      } catch (error: any) {
         // Windows系统可能不支持loadavg
       }
 
@@ -569,7 +569,7 @@ export class MonitoringService extends EventEmitter {
         const freeMem = os.freemem();
         freeMemoryMB = Math.round(freeMem / 1024 / 1024);
         totalMemoryMB = Math.round(totalMem / 1024 / 1024);
-      } catch (error) {
+      } catch (error: any) {
         // 忽略错误，使用默认值
       }
 
@@ -581,7 +581,7 @@ export class MonitoringService extends EventEmitter {
         diskUsage: 0 // 可以后续添加磁盘使用监控
       };
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Failed to collect system metrics', error);
       return {
         uptime: process.uptime(),
@@ -726,7 +726,7 @@ export class MonitoringService extends EventEmitter {
       setTimeout(() => {
         this.setupEventListenersInternal();
       }, 100);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: 设置事件监听器失败', error);
     }
   }
@@ -754,7 +754,7 @@ export class MonitoringService extends EventEmitter {
       } else {
         logger.warn('MonitoringService: MemoryOptimizationService不可用，跳过内存优化事件监听');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: 设置事件监听器失败', error);
     }
   }
@@ -799,7 +799,7 @@ export class MonitoringService extends EventEmitter {
             this.resolveAlert(existingAlert);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error(`MonitoringService: Error evaluating alert rule ${rule.id}`, error);
       }
     }
@@ -966,7 +966,7 @@ export class MonitoringService extends EventEmitter {
           default:
             logger.warn(`MonitoringService: Unknown alert action type: ${action.type}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error(`MonitoringService: Failed to execute alert action ${action.type}`, error);
       }
     }
@@ -998,7 +998,7 @@ export class MonitoringService extends EventEmitter {
       if (!response.ok) {
         logger.error(`MonitoringService: Webhook request failed: ${response.status}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('MonitoringService: Webhook request error', error);
     }
   }
@@ -1022,7 +1022,7 @@ export class MonitoringService extends EventEmitter {
     if (config.callback && typeof config.callback === 'function') {
       try {
         await config.callback(alert);
-      } catch (error) {
+      } catch (error: any) {
         logger.error('MonitoringService: Callback execution error', error);
       }
     }

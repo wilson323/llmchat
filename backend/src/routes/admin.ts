@@ -67,7 +67,7 @@ router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to get system info', error);
     res.status(500).json({
       code: 'SERVER_ERROR',
@@ -119,7 +119,7 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / Number(limit)),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to get users', error);
     res.status(500).json({
       code: 'SERVER_ERROR',
@@ -171,7 +171,7 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
       message: 'success',
       data: result.rows,
     });
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to get audit logs', error);
     res.status(500).json({
       code: 'SERVER_ERROR',
@@ -182,3 +182,4 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
 });
 
 export default router;
+

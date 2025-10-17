@@ -52,10 +52,11 @@ export async function setupSwagger(app: Application): Promise<void> {
 
     console.log('✅ Swagger API文档已启用');
     console.log('📄 访问地址: http://localhost:3001/api-docs');
-  } catch (error) {
+  } catch (error: any) {
     console.warn('⚠️ Swagger依赖未安装，API文档功能已禁用');
     console.warn(
       '💡 运行以下命令安装: pnpm add -D swagger-jsdoc swagger-ui-express @types/swagger-jsdoc @types/swagger-ui-express',
     );
   }
 }
+

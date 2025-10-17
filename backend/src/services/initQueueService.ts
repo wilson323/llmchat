@@ -204,7 +204,7 @@ export async function initQueueService(): Promise<void> {
     logger.info('✅ Queue service initialized successfully');
     logger.info(`📊 Available queues: chat-processing, email-notification, webhook-processing`);
 
-  } catch (error) {
+  } catch (error: any) {
     logger.warn('⚠️ 队列服务初始化失败，将以降级模式运行:', error);
     logger.info('📝 提示: 队列服务对核心功能不是必需的，应用可以正常运行');
     // 不抛出异常，允许应用继续启动
@@ -219,7 +219,7 @@ export async function shutdownQueueService(): Promise<void> {
     const queueManager = QueueManager.getInstance();
     await queueManager.shutdown();
     logger.info('✅ Queue service shutdown successfully');
-  } catch (error) {
+  } catch (error: any) {
     logger.error('❌ Failed to shutdown queue service:', error);
     throw error;
   }
@@ -265,7 +265,7 @@ export async function addSampleJobs(): Promise<void> {
 
     logger.info('✅ Sample jobs added to queues');
 
-  } catch (error) {
+  } catch (error: any) {
     logger.error('❌ Failed to add sample jobs:', error);
     throw error;
   }

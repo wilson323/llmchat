@@ -106,7 +106,7 @@ export class ChatInitService {
       // 流式输出完成后，返回完整数据
       onComplete(initData);
 
-    } catch (error) {
+    } catch (error: any) {
       onError(error instanceof Error ? error : new Error('获取初始化数据失败'));
     }
   }
@@ -147,7 +147,7 @@ export class ChatInitService {
       logger.debug('✅ FastGPT初始化API调用成功');
       return responseData.data;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('❌ FastGPT初始化API调用失败', { error });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;

@@ -36,7 +36,7 @@ function verifyToken(cookieToken: string | undefined, headerToken: string | unde
     }
 
     return crypto.timingSafeEqual(cookieBuffer, headerBuffer);
-  } catch (error) {
+  } catch (error: any) {
     logger.warn('CSRF token 验证异常', { error });
     return false;
   }
@@ -137,3 +137,4 @@ export function getCsrfToken(req: Request, res: Response): void {
     timestamp: new Date().toISOString(),
   });
 }
+

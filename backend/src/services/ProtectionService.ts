@@ -278,7 +278,7 @@ export class ProtectionService {
         await this.executeProtectedRequest(context, async () => {
           return chatHandler(req, res);
         });
-      } catch (error) {
+      } catch (error: any) {
         logger.error('受保护请求失败', {
           requestId: context.requestId,
           agentId: context.agentId,

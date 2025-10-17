@@ -90,7 +90,7 @@ export async function debugDatabaseSchema(): Promise<void> {
     try {
       const simpleResult = await client.query('SELECT COUNT(*) as total FROM pg_class WHERE relkind = \'r\' AND relname IN (\'users\', \'chat_sessions\', \'chat_messages\')');
       console.log('找到的表数量:', simpleResult.rows[0].total);
-    } catch (error) {
+    } catch (error: any) {
       console.log('查询表数量失败:', error);
     }
 
@@ -99,12 +99,12 @@ export async function debugDatabaseSchema(): Promise<void> {
       try {
         const countResult = await client.query('SELECT COUNT(*) as count FROM users');
         console.log('users表记录数:', countResult.rows[0].count);
-      } catch (error) {
+      } catch (error: any) {
         console.log('查询users表失败:', error);
       }
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('调试过程出错:', error);
   } finally {
     client.release();
@@ -124,3 +124,4 @@ if (require.main === module) {
       process.exit(1);
     });
   }
+

@@ -134,7 +134,7 @@ class RateLimiterManager {
         logger.warn('RateLimiter: Redis连接关闭，降级到内存模式');
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('RateLimiter: Redis初始化失败', { 
         error: error instanceof Error ? error.message : String(error) 
       });
@@ -156,7 +156,7 @@ class RateLimiterManager {
     let limiter: RateLimiterRedis | RateLimiterMemory;
 
     if (this.isRedisAvailable && this.redis) {
-      const redisOptions = {
+      const redisOptions: Record<string, unknown> = {
         storeClient: this.redis,
         points: config.points,
         duration: config.duration,
@@ -170,7 +170,7 @@ class RateLimiterManager {
       limiter = new RateLimiterRedis(redisOptions);
       logger.debug('创建Redis RateLimiter', { config });
     } else {
-      const memoryOptions = {
+      const memoryOptions: Record<string, unknown> = {
         points: config.points,
         duration: config.duration,
       };
@@ -421,3 +421,4 @@ export { rateLimiterManager };
 
 // 向后兼容旧接口
 export { apiRateLimiter as rateLimiter, apiRateLimiter as rateLimiterMiddleware };
+

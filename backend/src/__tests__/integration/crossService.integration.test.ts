@@ -426,7 +426,7 @@ describe('Cross-Service Integration Tests', () => {
         );
 
         expect(sessionCheck.rows[0].user_email).toBe('transaction@example.com');
-      } catch (error) {
+      } catch (error: any) {
         // 回滚事务
         await testDb.query('ROLLBACK');
         throw error;
@@ -455,7 +455,7 @@ describe('Cross-Service Integration Tests', () => {
         await testDb.query('INSERT INTO invalid_table (column) VALUES ($1)', ['test']);
 
         await testDb.query('COMMIT');
-      } catch (error) {
+      } catch (error: any) {
         // 回滚事务
         await testDb.query('ROLLBACK');
 
@@ -597,7 +597,7 @@ describe('Cross-Service Integration Tests', () => {
         // 尝试对不存在的队列进行操作
         await queueManager.pauseQueue('non-existent-queue');
         throw new Error('Should have thrown an error');
-      } catch (error) {
+      } catch (error: any) {
         expect(error).toBeInstanceOf(Error);
       }
     });

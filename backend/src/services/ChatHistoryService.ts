@@ -84,7 +84,7 @@ export class ChatHistoryService {
         );
 
         await client.query('COMMIT');
-      } catch (error) {
+      } catch (error: any) {
         await client.query('ROLLBACK');
         throw error;
       }
@@ -164,3 +164,4 @@ export class ChatHistoryService {
     };
   }
 }
+

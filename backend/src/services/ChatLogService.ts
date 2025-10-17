@@ -232,8 +232,9 @@ export class ChatLogService {
         event.eventType = payload.eventType;
       }
       this.observability.enqueue(event);
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('[ChatLogService] 推送观测事件失败', { error });
     }
   }
 }
+

@@ -148,7 +148,7 @@ class VisualizationConfigService {
         const loadedConfig = JSON.parse(configData);
         this.config = { ...this.getDefaultConfig(), ...loadedConfig };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn('Failed to load visualization config:', error);
       this.config = this.getDefaultConfig();
     }
@@ -165,7 +165,7 @@ class VisualizationConfigService {
       fs.writeFileSync(this.configPath, JSON.stringify(updatedConfig, null, 2));
       this.config = updatedConfig;
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save visualization config:', error);
       return false;
     }

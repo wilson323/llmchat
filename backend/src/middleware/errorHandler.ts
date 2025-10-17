@@ -284,7 +284,7 @@ export const safeJsonResponse = (
 ): void => {
   try {
     res.status(statusCode).json(data);
-  } catch (error) {
+  } catch (error: any) {
     const typedError = createErrorFromUnknown(error, {
       component: 'ErrorHandler',
       operation: 'safeJsonResponse',

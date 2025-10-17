@@ -81,7 +81,7 @@ describe('Simple Database Integration Tests', () => {
           expect(parseInt(checkResult.rows[0].count)).toBe(1);
           success = true;
         });
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Transaction test failed', { error: error instanceof Error ? error.message : String(error) });
       }
 
@@ -102,7 +102,7 @@ describe('Simple Database Integration Tests', () => {
           // 故意抛出错误触发回滚
           throw new Error('Intentional rollback test');
         });
-      } catch (error) {
+      } catch (error: any) {
         errorThrown = true;
       }
 
