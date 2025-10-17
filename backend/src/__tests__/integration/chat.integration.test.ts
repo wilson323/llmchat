@@ -339,12 +339,12 @@ describe('Chat Integration Tests', () => {
       const user2 = await createTestUser();
       
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [user1.id, user1.email, user1.passwordHash, true]
+        'INSERT INTO users (id, username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [user1.id, user1.email, 'test-salt', user1.passwordHash, user1.email, true, 'user', 'active']
       );
       await pool.query(
-        'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
-        [user2.id, user2.email, user2.passwordHash, true]
+        'INSERT INTO users (id, username, password_salt, password_hash, email, email_verified, role, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [user2.id, user2.email, 'test-salt', user2.passwordHash, user2.email, true, 'user', 'active']
       );
       
       testUserId = user1.id;

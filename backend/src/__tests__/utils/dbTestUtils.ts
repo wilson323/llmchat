@@ -203,7 +203,7 @@ export class DatabaseTestEnvironment {
 
     try {
       // 按依赖关系顺序清理数据
-      await client.query('DELETE FROM chat_messages');
+      await client.query('DELETE FROM messages');
       await client.query('DELETE FROM chat_sessions');
       await client.query('DELETE FROM users');
 

@@ -250,7 +250,7 @@ export function generateStrongPassword(): string {
 export async function cleanupTestData(pool: any, userId?: string): Promise<void> {
   try {
     if (userId) {
-      await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+      await pool.query('DELETE FROM chat_sessions WHERE user_id = $1', [userId]);
       await pool.query('DELETE FROM users WHERE id = $1', [userId]);
     }
   } catch (error) {

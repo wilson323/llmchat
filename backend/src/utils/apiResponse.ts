@@ -2,7 +2,6 @@ import type { Response } from 'express';
 import type { ApiSuccessResponse, JsonObject, JsonValue} from '@/types/dynamic';
 import { DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
 import { createErrorFromUnknown } from '@/types/errors';
-import { ApiError } from '@/types';
 
 interface PaginationMetadata {
   page: number;
@@ -355,7 +354,8 @@ export class ApiResponseHandler {
     try {
       return JSON.stringify(data, null, 2);
     } catch (error) {
-      const typedError = createErrorFromUnknown(error, {
+      // 记录序列化错误
+      createErrorFromUnknown(error, {
         component: 'ApiResponseHandler',
         operation: 'safeJsonStringify',
         context: { dataType: typeof data },

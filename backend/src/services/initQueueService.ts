@@ -6,11 +6,11 @@
 import QueueManager from '@/services/QueueManager';
 import logger from '@/utils/logger';
 import type { QueueProcessor, QueueMiddleware} from '@/types/queue';
-import { JobType, MessagePriority } from '@/types/queue';
+import { MessagePriority } from '@/types/queue';
 
 // 聊天消息处理器
 const chatMessageProcessor: QueueProcessor = async (job) => {
-  const { method, url, headers, body, query, params } = job.data as any;
+  const { method, url, body } = job.data as Record<string, unknown>;
 
   logger.info(`[QueueProcessor] Processing chat message: ${job.id}`, {
     method,
@@ -35,7 +35,7 @@ const chatMessageProcessor: QueueProcessor = async (job) => {
 
 // 邮件通知处理器
 const emailNotificationProcessor: QueueProcessor = async (job) => {
-  const { to, subject, template, data } = job.data as any;
+  const { to, subject, template } = job.data as Record<string, unknown>;
 
   logger.info(`[QueueProcessor] Processing email notification: ${job.id}`, {
     to,
@@ -62,7 +62,7 @@ const emailNotificationProcessor: QueueProcessor = async (job) => {
 
 // Webhook处理器
 const webhookProcessor: QueueProcessor = async (job) => {
-  const { url, method, headers, payload } = job.data as any;
+  const { url, method } = job.data as Record<string, unknown>;
 
   logger.info(`[QueueProcessor] Processing webhook: ${job.id}`, {
     url,
@@ -132,7 +132,7 @@ const metricsMiddleware: QueueMiddleware = {
       startTime: Date.now()
     };
   },
-  afterProcess: async (job, result) => {
+  afterProcess: async (job, _result) => {
     // 计算处理时间
     const startTime = (job.opts.metadata?.startTime as number) || job.createdAt.getTime();
     const processingTime = Date.now() - startTime;

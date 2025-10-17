@@ -17,7 +17,7 @@ import type { Express } from 'express';
 /**
  * 初始化Sentry
  */
-export function initSentry(app: Express): void {
+export function initSentry(_app: Express): void {
   // 仅在生产环境或明确启用时初始化
   if (process.env.NODE_ENV === 'production' || process.env.SENTRY_ENABLED === 'true') {
     const dsn = process.env.SENTRY_DSN;
@@ -44,7 +44,7 @@ export function initSentry(app: Express): void {
       profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
       // 数据清理
-      beforeSend(event: Sentry.ErrorEvent, hint: Sentry.EventHint): Sentry.ErrorEvent | null {
+      beforeSend(event: Sentry.ErrorEvent, _hint: Sentry.EventHint): Sentry.ErrorEvent | null {
         // 移除敏感数据
         if (event.request) {
           delete event.request.cookies;
@@ -175,8 +175,8 @@ export function addBreadcrumb(
 /**
  * 性能追踪中间件（简化版，v10推荐使用自动追踪）
  */
-export function performanceMiddleware(name: string) {
-  return (_req: any, _res: any, next: any) => {
+export function performanceMiddleware(_name: string) {
+  return (_req: unknown, _res: unknown, next: () => void) => {
     // v10中由 expressIntegration 自动处理
     // 这里保留接口兼容性但不做实际操作
     next();

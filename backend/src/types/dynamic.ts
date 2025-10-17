@@ -5,15 +5,8 @@
  * 🎯 目标：统一前后端类型定义，避免重复和不一致
  */
 
-import type {
-  JsonArray,
-  JsonObject,
-  JsonValue,
-  UnknownValue,
-} from '@llmchat/shared-types';
-
 // 重新导出共享类型，保持向后兼容
-export {
+export type {
   JsonObject,
   JsonArray,
   JsonValue,

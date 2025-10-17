@@ -3,7 +3,7 @@
  * 提供JWT令牌的安全创建和验证功能
  */
 
-import jwt, { Algorithm, SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { LogSanitizer } from './logSanitizer';
 
 export interface JWTPayload {
@@ -85,7 +85,7 @@ export class SecureJWT {
     return jwt.sign(payload, config.secret, options);
   }
 
-  static isTokenRevoked(token: string): boolean {
+  static isTokenRevoked(_token: string): boolean {
     // 这里可以实现token撤销检查逻辑
     // 例如检查黑名单或数据库记录
     return false;
@@ -123,7 +123,7 @@ export class SecureJWT {
 
   static refreshToken(token: string): string {
     const decoded = this.verifyToken(token);
-    const { iat, exp, ...payload } = decoded;
+    const { iat: _iat, exp: _exp, ...payload } = decoded;
     return this.createToken(payload);
   }
 

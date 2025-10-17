@@ -227,7 +227,7 @@ export async function initDB(): Promise<void> {
   });
   
   // ✅ T006: 连接池事件监听
-  pool.on('connect', (client) => {
+  pool.on('connect', (_client) => {
     logger.info('DB Pool: 新连接已建立', {
       total: pool!.totalCount,
       idle: pool!.idleCount,
@@ -235,21 +235,21 @@ export async function initDB(): Promise<void> {
     });
   });
 
-  pool.on('acquire', (client) => {
+  pool.on('acquire', (_client) => {
     // 仅在debug模式记录（避免日志洪水）
     if (process.env.LOG_LEVEL === 'debug') {
       logger.debug('DB Pool: 连接已获取');
     }
   });
 
-  pool.on('remove', (client) => {
+  pool.on('remove', (_client) => {
     logger.info('DB Pool: 连接已移除', {
       total: pool!.totalCount,
       idle: pool!.idleCount,
     });
   });
 
-  pool.on('error', (err, client) => {
+  pool.on('error', (err, _client) => {
     logger.error('DB Pool: 意外错误', {
       error: err.message,
       stack: err.stack,

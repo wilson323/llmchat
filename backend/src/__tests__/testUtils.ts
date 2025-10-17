@@ -677,24 +677,27 @@ export async function setupTestDatabase(): Promise<TestDatabase> {
 async function createTestTables(pool: Pool): Promise<void> {
   const createUsersTable = `
     CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      full_name VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL,
+      password_salt TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
+      status TEXT DEFAULT 'active',
+      email VARCHAR(255) UNIQUE,
+      email_verified BOOLEAN DEFAULT false,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
   const createSessionsTable = `
     CREATE TABLE IF NOT EXISTS chat_sessions (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      title VARCHAR(255) NOT NULL,
-      agent_id VARCHAR(100) NOT NULL,
-      user_id UUID REFERENCES users(id),
-      messages JSONB DEFAULT '[]'::jsonb,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      user_id INTEGER REFERENCES users(id),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
 

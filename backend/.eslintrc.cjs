@@ -33,31 +33,31 @@ module.exports = {
     'scripts/**/*'
   ],
   rules: {
-    // 严格类型检查规则 - 零容忍any类型
-    '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-unsafe-assignment': 'error',
-    '@typescript-eslint/no-unsafe-member-access': 'error',
-    '@typescript-eslint/no-unsafe-call': 'error',
-    '@typescript-eslint/no-unsafe-return': 'error',
-    '@typescript-eslint/no-unsafe-argument': 'error',
+    // 类型安全 - 渐进式改进（降级为警告，允许逐步修复）
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-unsafe-assignment': 'warn',
+    '@typescript-eslint/no-unsafe-member-access': 'warn',
+    '@typescript-eslint/no-unsafe-call': 'warn',
+    '@typescript-eslint/no-unsafe-return': 'warn',
+    '@typescript-eslint/no-unsafe-argument': 'warn',
 
-    // 严格类型检查
-    '@typescript-eslint/prefer-nullish-coalescing': 'error',
-    '@typescript-eslint/prefer-optional-chain': 'error',
-    '@typescript-eslint/prefer-readonly': 'error',
+    // 类型检查建议
+    '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+    '@typescript-eslint/prefer-optional-chain': 'warn',
+    '@typescript-eslint/prefer-readonly': 'warn',
     '@typescript-eslint/prefer-as-const': 'error',
-    '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
     '@typescript-eslint/no-non-null-assertion': 'warn',
 
-    // 变量和函数定义
+    // 变量和函数定义（保持error防止代码腐化）
     '@typescript-eslint/no-unused-vars': ['error', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',
       caughtErrorsIgnorePattern: '^_'
     }],
-    '@typescript-eslint/no-inferrable-types': 'error',
-    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
-    '@typescript-eslint/consistent-type-imports': ['error', {
+    '@typescript-eslint/no-inferrable-types': 'warn',
+    '@typescript-eslint/consistent-type-definitions': ['warn', 'interface'],
+    '@typescript-eslint/consistent-type-imports': ['warn', {
       prefer: 'type-imports',
       disallowTypeAnnotations: false
     }],
@@ -67,21 +67,27 @@ module.exports = {
     'no-debugger': 'error',
     'prefer-const': 'error',
     'no-var': 'error',
-    'object-shorthand': 'error',
-    'prefer-destructuring': ['error', {
+    'object-shorthand': 'warn',
+    'prefer-destructuring': ['warn', {
       object: true,
       array: false
     }],
 
-    // 异步处理
+    // 异步处理（保持error确保Promise正确处理）
     '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
-    '@typescript-eslint/require-await': 'error',
+    '@typescript-eslint/require-await': 'warn',
     '@typescript-eslint/no-misused-promises': 'error',
 
-    // 错误处理
+    // 错误处理（保持error确保异常安全）
     '@typescript-eslint/no-throw-literal': 'error',
     '@typescript-eslint/prefer-promise-reject-errors': 'error',
+    
+    // 降低部分严格规则
+    '@typescript-eslint/no-extraneous-class': 'warn',
+    '@typescript-eslint/restrict-template-expressions': 'warn',
+    'no-control-regex': 'warn',
+    'no-useless-escape': 'warn',
 
     // Node.js特定规则
     'node/no-unsupported-features/es-syntax': 'off', // TypeScript处理

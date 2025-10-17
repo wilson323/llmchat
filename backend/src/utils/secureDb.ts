@@ -9,8 +9,6 @@ import type { PoolConfig } from 'pg';
 import { Pool } from 'pg';
 import type { EncryptedData } from './secureCredentials';
 import { SecureCredentialsManager } from './secureCredentials';
-import { deepReplaceEnvVariables } from './envHelper';
-import { readJsonc } from './config';
 import logger from './logger';
 
 export interface SecurePgConfig {
