@@ -103,7 +103,7 @@ export class AuditController {
 
       const { limit, offset, startDate, endDate } = req.query;
 
-      const options: any = {};
+      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -155,7 +155,7 @@ export class AuditController {
 
       const { limit, offset } = req.query;
 
-      const options: any = {};
+      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -226,7 +226,7 @@ export class AuditController {
     try {
       const { limit, offset, startDate, endDate } = req.query;
 
-      const options: any = {};
+      const options: {limit?: number; offset?: number; startDate?: string; endDate?: string} = {};
       if (limit) {
         options.limit = parseInt(limit as string, 10);
       }
@@ -276,7 +276,7 @@ export class AuditController {
         endDate,
       } = req.query;
 
-      const queryParams: any = {};
+      const queryParams: Record<string, unknown> = {};
       if (userId) {
         queryParams.userId = userId as string;
       }

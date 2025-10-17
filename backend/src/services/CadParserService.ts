@@ -90,7 +90,7 @@ export class CadParserService {
   /**
    * 转换实体为统一格式
    */
-  private convertEntity(entity: any): DxfEntity | null {
+  private convertEntity(entity: Record<string, unknown>): DxfEntity | null {
     const baseEntity = {
       handle: entity.handle || uuidv4(),
       layer: entity.layer || '0',
@@ -130,7 +130,7 @@ export class CadParserService {
         return {
           ...baseEntity,
           type: entity.type as 'POLYLINE' | 'LWPOLYLINE',
-          vertices: (entity.vertices || []).map((v: any) => this.toPoint3D(v)),
+          vertices: (entity.vertices || []).map((v: Record<string, unknown>) => this.toPoint3D(v)),
           closed: entity.shape || false,
         } as PolylineEntity;
 
@@ -154,7 +154,7 @@ export class CadParserService {
   /**
    * 转换为 Point3D
    */
-  private toPoint3D(point: any): Point3D {
+  private toPoint3D(point: Record<string, unknown>): Point3D {
     return {
       x: point?.x || 0,
       y: point?.y || 0,

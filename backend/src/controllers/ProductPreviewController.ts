@@ -52,7 +52,7 @@ export class ProductPreviewController {
         message: '生成现场预览成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (err: any) {
+    } catch (err) {
       logger.error('调用豆包图片生成接口失败', { error: err });
       const apiError: ApiError = {
         code: 'DOUBAO_IMAGE_GENERATE_FAILED',

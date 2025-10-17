@@ -35,14 +35,14 @@ export class SessionEventService {
     sessionId: string,
     eventType: SessionEventType,
     metadata?: {
-      oldData?: any;
-      newData?: any;
+      oldData?: unknown;
+      newData?: unknown;
       reason?: string;
       feedbackType?: 'good' | 'bad';
       feedbackValue?: string;
       tags?: string[];
       exportFormat?: string;
-      [key: string]: any;
+      [key: string]: unknown;
     },
     context?: {
       userId?: string;
@@ -128,8 +128,8 @@ export class SessionEventService {
     const sortOrder = params.sortOrder || 'desc';
 
     agentEvents.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
 
       switch (sortBy) {
         case 'timestamp':
@@ -247,7 +247,7 @@ export class SessionEventService {
         .slice(0, 10),
       userActivity: Array.from(userActivity.entries())
         .map(([userId, eventCount]) => {
-          const userActivityData: any = { eventCount };
+          const userActivityData: Record<string, unknown> = { eventCount };
           if (userId) {
             userActivityData.userId = userId;
           }

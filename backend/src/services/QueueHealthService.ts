@@ -181,7 +181,7 @@ export class QueueHealthService {
   /**
    * 检查队列大小
    */
-  private async checkQueueSize(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
+  private async checkQueueSize(queueName: string, stats: {waiting: number; delayed: number}): Promise<{ healthy: boolean; message: string }> {
     try {
       const maxSize = this.healthConfig.maxQueueSize || 1000;
       const currentSize = stats.total;
@@ -208,7 +208,7 @@ export class QueueHealthService {
   /**
    * 检查处理时间
    */
-  private async checkProcessingTime(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
+  private async checkProcessingTime(queueName: string, stats: {processing?: number}): Promise<{ healthy: boolean; message: string }> {
     try {
       const maxTime = this.healthConfig.maxProcessingTime || 60000;
       const avgTime = stats.avgProcessingTime;
@@ -235,7 +235,7 @@ export class QueueHealthService {
   /**
    * 检查错误率
    */
-  private async checkErrorRate(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
+  private async checkErrorRate(queueName: string, stats: {failed: number; completed: number}): Promise<{ healthy: boolean; message: string }> {
     try {
       const maxErrorRate = this.healthConfig.maxErrorRate || 0.1;
       const currentErrorRate = stats.errorRate;
@@ -355,7 +355,7 @@ export class QueueHealthService {
   /**
    * 检查过期作业
    */
-  private async checkStaleJobs(queueName: string, stats: any): Promise<{ healthy: boolean; message: string }> {
+  private async checkStaleJobs(queueName: string, stats: Record<string, unknown>): Promise<{ healthy: boolean; message: string }> {
     try {
       const now = Date.now();
       const staleThreshold = 24 * 60 * 60 * 1000; // 24小时

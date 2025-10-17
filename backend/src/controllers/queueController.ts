@@ -28,10 +28,10 @@ export class QueueController {
       const { includeStats } = req.query;
 
       const queues = ['chat-processing', 'email-notification', 'webhook-processing'];
-      const result: any[] = [];
+      const result: Array<Record<string, unknown>> = [];
 
       for (const queueName of queues) {
-        const queueData: any = { name: queueName };
+        const queueData: Record<string, unknown> = { name: queueName };
 
         if (includeStats === 'true') {
           const stats = await this.getQueueManager().getQueueStats(queueName);
@@ -376,7 +376,7 @@ export class QueueController {
       }
 
       const results = await Promise.allSettled(
-        jobs.map(async (job: any) => {
+        jobs.map(async (job: {id: string}) => {
           switch (operation) {
             case 'add':
               return await this.getQueueManager().addJob(queueName, job.type, job.data, job.options);

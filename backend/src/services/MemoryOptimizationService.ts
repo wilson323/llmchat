@@ -785,10 +785,10 @@ export class MemoryOptimizationService extends EventEmitter {
   public healthCheck(): {
     healthy: boolean;
     issues: string[];
-    details: any;
+    details: Record<string, unknown>;
   } {
     const issues: string[] = [];
-    const details: any = {};
+    const details: Record<string, unknown> = {};
 
     // 检查服务状态
     if (!this.config.monitoringEnabled) {

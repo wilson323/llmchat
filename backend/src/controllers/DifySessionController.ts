@@ -46,7 +46,7 @@ export class DifySessionController {
         return;
       }
 
-      const params: any = {};
+      const params: Record<string, string> = {};
       if (user) {
         params.user = user as string;
       }

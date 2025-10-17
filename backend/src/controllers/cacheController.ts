@@ -21,7 +21,7 @@ export interface CacheOperationRequest {
   /** 缓存键 */
   key: string;
   /** 缓存值 */
-  value?: any;
+  value?: unknown;
   /** TTL（秒） */
   ttl?: number;
   /** 缓存标签 */
@@ -37,7 +37,7 @@ export interface BatchCacheOperationRequest {
   /** 缓存操作列表 */
   operations: Array<{
     key: string;
-    value: any;
+    value: unknown;
     ttl?: number;
     tags?: string[];
   }>;
@@ -62,7 +62,7 @@ export interface CacheQueryRequest {
 // 缓存统计响应接口
 export interface CacheStatsResponse {
   /** Redis缓存统计 */
-  redisStats: any;
+  redisStats: Record<string, unknown>;
   /** 中间件统计 */
   middlewareStats: CacheMiddlewareStats;
   /** 总体统计 */

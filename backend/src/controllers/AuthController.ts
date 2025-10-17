@@ -112,7 +112,7 @@ export class AuthController { // [L10]
         data: { valid: true, user: result.user }, // [L106]
         timestamp: new Date().toISOString(), // [L107]
       }); // [L108]
-    } catch (error: any) { // [L109]
+    } catch (error) { // [L109]
       logger.error('Token验证失败', { error }); // [L110]
       res.status(500).json({ // [L111]
         code: 'VERIFY_ERROR', // [L112]
@@ -158,7 +158,7 @@ export class AuthController { // [L10]
         data: { token: result.token, refreshToken: result.refreshToken, expiresIn: result.expiresIn }, // [L151]
         timestamp: new Date().toISOString(), // [L152]
       }); // [L153]
-    } catch (error: any) { // [L154]
+    } catch (error) { // [L154]
       logger.error('Token刷新失败', { error }); // [L155]
       const statusCode = error?.code === 'REFRESH_TOKEN_INVALID' ? 401 : 500; // [L156]
       res.status(statusCode).json({ // [L157]
@@ -205,7 +205,7 @@ export class AuthController { // [L10]
         data: null, // [L187]
         timestamp: new Date().toISOString(), // [L188]
       }); // [L189]
-    } catch (error: any) { // [L190]
+    } catch (error) { // [L190]
       logger.error('用户登出失败', { error }); // [L191]
       const statusCode = error?.code === 'AUTHENTICATION_REQUIRED' ? 401 : 500; // [L192]
       res.status(statusCode).json({ // [L193]
@@ -269,7 +269,7 @@ export class AuthController { // [L10]
         data: null,
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('修改密码失败', { error });
       const statusCode = error?.code === 'INVALID_CREDENTIALS' ? 400 : 500;
       res.status(statusCode).json({
@@ -314,7 +314,7 @@ export class AuthController { // [L10]
         data: { user },
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
+    } catch (error) {
       logger.error('用户注册失败', { error });
       const statusCode = error?.code === 'USER_ALREADY_EXISTS' ? 409 : 500;
       res.status(statusCode).json({

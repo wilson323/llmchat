@@ -18,7 +18,7 @@ export interface RetryConfig {
 
 export interface FallbackConfig {
   enabled: boolean;                      // 是否启用降级
-  fallbackResponse?: any;                // 降级响应
+  fallbackResponse?: unknown;                // 降级响应
   fallbackProvider?: string;             // 降级提供商
   cacheFallbackResponse: boolean;        // 是否缓存降级响应
   maxCacheSize: number;                  // 最大缓存大小
@@ -27,7 +27,7 @@ export interface FallbackConfig {
 
 export interface RequestDeduplicationConfig {
   enabled: boolean;                      // 是否启用去重
-  keyGenerator?: (request: any) => string; // 自定义key生成器
+  keyGenerator?: (request: unknown) => string; // 自定义key生成器
   deduplicationWindow: number;           // 去重窗口时间（毫秒）
   maxConcurrentRequests: number;         // 最大并发请求数
 }
@@ -148,7 +148,7 @@ export class RequestDeduplicator {
   /**
    * 生成请求key
    */
-  generateRequestKey(request: any): string {
+  generateRequestKey(request: unknown): string {
     if (this.config.keyGenerator) {
       return this.config.keyGenerator(request);
     }
@@ -216,7 +216,7 @@ export class RequestDeduplicator {
  */
 export class RetryService {
   private readonly deduplicator: RequestDeduplicator;
-  private readonly fallbackCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly fallbackCache: Map<string, { data: unknown; timestamp: number }> = new Map();
 
   constructor(
     private readonly retryConfig: RetryConfig,
