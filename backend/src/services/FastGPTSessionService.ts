@@ -311,7 +311,7 @@ export class FastGPTSessionService {
 
   private normalizeHistorySummary(item: Record<string, unknown>): FastGPTChatHistorySummary {
     const data = item as Record<string, any>;
-    const chatId = data?.chatId || data?.id || data?._id || data?.historyId || data?.history_id ?? '';
+    const chatId = (data?.chatId || data?.id || data?._id || data?.historyId || data?.history_id) ?? '';
     const title = data?.title || data?.name || data?.latestQuestion || data?.latest_question || '未命名对话';
     const createdAt = data?.createTime || data?.create_time || data?.createdAt || data?.created_at || data?.time || new Date().toISOString();
     const updatedAt =
@@ -323,7 +323,7 @@ export class FastGPTSessionService {
       title: String(title),
       createdAt: typeof createdAt === 'number' ? new Date(createdAt).toISOString() : String(createdAt),
       updatedAt: typeof updatedAt === 'number' ? new Date(updatedAt).toISOString() : String(updatedAt),
-      messageCount: Number(data?.messageCount || data?.msgCount || data?.totalMessages || data?.total ?? ''),
+      messageCount: Number((data?.messageCount || data?.msgCount || data?.totalMessages || data?.total) ?? 0),
       tags: Array.isArray(data?.tags) ? data.tags as string[] : undefined,
       raw: data,
     };
@@ -359,7 +359,7 @@ export class FastGPTSessionService {
 
   private normalizeHistoryDetail(payload: Record<string, unknown>): FastGPTChatHistoryDetail {
     const data = (payload?.data ?? payload) as Record<string, any>;
-    const list = data?.list || data?.messages || data?.history || data?.chatHistoryList || data?.detail ?? [];
+    const list = (data?.list || data?.messages || data?.history || data?.chatHistoryList || data?.detail) ?? [];
     const title = data?.title || data?.historyName || data?.history_title;
 
     const messages: FastGPTChatHistoryMessage[] = Array.isArray(list)
@@ -411,7 +411,7 @@ export class FastGPTSessionService {
         throw new Error(payload?.message || 'FastGPT 获取会话列表失败');
       }
 
-      const rawList = payload?.data?.list || payload?.data || payload?.historyList || payload?.list ?? [];
+      const rawList = (payload?.data?.list || payload?.data || payload?.historyList || payload?.list) ?? [];
       return Array.isArray(rawList) ? rawList.map((item) => this.normalizeHistorySummary(item)) : [];
     });
   }
@@ -573,8 +573,8 @@ export class FastGPTSessionService {
     // 构建查询参数
     const queryParams: Record<string, any> = {
       appId: agent.appId,
-      page: params?.page ?? '',
-      pageSize: params?.pageSize ?? '',
+      page: params?.page ?? 1,
+      pageSize: params?.pageSize ?? 10,
     };
 
     // 添加过滤条件
@@ -631,11 +631,11 @@ export class FastGPTSessionService {
       return {
         data: sessions,
         total: rawData?.total || sessions.length,
-        page: params?.page ?? '',
-        pageSize: params?.pageSize ?? '',
-        totalPages: Math.ceil((rawData?.total || sessions.length) / (params?.pageSize ?? '')),
-        hasNext: (params?.page ?? '') * (params?.pageSize ?? '') < (rawData?.total || sessions.length),
-        hasPrev: (params?.page ?? '') > 1,
+        page: params?.page ?? 1,
+        pageSize: params?.pageSize ?? 10,
+        totalPages: Math.ceil((rawData?.total || sessions.length) / (params?.pageSize ?? 10)),
+        hasNext: (params?.page ?? 1) * (params?.pageSize ?? 10) < (rawData?.total || sessions.length),
+        hasPrev: (params?.page ?? 1) > 1,
       };
     } catch (error) {
       // 如果增强API不可用，回退到基础API并应用本地处理
@@ -678,12 +678,12 @@ export class FastGPTSessionService {
     // 消息数量过滤
     if (params?.minMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount ?? '') >= params.minMessageCount!,
+        (session.messageCount ?? 0) >= params.minMessageCount!,
       );
     }
     if (params?.maxMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount ?? '') <= params.maxMessageCount!,
+        (session.messageCount ?? 0) <= params.maxMessageCount!,
       );
     }
 
@@ -713,8 +713,8 @@ export class FastGPTSessionService {
           bValue = new Date(b.updatedAt).getTime();
           break;
         case 'messageCount':
-          aValue = a.messageCount ?? '';
-          bValue = b.messageCount ?? '';
+          aValue = a.messageCount ?? 0;
+          bValue = b.messageCount ?? 0;
           break;
         case 'title':
           aValue = a.title.toLowerCase();
@@ -733,8 +733,8 @@ export class FastGPTSessionService {
     });
 
     // 分页
-    const page = params?.page ?? '';
-    const pageSize = params?.pageSize ?? '';
+    const page = params?.page ?? 1;
+    const pageSize = params?.pageSize ?? 10;
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedData = filteredSessions.slice(startIndex, endIndex);
@@ -969,7 +969,7 @@ export class FastGPTSessionService {
         `"${this.escapeCsv(session.title)}"`,
         session.createdAt,
         session.updatedAt,
-        session.messageCount ?? '',
+        String(session.messageCount ?? 0),
         `"${(session.tags || []).join(';')}"`,
       ];
 
@@ -1046,7 +1046,7 @@ export class FastGPTSessionService {
       return {
         data: [],
         total: 0,
-        page: params.page ?? '',
+        page: params.page ?? 1,
         pageSize: params.pageSize || 20,
         totalPages: 0,
         hasNext: false,
@@ -1078,7 +1078,7 @@ export class FastGPTSessionService {
 
     const sessions = result.data;
     const totalSessions = sessions.length;
-    const totalMessages = sessions.reduce((sum, session) => sum + (session.messageCount ?? ''), 0);
+    const totalMessages = sessions.reduce((sum, session) => sum + (session.messageCount ?? 0), 0);
     const averageMessagesPerSession = totalSessions > 0 ? totalMessages / totalSessions : 0;
 
     // 统计标签使用情况
@@ -1102,7 +1102,7 @@ export class FastGPTSessionService {
       const date = (session.updatedAt || '').split('T')[0] || '';
       const current = activityMap.get(date) || { sessions: 0, messages: 0 };
       current.sessions++;
-      current.messages += (session.messageCount ?? '');
+      current.messages += (session.messageCount ?? 0);
       activityMap.set(date, current);
     });
 
