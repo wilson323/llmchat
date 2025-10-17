@@ -1,0 +1,53 @@
+# Codecov配置文件
+# 用于测试覆盖率报告和质量门禁
+
+coverage:
+  status:
+    project:
+      default:
+        target: 95%            # 项目整体覆盖率目标
+        threshold: 1%          # 允许±1%波动
+        if_ci_failed: error    # CI失败时的状态
+    
+    patch:
+      default:
+        target: 90%            # 新代码覆盖率目标
+        threshold: 2%          # 允许±2%波动
+  
+  precision: 2
+  round: down
+  range: "70...100"
+
+# 注释配置
+comment:
+  layout: "reach, diff, flags, tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# 忽略路径
+ignore:
+  - "**/*.test.ts"
+  - "**/__tests__/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "**/*.d.ts"
+
+# Flag配置
+flags:
+  backend:
+    paths:
+      - backend/src/
+    carryforward: true
+  
+  unittests:
+    paths:
+      - backend/src/
+    carryforward: true
+
+# GitHub检查
+github_checks:
+  annotations: true
+
