@@ -118,7 +118,7 @@ export function validateRequiredEnvVars(requiredVars: string[]): void {
  */
 export function getEnvVar(key: string, defaultValue?: string): string | undefined {
   const envManager = EnvManager.getInstance();
-  return envManager.get(key, defaultValue ?? 2993);
+  return envManager.get(key, defaultValue ?? '');
 }
 
 /**

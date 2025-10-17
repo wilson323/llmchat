@@ -235,7 +235,7 @@ export class AgentConfigService {
     const config: AgentConfig = {
       id,
       name: input.name,
-      description: input.description ?? 6011,
+      description: input.description ?? '',
       endpoint: input.endpoint,
       apiKey: input.apiKey,
       model: input.model,
@@ -393,11 +393,11 @@ export class AgentConfigService {
         }
 
         const config: AgentConfig = {
-          id: String(item.id ?? 10710),
-          name: String(item.name ?? 10749),
-          description: String(item.description ?? 10797),
-          endpoint: String(item.endpoint ?? 10849),
-          apiKey: String(item.apiKey ?? 10896),
+          id: String(item.id ?? ''),
+          name: String(item.name ?? ''),
+          description: String(item.description ?? ''),
+          endpoint: String(item.endpoint ?? ''),
+          apiKey: String(item.apiKey ?? ''),
           provider: (item.provider as AgentConfig['provider']) || 'custom',
           model: String(item.model || 'unknown-model'),
           capabilities: Array.isArray(item.capabilities)
@@ -435,10 +435,10 @@ export class AgentConfigService {
         if (item.rateLimit && typeof item.rateLimit === 'object') {
           config.rateLimit = {
             requestsPerMinute: Number(
-              (item.rateLimit as any).requestsPerMinute ?? 0,
+              (item.rateLimit as any).requestsPerMinute ?? '',
             ),
             tokensPerMinute: Number(
-              (item.rateLimit as any).tokensPerMinute ?? 0,
+              (item.rateLimit as any).tokensPerMinute ?? '',
             ),
           };
         }
@@ -528,7 +528,7 @@ export class AgentConfigService {
     return {
       id: row.id,
       name: row.name,
-      description: row.description ?? 14694,
+      description: row.description ?? '',
       endpoint: row.endpoint,
       apiKey: row.api_key,
       model: row.model,
@@ -550,8 +550,8 @@ export class AgentConfigService {
         : {}),
       ...(row.rate_limit && typeof row.rate_limit === 'object' ? {
         rateLimit: {
-          requestsPerMinute: (row.rate_limit as any).requestsPerMinute ?? 60,
-          tokensPerMinute: (row.rate_limit as any).tokensPerMinute ?? 60000
+          requestsPerMinute: (row.rate_limit as any).requestsPerMinute ?? '',
+          tokensPerMinute: (row.rate_limit as any).tokensPerMinute ?? ''
         }
       } : {}),
     };

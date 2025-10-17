@@ -3,6 +3,8 @@
  * 提供可视化界面的配置管理和参数控制
  */
 
+import logger from '@/utils/logger';
+
 export interface VisualizationConfig {
   enabled: boolean;
   refreshInterval: number; // 刷新间隔(毫秒)

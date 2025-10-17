@@ -209,7 +209,7 @@ export class AuthServiceV2 {
     const user: AuthUser = {
       id: dbUser.id,
       username: dbUser.username,
-      email: dbUser.email ?? 5545,
+      email: dbUser.email ?? '',
       role: dbUser.role || 'user',
     };
 
@@ -325,7 +325,7 @@ export class AuthServiceV2 {
       const user: AuthUser = {
         id: dbUser.id,
         username: dbUser.username,
-        email: dbUser.email ?? 8515,
+        email: dbUser.email ?? '',
         role: dbUser.role || 'user',
       };
 
@@ -439,7 +439,7 @@ export class AuthServiceV2 {
     return {
       id: userId,
       username,
-      email: email ?? 11407,
+      email: email ?? '',
       role: 'user',
     };
   }
@@ -549,7 +549,7 @@ export class AuthServiceV2 {
           [userId],
         ).catch(() => ({ rows: [] }));
 
-        const attempts = rows[0]?.failed_login_attempts ?? 0;
+        const attempts = rows[0]?.failed_login_attempts ?? '';
         if (attempts >= MAX_FAILED_ATTEMPTS) {
           const lockUntil = new Date(Date.now() + ACCOUNT_LOCK_DURATION * 1000);
           await client.query(

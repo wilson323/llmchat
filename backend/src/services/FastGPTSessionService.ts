@@ -311,7 +311,7 @@ export class FastGPTSessionService {
 
   private normalizeHistorySummary(item: Record<string, unknown>): FastGPTChatHistorySummary {
     const data = item as Record<string, any>;
-    const chatId = data?.chatId || data?.id || data?._id || data?.historyId || data?.history_id ?? 9138;
+    const chatId = data?.chatId || data?.id || data?._id || data?.historyId || data?.history_id ?? '';
     const title = data?.title || data?.name || data?.latestQuestion || data?.latest_question || '未命名对话';
     const createdAt = data?.createTime || data?.create_time || data?.createdAt || data?.created_at || data?.time || new Date().toISOString();
     const updatedAt =
@@ -323,7 +323,7 @@ export class FastGPTSessionService {
       title: String(title),
       createdAt: typeof createdAt === 'number' ? new Date(createdAt).toISOString() : String(createdAt),
       updatedAt: typeof updatedAt === 'number' ? new Date(updatedAt).toISOString() : String(updatedAt),
-      messageCount: Number(data?.messageCount || data?.msgCount || data?.totalMessages || data?.total ?? 0),
+      messageCount: Number(data?.messageCount || data?.msgCount || data?.totalMessages || data?.total ?? ''),
       tags: Array.isArray(data?.tags) ? data.tags as string[] : undefined,
       raw: data,
     };
@@ -400,7 +400,7 @@ export class FastGPTSessionService {
 
     const cacheKey = buildCacheKey(
       agentId,
-      `list:${params.page ?? 1}:${params.pageSize || 'default'}`,
+      `list:${params.page ?? ''}:${params.pageSize || 'default'}`,
     );
 
     return this.getWithCache(this.historyListCache, cacheKey, this.historyListPolicy, async () => {
@@ -573,8 +573,8 @@ export class FastGPTSessionService {
     // 构建查询参数
     const queryParams: Record<string, any> = {
       appId: agent.appId,
-      page: params?.page ?? 1,
-      pageSize: params?.pageSize ?? 20,
+      page: params?.page ?? '',
+      pageSize: params?.pageSize ?? '',
     };
 
     // 添加过滤条件
@@ -631,11 +631,11 @@ export class FastGPTSessionService {
       return {
         data: sessions,
         total: rawData?.total || sessions.length,
-        page: params?.page ?? 1,
-        pageSize: params?.pageSize ?? 20,
-        totalPages: Math.ceil((rawData?.total || sessions.length) / (params?.pageSize ?? 20)),
-        hasNext: (params?.page ?? 1) * (params?.pageSize ?? 20) < (rawData?.total || sessions.length),
-        hasPrev: (params?.page ?? 1) > 1,
+        page: params?.page ?? '',
+        pageSize: params?.pageSize ?? '',
+        totalPages: Math.ceil((rawData?.total || sessions.length) / (params?.pageSize ?? '')),
+        hasNext: (params?.page ?? '') * (params?.pageSize ?? '') < (rawData?.total || sessions.length),
+        hasPrev: (params?.page ?? '') > 1,
       };
     } catch (error) {
       // 如果增强API不可用，回退到基础API并应用本地处理
@@ -678,12 +678,12 @@ export class FastGPTSessionService {
     // 消息数量过滤
     if (params?.minMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount ?? 0) >= params.minMessageCount!,
+        (session.messageCount ?? '') >= params.minMessageCount!,
       );
     }
     if (params?.maxMessageCount) {
       filteredSessions = filteredSessions.filter(session =>
-        (session.messageCount ?? 0) <= params.maxMessageCount!,
+        (session.messageCount ?? '') <= params.maxMessageCount!,
       );
     }
 
@@ -713,8 +713,8 @@ export class FastGPTSessionService {
           bValue = new Date(b.updatedAt).getTime();
           break;
         case 'messageCount':
-          aValue = a.messageCount ?? 0;
-          bValue = b.messageCount ?? 0;
+          aValue = a.messageCount ?? '';
+          bValue = b.messageCount ?? '';
           break;
         case 'title':
           aValue = a.title.toLowerCase();
@@ -733,8 +733,8 @@ export class FastGPTSessionService {
     });
 
     // 分页
-    const page = params?.page ?? 1;
-    const pageSize = params?.pageSize ?? 20;
+    const page = params?.page ?? '';
+    const pageSize = params?.pageSize ?? '';
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedData = filteredSessions.slice(startIndex, endIndex);
@@ -969,7 +969,7 @@ export class FastGPTSessionService {
         `"${this.escapeCsv(session.title)}"`,
         session.createdAt,
         session.updatedAt,
-        session.messageCount ?? 0,
+        session.messageCount ?? '',
         `"${(session.tags || []).join(';')}"`,
       ];
 
@@ -1046,7 +1046,7 @@ export class FastGPTSessionService {
       return {
         data: [],
         total: 0,
-        page: params.page ?? 1,
+        page: params.page ?? '',
         pageSize: params.pageSize || 20,
         totalPages: 0,
         hasNext: false,
@@ -1078,7 +1078,7 @@ export class FastGPTSessionService {
 
     const sessions = result.data;
     const totalSessions = sessions.length;
-    const totalMessages = sessions.reduce((sum, session) => sum + (session.messageCount ?? 0), 0);
+    const totalMessages = sessions.reduce((sum, session) => sum + (session.messageCount ?? ''), 0);
     const averageMessagesPerSession = totalSessions > 0 ? totalMessages / totalSessions : 0;
 
     // 统计标签使用情况
@@ -1102,7 +1102,7 @@ export class FastGPTSessionService {
       const date = (session.updatedAt || '').split('T')[0] || '';
       const current = activityMap.get(date) || { sessions: 0, messages: 0 };
       current.sessions++;
-      current.messages += (session.messageCount ?? 0);
+      current.messages += (session.messageCount ?? '');
       activityMap.set(date, current);
     });
 
