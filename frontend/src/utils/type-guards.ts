@@ -788,6 +788,20 @@ export const TypeGuards = {
   isEmptySession,
   isArchivedSession,
   isPinnedSession,
+  
+  // 组合检查
+  hasProperty,
+  hasProperties,
+  isNonEmptyString,
+  isPositiveNumber,
+  isNonNegativeNumber,
+  
+  // 断言
+  assertDefined,
+  assertType,
+  assertAgent,
+  assertChatMessage,
+  assertChatSession,
 } as const;
 
 /**
