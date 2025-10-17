@@ -488,7 +488,10 @@ async function startServer() {
   }
 }
 
-startServer();
+// 只在非测试环境启动服务器
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 // 优雅关闭
 const gracefulShutdown = async (signal: string): Promise<void> => {

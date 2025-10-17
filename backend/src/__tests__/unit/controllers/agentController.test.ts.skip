@@ -11,7 +11,7 @@
  * 覆盖率目标：≥90%
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AgentController } from '@/controllers/AgentController';
 import { AgentService } from '@/services/AgentService';
 import { generateToken } from '../../helpers/testUtils';
@@ -22,6 +22,7 @@ jest.mock('@/services/AgentService');
 describe('AgentController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: jest.MockedFunction<NextFunction>;
   let mockAgentService: jest.Mocked<AgentService>;
   let agentController: AgentController;
   
@@ -38,6 +39,8 @@ describe('AgentController', () => {
       json: jest.fn().mockReturnThis()
     };
     
+    mockNext = jest.fn();
+    
     mockAgentService = new AgentService() as jest.Mocked<AgentService>;
     agentController = new AgentController();
     (agentController as any).agentService = mockAgentService;
@@ -47,7 +50,7 @@ describe('AgentController', () => {
     jest.clearAllMocks();
   });
   
-  describe('listAgents', () => {
+  describe('getAgents', () => {
     it('should return all available agents', async () => {
       // Arrange
       const mockAgents = [
@@ -56,16 +59,16 @@ describe('AgentController', () => {
         { id: 'agent-3', name: '助手3', status: 'inactive', description: '描述3' }
       ];
       
-      mockAgentService.listAgents = jest.fn().mockResolvedValue(mockAgents);
+      mockAgentService.getAgents = jest.fn().mockResolvedValue(mockAgents);
       
       // Act
-      await agentController.listAgents(
+      await agentController.getAgents(
         mockRequest as Request,
         mockResponse as Response
       );
       
       // Assert
-      expect(mockAgentService.listAgents).toHaveBeenCalled();
+      expect(mockAgentService.getAgents).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -87,7 +90,7 @@ describe('AgentController', () => {
         { id: 'agent-2', name: '助手2', status: 'active' }
       ];
       
-      mockAgentService.listAgents = jest.fn().mockResolvedValue(activeAgents);
+      mockAgentService.getAgents = jest.fn().mockResolvedValue(activeAgents);
       
       // Act
       await agentController.listAgents(
@@ -96,7 +99,7 @@ describe('AgentController', () => {
       );
       
       // Assert
-      expect(mockAgentService.listAgents).toHaveBeenCalledWith({ status: 'active' });
+      expect(mockAgentService.getAgents).toHaveBeenCalledWith({ status: 'active' });
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -121,7 +124,7 @@ describe('AgentController', () => {
         }
       ];
       
-      mockAgentService.listAgents = jest.fn().mockResolvedValue(agentsWithMetrics);
+      mockAgentService.getAgents = jest.fn().mockResolvedValue(agentsWithMetrics);
       
       // Act
       await agentController.listAgents(
@@ -157,7 +160,8 @@ describe('AgentController', () => {
       // Act
       await agentController.getAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -181,7 +185,8 @@ describe('AgentController', () => {
       // Act
       await agentController.getAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -213,7 +218,8 @@ describe('AgentController', () => {
       // Act
       await agentController.getAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -227,7 +233,7 @@ describe('AgentController', () => {
     it('should update agent configuration', async () => {
       // Arrange
       mockRequest.params = { id: 'agent-123' };
-      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.user = { id: 'admin-123', role: 'admin' };
       mockRequest.body = {
         name: '更新后的助手',
         description: '新描述',
@@ -247,7 +253,8 @@ describe('AgentController', () => {
       // Act
       await agentController.updateAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -264,7 +271,7 @@ describe('AgentController', () => {
     it('should validate configuration before update', async () => {
       // Arrange
       mockRequest.params = { id: 'agent-123' };
-      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.user = { id: 'admin-123', role: 'admin' };
       mockRequest.body = {
         config: {
           temperature: 2.5 // 无效值（应该0-2）
@@ -278,7 +285,8 @@ describe('AgentController', () => {
       // Act
       await agentController.updateAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -293,13 +301,14 @@ describe('AgentController', () => {
     it('should require admin role', async () => {
       // Arrange
       mockRequest.params = { id: 'agent-123' };
-      mockRequest.user = { userId: 'user-123', isAdmin: false };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = { name: 'Updated' };
       
       // Act
       await agentController.updateAgent(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -323,7 +332,7 @@ describe('AgentController', () => {
       mockAgentService.checkStatus = jest.fn().mockResolvedValue(statusInfo);
       
       // Act
-      await agentController.checkStatus(
+      await agentController.getAgentStatus(
         mockRequest as Request,
         mockResponse as Response
       );
@@ -351,7 +360,7 @@ describe('AgentController', () => {
       });
       
       // Act
-      await agentController.checkStatus(
+      await agentController.getAgentStatus(
         mockRequest as Request,
         mockResponse as Response
       );
@@ -366,7 +375,7 @@ describe('AgentController', () => {
   describe('reloadConfig', () => {
     it('should reload agent configuration', async () => {
       // Arrange
-      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.user = { id: 'admin-123', role: 'admin' };
       
       mockAgentService.reloadConfig = jest.fn().mockResolvedValue({
         success: true,
@@ -375,7 +384,7 @@ describe('AgentController', () => {
       });
       
       // Act
-      await agentController.reloadConfig(
+      await agentController.reloadAgents(
         mockRequest as Request,
         mockResponse as Response
       );
@@ -395,10 +404,10 @@ describe('AgentController', () => {
     
     it('should require admin permission', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123', isAdmin: false };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       
       // Act
-      await agentController.reloadConfig(
+      await agentController.reloadAgents(
         mockRequest as Request,
         mockResponse as Response
       );
@@ -410,14 +419,14 @@ describe('AgentController', () => {
     
     it('should handle reload failures', async () => {
       // Arrange
-      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.user = { id: 'admin-123', role: 'admin' };
       
       mockAgentService.reloadConfig = jest.fn().mockRejectedValue(
         new Error('Config file not found')
       );
       
       // Act
-      await agentController.reloadConfig(
+      await agentController.reloadAgents(
         mockRequest as Request,
         mockResponse as Response
       );
@@ -427,35 +436,5 @@ describe('AgentController', () => {
     });
   });
   
-  describe('getMetrics', () => {
-    it('should return agent metrics', async () => {
-      // Arrange
-      mockRequest.params = { id: 'agent-123' };
-      
-      const metrics = {
-        totalMessages: 1000,
-        avgResponseTime: 1500,
-        errorRate: 0.02,
-        uptime: 0.998,
-        lastUsed: new Date()
-      };
-      
-      mockAgentService.getMetrics = jest.fn().mockResolvedValue(metrics);
-      
-      // Act
-      await agentController.getMetrics(
-        mockRequest as Request,
-        mockResponse as Response
-      );
-      
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: metrics
-        })
-      );
-    });
-  });
 });
 

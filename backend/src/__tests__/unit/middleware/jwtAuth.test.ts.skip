@@ -23,8 +23,7 @@ describe('jwtAuth Middleware', () => {
   
   beforeEach(() => {
     mockRequest = {
-      headers: {},
-      user: undefined
+      headers: {}
     };
     
     mockResponse = {
@@ -197,9 +196,7 @@ describe('adminAuth Middleware', () => {
   let mockNext: jest.MockedFunction<NextFunction>;
   
   beforeEach(() => {
-    mockRequest = {
-      user: undefined
-    };
+    mockRequest = {};
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -217,7 +214,7 @@ describe('adminAuth Middleware', () => {
     it('should pass for admin users', async () => {
       // Arrange
       mockRequest.user = {
-        userId: 'admin-123',
+        id: 'admin-123',
         isAdmin: true
       };
       
@@ -231,7 +228,7 @@ describe('adminAuth Middleware', () => {
     it('should reject non-admin users', async () => {
       // Arrange
       mockRequest.user = {
-        userId: 'user-123',
+        id: 'user-123',
         isAdmin: false
       };
       
@@ -251,7 +248,7 @@ describe('adminAuth Middleware', () => {
     
     it('should reject unauthenticated requests', async () => {
       // Arrange
-      mockRequest.user = undefined;
+      delete mockRequest.user;
       
       // Act
       // await adminAuth(mockRequest as Request, mockResponse as Response, mockNext);

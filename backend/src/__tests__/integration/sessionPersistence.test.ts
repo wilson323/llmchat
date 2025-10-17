@@ -8,17 +8,30 @@
  * - 故障恢复能力
  */
 
-import { getPool } from '@/utils/db';
+import { Pool } from 'pg';
 import logger from '@/utils/logger';
+import { dbTestSetup } from '../utils/dbTestUtils';
 
 // Mock logger
 jest.mock('@/utils/logger');
 
 describe('Session Persistence Verification', () => {
+  let pool: Pool;
+  
+  beforeAll(async () => {
+    await dbTestSetup.beforeAll();
+    pool = dbTestSetup.getClient();
+  });
+  
+  beforeEach(async () => {
+    await dbTestSetup.beforeEach();
+  });
+  
+  afterAll(async () => {
+    await dbTestSetup.afterAll();
+  });
   describe('Database Storage', () => {
     it('should verify chat_sessions table exists', async () => {
-      const pool = getPool();
-      
       const result = await pool.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
@@ -31,8 +44,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should verify chat_messages table exists', async () => {
-      const pool = getPool();
-      
       const result = await pool.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.tables 
@@ -45,8 +56,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should verify required columns in chat_sessions', async () => {
-      const pool = getPool();
-      
       const result = await pool.query(`
         SELECT column_name, data_type 
         FROM information_schema.columns 
@@ -66,8 +75,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should verify required columns in chat_messages', async () => {
-      const pool = getPool();
-      
       const result = await pool.query(`
         SELECT column_name, data_type 
         FROM information_schema.columns 
@@ -88,8 +95,6 @@ describe('Session Persistence Verification', () => {
 
   describe('Data Persistence Flow', () => {
     it('should persist session data to database', async () => {
-      const pool = getPool();
-      
       // 创建测试会话
       const testSession = {
         id: `test-session-${Date.now()}`,
@@ -121,7 +126,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should persist messages data to database', async () => {
-      const pool = getPool();
       
       // 创建测试会话和消息
       const testSessionId = `test-session-${Date.now()}`;
@@ -167,7 +171,6 @@ describe('Session Persistence Verification', () => {
 
   describe('Data Consistency', () => {
     it('should maintain referential integrity between sessions and messages', async () => {
-      const pool = getPool();
       
       // 验证外键约束存在
       const result = await pool.query(`
@@ -194,7 +197,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should handle concurrent session updates correctly', async () => {
-      const pool = getPool();
       const testSessionId = `concurrent-test-${Date.now()}`;
 
       // 创建测试会话
@@ -230,7 +232,6 @@ describe('Session Persistence Verification', () => {
 
   describe('Performance Verification', () => {
     it('should retrieve session data efficiently', async () => {
-      const pool = getPool();
       const startTime = Date.now();
 
       // 查询最近的会话
@@ -247,7 +248,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should support efficient message pagination', async () => {
-      const pool = getPool();
       const testSessionId = `pagination-test-${Date.now()}`;
 
       // 创建测试会话
@@ -295,7 +295,6 @@ describe('Session Persistence Verification', () => {
 
   describe('Data Integrity', () => {
     it('should enforce NOT NULL constraints on required fields', async () => {
-      const pool = getPool();
 
       // 尝试插入缺少必需字段的会话
       await expect(
@@ -307,7 +306,6 @@ describe('Session Persistence Verification', () => {
     });
 
     it('should maintain created_at and updated_at timestamps', async () => {
-      const pool = getPool();
       const testSessionId = `timestamp-test-${Date.now()}`;
 
       // 创建会话

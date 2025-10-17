@@ -11,40 +11,40 @@
  */
 
 import request from 'supertest';
+import { Pool } from 'pg';
 import { createTestUser, generateToken, cleanupTestData } from '../helpers/testUtils';
-import { getPool } from '@/utils/db';
+import { app } from '@/index';
+import { dbTestSetup } from '../utils/dbTestUtils';
 
 describe('Chat Integration Tests', () => {
-  let app: any;
   let testUserId: string | null = null;
   let authToken: string | null = null;
+  let pool: Pool;
   
   beforeAll(async () => {
-    // 导入app实例
-    // const { app: expressApp } = await import('@/index');
-    // app = expressApp;
+    await dbTestSetup.beforeAll();
+    pool = dbTestSetup.getClient();
+  });
+  
+  beforeEach(async () => {
+    await dbTestSetup.beforeEach();
   });
   
   afterEach(async () => {
     if (testUserId) {
-      const pool = getPool();
       await cleanupTestData(pool, testUserId);
       testUserId = null;
     }
   });
   
   afterAll(async () => {
-    const pool = getPool();
-    if (pool) {
-      await pool.end();
-    }
+    await dbTestSetup.afterAll();
   });
   
   describe('Complete Chat Flow', () => {
     it('should create session and send messages', async () => {
       // Step 1: 创建测试用户并登录
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -101,7 +101,6 @@ describe('Chat Integration Tests', () => {
     it('should handle streaming responses', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -140,7 +139,6 @@ describe('Chat Integration Tests', () => {
     it('should handle multiple concurrent sessions', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -171,7 +169,6 @@ describe('Chat Integration Tests', () => {
     it('should isolate messages between sessions', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -209,7 +206,6 @@ describe('Chat Integration Tests', () => {
     it('should persist messages across requests', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -241,7 +237,6 @@ describe('Chat Integration Tests', () => {
     it('should maintain message order', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -274,7 +269,6 @@ describe('Chat Integration Tests', () => {
     it('should switch agent mid-conversation', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -312,7 +306,6 @@ describe('Chat Integration Tests', () => {
     it('should handle rapid message sending', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -344,7 +337,6 @@ describe('Chat Integration Tests', () => {
       // Arrange
       const user1 = await createTestUser();
       const user2 = await createTestUser();
-      const pool = getPool();
       
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
@@ -379,7 +371,6 @@ describe('Chat Integration Tests', () => {
     it('should handle malformed message content', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]

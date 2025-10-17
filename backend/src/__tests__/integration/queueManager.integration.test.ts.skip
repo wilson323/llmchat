@@ -12,7 +12,8 @@ import { QueueStatsService } from '../../services/QueueStatsService';
 import { QueueHealthService } from '../../services/QueueHealthService';
 import { QueueMonitoringService } from '../../services/QueueMonitoringService';
 import Redis from 'ioredis';
-import type { QueueConfig, MessagePriority } from '../../types/queue';
+import type { QueueConfig } from '../../types/queue';
+import { MessagePriority } from '../../types/queue';
 
 // 辅助函数：创建完整的QueueConfig
 function createQueueConfig(name: string, partial: Partial<QueueConfig> = {}): QueueConfig {
@@ -523,10 +524,10 @@ describe('QueueManager Integration Tests', () => {
     describe('GET /api/queue/stats/:queueName', () => {
       it('should return queue statistics', async () => {
         const queueName = 'test-api-stats';
-        queueManager.createQueue(createQueueConfig(queueName);
+        queueManager.createQueue(createQueueConfig(queueName));
 
         // 添加测试作业
-        await queueOpsService.addJob(queueName));
+        await queueOpsService.addJob(queueName, { test: true });
 
         const response = await request(app)
           .get(`/api/queue/stats/${queueName}`)
@@ -609,10 +610,10 @@ describe('QueueManager Integration Tests', () => {
     describe('POST /api/queue/:queueName/clear', () => {
       it('should clear queue', async () => {
         const queueName = 'test-api-clear';
-        queueManager.createQueue(createQueueConfig(queueName);
+        queueManager.createQueue(createQueueConfig(queueName));
 
         // 添加作业
-        await queueOpsService.addJob(queueName));
+        await queueOpsService.addJob(queueName, { test: true });
         await queueOpsService.addJob(queueName, { test: true });
 
         // 清空队列
@@ -665,10 +666,10 @@ describe('QueueManager Integration Tests', () => {
 
     it('should handle malformed job data', async () => {
       const queueName = 'test-malformed';
-      queueManager.createQueue(createQueueConfig(queueName);
+      queueManager.createQueue(createQueueConfig(queueName));
 
       // 添加正常作业
-      const jobId = await queueOpsService.addJob(queueName));
+      const jobId = await queueOpsService.addJob(queueName, { test: true });
 
       // 手动破坏作业数据
       await redis.hset(`${queueName}:jobs`, jobId, 'invalid json');

@@ -36,11 +36,11 @@ describe('Database Integration Tests', () => {
     });
 
     it('should have correct database configuration', async () => {
-      expect(testDbConfig.host).toBe('106.63.8.99');
-      expect(testDbConfig.port).toBe(5432);
-      expect(testDbConfig.database).toBe('postgres');
+      expect(testDbConfig.host).toBe('171.43.138.237');
+      expect(testDbConfig.port).toBe(5443);
+      expect(testDbConfig.database).toBe('zkteco_test');
       expect(testDbConfig.user).toBe('username');
-      expect(testDbConfig.password).toBe('password');
+      expect(testDbConfig.password).toBe('postgres');
     });
 
     it('should get database statistics', async () => {
@@ -141,7 +141,7 @@ describe('Database Integration Tests', () => {
       });
 
       expect(userId).toBeDefined();
-      await DatabaseAssertions.assertExists('users', 'username = $1', ['test@example.com')]);
+      await DatabaseAssertions.assertExists('users', 'username = $1', ['test@example.com']);
       await DatabaseAssertions.assertExists('chat_sessions', 'user_id = $1', [userId]);
       await DatabaseAssertions.assertExists('chat_messages', 'session_id IN (SELECT id FROM chat_sessions WHERE user_id = $1)', [userId]);
     });
@@ -162,7 +162,7 @@ describe('Database Integration Tests', () => {
       expect(results).toHaveLength(5);
 
       for (const email of results) {
-        await DatabaseAssertions.assertExists('users', 'username = $1'), [email]);
+        await DatabaseAssertions.assertExists('users', 'username = $1', [email]);
       }
 
       await DatabaseAssertions.assertCount('users', 5);
@@ -180,7 +180,7 @@ describe('Database Integration Tests', () => {
         );
       });
 
-      await DatabaseAssertions.assertExists('users', 'username = $1'), [userData.email]);
+      await DatabaseAssertions.assertExists('users', 'username = $1', [userData.email]);
     });
 
     it('should enforce unique email constraint', async () => {

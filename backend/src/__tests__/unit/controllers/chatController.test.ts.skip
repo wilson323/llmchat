@@ -11,7 +11,7 @@
  * 覆盖率目标：≥90%
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ChatController } from '@/controllers/ChatController';
 import { ChatService } from '@/services/ChatService';
 import { createTestUser, createTestSession, createTestMessage, generateToken } from '../../helpers/testUtils';
@@ -22,10 +22,12 @@ jest.mock('@/services/ChatService');
 describe('ChatController', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let mockNext: jest.MockedFunction<NextFunction>;
   let mockChatService: jest.Mocked<ChatService>;
   let chatController: ChatController;
   
   beforeEach(() => {
+    mockNext = jest.fn();
     mockRequest = {
       body: {},
       params: {},
@@ -58,7 +60,7 @@ describe('ChatController', () => {
       const testUser = await createTestUser();
       const testSession = createTestSession({ userId: testUser.id });
       
-      mockRequest.user = { userId: testUser.id };
+      mockRequest.user = { id: testUser.id, role: 'user' };
       mockRequest.body = {
         sessionId: testSession.id,
         message: 'Hello, AI!',
@@ -77,7 +79,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -101,7 +104,7 @@ describe('ChatController', () => {
     
     it('should validate message content', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: '', // 空消息
@@ -111,7 +114,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -136,7 +140,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -145,7 +150,7 @@ describe('ChatController', () => {
     
     it('should validate session exists', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'non-existent-session',
         message: 'Hello',
@@ -159,7 +164,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -173,7 +179,7 @@ describe('ChatController', () => {
     
     it('should handle rate limiting', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: 'Hello',
@@ -187,7 +193,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -196,7 +203,7 @@ describe('ChatController', () => {
     
     it('should reject messages exceeding length limit', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: 'a'.repeat(10001), // 超长消息
@@ -206,7 +213,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -228,7 +236,7 @@ describe('ChatController', () => {
         createTestMessage({ sessionId: testSession.id, role: 'assistant' })
       ];
       
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.params = { sessionId: testSession.id };
       mockRequest.query = {};
       
@@ -263,7 +271,7 @@ describe('ChatController', () => {
     it('should paginate results', async () => {
       // Arrange
       const testSession = createTestSession();
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.params = { sessionId: testSession.id };
       mockRequest.query = { page: '2', pageSize: '20' };
       
@@ -289,7 +297,7 @@ describe('ChatController', () => {
     it('should filter by date range', async () => {
       // Arrange
       const testSession = createTestSession();
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.params = { sessionId: testSession.id };
       mockRequest.query = {
         startDate: '2024-01-01',
@@ -320,7 +328,7 @@ describe('ChatController', () => {
     
     it('should reject unauthorized access', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.params = { sessionId: 'other-user-session' };
       
       mockChatService.getMessages = jest.fn().mockRejectedValue(
@@ -342,7 +350,7 @@ describe('ChatController', () => {
     it('should create new session', async () => {
       // Arrange
       const testUser = await createTestUser();
-      mockRequest.user = { userId: testUser.id };
+      mockRequest.user = { id: testUser.id, role: 'user' };
       mockRequest.body = {
         agentId: 'default-agent',
         title: '新对话'
@@ -354,7 +362,8 @@ describe('ChatController', () => {
       // Act
       await chatController.createSession(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -377,7 +386,7 @@ describe('ChatController', () => {
     
     it('should use default agent if not specified', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = { title: '新对话' };
       
       mockChatService.createSession = jest.fn().mockResolvedValue(
@@ -387,7 +396,8 @@ describe('ChatController', () => {
       // Act
       await chatController.createSession(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -403,7 +413,7 @@ describe('ChatController', () => {
     it('should switch to valid agent', async () => {
       // Arrange
       const testSession = createTestSession();
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.params = { sessionId: testSession.id };
       mockRequest.body = { agentId: 'new-agent' };
       
@@ -429,7 +439,7 @@ describe('ChatController', () => {
     
     it('should reject invalid agent', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.params = { sessionId: 'session-123' };
       mockRequest.body = { agentId: 'invalid-agent' };
       
@@ -450,7 +460,7 @@ describe('ChatController', () => {
     it('should preserve conversation history', async () => {
       // Arrange
       const testSession = createTestSession();
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.params = { sessionId: testSession.id };
       mockRequest.body = { agentId: 'new-agent' };
       
@@ -475,7 +485,7 @@ describe('ChatController', () => {
   describe('Stream Response', () => {
     it('should setup SSE headers correctly', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: 'Tell me a story',
@@ -493,7 +503,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -504,7 +515,7 @@ describe('ChatController', () => {
     
     it('should stream chunks progressively', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: 'Test',
@@ -523,7 +534,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert
@@ -535,7 +547,7 @@ describe('ChatController', () => {
     it('should handle concurrent message sends', async () => {
       // Arrange
       const testSession = createTestSession();
-      mockRequest.user = { userId: testSession.userId };
+      mockRequest.user = { id: testSession.userId, role: 'user' };
       mockRequest.body = {
         sessionId: testSession.id,
         message: 'Test',
@@ -549,7 +561,8 @@ describe('ChatController', () => {
       const promises = Array(5).fill(null).map(() =>
         chatController.sendMessage(
           mockRequest as Request,
-          mockResponse as Response
+          mockResponse as Response,
+          mockNext
         )
       );
       
@@ -561,7 +574,7 @@ describe('ChatController', () => {
     
     it('should handle special characters in messages', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: '<script>alert("XSS")</script>',
@@ -575,7 +588,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert: 应该被清理或转义
@@ -585,7 +599,7 @@ describe('ChatController', () => {
     
     it('should handle file attachments', async () => {
       // Arrange
-      mockRequest.user = { userId: 'user-123' };
+      mockRequest.user = { id: 'user-123', role: 'user' };
       mockRequest.body = {
         sessionId: 'session-123',
         message: '分析这张图片',
@@ -603,7 +617,8 @@ describe('ChatController', () => {
       // Act
       await chatController.sendMessage(
         mockRequest as Request,
-        mockResponse as Response
+        mockResponse as Response,
+        mockNext
       );
       
       // Assert

@@ -649,45 +649,6 @@ export class AuthServiceV2 {
   }
 
   /**
-   * 修改密码
-   */
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    // 查询用户
-    const user = await this.findUserById(userId);
-    if (!user) {
-      throw new ResourceError({
-        message: '用户不存在',
-        code: 'USER_NOT_FOUND',
-        resourceType: 'user',
-        resourceId: userId,
-      });
-    }
-
-    // 验证当前密码
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
-    if (!isPasswordValid) {
-      throw new AuthenticationError({
-        message: '当前密码错误',
-        code: 'INVALID_CREDENTIALS',
-      });
-    }
-
-    // 验证新密码强度
-    this.validatePasswordStrength(newPassword);
-
-    // 更新密码
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    await withClient(async (client) => {
-      await client.query(
-        'UPDATE users SET password_hash = $1 WHERE id = $2',
-        [newPasswordHash, userId],
-      );
-    });
-
-    logger.info('密码修改成功', { userId });
-  }
-
-  /**
    * 清理资源
    */
   async close(): Promise<void> {

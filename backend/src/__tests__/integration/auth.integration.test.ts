@@ -13,34 +13,34 @@
  */
 
 import request from 'supertest';
+import { Pool } from 'pg';
 import { createTestUser, cleanupTestData, randomEmail, generateStrongPassword } from '../helpers/testUtils';
-import { getPool } from '@/utils/db';
+import { app } from '@/index';
+import { dbTestSetup } from '../utils/dbTestUtils';
 
 describe('Auth Integration Tests', () => {
-  let app: any; // Express app实例
   let testUserId: string | null = null;
+  let pool: Pool;
   
   beforeAll(async () => {
-    // 导入app实例
-    // const { app: expressApp } = await import('@/index');
-    // app = expressApp;
+    await dbTestSetup.beforeAll();
+    pool = dbTestSetup.getClient();
+  });
+  
+  beforeEach(async () => {
+    await dbTestSetup.beforeEach();
   });
   
   afterEach(async () => {
     // 清理测试数据
     if (testUserId) {
-      const pool = getPool();
       await cleanupTestData(pool, testUserId);
       testUserId = null;
     }
   });
   
   afterAll(async () => {
-    // 关闭数据库连接
-    const pool = getPool();
-    if (pool) {
-      await pool.end();
-    }
+    await dbTestSetup.afterAll();
   });
   
   describe('Complete Registration Flow', () => {
@@ -120,7 +120,6 @@ describe('Auth Integration Tests', () => {
     it('should login and access protected routes', async () => {
       // Step 1: 创建测试用户
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -150,7 +149,6 @@ describe('Auth Integration Tests', () => {
     it('should track failed login attempts', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -185,7 +183,6 @@ describe('Auth Integration Tests', () => {
     it('should refresh token before expiration', async () => {
       // Step 1: 登录获取token
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -215,7 +212,6 @@ describe('Auth Integration Tests', () => {
     it('should reject used refresh token', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -251,7 +247,6 @@ describe('Auth Integration Tests', () => {
     it('should change password and invalidate old tokens', async () => {
       // Step 1: 登录
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -302,7 +297,6 @@ describe('Auth Integration Tests', () => {
     it('should invalidate token on logout', async () => {
       // Step 1: 登录
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -338,7 +332,6 @@ describe('Auth Integration Tests', () => {
     it('should handle concurrent login attempts', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -367,7 +360,6 @@ describe('Auth Integration Tests', () => {
     it('should handle concurrent token refresh', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]
@@ -414,7 +406,6 @@ describe('Auth Integration Tests', () => {
       // Assert
       expect(response.status).toBe(400);
       // 数据库应该没有被破坏
-      const pool = getPool();
       const usersCheck = await pool.query('SELECT COUNT(*) FROM users');
       expect(usersCheck.rows[0].count).toBeDefined();
     });
@@ -422,7 +413,6 @@ describe('Auth Integration Tests', () => {
     it('should prevent brute force attacks', async () => {
       // Arrange
       const testUser = await createTestUser();
-      const pool = getPool();
       await pool.query(
         'INSERT INTO users (id, email, password_hash, email_verified) VALUES ($1, $2, $3, $4)',
         [testUser.id, testUser.email, testUser.passwordHash, true]

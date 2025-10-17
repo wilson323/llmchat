@@ -2,6 +2,7 @@ import type { Request, Response } from 'express'; // [L1]
 import logger from '@/utils/logger'; // [L2]
 import { AuthServiceV2 } from '@/services/AuthServiceV2'; // [L3]
 import { toEnhancedError, ExpressErrorHandler } from '@/utils/errorHandler'; // [L4]
+import type { AuthenticatedRequest } from '@/middleware/jwtAuth';
 
 /**
  * 认证控制器

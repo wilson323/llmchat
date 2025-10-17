@@ -12,16 +12,13 @@
 
 import request from 'supertest';
 import { generateToken } from '../helpers/testUtils';
+import { app } from '@/index';
 
 describe('Agent Integration Tests', () => {
-  let app: any;
   let adminToken: string;
   let userToken: string;
   
   beforeAll(async () => {
-    // const { app: expressApp } = await import('@/index');
-    // app = expressApp;
-    
     adminToken = generateToken('admin-123', { isAdmin: true });
     userToken = generateToken('user-123', { isAdmin: false });
   });

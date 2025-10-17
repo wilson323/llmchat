@@ -16,13 +16,26 @@ global.console = {
   warn: console.warn,
 };
 
-// Mock process.env以避免环境变量问题
+// Mock process.env以避免环境变量问题 - 统一数据源配置
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-purposes-only';
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:123456@localhost:5432/postgres';
-process.env.REDIS_HOST = process.env.REDIS_HOST || 'localhost';
-process.env.REDIS_PORT = process.env.REDIS_PORT || '6379';
-process.env.REDIS_DB = '1'; // 使用DB 1用于测试，避免污染生产数据
+
+// 数据库配置 - 统一数据源 (171.43.138.237)
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://username:postgres@171.43.138.237:5443/zkteco_test';
+process.env.DB_HOST = process.env.DB_HOST || '171.43.138.237';
+process.env.DB_PORT = process.env.DB_PORT || '5443';
+process.env.DB_USER = process.env.DB_USER || 'username';
+process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'postgres';
+process.env.DB_NAME = process.env.DB_NAME || 'zkteco_test';
+process.env.DB_SSL = process.env.DB_SSL || 'false';
+
+// Redis配置 - 统一数据源 (171.43.138.237)
+process.env.REDIS_HOST = process.env.REDIS_HOST || '171.43.138.237';
+process.env.REDIS_PORT = process.env.REDIS_PORT || '7788';
+process.env.REDIS_DB = process.env.REDIS_DB || '1'; // 使用DB 1用于测试，避免污染生产数据
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://171.43.138.237:7788/1';
+
+// 连接池配置
 process.env.DB_POOL_MAX = '20'; // 测试环境使用较小的连接池
 process.env.DB_POOL_MIN = '2';
 

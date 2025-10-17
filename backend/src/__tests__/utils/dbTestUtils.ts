@@ -7,14 +7,14 @@ import { Pool, PoolClient } from 'pg';
 import { initDB, getPool, withClient } from '../../utils/db';
 import logger from '../../utils/logger';
 
-// 测试数据库配置
+// 测试数据库配置 - 使用统一数据源
 export const testDbConfig = {
-  host: '106.63.8.99',
-  port: 5432,
-  database: 'postgres',
-  user: 'username',
-  password: 'password',
-  ssl: false,
+  host: process.env.DB_HOST || '171.43.138.237',
+  port: parseInt(process.env.DB_PORT || '5443', 10),
+  database: process.env.DB_NAME?.replace(/^([^_]+)$/, '$1_test') || 'zkteco_test',
+  user: process.env.DB_USER || 'username',
+  password: process.env.DB_PASSWORD || 'postgres',
+  ssl: process.env.DB_SSL === 'true',
   max: 20, // 连接池大小
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
@@ -316,17 +316,35 @@ export const testDbEnv = new DatabaseTestEnvironment();
 // 测试用户数据工厂
 export class TestDataFactory {
   /**
-   * 创建测试用户数据
+   * 创建测试用户数据（匹配实际表结构）
    */
   static createUser(overrides: Partial<any> = {}): any {
+    const timestamp = Date.now();
     return {
-      username: `testuser-${Date.now()}`,
+      username: `testuser-${timestamp}`,
       password_salt: 'testsalt'.repeat(8), // 64字符
       password_hash: 'test.hashed.password.sha256',
       role: 'user',
       status: 'active',
+      email: `test${timestamp}@example.com`,
+      email_verified: false,
       ...overrides,
     };
+  }
+
+  /**
+   * 插入测试用户（自动处理所有必需字段）
+   */
+  static async insertUser(client: PoolClient, userData?: Partial<any>): Promise<number> {
+    const user = TestDataFactory.createUser(userData);
+    
+    const result = await client.query(
+      `INSERT INTO users (username, password_salt, password_hash, role, status, email, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [user.username, user.password_salt, user.password_hash, user.role, user.status, user.email, user.email_verified]
+    );
+    
+    return result.rows[0].id;
   }
 
   /**

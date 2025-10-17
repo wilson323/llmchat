@@ -8,8 +8,7 @@ const path = require('path');
 
 const testFiles = [
   'src/__tests__/integration/database.integration.test.ts',
-  'src/__tests__/integration/databaseMigration.integration.test.ts',
-  'src/__tests__/integration/databasePerformance.integration.test.ts'
+  'src/__tests__/integration/databaseMigration.integration.test.ts'
 ];
 
 function fixFile(filePath) {
