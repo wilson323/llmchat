@@ -1,0 +1,147 @@
+name: 🎯 Enhanced Code Quality Monitoring
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # 每天早上8点运行
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  quality-monitoring:
+    name: 📊 Code Quality Dashboard
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+      
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: 🔍 Run ESLint Check (Zero Tolerance)
+        id: eslint
+        run: |
+          echo "::group::ESLint Check"
+          cd backend
+          npx eslint src --format stylish
+          ESLINT_EXIT_CODE=$?
+          npx eslint src --format json > ../eslint-report.json || true
+          echo "::endgroup::"
+          
+          if [ $ESLINT_EXIT_CODE -ne 0 ]; then
+            echo "::error::ESLint found issues that need to be fixed"
+            echo "eslint_status=failed" >> $GITHUB_OUTPUT
+          else
+            echo "✅ ESLint check passed with 0 errors and 0 warnings!"
+            echo "eslint_status=passed" >> $GITHUB_OUTPUT
+          fi
+          exit $ESLINT_EXIT_CODE
+      
+      - name: 🔍 TypeScript Type Check (Zero Tolerance)
+        id: typescript
+        run: |
+          echo "::group::TypeScript Check"
+          cd backend
+          npx tsc --noEmit
+          TS_EXIT_CODE=$?
+          echo "::endgroup::"
+          
+          if [ $TS_EXIT_CODE -ne 0 ]; then
+            echo "::error::TypeScript found type errors"
+            echo "typescript_status=failed" >> $GITHUB_OUTPUT
+          else
+            echo "✅ TypeScript check passed with 0 errors!"
+            echo "typescript_status=passed" >> $GITHUB_OUTPUT
+          fi
+          exit $TS_EXIT_CODE
+      
+      - name: 🧪 Run Tests
+        id: tests
+        run: |
+          echo "::group::Test Suite"
+          cd backend
+          npm test -- --coverage --passWithNoTests
+          TEST_EXIT_CODE=$?
+          echo "::endgroup::"
+          
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "::warning::Some tests failed"
+            echo "test_status=failed" >> $GITHUB_OUTPUT
+          else
+            echo "✅ All tests passed!"
+            echo "test_status=passed" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 📊 Generate Quality Dashboard
+        if: always()
+        run: |
+          node temp-scripts/quality-dashboard.js || true
+      
+      - name: 📤 Upload Quality Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report-${{ github.sha }}
+          path: |
+            quality-reports/
+            eslint-report.json
+          retention-days: 30
+      
+      - name: 💬 Comment Quality Report on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('quality-reports/latest.json', 'utf8'));
+            
+            const body = `
+            ## 📊 Code Quality Report
+            
+            **Quality Score**: ${report.quality.score}/100 ${report.quality.grade}
+            
+            ### Results
+            
+            | Category | Status | Details |
+            |----------|--------|---------|
+            | ESLint | ${report.eslint.errors === 0 && report.eslint.warnings === 0 ? '✅' : '❌'} | ${report.eslint.errors} errors, ${report.eslint.warnings} warnings |
+            | TypeScript | ${report.typescript.errors === 0 ? '✅' : '❌'} | ${report.typescript.errors} type errors |
+            | Tests | ${report.tests.passRate >= 90 ? '✅' : '⚠️'} | ${report.tests.passed}/${report.tests.total} (${report.tests.passRate}%) |
+            
+            ${report.quality.score >= 95 ? '🌟🌟🌟 **Excellent!** Code quality is outstanding!' : ''}
+            ${report.quality.score >= 90 && report.quality.score < 95 ? '🌟🌟 **Very Good!** Code quality is great!' : ''}
+            ${report.quality.score < 90 ? '⚠️ **Needs Improvement** - Please address the issues above.' : ''}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+      
+      - name: 🚫 Fail on Quality Issues
+        if: steps.eslint.outputs.eslint_status == 'failed' || steps.typescript.outputs.typescript_status == 'failed'
+        run: |
+          echo "::error::Quality gates failed!"
+          echo "ESLint: ${{ steps.eslint.outputs.eslint_status }}"
+          echo "TypeScript: ${{ steps.typescript.outputs.typescript_status }}"
+          exit 1
+

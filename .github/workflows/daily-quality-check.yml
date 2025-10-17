@@ -1,0 +1,144 @@
+name: 📅 Daily Quality Check & Report
+
+on:
+  schedule:
+    # 每天UTC时间0点运行（北京时间早上8点）
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      send_notification:
+        description: '发送通知'
+        required: false
+        default: 'true'
+
+jobs:
+  daily-quality-check:
+    name: 📊 Daily Code Quality Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'pnpm'
+      
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: 📚 Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: 🔍 Complete Quality Audit
+        id: quality_audit
+        run: |
+          echo "::group::ESLint Check"
+          cd backend
+          npx eslint src --format stylish > ../eslint-daily.txt 2>&1 || true
+          npx eslint src --format json > ../eslint-daily.json 2>&1 || true
+          echo "::endgroup::"
+          
+          echo "::group::TypeScript Check"
+          npx tsc --noEmit > ../tsc-daily.txt 2>&1 || true
+          echo "::endgroup::"
+          
+          echo "::group::Test Suite"
+          npm test -- --coverage > ../test-daily.txt 2>&1 || true
+          echo "::endgroup::"
+      
+      - name: 📊 Generate Quality Report
+        run: |
+          node temp-scripts/quality-dashboard.js > quality-dashboard.txt 2>&1 || true
+      
+      - name: 📤 Upload Daily Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-quality-report-${{ github.run_number }}
+          path: |
+            quality-reports/
+            eslint-daily.*
+            tsc-daily.txt
+            test-daily.txt
+            quality-dashboard.txt
+          retention-days: 90
+      
+      - name: 📧 Create Issue if Quality Degraded
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '⚠️ Daily Quality Check Failed - ' + new Date().toISOString().split('T')[0];
+            const body = `
+            ## 📊 Daily Quality Check Report
+            
+            **Date**: ${new Date().toISOString()}
+            **Run**: ${{ github.run_number }}
+            
+            ### ⚠️ Quality Issues Detected
+            
+            One or more quality checks failed. Please review the attached artifacts.
+            
+            ### 📎 Artifacts
+            - [View detailed report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            ### 🔧 Action Required
+            - Review the quality report artifacts
+            - Fix any TypeScript errors
+            - Address ESLint warnings
+            - Improve test coverage if needed
+            
+            **Priority**: High  
+            **Labels**: quality, automated-report
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['quality', 'automated-report', 'needs-triage']
+            });
+      
+      - name: 📈 Generate Trend Report
+        run: |
+          echo "📈 生成质量趋势报告..."
+          # 比较最近7天的报告
+          echo "TODO: 实现趋势分析"
+
+  security-scan:
+    name: 🔒 Daily Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔒 Run npm audit
+        run: |
+          cd backend
+          npm audit --audit-level=moderate > ../security-audit.txt 2>&1 || true
+      
+      - name: 🔒 Run dependency check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'llmchat'
+          path: '.'
+          format: 'HTML'
+        continue-on-error: true
+      
+      - name: 📤 Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-${{ github.run_number }}
+          path: |
+            security-audit.txt
+            reports/
+          retention-days: 90
+

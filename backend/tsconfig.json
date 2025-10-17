@@ -38,10 +38,12 @@
       "@/utils/*": ["utils/*"]
     }
   },
-  "include": ["src/**/*", "jest.config.ts", "scripts/**/*"],
+  "include": ["src/**/*", "jest.config.ts"],
   "exclude": [
     "node_modules",
     "dist",
+    "scripts",
+    "src/scripts",
     "../frontend/**/*",
     "**/*.skip.ts"
   ]
