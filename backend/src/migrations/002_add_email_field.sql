@@ -6,6 +6,10 @@
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 
+-- 添加email验证状态字段
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT false;
+
 -- 添加登录失败追踪字段
 ALTER TABLE users 
 ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0;

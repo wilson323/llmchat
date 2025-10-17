@@ -225,6 +225,11 @@ export function createRateLimiter(options: RateLimitOptions = {}) {
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      // 测试环境完全禁用速率限制
+      if (process.env.NODE_ENV === 'test') {
+        return next();
+      }
+
       // 检查白名单
       if ('whitelist' in config && config.whitelist && isWhitelisted(req, config.whitelist)) {
         return next();

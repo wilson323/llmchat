@@ -56,7 +56,7 @@ router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
           },
           uptime: process.uptime(),
           nodeVersion: process.version,
-          env: process.env.NODE_ENV || 'development',
+          env: process.env.NODE_ENV ?? 'development',
         },
         database: {
           healthy: dbResult !== null,

@@ -23,10 +23,10 @@ export class SecureCredentialsManager {
    */
   private static deriveKey(): Buffer {
     const secretSources = [
-      process.env.TOKEN_SECRET || process.env.JWT_SECRET || 'default-secret',
-      process.env.DATABASE_URL || '',
-      process.env.NODE_ENV || 'development',
-      process.env.HOSTNAME || '',
+      process.env.TOKEN_SECRET ?? process.env.JWT_SECRET ?? 'default-secret',
+      process.env.DATABASE_URL ?? '',
+      process.env.NODE_ENV ?? 'development',
+      process.env.HOSTNAME ?? '',
       'llmchat-credentials-salt-2024', // Fixed salt component
     ];
 
@@ -34,7 +34,7 @@ export class SecureCredentialsManager {
     const combinedSecret = secretSources.join('|');
 
     // Create consistent salt from environment
-    const saltInput = process.env.CREDENTIALS_SALT || 'llmchat-default-salt';
+    const saltInput = process.env.CREDENTIALS_SALT ?? 'llmchat-default-salt';
     const salt = crypto.createHash('sha256').update(saltInput).digest();
 
     return crypto.pbkdf2Sync(combinedSecret, salt, this.SALT_ROUNDS, 32, 'sha256');

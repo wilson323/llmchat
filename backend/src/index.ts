@@ -97,7 +97,7 @@ process.on('uncaughtException', (error: Error) => {
 let visualizationController: VisualizationController | null = null;
 
 const app: express.Express = express();
-const PORT = process.env.PORT || (process.env.NODE_ENV === 'test' ? 0 : 3001);
+const PORT = process.env.PORT ?? (process.env.NODE_ENV === 'test' ? 0 : 3001);
 
 // 声明 server 变量（必须在使用前声明）
 let server: ReturnType<typeof app.listen>;
@@ -130,7 +130,7 @@ app.use(
             imgSrc: ["'self'", "data:", "https:", "blob:"],
             connectSrc: [
               "'self'",
-              process.env.FRONTEND_URL || "http://localhost:3000",
+              process.env.FRONTEND_URL ?? "http://localhost:3000",
             ],
             fontSrc: ["'self'", "data:"],
             objectSrc: ["'none'"],
@@ -154,7 +154,7 @@ app.use(
 // CORS配置
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
     credentials: true,
   })
 );
@@ -183,8 +183,8 @@ app.use(
 
 // 速率限制（支持高并发场景）
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || "1000", 10), // 每分钟1000请求
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS ?? "1000", 10), // 每分钟1000请求
   message: "请求过于频繁，请稍后再试",
   standardHeaders: true,
   legacyHeaders: false,
@@ -232,6 +232,7 @@ app.use("/api/dify", difySessionRouter); // Dify会话管理接口
 app.use("/api/product-preview", productPreviewRoutes); // 产品预览接口
 app.use("/api/sessions", sessionRouter); // FastGPT会话管理接口
 app.use("/api/chat-sessions", chatSessionsRouter); // ✅ T009: 通用会话持久化接口
+app.use("/api/chat/sessions", chatSessionsRouter); // 别名路由，向后兼容测试
 app.use("/api/upload", uploadRouter); // ✅ T011: 文件上传接口
 app.use("/api/database", databasePerformanceRouter); // 数据库性能管理接口
 app.use("/api/cache", cacheRouter); // 缓存管理接口
@@ -461,7 +462,7 @@ async function startServer() {
     server = app.listen(PORT, () => {
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📍 端口: ${PORT}`);
-      logger.info(`🌍 环境: ${process.env.NODE_ENV || "development"}`);
+      logger.info(`🌍 环境: ${process.env.NODE_ENV ?? "development"}`);
       logger.info(
         `✅ Sentry: ${
           process.env.SENTRY_ENABLED === "true" ? "已启用" : "已禁用"

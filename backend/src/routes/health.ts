@@ -107,7 +107,7 @@ router.get('/', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     service: 'llmchat-backend',
-    version: process.env.APP_VERSION || '1.0.0',
+    version: process.env.APP_VERSION ?? '1.0.0',
   });
 });
 
@@ -136,7 +136,7 @@ router.get('/detailed', async (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     service: 'llmchat-backend',
-    version: process.env.APP_VERSION || '1.0.0',
+    version: process.env.APP_VERSION ?? '1.0.0',
     system: {
       memory: {
         rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
@@ -149,7 +149,7 @@ router.get('/detailed', async (_req: Request, res: Response) => {
         user: `${(cpuUsage.user / 1000000).toFixed(2)}s`,
         system: `${(cpuUsage.system / 1000000).toFixed(2)}s`,
       },
-      env: process.env.NODE_ENV || 'development',
+      env: process.env.NODE_ENV ?? 'development',
       nodeVersion: process.version,
     },
     components: {

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import Joi, { type ValidationError as JoiValidationError } from 'joi';
+import Joi from 'joi';
 
 import { AgentConfigService } from '@/services/AgentConfigService';
 import { ChatProxyService } from '@/services/ChatProxyService';

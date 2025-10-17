@@ -29,8 +29,8 @@ export function initSentry(_app: Express): void {
 
     Sentry.init({
       dsn,
-      environment: process.env.NODE_ENV || 'development',
-      release: process.env.APP_VERSION || 'unknown',
+      environment: process.env.NODE_ENV ?? 'development',
+      release: process.env.APP_VERSION ?? 'unknown',
 
       // 集成（Sentry v10+ 使用函数式API）
       integrations: [

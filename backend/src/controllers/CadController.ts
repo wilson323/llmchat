@@ -7,7 +7,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { CadParserService } from '@/services/CadParserService';
 import { CadOperationService } from '@/services/CadOperationService';
-import { DashScopeService } from '@/services/DashScopeService';
 import { CAD_FUNCTION_TOOLS } from '@/utils/cadFunctionTools';
 import type {
   DxfEntity,

@@ -117,11 +117,11 @@ export async function initDB(): Promise<void> {
 
   // 优先使用环境变量直接配置，避免依赖配置文件
   const rawPg: PostgresConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_NAME || 'postgres',
+    host: process.env.DB_HOST ?? 'localhost',
+    port: process.env.DB_PORT ?? 5432,
+    user: process.env.DB_USER ?? 'postgres',
+    password: process.env.DB_PASSWORD ?? 'password',
+    database: process.env.DB_NAME ?? 'postgres',
     ssl: process.env.DB_SSL === 'true'
   };
 
@@ -273,6 +273,8 @@ export async function initDB(): Promise<void> {
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE,
+        email_verified BOOLEAN DEFAULT false,
         password_salt TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         role TEXT DEFAULT 'user',
@@ -289,6 +291,104 @@ export async function initDB(): Promise<void> {
     } catch (error) {
       // 列可能不存在，忽略错误
       logger.info('[initDB] 明文密码列不存在或已移除');
+    }
+
+    // Schema演进：添加缺失的列（兼容旧版本数据库）
+    try {
+      // 检查email列是否存在
+      const emailColumnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'email'
+      `);
+      
+      if (emailColumnCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN email TEXT;');
+        await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;');
+        logger.info('[initDB] ✅ 添加email列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] email列添加失败', { error });
+    }
+
+    try {
+      // 检查email_verified列是否存在
+      const emailVerifiedCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'email_verified'
+      `);
+      
+      if (emailVerifiedCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;');
+        logger.info('[initDB] ✅ 添加email_verified列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] email_verified列添加失败', { error });
+    }
+
+    try {
+      // 添加failed_login_attempts列
+      const failedLoginCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'failed_login_attempts'
+      `);
+      
+      if (failedLoginCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0;');
+        logger.info('[initDB] ✅ 添加failed_login_attempts列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] failed_login_attempts列添加失败', { error });
+    }
+
+    try {
+      // 添加locked_until列
+      const lockedUntilCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'locked_until'
+      `);
+      
+      if (lockedUntilCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;');
+        logger.info('[initDB] ✅ 添加locked_until列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] locked_until列添加失败', { error });
+    }
+
+    try {
+      // 添加last_login_at列
+      const lastLoginAtCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'last_login_at'
+      `);
+      
+      if (lastLoginAtCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMPTZ;');
+        logger.info('[initDB] ✅ 添加last_login_at列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] last_login_at列添加失败', { error });
+    }
+
+    try {
+      // 添加last_login_ip列
+      const lastLoginIpCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'last_login_ip'
+      `);
+      
+      if (lastLoginIpCheck.rows.length === 0) {
+        await client.query('ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(45);');
+        logger.info('[initDB] ✅ 添加last_login_ip列');
+      }
+    } catch (error) {
+      logger.warn('[initDB] last_login_ip列添加失败', { error });
     }
 
     await client.query(`

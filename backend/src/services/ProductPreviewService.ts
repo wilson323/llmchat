@@ -55,11 +55,11 @@ export class ProductPreviewService {
 
   constructor() {
     // 默认使用 Ark Doubao v3 端点，可通过 DOUBAO_IMAGE_API_URL 覆盖
-    this.endpoint = process.env.DOUBAO_IMAGE_API_URL || 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
+    this.endpoint = process.env.DOUBAO_IMAGE_API_URL ?? 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
     this.apiKey = process.env.DOUBAO_API_KEY;
-    this.model = process.env.DOUBAO_IMAGE_MODEL || 'doubao-seedream-4-0-250828';
-    this.size = process.env.DOUBAO_IMAGE_SIZE || '1024x1024';
-    this.stream = String(process.env.DOUBAO_IMAGE_STREAM || 'false').toLowerCase() === 'true';
+    this.model = process.env.DOUBAO_IMAGE_MODEL ?? 'doubao-seedream-4-0-250828';
+    this.size = process.env.DOUBAO_IMAGE_SIZE ?? '1024x1024';
+    this.stream = String(process.env.DOUBAO_IMAGE_STREAM ?? 'false').toLowerCase() === 'true';
   }
 
   /**

@@ -5,7 +5,38 @@
  * 🎯 目标：统一前后端类型定义，避免重复和不一致
  */
 
-// 重新导出共享类型，保持向后兼容
+// 导入类型用于本文件内部使用
+import type {
+  JsonObject,
+  JsonArray,
+  JsonValue,
+  UnknownValue,
+  DataPayload,
+  ApiRequestPayload,
+  ApiSuccessResponse,
+  ApiResponsePayload,
+  ExternalServiceResponse,
+  PaginationParams,
+  DateRangeParams,
+  SearchFilterParams,
+  QueryParams,
+  FastGPTEventPayload,
+  FastGPTReasoningData,
+  ReasoningStepUpdate,
+  ParsedReasoningUpdate,
+  FastGPTStreamEventType,
+  FastGPTEventMetadata,
+  FastGPTEvent,
+} from '@llmchat/shared-types';
+
+// 导入类和工具
+import {
+  DynamicTypeGuard,
+  DynamicDataConverter,
+  SafeAccess,
+} from '@llmchat/shared-types';
+
+// 重新导出所有类型
 export type {
   JsonObject,
   JsonArray,
@@ -27,10 +58,14 @@ export type {
   FastGPTStreamEventType,
   FastGPTEventMetadata,
   FastGPTEvent,
+};
+
+// 重新导出类和工具
+export {
   DynamicTypeGuard,
   DynamicDataConverter,
   SafeAccess,
-} from '@llmchat/shared-types';
+};
 
 // ============================================================================
 // 后端特有的扩展类型

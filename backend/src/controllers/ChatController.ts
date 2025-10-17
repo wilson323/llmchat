@@ -13,7 +13,6 @@ interface ProtectedRequest extends Request {
 interface ExtendedResponse extends Omit<Response, 'flushHeaders'> {
   flushHeaders(): void;
 }
-import axios from 'axios';
 import fs from 'fs/promises';
 import path from 'path';
 import Joi from 'joi';
@@ -562,7 +561,7 @@ export class ChatController {
         ...(voiceNote ? { voiceNote } : {}),
       };
 
-      const sessionId = normalizedOptions.chatId || value.chatId || generateId();
+      const sessionId = normalizedOptions.chatId ?? value.chatId ?? generateId();
       normalizedOptions.chatId = sessionId;
 
       const decoratedMessages = this.decorateMessages(

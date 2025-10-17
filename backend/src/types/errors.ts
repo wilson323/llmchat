@@ -35,7 +35,7 @@ export abstract class BaseError extends Error {
     context,
     userId,
     requestId,
-    _cause,
+    cause: _cause,
   }: {
     message: string;
     code: string;

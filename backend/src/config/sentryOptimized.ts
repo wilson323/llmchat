@@ -24,8 +24,8 @@ export function initSentryOptimized(app: Express): void {
 
   Sentry.init({
     dsn,
-    environment: process.env.NODE_ENV || 'development',
-    release: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV ?? 'development',
+    release: process.env.npm_package_version ?? '1.0.0',
     
     // ✅ Express集成 (Sentry v10 API - 自动集成，无需参数)
     integrations: [

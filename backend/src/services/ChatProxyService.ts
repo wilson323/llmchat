@@ -505,7 +505,7 @@ export class ChatProxyService {
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;
     this.httpClient = axios.create({
-      timeout: parseInt(process.env.REQUEST_TIMEOUT || '30000'),
+      timeout: parseInt(process.env.REQUEST_TIMEOUT ?? '30000'),
     });
 
     // 注册提供商适配器

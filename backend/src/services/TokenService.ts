@@ -45,9 +45,9 @@ export class TokenService {
       retryStrategy: (times: number) => number;
       lazyConnect: boolean;
     } = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379', 10),
-      db: parseInt(process.env.REDIS_DB || '0', 10),
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+      db: parseInt(process.env.REDIS_DB ?? '0', 10),
       keyPrefix: 'token:',
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
@@ -62,9 +62,9 @@ export class TokenService {
     }
 
     this.redis = new Redis(redisConfig);
-    this.secret = process.env.JWT_SECRET || this.generateSecret();
-    this.ttl = parseInt(process.env.TOKEN_TTL || '604800', 10); // 7 天
-    this.refreshTtl = parseInt(process.env.REFRESH_TOKEN_TTL || '2592000', 10); // 30 天
+    this.secret = process.env.JWT_SECRET ?? this.generateSecret();
+    this.ttl = parseInt(process.env.TOKEN_TTL ?? '604800', 10); // 7 天
+    this.refreshTtl = parseInt(process.env.REFRESH_TOKEN_TTL ?? '2592000', 10); // 30 天
     // ✅ 不再在构造函数中调用 getPool()，改为使用 getter 延迟获取
 
     // 监听 Redis 连接事件

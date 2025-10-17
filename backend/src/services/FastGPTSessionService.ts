@@ -80,7 +80,7 @@ export class FastGPTSessionService {
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;
     this.httpClient = axios.create({
-      timeout: parseInt(process.env.REQUEST_TIMEOUT || '30000', 10),
+      timeout: parseInt(process.env.REQUEST_TIMEOUT ?? '30000', 10),
     });
     this.eventService = new SessionEventService();
   }

@@ -114,7 +114,7 @@ export class DifySessionService {
 
   constructor() {
     this.httpClient = axios.create({
-      timeout: parseInt(process.env.REQUEST_TIMEOUT || '30000', 10),
+      timeout: parseInt(process.env.REQUEST_TIMEOUT ?? '30000', 10),
       headers: {
         'Content-Type': 'application/json',
       },

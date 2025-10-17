@@ -82,11 +82,11 @@ const auditLogTransport = new DailyRotateFile({
  * 创建 Logger 实例
  */
 export const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL ?? 'info',
   format: customFormat,
   defaultMeta: {
     service: 'llmchat-backend',
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV ?? 'development',
   },
   transports: [
     appLogTransport,
@@ -109,7 +109,7 @@ export const logger = winston.createLogger({
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: consoleFormat,
-    level: process.env.LOG_LEVEL || 'info', // ✅ 使用环境变量控制日志级别
+    level: process.env.LOG_LEVEL ?? 'info', // ✅ 使用环境变量控制日志级别
   }));
 }
 

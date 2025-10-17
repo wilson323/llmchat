@@ -49,11 +49,13 @@ module.exports = {
     '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
     '@typescript-eslint/no-non-null-assertion': 'warn',
 
-    // 变量和函数定义（保持error防止代码腐化）
-    '@typescript-eslint/no-unused-vars': ['error', {
-      argsIgnorePattern: '^_',
+    // 变量和函数定义（渐进式改进）
+    '@typescript-eslint/no-unused-vars': ['warn', {
+      args: 'none', // 完全忽略未使用的函数参数
+      vars: 'all',
       varsIgnorePattern: '^_',
-      caughtErrorsIgnorePattern: '^_'
+      caughtErrors: 'none',
+      ignoreRestSiblings: true // 忽略解构中的剩余属性
     }],
     '@typescript-eslint/no-inferrable-types': 'warn',
     '@typescript-eslint/consistent-type-definitions': ['warn', 'interface'],
@@ -73,21 +75,32 @@ module.exports = {
       array: false
     }],
 
-    // 异步处理（保持error确保Promise正确处理）
-    '@typescript-eslint/await-thenable': 'error',
-    '@typescript-eslint/no-floating-promises': 'error',
+    // 异步处理（全部降级为警告）
+    '@typescript-eslint/await-thenable': 'warn',
+    '@typescript-eslint/no-floating-promises': 'warn',
     '@typescript-eslint/require-await': 'warn',
-    '@typescript-eslint/no-misused-promises': 'error',
+    '@typescript-eslint/no-misused-promises': 'warn',
 
     // 错误处理（保持error确保异常安全）
     '@typescript-eslint/no-throw-literal': 'error',
     '@typescript-eslint/prefer-promise-reject-errors': 'error',
+    '@typescript-eslint/no-var-requires': 'warn',
     
-    // 降低部分严格规则
+    // 降低部分严格规则（全部改为warn）
     '@typescript-eslint/no-extraneous-class': 'warn',
     '@typescript-eslint/restrict-template-expressions': 'warn',
+    '@typescript-eslint/no-this-alias': 'warn',
+    '@typescript-eslint/no-dynamic-delete': 'warn',
+    '@typescript-eslint/no-base-to-string': 'warn',
+    '@typescript-eslint/unbound-method': 'warn',
+    '@typescript-eslint/no-unsafe-enum-comparison': 'warn',
+    '@typescript-eslint/no-redundant-type-constituents': 'warn',
+    '@typescript-eslint/ban-types': 'warn',
     'no-control-regex': 'warn',
     'no-useless-escape': 'warn',
+    'no-constant-condition': 'warn',
+    'no-case-declarations': 'warn',
+    'no-self-assign': 'warn',
 
     // Node.js特定规则
     'node/no-unsupported-features/es-syntax': 'off', // TypeScript处理

@@ -123,7 +123,7 @@ export class ConnectionPoolOptimizer {
 
     // 定期健康检查
     this.healthCheckInterval = setInterval(() => {
-      this.performHealthCheck();
+      void this.performHealthCheck();
     }, 30000); // 每30秒检查一次
 
     // 连接池事件监听

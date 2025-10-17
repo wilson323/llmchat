@@ -111,8 +111,8 @@ export class AgentConfigService {
 
   constructor(configPath?: string) {
     this.configPath =
-      configPath ||
-      process.env.AGENTS_CONFIG_PATH ||
+      configPath ??
+      process.env.AGENTS_CONFIG_PATH ??
       path.join(__dirname, '../../../config/agents.json');
   }
 

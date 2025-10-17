@@ -140,11 +140,11 @@ export class QueueManager extends EventEmitter {
   private static createDefaultConfig(): QueueManagerConfig {
     return {
       redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '3019'),
+        host: process.env.REDIS_HOST ?? 'localhost',
+        port: parseInt(process.env.REDIS_PORT ?? '3019'),
         ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
-        db: parseInt(process.env.REDIS_DB || '0'),
-        keyPrefix: process.env.REDIS_KEY_PREFIX || 'llmchat:queue:'
+        db: parseInt(process.env.REDIS_DB ?? '0'),
+        keyPrefix: process.env.REDIS_KEY_PREFIX ?? 'llmchat:queue:'
       },
       defaultConcurrency: 5,
       stalledInterval: 30000,

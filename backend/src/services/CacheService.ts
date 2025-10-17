@@ -55,7 +55,7 @@ export class CacheService {
     }
 
     const redisHost = process.env.REDIS_HOST;
-    const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+    const redisPort = parseInt(process.env.REDIS_PORT ?? '6379', 10);
     const redisPassword = process.env.REDIS_PASSWORD;
 
     if (!redisHost) {

@@ -10,7 +10,7 @@ import { MessagePriority } from '@/types/queue';
 
 // 聊天消息处理器
 const chatMessageProcessor: QueueProcessor = async (job) => {
-  const { method, url, body } = job.data as Record<string, unknown>;
+  const { method, url, body } = job.data;
 
   logger.info(`[QueueProcessor] Processing chat message: ${job.id}`, {
     method,
@@ -35,7 +35,7 @@ const chatMessageProcessor: QueueProcessor = async (job) => {
 
 // 邮件通知处理器
 const emailNotificationProcessor: QueueProcessor = async (job) => {
-  const { to, subject, template } = job.data as Record<string, unknown>;
+  const { to, subject, template } = job.data;
 
   logger.info(`[QueueProcessor] Processing email notification: ${job.id}`, {
     to,
@@ -62,7 +62,7 @@ const emailNotificationProcessor: QueueProcessor = async (job) => {
 
 // Webhook处理器
 const webhookProcessor: QueueProcessor = async (job) => {
-  const { url, method } = job.data as Record<string, unknown>;
+  const { url, method } = job.data;
 
   logger.info(`[QueueProcessor] Processing webhook: ${job.id}`, {
     url,
@@ -160,10 +160,10 @@ export async function initQueueService(): Promise<void> {
       db: number;
       keyPrefix: string;
     } = {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '3019'),
-      db: parseInt(process.env.REDIS_DB || '0'),
-      keyPrefix: process.env.REDIS_KEY_PREFIX || 'llmchat:queue:'
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: parseInt(process.env.REDIS_PORT ?? '3019'),
+      db: parseInt(process.env.REDIS_DB ?? '0'),
+      keyPrefix: process.env.REDIS_KEY_PREFIX ?? 'llmchat:queue:'
     };
 
     // 只有在密码存在时才添加

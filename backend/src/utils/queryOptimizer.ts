@@ -4,6 +4,7 @@
  * 提供查询优化建议、慢查询检测、索引推荐等功能
  */
 
+import crypto from 'crypto';
 import type { Pool, PoolClient } from 'pg';
 import logger from './logger';
 
@@ -162,7 +163,11 @@ export class DatabaseQueryOptimizer {
   /**
    * 获取常见查询模式
    */
-  private async getCommonQueryPatterns(client: PoolClient): Promise<any[]> {
+  private async getCommonQueryPatterns(_client: PoolClient): Promise<Array<{
+    tableName: string;
+    pattern: string;
+    reason: string;
+  }>> {
     const queries = [
       {
         tableName: 'chat_sessions',
@@ -271,7 +276,7 @@ export class DatabaseQueryOptimizer {
    */
   private generateQueryId(query: string): string {
     // 使用查询的哈希值作为ID
-    return require('crypto')
+    return crypto
       .createHash('md5')
       .update(query)
       .digest('hex')

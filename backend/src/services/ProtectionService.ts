@@ -75,7 +75,7 @@ export class ProtectionService {
     this.multiDimensionRateLimiter = new MultiDimensionRateLimiter({
       ip: {
         windowMs: 60000, // 1分钟
-        maxRequests: parseInt(process.env.RATE_LIMIT_POINTS || '100'),
+        maxRequests: parseInt(process.env.RATE_LIMIT_POINTS ?? '100'),
         keyGenerator: (req: Request) => req.ip || 'unknown',
       },
       user: {
@@ -431,24 +431,24 @@ export class ProtectionService {
   private mergeWithDefaultConfig(config?: Partial<ProtectionConfig>): ProtectionConfig {
     const defaultConfig: ProtectionConfig = {
       circuitBreaker: {
-        failureThreshold: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD || '5'),
-        successThreshold: parseInt(process.env.CIRCUIT_BREAKER_SUCCESS_THRESHOLD || '3'),
-        timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '10000'),
-        resetTimeout: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT || '30000'),
+        failureThreshold: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD ?? '5'),
+        successThreshold: parseInt(process.env.CIRCUIT_BREAKER_SUCCESS_THRESHOLD ?? '3'),
+        timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT ?? '10000'),
+        resetTimeout: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT ?? '30000'),
         monitoringEnabled: true,
       },
       rateLimit: {
         windowMs: 60000,
-        maxRequests: parseInt(process.env.RATE_LIMIT_POINTS || '100'),
+        maxRequests: parseInt(process.env.RATE_LIMIT_POINTS ?? '100'),
         enableCacheProtection: true,
         enableBurstProtection: true,
         burstLimit: 20,
       },
       retry: {
-        maxRetries: parseInt(process.env.RETRY_MAX_RETRIES || '3'),
-        baseDelay: parseInt(process.env.RETRY_BASE_DELAY || '1000'),
-        maxDelay: parseInt(process.env.RETRY_MAX_DELAY || '10000'),
-        backoffFactor: parseFloat(process.env.RETRY_BACKOFF_FACTOR || '2'),
+        maxRetries: parseInt(process.env.RETRY_MAX_RETRIES ?? '3'),
+        baseDelay: parseInt(process.env.RETRY_BASE_DELAY ?? '1000'),
+        maxDelay: parseInt(process.env.RETRY_MAX_DELAY ?? '10000'),
+        backoffFactor: parseFloat(process.env.RETRY_BACKOFF_FACTOR ?? '2'),
         enableJitter: process.env.RETRY_ENABLE_JITTER === 'true',
         retryableErrors: ['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'NETWORK_ERROR'],
         retryableStatusCodes: [408, 429, 500, 502, 503, 504],
@@ -461,8 +461,8 @@ export class ProtectionService {
           timestamp: new Date().toISOString(),
         },
         cacheFallbackResponse: true,
-        maxCacheSize: parseInt(process.env.FALLBACK_MAX_CACHE_SIZE || '100'),
-        cacheTTL: parseInt(process.env.FALLBACK_CACHE_TTL || '300000'),
+        maxCacheSize: parseInt(process.env.FALLBACK_MAX_CACHE_SIZE ?? '100'),
+        cacheTTL: parseInt(process.env.FALLBACK_CACHE_TTL ?? '300000'),
       },
       deduplication: {
         enabled: true,
@@ -471,9 +471,9 @@ export class ProtectionService {
       },
       monitoring: {
         enabled: process.env.MONITORING_ENABLED === 'true',
-        metricsInterval: parseInt(process.env.MONITORING_METRICS_INTERVAL || '60000'),
-        healthCheckInterval: parseInt(process.env.MONITORING_HEALTH_CHECK_INTERVAL || '60000'),
-        slaUpdateInterval: parseInt(process.env.MONITORING_SLA_UPDATE_INTERVAL || '60000'),
+        metricsInterval: parseInt(process.env.MONITORING_METRICS_INTERVAL ?? '60000'),
+        healthCheckInterval: parseInt(process.env.MONITORING_HEALTH_CHECK_INTERVAL ?? '60000'),
+        slaUpdateInterval: parseInt(process.env.MONITORING_SLA_UPDATE_INTERVAL ?? '60000'),
       },
       alerts: {
         consoleEnabled: process.env.ALERT_CONSOLE_ENABLED === 'true',
@@ -482,7 +482,7 @@ export class ProtectionService {
         emailEnabled: process.env.ALERT_EMAIL_ENABLED === 'true',
         emailConfig: {
           smtpHost: process.env.ALERT_EMAIL_SMTP_HOST,
-          smtpPort: parseInt(process.env.ALERT_EMAIL_SMTP_PORT || '587'),
+          smtpPort: parseInt(process.env.ALERT_EMAIL_SMTP_PORT ?? '587'),
           username: process.env.ALERT_EMAIL_USERNAME,
           password: process.env.ALERT_EMAIL_PASSWORD,
         },

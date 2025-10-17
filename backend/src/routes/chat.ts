@@ -8,6 +8,10 @@ const chatController = new ChatController();
 // POST /api/chat/completions
 router.post('/completions', chatController.chatCompletions);
 
+// 发送消息别名路由（向后兼容测试）
+// POST /api/chat/messages
+router.post('/messages', chatController.chatCompletions);
+
 // 聊天初始化路由
 router.get('/init', chatController.chatInit);
 

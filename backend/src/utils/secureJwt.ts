@@ -35,10 +35,10 @@ export class SecureJWT {
 
     return {
       secret,
-      algorithm: (process.env.JWT_ALGORITHM as jwt.Algorithm) || this.DEFAULT_ALGORITHM,
-      expiresIn: process.env.JWT_EXPIRES_IN || this.DEFAULT_EXPIRES_IN,
-      issuer: process.env.JWT_ISSUER || 'llmchat-backend',
-      audience: process.env.JWT_AUDIENCE || 'llmchat-frontend',
+      algorithm: (process.env.JWT_ALGORITHM as jwt.Algorithm) ?? this.DEFAULT_ALGORITHM,
+      expiresIn: process.env.JWT_EXPIRES_IN ?? this.DEFAULT_EXPIRES_IN,
+      issuer: process.env.JWT_ISSUER ?? 'llmchat-backend',
+      audience: process.env.JWT_AUDIENCE ?? 'llmchat-frontend',
     };
   }
 
