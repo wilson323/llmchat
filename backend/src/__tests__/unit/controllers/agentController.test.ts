@@ -1,0 +1,461 @@
+/**
+ * AgentController 单元测试
+ * 
+ * 测试范围：
+ * - 智能体列表获取
+ * - 智能体详情查询
+ * - 智能体配置更新
+ * - 智能体状态检查
+ * - 配置重载
+ * 
+ * 覆盖率目标：≥90%
+ */
+
+import { Request, Response } from 'express';
+import { AgentController } from '@/controllers/AgentController';
+import { AgentService } from '@/services/AgentService';
+import { generateToken } from '../../helpers/testUtils';
+
+// Mock AgentService
+jest.mock('@/services/AgentService');
+
+describe('AgentController', () => {
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let mockAgentService: jest.Mocked<AgentService>;
+  let agentController: AgentController;
+  
+  beforeEach(() => {
+    mockRequest = {
+      params: {},
+      query: {},
+      body: {},
+      user: undefined
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    };
+    
+    mockAgentService = new AgentService() as jest.Mocked<AgentService>;
+    agentController = new AgentController();
+    (agentController as any).agentService = mockAgentService;
+  });
+  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+  
+  describe('listAgents', () => {
+    it('should return all available agents', async () => {
+      // Arrange
+      const mockAgents = [
+        { id: 'agent-1', name: '助手1', status: 'active', description: '描述1' },
+        { id: 'agent-2', name: '助手2', status: 'active', description: '描述2' },
+        { id: 'agent-3', name: '助手3', status: 'inactive', description: '描述3' }
+      ];
+      
+      mockAgentService.listAgents = jest.fn().mockResolvedValue(mockAgents);
+      
+      // Act
+      await agentController.listAgents(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.listAgents).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: expect.objectContaining({
+            agents: mockAgents,
+            total: 3
+          })
+        })
+      );
+    });
+    
+    it('should filter by status', async () => {
+      // Arrange
+      mockRequest.query = { status: 'active' };
+      
+      const activeAgents = [
+        { id: 'agent-1', name: '助手1', status: 'active' },
+        { id: 'agent-2', name: '助手2', status: 'active' }
+      ];
+      
+      mockAgentService.listAgents = jest.fn().mockResolvedValue(activeAgents);
+      
+      // Act
+      await agentController.listAgents(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.listAgents).toHaveBeenCalledWith({ status: 'active' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            agents: activeAgents
+          })
+        })
+      );
+    });
+    
+    it('should include metrics when requested', async () => {
+      // Arrange
+      mockRequest.query = { includeMetrics: 'true' };
+      
+      const agentsWithMetrics = [
+        {
+          id: 'agent-1',
+          name: '助手1',
+          metrics: {
+            totalMessages: 100,
+            avgResponseTime: 1500
+          }
+        }
+      ];
+      
+      mockAgentService.listAgents = jest.fn().mockResolvedValue(agentsWithMetrics);
+      
+      // Act
+      await agentController.listAgents(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      const response = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(response.data.agents[0]).toHaveProperty('metrics');
+    });
+  });
+  
+  describe('getAgent', () => {
+    it('should return agent details', async () => {
+      // Arrange
+      const agentId = 'agent-123';
+      mockRequest.params = { id: agentId };
+      
+      const agentDetails = {
+        id: agentId,
+        name: '测试助手',
+        description: '测试用智能体',
+        status: 'active',
+        config: {
+          model: 'FastAI-4k',
+          temperature: 0.7
+        }
+      };
+      
+      mockAgentService.getAgent = jest.fn().mockResolvedValue(agentDetails);
+      
+      // Act
+      await agentController.getAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.getAgent).toHaveBeenCalledWith(agentId);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: agentDetails
+        })
+      );
+    });
+    
+    it('should return 404 for non-existent agent', async () => {
+      // Arrange
+      mockRequest.params = { id: 'non-existent' };
+      mockAgentService.getAgent = jest.fn().mockRejectedValue(
+        new Error('Agent not found')
+      );
+      
+      // Act
+      await agentController.getAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'AGENT_NOT_FOUND'
+        })
+      );
+    });
+    
+    it('should include configuration details', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      
+      const agentWithConfig = {
+        id: 'agent-123',
+        name: '助手',
+        config: {
+          model: 'FastAI-4k',
+          temperature: 0.7,
+          maxTokens: 4000,
+          systemPrompt: '你是一个有用的助手'
+        }
+      };
+      
+      mockAgentService.getAgent = jest.fn().mockResolvedValue(agentWithConfig);
+      
+      // Act
+      await agentController.getAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      const response = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(response.data.config).toHaveProperty('model');
+      expect(response.data.config).toHaveProperty('temperature');
+    });
+  });
+  
+  describe('updateAgent', () => {
+    it('should update agent configuration', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.body = {
+        name: '更新后的助手',
+        description: '新描述',
+        config: {
+          temperature: 0.9
+        }
+      };
+      
+      const updatedAgent = {
+        id: 'agent-123',
+        name: '更新后的助手',
+        description: '新描述'
+      };
+      
+      mockAgentService.updateAgent = jest.fn().mockResolvedValue(updatedAgent);
+      
+      // Act
+      await agentController.updateAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.updateAgent).toHaveBeenCalledWith(
+        'agent-123',
+        expect.objectContaining({
+          name: '更新后的助手'
+        })
+      );
+      
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+    
+    it('should validate configuration before update', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      mockRequest.body = {
+        config: {
+          temperature: 2.5 // 无效值（应该0-2）
+        }
+      };
+      
+      mockAgentService.updateAgent = jest.fn().mockRejectedValue(
+        new Error('Invalid temperature value')
+      );
+      
+      // Act
+      await agentController.updateAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'VALIDATION_ERROR'
+        })
+      );
+    });
+    
+    it('should require admin role', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      mockRequest.user = { userId: 'user-123', isAdmin: false };
+      mockRequest.body = { name: 'Updated' };
+      
+      // Act
+      await agentController.updateAgent(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+    });
+  });
+  
+  describe('checkStatus', () => {
+    it('should return agent status', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      
+      const statusInfo = {
+        id: 'agent-123',
+        status: 'active',
+        available: true,
+        lastCheck: new Date(),
+        responseTime: 150
+      };
+      
+      mockAgentService.checkStatus = jest.fn().mockResolvedValue(statusInfo);
+      
+      // Act
+      await agentController.checkStatus(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.checkStatus).toHaveBeenCalledWith('agent-123');
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: statusInfo
+        })
+      );
+    });
+    
+    it('should detect unavailable agents', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      
+      mockAgentService.checkStatus = jest.fn().mockResolvedValue({
+        id: 'agent-123',
+        status: 'error',
+        available: false,
+        error: 'Connection timeout'
+      });
+      
+      // Act
+      await agentController.checkStatus(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      const response = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(response.data.available).toBe(false);
+      expect(response.data).toHaveProperty('error');
+    });
+  });
+  
+  describe('reloadConfig', () => {
+    it('should reload agent configuration', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      
+      mockAgentService.reloadConfig = jest.fn().mockResolvedValue({
+        success: true,
+        agentsLoaded: 5,
+        timestamp: new Date()
+      });
+      
+      // Act
+      await agentController.reloadConfig(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockAgentService.reloadConfig).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'SUCCESS',
+          data: expect.objectContaining({
+            agentsLoaded: 5
+          })
+        })
+      );
+    });
+    
+    it('should require admin permission', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'user-123', isAdmin: false };
+      
+      // Act
+      await agentController.reloadConfig(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockAgentService.reloadConfig).not.toHaveBeenCalled();
+    });
+    
+    it('should handle reload failures', async () => {
+      // Arrange
+      mockRequest.user = { userId: 'admin-123', isAdmin: true };
+      
+      mockAgentService.reloadConfig = jest.fn().mockRejectedValue(
+        new Error('Config file not found')
+      );
+      
+      // Act
+      await agentController.reloadConfig(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+  });
+  
+  describe('getMetrics', () => {
+    it('should return agent metrics', async () => {
+      // Arrange
+      mockRequest.params = { id: 'agent-123' };
+      
+      const metrics = {
+        totalMessages: 1000,
+        avgResponseTime: 1500,
+        errorRate: 0.02,
+        uptime: 0.998,
+        lastUsed: new Date()
+      };
+      
+      mockAgentService.getMetrics = jest.fn().mockResolvedValue(metrics);
+      
+      // Act
+      await agentController.getMetrics(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+      
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: metrics
+        })
+      );
+    });
+  });
+});
+
