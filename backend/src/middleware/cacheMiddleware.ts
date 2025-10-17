@@ -456,7 +456,7 @@ class CacheMiddlewareManager {
       res.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
 
       // 调用原始end方法
-      return originalEnd.apply(res, args as any);
+      return originalEnd.apply(res, endArgs as any);
     };
 
     next();

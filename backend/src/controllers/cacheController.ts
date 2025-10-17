@@ -6,7 +6,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import logger from '@/utils/logger';
-import type { CacheStrategy } from '@/services/RedisCacheManager';
+import type { CacheStrategy, RedisCacheStats } from '@/services/RedisCacheManager';
 import { RedisCacheManager } from '@/services/RedisCacheManager';
 import type {
   CacheMiddlewareStats

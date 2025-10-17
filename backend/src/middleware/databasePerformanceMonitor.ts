@@ -395,7 +395,7 @@ export function databasePerformanceMonitorMiddleware(
       duration: `${duration.toFixed(2)}ms`,
     });
 
-    return originalEnd.apply(this, args as any);
+    return originalEnd.apply(this, endArgs as any);
   };
 
   next();

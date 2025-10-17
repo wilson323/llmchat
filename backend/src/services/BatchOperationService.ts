@@ -23,13 +23,15 @@ export interface BatchOperation {
 export interface BatchOperationResult {
   successful: Array<{
     id?: string;
-    result?: any;
-    index: number;
+    type?: string;
+    data?: unknown;
+    options?: QueueOptions;
+    updates?: unknown;
   }>;
   failed: Array<{
     index: number;
     error: string;
-    data: any;
+    data: unknown;
   }>;
   total: number;
   duration: number;
@@ -37,7 +39,7 @@ export interface BatchOperationResult {
 
 export interface BatchAddOperation {
   type: string;
-  data: any;
+  data: unknown;
   options?: QueueOptions;
   priority?: number;
   delay?: number;
@@ -80,8 +82,8 @@ export class BatchOperationService {
     operations: BatchAddOperation[]
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
-    const successful: Array<{ id?: string; result?: any; index: number }> = [];
-    const failed: Array<{ index: number; error: string; data: any }> = [];
+    const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
+    const failed: Array<{ index: number; error: string; data: unknown }> = [];
 
     try {
       if (this.enablePipelining) {
@@ -91,7 +93,7 @@ export class BatchOperationService {
         // 逐个添加
         await this.batchAddSequential(queueName, operations, successful, failed);
       }
-    } catch (error: any) {
+    } catch (error) {
       logger.error(`BatchOperationService: Error in batch add jobs for queue ${queueName}:`, error);
       failed.push({
         index: 0,
@@ -124,8 +126,8 @@ export class BatchOperationService {
   private async batchAddWithPipeline(
     queueName: string,
     operations: BatchAddOperation[],
-    successful: Array<{ id?: string; result?: any; index: number }>,
-    failed: Array<{ index: number; error: string; data: any }>
+    successful: Array<{ id?: string; result?: unknown; index: number }>,
+    failed: Array<{ index: number; error: string; data: unknown }>
   ): Promise<void> {
     const redis = await this.connectionPool.acquire();
     try {
@@ -237,8 +239,8 @@ export class BatchOperationService {
   private async batchAddSequential(
     queueName: string,
     operations: BatchAddOperation[],
-    successful: Array<{ id?: string; result?: any; index: number }>,
-    failed: Array<{ index: number; error: string; data: any }>
+    successful: Array<{ id?: string; result?: unknown; index: number }>,
+    failed: Array<{ index: number; error: string; data: unknown }>
   ): Promise<void> {
     // 这里可以调用QueueManager的addJob方法
     // 为了简化，这里只记录日志
@@ -253,8 +255,8 @@ export class BatchOperationService {
     jobIds: string[]
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
-    const successful: Array<{ id?: string; result?: any; index: number }> = [];
-    const failed: Array<{ index: number; error: string; data: any }> = [];
+    const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
+    const failed: Array<{ index: number; error: string; data: unknown }> = [];
 
     try {
       const redis = await this.connectionPool.acquire();
@@ -318,8 +320,8 @@ export class BatchOperationService {
     options: { resetAttempts?: boolean } = {}
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
-    const successful: Array<{ id?: string; result?: any; index: number }> = [];
-    const failed: Array<{ index: number; error: string; data: any }> = [];
+    const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
+    const failed: Array<{ index: number; error: string; data: unknown }> = [];
 
     try {
       const redis = await this.connectionPool.acquire();

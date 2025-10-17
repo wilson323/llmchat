@@ -194,7 +194,7 @@ export class FastGPTSessionService {
           params: options.params || {},
           headers,
         });
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         // 若 404，尝试 /v1 回退
         const status = error?.response?.status;
@@ -637,7 +637,7 @@ export class FastGPTSessionService {
         hasNext: (params?.page || 1) * (params?.pageSize || 20) < (rawData?.total || sessions.length),
         hasPrev: (params?.page || 1) > 1,
       };
-    } catch (error: any) {
+    } catch (error) {
       // 如果增强API不可用，回退到基础API并应用本地处理
       logger.warn('增强版会话API不可用，使用基础API + 本地处理', { error });
       const allSessions = await this.listHistories(agentId, { page: 1, pageSize: 1000 });
@@ -804,7 +804,7 @@ export class FastGPTSessionService {
         }
 
         results.success++;
-      } catch (error: any) {
+      } catch (error) {
         results.failed++;
         const errorMsg = `会话 ${sessionId} 操作失败: ${getErrorMessage(error)}`;
         results.errors.push(errorMsg);
@@ -930,7 +930,7 @@ export class FastGPTSessionService {
           // 这里需要获取会话详情，但需要知道agentId
           // 暂时跳过，实际实现时需要传入agentId
           logger.debug('获取会话的详细消息', { chatId: session.chatId });
-        } catch (error: any) {
+        } catch (error) {
           logger.warn('获取会话消息失败', { chatId: session.chatId, error });
         }
       }
@@ -1025,7 +1025,7 @@ export class FastGPTSessionService {
         metadata,
         context,
       );
-    } catch (error: any) {
+    } catch (error) {
       logger.error('记录会话事件失败', { error });
       // 事件记录失败不应该影响主要功能
     }
@@ -1040,7 +1040,7 @@ export class FastGPTSessionService {
   ): Promise<PaginatedResponse<SessionEvent>> {
     try {
       return await this.eventService.queryEvents(agentId, params);
-    } catch (error: any) {
+    } catch (error) {
       logger.error('查询会话事件失败', { error });
       // 返回空结果而不是抛出错误
       return {
