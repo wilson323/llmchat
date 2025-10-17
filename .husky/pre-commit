@@ -1,7 +1,16 @@
 ﻿#!/bin/sh
 
 # Windows兼容pre-commit hook
-echo "Pre-commit checks running..."
+echo "🔍 Running pre-commit quality checks..."
 
-# 允许所有提交通过
+# 运行lint-staged检查所有staged文件
+npx lint-staged
+
+# 如果lint-staged失败，阻止提交
+if [ $? -ne 0 ]; then
+  echo "❌ Pre-commit checks failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
 exit 0
