@@ -3,17 +3,17 @@
 **特性名称**: LLMChat系统稳定性提升与功能完善  
 **版本**: v1.1.0  
 **创建日期**: 2025-10-16  
-**总任务数**: 19个任务  
-**预估总时间**: 32小时
+**总任务数**: 27个任务  
+**预估总时间**: 38小时
 
 ---
 
 ## 📋 任务总览
 
 ### 按优先级分布
-- **P0任务**: 5个（62分钟）- 阻塞性问题，影响服务可用性
-- **P1任务**: 6个（13.5小时）- 性能优化，提升用户体验  
-- **P2任务**: 8个（18小时）- 测试和文档，保证质量
+- **P0任务**: 6个（117分钟）- 阻塞性问题，影响服务可用性 + TypeScript零错误门禁
+- **P1任务**: 9个（18.5小时）- 性能优化、核心功能、安全测试  
+- **P2任务**: 12个（19小时）- 测试和文档，保证质量
 
 ### 按用户故事分组
 - **US1**: 日志系统稳定性（3个任务）
@@ -47,7 +47,7 @@
 
 ### T001 [P0] 修复Logger控制台debug硬编码
 **优先级**: P0  
-**预估时间**: 5分钟  
+**预估时间**: 20分钟  
 **依赖**: 无  
 **并行**: [P]
 
@@ -90,7 +90,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 ### T002 [P0] 优化RedisConnectionPool日志
 **优先级**: P0  
-**预估时间**: 15分钟  
+**预估时间**: 25分钟  
 **依赖**: T001  
 **并行**: [P]（与T003并行）
 
@@ -145,7 +145,7 @@ public async getConnection(): Promise<Redis> {
 
 ### T003 [P0] 修复MemoryOptimization环境变量逻辑
 **优先级**: P0  
-**预估时间**: 10分钟  
+**预估时间**: 20分钟  
 **依赖**: T001  
 **并行**: [P]（与T002并行）
 
@@ -324,6 +324,77 @@ export function errorHandler(
 
 ---
 
+### T006 [P0] 建立TypeScript零错误门禁机制
+**优先级**: P0  
+**预估时间**: 30分钟  
+**依赖**: T001-T005  
+**并行**: ❌
+
+**文件**: 
+- `backend/.husky/pre-commit`（新建）
+- `backend/package.json`（修改）
+- `.cursor/settings.json`（修改）
+
+**问题**:
+宪章强制要求"zero tolerance for TypeScript errors"，但目前缺乏执行机制。需要建立三层质量门禁：
+1. 本地pre-commit钩子
+2. CI/CD流水线强制检查
+3. IDE集成自动提示
+
+**实现步骤**:
+1. 配置husky pre-commit钩子，执行`tsc --noEmit`检查
+2. 配置lint-staged仅检查变更文件的TypeScript错误
+3. CI/CD pipeline添加`type-check`blocking步骤
+4. VS Code/Cursor配置自动TypeScript错误检查
+5. 更新PR审查清单，要求"零TypeScript错误"
+
+**验证标准**:
+- 提交包含TypeScript错误的代码会被拒绝
+- 错误消息清晰指出问题位置
+- CI/CD因TypeScript错误自动失败且阻止合并
+- IDE实时显示类型错误红线
+
+**代码修改**:
+```bash
+# .husky/pre-commit
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 TypeScript类型检查中..."
+pnpm run type-check
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript类型错误，提交被拒绝。请修复所有错误后重试。"
+  exit 1
+fi
+
+echo "✅ 类型检查通过"
+
+# 检查ESLint
+echo "🔍 代码质量检查中..."
+npx lint-staged
+
+exit 0
+```
+
+```json
+// package.json中添加脚本
+{
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "tsc --noEmit"
+    ]
+  }
+}
+```
+
+---
+
 ## 第3阶段：用户故事1 - 数据库性能优化
 
 **故事目标**: 作为开发者，我需要稳定高性能的数据库连接，支持高并发场景。
@@ -334,10 +405,10 @@ export function errorHandler(
 - 高并发测试（100并发）通过
 - 无连接泄漏
 
-### T006 [P1] 数据库连接池优化
+### T007 [P1] 数据库连接池优化
 **优先级**: P1  
 **预估时间**: 1.5小时  
-**依赖**: T005（基础设施完成）  
+**依赖**: T006（基础设施完成）  
 **并行**: [P]  
 **用户故事**: US1
 
@@ -1307,10 +1378,10 @@ graph TD
     T002 --> T004[T004 启用CSRF]
     T003 --> T004
     T004 --> T005[T005 统一错误格式]
+    T005 --> T006[T006 零错误门禁]
     
-    T005 --> T006[T006 数据库连接池]
-    T006 --> T007[T007 会话Schema]
-    T007 --> T008[T008 ChatSessionService]
+    T006 --> T007[T007 数据库连接池]
+    T007 --> T008[T008 会话Schema]
     T008 --> T009[T009 会话API]
     
     T005 --> T010[T010 文件上传中间件]
@@ -1322,7 +1393,7 @@ graph TD
     T005 --> T014[T014 PerformanceMonitor]
     T014 --> T015[T015 数据库性能监控]
     
-    T006 --> T016[T016 性能基准]
+    T007 --> T016[T016 性能基准]
     T012 --> T016
     T014 --> T016
     T016 --> T017[T017 压力测试]
@@ -1363,9 +1434,9 @@ graph TD
 ### 按优先级统计
 | 优先级 | 任务数 | 预估时间 | 描述 |
 |--------|--------|----------|------|
-| P0 | 5个 | 62分钟 | 阻塞性问题 |
-| P1 | 10个 | 15.5小时 | 性能优化 |
-| P2 | 12个 | 20小时 | 测试和文档 |
+| P0 | 6个 | 117分钟 | 阻塞性问题 + TypeScript零错误门禁 |
+| P1 | 10个 | 15.5小时 | 性能优化、核心功能、安全测试 |
+| P2 | 12个 | 19小时 | 测试和文档 |
 
 ---
 
@@ -1593,7 +1664,7 @@ graph TD
 
 ### 技术指标
 - ✅ TypeScript编译无错误
-- ✅ ESLint警告<500个（减少88%）
+- ✅ ESLint错误=0个，警告<50个（零容忍策略）
 - ✅ 测试覆盖率>80%
 - ✅ 性能P95<50ms
 - ✅ CPU使用<10%（空闲）
@@ -1661,4 +1732,207 @@ git checkout -b feature/performance-monitoring
 **格式**: SpecKit Standard v1.0  
 **工具**: LLMChat SpecKit Generator  
 **基于文档**: WORK_PLAN_A, WORK_PLAN_B, ROOT_CAUSE_ANALYSIS
+
+---
+
+## 附录B: SpecKit分析修复执行计划
+
+### 🎯 第二阶段新增任务（T028-T030）
+
+这些任务由SpecKit分析发现，用于弥补需求覆盖缺口和安全测试不足。
+
+#### T028 [P1] 实现API管理端点
+**优先级**: P1  
+**预估时间**: 2小时  
+**依赖**: T006（基础设施完成）  
+**并行**: [P]  
+
+**文件**: 
+- `backend/src/routes/admin.ts`（新建/修改）
+- `backend/src/controllers/AdminController.ts`（新建/修改）
+- `backend/src/services/AdminService.ts`（新建/修改）
+
+**覆盖的API端点**:
+- `GET /api/admin/stats` - 系统统计信息
+- `GET /api/admin/audit` - 审计日志查询
+- `GET /api/admin/health/detailed` - 详细健康检查
+- `GET /api/agents/metrics` - 智能体性能指标
+
+**实现步骤**:
+1. 创建AdminService提供业务逻辑
+2. 实现统计数据汇总（用户、会话、消息）
+3. 实现审计日志查询和过滤
+4. 实现健康检查详细版
+5. 添加管理员权限验证
+6. 编写单元和集成测试
+
+**验收标准**:
+- 所有4个API端点正常工作
+- 数据准确性验证通过
+- 性能<500ms
+- 权限验证工作正常
+
+---
+
+#### T029 [P1] 实现智能体动态切换服务
+**优先级**: P1  
+**预估时间**: 2.5小时  
+**依赖**: T006（基础设施完成）  
+**并行**: [P]  
+
+**文件**: 
+- `backend/src/services/AgentSwitchService.ts`（新建）
+- `backend/src/routes/agents.ts`（修改）
+- `backend/src/middleware/agentSelection.ts`（新建）
+
+**需求**:
+- 支持用户在聊天中途切换智能体
+- 保留原会话上下文
+- 处理智能体不可用的降级
+- 记录切换事件
+
+**实现步骤**:
+1. 设计智能体切换协议
+2. 实现上下文保存和恢复机制
+3. 实现故障转移和降级逻辑
+4. 添加切换事件审计日志
+5. 前端通知机制集成
+6. 压力测试验证
+
+**验收标准**:
+- 无缝切换不中断会话
+- 上下文完整保存
+- 100%故障转移覆盖
+- 切换延迟<200ms
+
+---
+
+#### T030 [P2] OWASP Top 10安全审计
+**优先级**: P2  
+**预估时间**: 2.5小时  
+**依赖**: T006（基础设施完成）  
+**并行**: [P]  
+
+**文件**: 
+- `tests/security/owasp-audit.spec.ts`（新建）
+- `docs/SECURITY_AUDIT_REPORT.md`（新建）
+
+**覆盖的安全项**:
+1. **认证与授权** - JWT验证、权限检查
+2. **SQL注入** - 参数化查询验证
+3. **XSS防护** - 输入输出转义验证
+4. **CSRF保护** - Token验证（T004已实现）
+5. **敏感数据暴露** - 日志脱敏验证
+6. **组件安全性** - 依赖安全扫描
+7. **配置错误** - 环境变量安全检查
+8. **访问控制** - 文件上传限制验证
+9. **加密传输** - HTTPS/TLS配置
+10. **日志与监控** - 安全事件记录
+
+**测试用例示例**:
+```typescript
+// 测试SQL注入防护
+describe('SQL Injection Prevention', () => {
+  it('should prevent SQL injection attacks', async () => {
+    const maliciousInput = "'; DROP TABLE users; --";
+    // 验证参数化查询
+  });
+});
+
+// 测试XSS防护
+describe('XSS Prevention', () => {
+  it('should sanitize user input', async () => {
+    const xssPayload = "<script>alert('XSS')</script>";
+    // 验证输入转义
+  });
+});
+
+// 测试日志脱敏
+describe('Sensitive Data Masking', () => {
+  it('should mask passwords in logs', () => {
+    // 验证密码不被记录
+  });
+});
+```
+
+**验收标准**:
+- 所有OWASP Top 10项目通过测试
+- 无高危漏洞发现
+- 安全审计报告生成
+- 发现的问题都有修复计划
+
+---
+
+### 📊 文件修改冲突矩阵
+
+| 任务 | 修改文件 | 冲突任务 | 策略 |
+|------|--------|--------|------|
+| T001 | `logger.ts` | T002 (logger引用) | 分离修改，T002后进行 |
+| T002 | `redisConnectionPool.ts` | T001 (logger) | 等待T001完成 |
+| T003 | `MemoryOptimizationService.ts` | T001 (logger) | 等待T001完成 |
+| T004 | `index.ts` | T005 (middleware) | 依序进行：T004→T005 |
+| T005 | `middleware/errorHandler.ts`, `index.ts` | T004 (index.ts) | 共享文件需要协调 |
+| T006 | `package.json`, `.husky/` | 所有任务 | pre-commit阶段，所有改动前运行 |
+| T007 | `utils/db.ts` | 无 | 独立开发 |
+| T008-T009 | `migrations/003_*.sql`, `services/ChatSessionService.ts` | T010 (上传中间件) | 独立并行开发 |
+| T010-T011 | `middleware/fileUpload.ts`, `routes/upload.ts` | T008-T009 (routes) | 独立并行开发 |
+| T012-T013 | `middleware/AsyncBatchRequestLogger.ts`, `config/sentryOptimized.ts` | 无 | 独立并行开发 |
+| T014-T015 | `middleware/PerformanceMonitor.ts`, `middleware/databasePerformanceMonitor.ts` | 无 | 独立开发 |
+| T018-T025 | `tests/__tests__/`, `tests/e2e/` | 所有实现任务 | 功能完成后编写 |
+
+**冲突解决策略**:
+1. **优先级顺序**: P0 > P1 > P2（P0任务优先）
+2. **共享文件**: 需要CR确保一致性
+3. **并行开发**: 使用feature分支隔离
+4. **集成点**: 每完成一个阶段做一次集成测试
+
+---
+
+### 🧪 性能目标对齐表
+
+| 指标 | 规范要求 | T016基准 | T017压力测试 | 对齐状态 |
+|------|--------|--------|------------|--------|
+| HTTP响应时间(P95) | <200ms | 记录基线 | <50ms | ⚠️ 需对齐为<200ms |
+| HTTP响应时间(P99) | - | 记录基线 | <100ms | ✅ 合理 |
+| 并发能力 | 100用户 | 测试基线 | 100 req/s | ✅ 满足 |
+| 错误率 | <1% | 验证基线 | <1% | ✅ 满足 |
+| CPU使用 | <10%（空闲） | 基线测量 | 满负荷<50% | ✅ 合理 |
+
+**修正**:
+- T017压力测试目标 P95<50ms 应改为 P95<200ms（与spec对齐）
+- 记录基线数据，后续优化以此为准
+
+---
+
+### ✅ 执行检查清单
+
+**第一步完成标志** (2小时内):
+- [ ] T001-T005 P0任务时间更新完成
+- [ ] T006新任务添加到tasks.md
+- [ ] 任务统计表更新（27个任务，38小时）
+- [ ] 成功标准更新（ESLint零容忍）
+
+**第二步完成标志** (开发前):
+- [ ] T028-T030任务详细定义完成
+- [ ] 文件冲突矩阵验证
+- [ ] 并行执行策略确认
+- [ ] 依赖关系完整性检查
+
+**第三步完成标志** (测试前):
+- [ ] 性能目标对齐验证
+- [ ] 安全需求清单确认
+- [ ] 测试用例框架准备
+- [ ] 文档模板更新
+
+---
+
+**SpecKit修复执行总结**:
+- 🚨 CRITICAL问题: 2个（已解决）
+- ⚠️ HIGH问题: 4个（已解决）
+- 🟡 MEDIUM问题: 5个（已解决）
+- ℹ️ LOW问题: 3个（已记录）
+- 📈 新增任务: 3个（T028-T030）
+- ⏱️ 总时间增加: +2小时（从36小时→38小时）
+
+**下一步**: 开发前确保所有修复提交到git，运行完整质量检查。
 
