@@ -70,14 +70,18 @@ jobs:
         run: cd backend && pnpm run test:ci
         continue-on-error: true
       
+      # 上传覆盖率到Codecov（可选）
+      # 注意：需要在GitHub Settings配置CODECOV_TOKEN
+      # 如未配置，此步骤会优雅跳过（continue-on-error: true）
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           files: ./backend/coverage/lcov.info
           flags: backend,unittests
           name: backend-coverage
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN || '' }}
       
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
