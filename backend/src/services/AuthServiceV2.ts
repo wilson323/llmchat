@@ -610,6 +610,13 @@ export class AuthServiceV2 {
     }
   }
 
+  /**
+   * 验证密码强度（公共方法，用于测试）
+   */
+  validatePassword(password: string): void {
+    this.validatePasswordStrength(password);
+  }
+
   private validatePasswordStrength(password: string): void {
     if (password.length < 8) {
       throw new ValidationError({

@@ -32,9 +32,8 @@ describe('AuthController', () => {
       body: {},
       params: {},
       query: {},
-      headers: {},
-      user: undefined
-    };
+      headers: {}
+    } as Partial<Request>;
     
     // 创建Mock Response
     mockResponse = {

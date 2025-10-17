@@ -25,6 +25,7 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
+    "types": ["node", "jest"],
     "baseUrl": "./src",
 
     "paths": {
@@ -41,7 +42,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "../frontend/**/*",
+    "**/*.skip.ts"
   ]
 }

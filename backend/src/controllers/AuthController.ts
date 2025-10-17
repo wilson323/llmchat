@@ -280,4 +280,49 @@ export class AuthController { // [L10]
       });
     }
   }
+
+  /**
+   * 用户注册
+   * 路由: POST /api/auth/register
+   * 参数: req.body { username: string, email: string, password: string }
+   * 返回: 201 { code, message, data: { user }, timestamp }
+   */
+  async register(req: Request, res: Response): Promise<void> {
+    try {
+      const { username, email, password } = req.body as { 
+        username?: string; 
+        email?: string; 
+        password?: string; 
+      };
+
+      if (!username || !email || !password) {
+        res.status(400).json({
+          code: 'INVALID_INPUT',
+          message: '用户名、邮箱和密码不能为空',
+          data: null,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // 调用register方法（需要在AuthServiceV2中实现）
+      const user = await this.authService.register(username, email, password);
+
+      res.status(201).json({
+        code: 'SUCCESS',
+        message: '注册成功',
+        data: { user },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      logger.error('用户注册失败', { error });
+      const statusCode = error?.code === 'USER_ALREADY_EXISTS' ? 409 : 500;
+      res.status(statusCode).json({
+        code: error?.code ?? 'REGISTER_ERROR',
+        message: error?.message ?? '注册失败',
+        data: null,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
 } // [L201]

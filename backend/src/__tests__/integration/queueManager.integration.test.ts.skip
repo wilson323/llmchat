@@ -29,8 +29,8 @@ function createQueueConfig(name: string, partial: Partial<QueueConfig> = {}): Qu
     stalledInterval: partial.stalledInterval || 30000,
     maxStalledCount: partial.maxStalledCount || 3,
     delayOnFail: partial.delayOnFail !== undefined ? partial.delayOnFail : false,
-    deadLetterQueue: partial.deadLetterQueue,
-    paused: partial.paused,
+    deadLetterQueue: partial.deadLetterQueue || undefined,
+    paused: partial.paused || undefined,
     visibilityTimeout: partial.visibilityTimeout || 30000,
   };
 }

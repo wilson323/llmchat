@@ -14,6 +14,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AgentController } from '@/controllers/AgentController';
 import { AgentService } from '@/services/AgentService';
+import type { AgentConfig } from '@/types/agent';
 import { generateToken } from '../../helpers/testUtils';
 
 // Mock AgentService
@@ -30,9 +31,8 @@ describe('AgentController', () => {
     mockRequest = {
       params: {},
       query: {},
-      body: {},
-      user: undefined
-    };
+      body: {}
+    } as Partial<Request>;
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),

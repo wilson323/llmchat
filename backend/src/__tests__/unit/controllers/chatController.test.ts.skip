@@ -32,9 +32,8 @@ describe('ChatController', () => {
       body: {},
       params: {},
       query: {},
-      headers: {},
-      user: undefined
-    };
+      headers: {}
+    } as Partial<Request>;
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),

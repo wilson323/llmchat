@@ -10,7 +10,7 @@
  * 覆盖率目标：≥90%
  */
 
-import { AgentConfigService } from '@/services/AgentConfigService';
+import { AgentService } from '@/services/AgentService';
 import { createMockFastGPTClient } from '../../mocks/fastgpt.mock';
 import { createMockRedisClient } from '../../mocks/redis.mock';
 
@@ -18,7 +18,7 @@ jest.mock('@/clients/FastGPTClient');
 jest.mock('ioredis');
 
 describe('AgentService', () => {
-  let agentService: AgentConfigService;
+  let agentService: AgentService;
   let mockFastGPT: any;
   let mockRedis: any;
   
@@ -26,7 +26,7 @@ describe('AgentService', () => {
     mockFastGPT = createMockFastGPTClient();
     mockRedis = createMockRedisClient();
     
-    agentService = new AgentConfigService();
+    agentService = new AgentService();
     (agentService as any).fastgptClient = mockFastGPT;
     (agentService as any).redis = mockRedis;
   });
