@@ -52,11 +52,29 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
 
     setLoading(true);
     try {
-      // TODO: 实现密码修改API调用
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 模拟API调用
+      // 调用密码修改API
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.code !== 'SUCCESS') {
+        throw new Error(data.message || '密码修改失败');
+      }
+
       onSuccess();
     } catch (err) {
-      setError(t('密码修改失败，请重试'));
+      setError(err instanceof Error ? err.message : t('密码修改失败，请重试'));
     } finally {
       setLoading(false);
     }

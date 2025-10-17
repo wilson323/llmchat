@@ -46,7 +46,7 @@ export class ChatLogService {
 
     // 默认写入项目根目录 ./log（以编译后 dist 下 __dirname 回溯到仓库根）
     this.logDir =
-      cfgLog.dir || process.env.LOG_CHAT_DIR || path.resolve(__dirname, '../../..', 'log');
+      cfgLog.dir ?? process.env.LOG_CHAT_DIR ?? path.resolve(__dirname, '../../..', 'log');
 
     // 记录范围（默认：都记录）
     this.recordNormal = cfgLog.record?.normal ?? true;

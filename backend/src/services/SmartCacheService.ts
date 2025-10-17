@@ -328,10 +328,23 @@ export class SmartCacheService {
   /**
    * 获取缓存大小
    */
-  public getCacheSize(): { memory: number; redis: number } {
+  public async getCacheSize(): Promise<{ memory: number; redis: number }> {
+    let redisSize = 0;
+    
+    try {
+      const cacheService = getCacheService();
+      if (cacheService.isConnected()) {
+        // 获取Redis中所有键的数量
+        const dbsize = await cacheService.dbsize();
+        redisSize = dbsize || 0;
+      }
+    } catch (error) {
+      logger.warn('获取Redis缓存大小失败', { error });
+    }
+
     return {
       memory: this.memoryCache.size,
-      redis: 0, // TODO: 从Redis获取
+      redis: redisSize,
     };
   }
 }

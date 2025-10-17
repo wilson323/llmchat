@@ -383,6 +383,23 @@ export class CacheService {
   }
 
   /**
+   * 获取Redis数据库键数量
+   */
+  async dbsize(): Promise<number> {
+    if (!this.client || !this.connected) {
+      return 0;
+    }
+
+    try {
+      const size = await this.client.dbsize();
+      return size;
+    } catch (error) {
+      logger.error('获取Redis dbsize失败', { error });
+      return 0;
+    }
+  }
+
+  /**
    * 健康检查
    * 返回缓存服务的健康状态和详细信息
    */
