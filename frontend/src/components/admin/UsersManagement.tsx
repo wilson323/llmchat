@@ -35,7 +35,7 @@ const createUser = async (userData: Partial<AdminUser> & { password?: string }):
     email: userWithoutPassword.email || `${userWithoutPassword.username}@example.com`,
     status: userWithoutPassword.status || 'active',
     createdAt: new Date().toISOString(),
-    ...userWithoutPassword
+    ...userWithoutPassword,
   };
 };
 
@@ -47,7 +47,7 @@ const updateUser = async (_id: string, userData: Partial<AdminUser>): Promise<Ad
     email: userData.email || '',
     status: userData.status || 'active',
     createdAt: userData.createdAt || new Date().toISOString(),
-    ...userData
+    ...userData,
   };
 };
 

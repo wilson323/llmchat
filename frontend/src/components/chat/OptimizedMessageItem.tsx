@@ -9,16 +9,8 @@
  * 5. Intersection Observer for lazy loading
  */
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {Bot, Copy, Loader2, RefreshCw, ThumbsDown, ThumbsUp, User} from 'lucide-react';
+
+import { Bot, Copy, Loader2, RefreshCw, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { ChatMessage } from '@/types';
 import { useI18n } from '@/i18n';
@@ -26,15 +18,12 @@ import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-;
-;
-;
-;
-;
+
+
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import {
-  usePerformanceMonitor
+  usePerformanceMonitor,
 } from '@/utils/performanceOptimizer';
 
 interface OptimizedMessageItemProps {
@@ -133,7 +122,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
       hasCode: /```/u.test(messageContent),
       hasLinks: /https?:\/\/[^\s]+/.test(messageContent),
       hasEmojis,
-      complexity: 0
+      complexity: 0,
     };
 
     // Calculate estimated render complexity
@@ -182,8 +171,8 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
         {
           root: null,
           rootMargin: '50px',
-          threshold: 0.1
-        }
+          threshold: 0.1,
+        },
       );
     }
 
@@ -232,7 +221,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
       } transition-all duration-200 ease-in-out`}
       role="article"
       aria-label={isUserMessage ? t('用户消息') : t('AI回复')}
-    >
+      >
       {/* Avatar */}
       <div className="flex-shrink-0">
         <Avatar className="w-8 h-8">
@@ -468,7 +457,9 @@ OptimizedMessageItem.displayName = 'OptimizedMessageItem';
 
 // Helper function for formatting file sizes
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
 
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];

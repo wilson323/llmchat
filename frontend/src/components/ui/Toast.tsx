@@ -1,152 +1,467 @@
-;
-;
-;
-;
-;
+
+import * as React from 'react';
 import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 import { create } from 'zustand';
 import { AnimatePresence, motion } from 'framer-motion';
-;
-;
-;
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+import type {
+  ToastType as IToastType,
+  ToastOptions as IToastOptions,
+  ToastItem as IToastItem,
+  ToastState as IToastState,
+  BaseComponentProps,
+} from './ui.types';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+// Toast变体配置
+const toastVariants = cva(
+  'pointer-events-auto w-[320px] rounded-xl border shadow-lg bg-background/95 backdrop-blur-xl p-3',
+  {
+    variants: {
+      variant: {
+        success: 'border-emerald-200/40 dark:border-emerald-800/40',
+        error: 'border-red-200/40 dark:border-red-800/40',
+        warning: 'border-amber-200/40 dark:border-amber-800/40',
+        info: 'border-blue-200/40 dark:border-blue-800/40',
+        default: 'border-border/50',
+      },
+      position: {
+        'top-right': 'fixed top-3 right-3 z-[100]',
+        'top-left': 'fixed top-3 left-3 z-[100]',
+        'bottom-right': 'fixed bottom-3 right-3 z-[100]',
+        'bottom-left': 'fixed bottom-3 left-3 z-[100]',
+        'top-center': 'fixed top-3 left-1/2 -translate-x-1/2 z-[100]',
+        'bottom-center': 'fixed bottom-3 left-1/2 -translate-x-1/2 z-[100]',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      position: 'top-right',
+    },
+  },
+);
 
-export interface ToastOptions {
-  id?: string;
-  type?: ToastType;
-  title?: string;
-  description?: string;
-  duration?: number; // ms
+// Toast类型扩展
+export type ToastType = IToastType;
+
+// Toast选项扩展
+export interface ToastOptions extends IToastOptions {
+  /** 自定义图标 */
+  icon?: React.ReactNode;
+  /** 是否可关闭 */
+  closable?: boolean;
+  /** 操作按钮 */
+  action?: {
+    label: string;
+    onClick: () => void;
+    variant?: 'default' | 'destructive';
+  };
+  /** 自定义渲染函数 */
+  render?: (toast: ToastItem) => React.ReactNode;
+  /** 位置 */
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  /** 是否在挂载时显示 */
+  showWhenMounted?: boolean;
 }
 
-interface ToastItem extends Required<Omit<ToastOptions, 'duration'>> {
-  duration: number;
+// Toast项扩展
+export interface ToastItem extends IToastItem {
+  /** 自定义图标 */
+  icon?: React.ReactNode;
+  /** 是否可关闭 */
+  closable?: boolean;
+  /** 操作按钮 */
+  action?: {
+    label: string;
+    onClick: () => void;
+    variant?: 'default' | 'destructive';
+  };
+  /** 自定义渲染函数 */
+  render?: (toast: ToastItem) => React.ReactNode;
+  /** 位置 */
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  /** 创建时间 */
+  createdAt: number;
+  /** 是否正在悬停 */
+  isPaused?: boolean;
 }
 
-interface ToastState {
-  toasts: ToastItem[];
-  add: (t: ToastItem) => void;
-  remove: (id: string) => void;
-  getState: () => ToastState;
+// Toast状态扩展
+export interface ToastState extends IToastState {
+  /** 暂停计时器 */
+  pauseTimer: (id: string) => void;
+  /** 恢复计时器 */
+  resumeTimer: (id: string) => void;
+  /** 清空所有 */
+  clear: () => void;
+  /** 设置位置 */
+  setPosition: (position: string) => void;
+  /** 获取指定位置的Toasts */
+  getToastsByPosition: (position: string) => ToastItem[];
 }
 
+// Toast组件Props
+export interface ToastProps extends BaseComponentProps {
+  /** Toast项 */
+  toast: ToastItem;
+  /** 关闭回调 */
+  onClose?: (id: string) => void;
+  /** 位置 */
+  position?: string;
+}
+
+// ToastProviderProps
+export interface ToastProviderProps extends BaseComponentProps {
+  /** 位置 */
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  /** 最大显示数量 */
+  maxToasts?: number;
+  /** 是否可拖拽关闭 */
+  swipeToClose?: boolean;
+}
+
+// 生成唯一ID
 const genId = () => Math.random().toString(36).slice(2);
 
-export const useToastStore = create<ToastState>((set, get: () => any) => ({
+// Toast store
+export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
-  add: (t: any) => set((s: any) => ({ toasts: [...s.toasts, t] })),
-  remove: (id: string | number) => set((s: any) => ({ toasts: s.toasts.filter((x: any) => x.id !== id) })),
-  getState: get,
+  add: (toast) => set((state) => {
+    const newToasts = [...state.toasts, toast];
+    return { toasts: newToasts };
+  }),
+  remove: (id) => set((state) => ({
+    toasts: state.toasts.filter((t) => t.id !== id),
+  })),
+  pauseTimer: (id) => set((state) => ({
+    toasts: state.toasts.map((t) => (t.id === id ? { ...t, isPaused: true } : t)),
+  })),
+  resumeTimer: (id) => set((state) => ({
+    toasts: state.toasts.map((t) => (t.id === id ? { ...t, isPaused: false } : t)),
+  })),
+  clear: () => set({ toasts: [] }),
+  setPosition: (position) => set((state) => ({
+    toasts: state.toasts.map((t) => ({ ...t, position })),
+  })),
+  getToastsByPosition: (position) => get().toasts.filter((t) => t.position === position),
+  getState: () => get(),
 }));
 
-export function toast(opts: ToastOptions | string) {
-  const id = genId();
-  const o = typeof opts === 'string' ? { title: opts } : opts || {};
-  const item: ToastItem = {
-    id,
-    type: (o.type ?? 'info') as ToastType,
-    title: o.title ?? '',
-    description: o.description ?? '',
-    duration: typeof o.duration === 'number' ? o.duration : 3000,
-  };
-  useToastStore.getState().add(item);
-  // auto dismiss
-  window.setTimeout(() => useToastStore.getState().remove(id), item.duration + 100);
-  return id;
-}
+// Toast hook
+export const useToast = () => {
+  const store = useToastStore();
 
-export function Toaster() {
-  const { toasts, remove } = useToastStore();
+  const toast = React.useCallback((options: ToastOptions | string) => {
+    const id = genId();
+    const opts = typeof options === 'string' ? { title: options } : options;
+
+    const item: ToastItem = {
+      id,
+      type: opts.type || 'info',
+      title: opts.title || '',
+      description: opts.description || '',
+      duration: opts.duration || 3000,
+      icon: opts.icon,
+      closable: opts.closable !== false,
+      action: opts.action,
+      render: opts.render,
+      position: opts.position || 'top-right',
+      createdAt: Date.now(),
+      isPaused: false,
+    };
+
+    store.add(item);
+
+    // 自动关闭
+    if (item.duration > 0) {
+      const timer = setTimeout(() => {
+        store.remove(id);
+      }, item.duration);
+
+      return () => clearTimeout(timer);
+    }
+
+    return id;
+  }, [store]);
+
+  const dismiss = React.useCallback((id: string) => {
+    store.remove(id);
+  }, [store]);
+
+  const success = React.useCallback((options: Omit<ToastOptions, 'type'> | string) => {
+    return toast({ ...(typeof options === 'string' ? { title: options } : options), type: 'success' });
+  }, [toast]);
+
+  const error = React.useCallback((options: Omit<ToastOptions, 'type'> | string) => {
+    return toast({ ...(typeof options === 'string' ? { title: options } : options), type: 'error' });
+  }, [toast]);
+
+  const warning = React.useCallback((options: Omit<ToastOptions, 'type'> | string) => {
+    return toast({ ...(typeof options === 'string' ? { title: options } : options), type: 'warning' });
+  }, [toast]);
+
+  const info = React.useCallback((options: Omit<ToastOptions, 'type'> | string) => {
+    return toast({ ...(typeof options === 'string' ? { title: options } : options), type: 'info' });
+  }, [toast]);
+
+  return {
+    toast,
+    dismiss,
+    success,
+    error,
+    warning,
+    info,
+    clear: store.clear,
+  };
+};
+
+// Toast组件
+const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
+  ({ toast, onClose, position, className, ...props }, ref) => {
+    const [isHovered, setIsHovered] = React.useState(false);
+    const timeoutRef = React.useRef<NodeJS.Timeout>();
+    const remainingTimeRef = React.useRef(toast.duration);
+
+    React.useEffect(() => {
+      if (toast.duration <= 0) return;
+
+      const startTime = Date.now();
+      remainingTimeRef.current = toast.duration;
+
+      timeoutRef.current = setTimeout(() => {
+        if (!isHovered) {
+          onClose?.(toast.id);
+        }
+      }, remainingTimeRef.current);
+
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, [toast.duration, onClose, isHovered]);
+
+    const handleMouseEnter = React.useCallback(() => {
+      setIsHovered(true);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        remainingTimeRef.current = Math.max(0, remainingTimeRef.current - (Date.now() - toast.createdAt));
+      }
+    }, [toast.createdAt]);
+
+    const handleMouseLeave = React.useCallback(() => {
+      setIsHovered(false);
+      if (remainingTimeRef.current > 0) {
+        timeoutRef.current = setTimeout(() => {
+          onClose?.(toast.id);
+        }, remainingTimeRef.current);
+      }
+    }, [onClose]);
+
+    const handleClose = React.useCallback(() => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      onClose?.(toast.id);
+    }, [onClose, toast.id]);
+
+    // 使用自定义渲染函数
+    if (toast.render) {
+      return (
+        <div
+          ref={ref}
+          className={className}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...props}
+        >
+          {toast.render(toast)}
+        </div>
+      );
+    }
+
+    // 默认图标
+    const defaultIcon = React.useMemo(() => {
+      switch (toast.type) {
+        case 'success':
+          return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+        case 'error':
+          return <AlertTriangle className="w-5 h-5 text-red-500" />;
+        case 'warning':
+          return <AlertTriangle className="w-5 h-5 text-amber-500" />;
+        case 'info':
+          return <Info className="w-5 h-5 text-blue-500" />;
+        default:
+          return <Info className="w-5 h-5 text-blue-500" />;
+      }
+    }, [toast.type]);
+
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: -50, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -50, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={cn(
+          toastVariants({ variant: toast.type, position: position || toast.position }),
+          className
+        )}
+        role={toast.type === 'error' ? 'alert' : 'status'}
+        aria-labelledby={`toast-title-${toast.id}`}
+        aria-describedby={toast.description ? `toast-desc-${toast.id}` : undefined}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        {...props}
+      >
+        <div className="flex items-start gap-3">
+          {/* 图标 */}
+          <div className="mt-0.5 shrink-0" aria-hidden="true">
+            {toast.icon || defaultIcon}
+          </div>
+
+          {/* 内容 */}
+          <div className="flex-1 min-w-0">
+            {toast.title && (
+              <div
+                id={`toast-title-${toast.id}`}
+                className="text-sm font-medium text-foreground truncate"
+              >
+                {toast.title}
+              </div>
+            )}
+            {toast.description && (
+              <div
+                id={`toast-desc-${toast.id}`}
+                className="mt-0.5 text-xs text-muted-foreground line-clamp-3"
+              >
+                {toast.description}
+              </div>
+            )}
+          </div>
+
+          {/* 操作按钮 */}
+          {toast.action && (
+            <button
+              onClick={() => {
+                toast.action.onClick();
+                handleClose();
+              }}
+              className={cn(
+                'shrink-0 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                toast.action.variant === 'destructive'
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              )}
+            >
+              {toast.action.label}
+            </button>
+          )}
+
+          {/* 关闭按钮 */}
+          {toast.closable !== false && (
+            <button
+              onClick={handleClose}
+              className="shrink-0 rounded-md p-1 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
+              aria-label={`关闭通知：${toast.title}`}
+              type="button"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+);
+ToastComponent.displayName = 'Toast';
+
+// ToastProvider组件
+export const ToastProvider: React.FC<ToastProviderProps> = ({
+  position = 'top-right',
+  maxToasts = 5,
+  swipeToClose = false,
+  className,
+  ...props
+}) => {
+  const { getToastsByPosition } = useToastStore();
+  const toasts = getToastsByPosition(position);
+
+  // 限制显示数量
+  const visibleToasts = React.useMemo(
+    () => toasts.slice(-maxToasts),
+    [toasts, maxToasts]
+  );
+
+  const handleDismiss = React.useCallback((id: string) => {
+    useToastStore.getState().remove(id);
+  }, []);
 
   return (
-    <>
-      {/* 可访问性通知区域 - 屏幕阅读器专用 */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        role="status"
-        >
-        {toasts.map((t: any) => (
-          <div key={`a11y-${t.id}`}>
-            {t.type === 'error' ? '错误：' : t.type === 'warning' ? '警告：' : t.type === 'success' ? '成功：' : '信息：'}
-            {t.title}
-            {t.description && `，${t.description}`}
-          </div>
+    <div
+      className={cn(
+        'fixed z-[100] flex flex-col gap-2 p-4 pointer-events-none',
+        position.includes('top') ? 'top-0' : 'bottom-0',
+        position.includes('right') ? 'right-0' : position.includes('left') ? 'left-0' : 'left-1/2 -translate-x-1/2',
+        position.includes('center') && !position.includes('left') && !position.includes('right') && '-translate-x-1/2',
+        className
+      )}
+      {...props}
+    >
+      <AnimatePresence>
+        {visibleToasts.map((toast) => (
+          <ToastProvider.Toast
+            key={toast.id}
+            toast={toast}
+            onClose={handleDismiss}
+            position={position}
+          />
         ))}
-      </div>
-
-      {/* 错误通知 - 使用 assertive 确保立即通知 */}
-      <div
-        aria-live="assertive"
-        aria-atomic="true"
-        className="sr-only"
-        role="alert"
-        >
-        {toasts.filter((t: any) => t.type === 'error').map((t: any) => (
-          <div key={`error-${t.id}`}>
-            错误：{t.title}
-            {t.description && `，${t.description}`}
-          </div>
-        ))}
-      </div>
-
-      {/* 视觉Toast显示区域 */}
-      <div className="pointer-events-none fixed top-3 right-3 z-[100] flex flex-col gap-2">
-        <AnimatePresence>
-          {toasts.map((t: any) => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-              className={`pointer-events-auto w-[320px] rounded-xl border shadow-lg bg-background/95 backdrop-blur-xl ${
-                t.type === 'success' ? 'border-emerald-200/40' : t.type === 'error' ? 'border-red-200/40' : t.type === 'warning' ? 'border-amber-200/40' : 'border-border/50'
-              }`}
-              role={t.type === 'error' ? 'alert' : 'status'}
-              aria-labelledby={`toast-title-${t.id}`}
-              aria-describedby={t.description ? `toast-desc-${t.id}` : undefined}
-            >
-              <div className="p-3 flex items-start gap-3">
-                <div className="mt-0.5" aria-hidden="true">
-                  {t.type === 'success' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-                  {t.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
-                  {t.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
-                  {t.type === 'info' && <Info className="w-5 h-5 text-[var(--brand)]" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  {t.title && (
-                    <div
-                      id={`toast-title-${t.id}`}
-                      className="text-sm font-medium text-foreground truncate"
-                    >
-                      {t.title}
-                    </div>
-                  )}
-                  {t.description && (
-                    <div
-                      id={`toast-desc-${t.id}`}
-                      className="mt-0.5 text-xs text-muted-foreground line-clamp-3"
-                    >
-                      {t.description}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => remove(t.id)}
-                  className="shrink-0 rounded-md p-1 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:ring-offset-2"
-                  aria-label={`关闭通知：${t.title}`}
-                  type="button"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-    </>
+      </AnimatePresence>
+    </div>
   );
-}
+};
+
+// 为ToastProvider添加Toast子组件
+ToastProvider.Toast = ToastComponent;
+
+// 全局toast函数
+export const toast = (options: ToastOptions | string) => {
+  const { toast: toastFn } = useToast.getState();
+  return toastFn(options);
+};
+
+// 便捷函数
+export const toastSuccess = (options: Omit<ToastOptions, 'type'> | string) => {
+  const { toast: toastFn } = useToast.getState();
+  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'success' });
+};
+
+export const toastError = (options: Omit<ToastOptions, 'type'> | string) => {
+  const { toast: toastFn } = useToast.getState();
+  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'error' });
+};
+
+export const toastWarning = (options: Omit<ToastOptions, 'type'> | string) => {
+  const { toast: toastFn } = useToast.getState();
+  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'warning' });
+};
+
+export const toastInfo = (options: Omit<ToastOptions, 'type'> | string) => {
+  const { toast: toastFn } = useToast.getState();
+  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'info' });
+};
+
+// Toaster组件导出 - 提供统一导出接口
+export const Toaster = ToastProvider;
+
+// 默认导出
+export default ToastProvider;
+export {
+  ToastComponent,
+  useToast,
+  useToastStore,
+  Toaster,
+  type ToastProps,
+  type ToastProviderProps,
+};
