@@ -5,11 +5,133 @@
 
 'use client';
 
-import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
-import { useVirtualScroll } from '@/hooks/useVirtualScroll';
+import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef } from 'react';
 import type { VirtualScrollItem, VirtualScrollProps, VirtualScrollRef } from './ui.types';
 
-export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = unknown>({
+// 简化的虚拟滚动实现（替代useVirtualScroll hook）
+function useVirtualScroll<T>({
+  items,
+  itemHeight,
+  containerHeight,
+  overscan = 5,
+  estimatedItemHeight = 40
+}: {
+  items: T[];
+  itemHeight?: number | ((item: T, index: number) => number);
+  containerHeight: number;
+  overscan?: number;
+  estimatedItemHeight?: number;
+}) {
+  const [scrollTop, setScrollTop] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 计算项目高度
+  const getItemHeight = useCallback((item: T, index: number) => {
+    if (typeof itemHeight === 'function') {
+      return itemHeight(item, index);
+    }
+    return itemHeight || estimatedItemHeight;
+  }, [itemHeight, estimatedItemHeight]);
+
+  // 计算虚拟项目
+  const virtualItems = useMemo(() => {
+    const result: Array<{
+      index: number;
+      top: number;
+      height: number;
+      key: string;
+    }> = [];
+
+    let currentTop = 0;
+    const itemCount = items.length;
+
+    // 找到起始索引
+    let startIndex = 0;
+    let accumulatedHeight = 0;
+
+    for (let i = 0; i < itemCount; i++) {
+      const height = getItemHeight(items[i], i);
+      if (accumulatedHeight + height > scrollTop) {
+        startIndex = Math.max(0, i - overscan);
+        break;
+      }
+      accumulatedHeight += height;
+    }
+
+    // 计算结束索引
+    let endIndex = startIndex;
+    let visibleHeight = 0;
+
+    for (let i = startIndex; i < itemCount; i++) {
+      const height = getItemHeight(items[i], i);
+      if (visibleHeight > containerHeight + overscan * estimatedItemHeight) {
+        break;
+      }
+      visibleHeight += height;
+      endIndex = i;
+    }
+
+    endIndex = Math.min(itemCount - 1, endIndex + overscan);
+
+    // 生成虚拟项目
+    for (let i = startIndex; i <= endIndex; i++) {
+      let top = 0;
+      for (let j = 0; j < i; j++) {
+        top += getItemHeight(items[j], j);
+      }
+
+      result.push({
+        index: i,
+        top,
+        height: getItemHeight(items[i], i),
+        key: `${i}`
+      });
+    }
+
+    return result;
+  }, [items, scrollTop, getItemHeight, overscan, estimatedItemHeight, containerHeight]);
+
+  // 计算总高度
+  const totalHeight = useMemo(() => {
+    return items.reduce((total, item, index) => {
+      return total + getItemHeight(item, index);
+    }, 0);
+  }, [items, getItemHeight]);
+
+  // 滚动到指定索引
+  const scrollToIndex = useCallback((index: number) => {
+    if (containerRef.current && index >= 0 && index < items.length) {
+      let top = 0;
+      for (let i = 0; i < index; i++) {
+        top += getItemHeight(items[i], i);
+      }
+      containerRef.current.scrollTop = top;
+    }
+  }, [items, getItemHeight]);
+
+  // 滚动到指定偏移
+  const scrollToOffset = useCallback((offset: number) => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = offset;
+    }
+  }, []);
+
+  // 滚动事件处理
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  return {
+    virtualItems,
+    totalHeight,
+    containerRef,
+    scrollToIndex,
+    scrollToOffset,
+    handleScroll
+  };
+}
+
+export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = unknown>({
   items,
   itemKey,
   itemHeight,
@@ -27,7 +149,6 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
   loading = false,
   hasMore = false
 }, ref) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollingTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -41,12 +162,14 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
 
   const keyFn = itemKey || defaultKeyFn;
 
-  // 使用虚拟滚动hook
+  // 使用内联虚拟滚动实现
   const {
     virtualItems,
     totalHeight,
-    scrollToIndex,
-    scrollToOffset
+    containerRef: virtualContainerRef,
+    scrollToIndex: scrollToIndexInternal,
+    scrollToOffset: scrollToOffsetInternal,
+    handleScroll: handleVirtualScroll
   } = useVirtualScroll({
     items,
     itemHeight,
@@ -54,6 +177,17 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
     overscan,
     estimatedItemHeight
   });
+
+  // 合并refs
+  const mergedRef = useCallback((element: HTMLDivElement | null) => {
+    containerRef.current = element;
+    virtualContainerRef.current = element;
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      ref.current = element;
+    }
+  }, [ref, virtualContainerRef]);
 
   // 滚动事件处理
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -70,7 +204,10 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
       setIsScrolling(false);
     }, 150);
 
-    onScroll?.(scrollTop);
+    onScroll?.({ scrollTop, scrollHeight: e.currentTarget.scrollHeight, clientHeight: e.currentTarget.clientHeight });
+
+    // 调用内部滚动处理
+    handleVirtualScroll(e);
 
     // 检查是否到达底部
     if (onEndReached && hasMore && !loading) {
@@ -81,17 +218,17 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
         onEndReached();
       }
     }
-  }, [onScroll, onEndReached, hasMore, loading, endReachedThreshold]);
+  }, [onScroll, onEndReached, hasMore, loading, endReachedThreshold, handleVirtualScroll]);
 
   // 暴露给父组件的方法
   React.useImperativeHandle(ref, () => ({
     element: containerRef.current,
-    scrollToIndex,
-    scrollToOffset,
+    scrollToIndex: scrollToIndexInternal,
+    scrollToOffset: scrollToOffsetInternal,
     getScrollTop: () => containerRef.current?.scrollTop || 0,
     getScrollHeight: () => containerRef.current?.scrollHeight || 0,
     getClientHeight: () => containerRef.current?.clientHeight || 0
-  }), [scrollToIndex, scrollToOffset]);
+  }), [scrollToIndexInternal, scrollToOffsetInternal]);
 
   // 清理timeout
   useEffect(() => {
@@ -137,7 +274,7 @@ export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps
 
   return (
     <div
-      ref={containerRef}
+      ref={mergedRef}
       className={className}
       style={{
         height,

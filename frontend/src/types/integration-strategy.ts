@@ -9,6 +9,19 @@
  */
 
 // =============================================================================
+// 基础类型定义（补充缺失的类型）
+// =============================================================================
+
+/** 基础字符串字面量类型 */
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+/** 基础测试类型 */
+export type TestType = 'unit' | 'integration' | 'e2e' | 'performance' | 'security';
+
+/** 基础工具类型 */
+export type ToolType = 'validator' | 'converter' | 'migrator' | 'tester';
+
+// =============================================================================
 // 集成策略总览
 // =============================================================================
 
@@ -37,7 +50,7 @@ export interface TypeIntegrationStrategy {
   /** 验证测试 */
   validation: ValidationTest[];
   /** 风险等级 */
-  risk: 'low' | 'medium' | 'high';
+  risk: RiskLevel;
   /** 预估时间 */
   estimatedTime: string;
 }
@@ -253,7 +266,7 @@ export interface ValidationTest {
   /** 测试名称 */
   name: string;
   /** 测试类型 */
-  type: 'unit' | 'integration' | 'e2e' | 'performance' | 'security';
+  type: TestType;
   /** 测试文件 */
   testFile: string;
   /** 测试描述 */
@@ -333,7 +346,7 @@ export interface MigrationTool {
   /** 工具路径 */
   path: string;
   /** 工具类型 */
-  type: 'validator' | 'converter' | 'migrator' | 'tester';
+  type: ToolType;
   /** 是否必需 */
   required: boolean;
 }

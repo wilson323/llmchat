@@ -9,7 +9,7 @@ import type {
   TabsComponent,
   ForwardRefComponent,
 } from './ui.types';
-import { createSubComponent, attachSubComponents } from './types.unified';
+import { createSubComponent, attachSubComponents } from './ui.types';
 
 // Tabs变体配置
 const tabsVariants = cva(
@@ -80,14 +80,10 @@ const tabsTriggerVariants = cva(
   },
 );
 
-// 扩展Props接口
+// Tabs组件Props - 扩展ui.types.ts中的类型，添加CVA变体和特定功能
 export interface TabsProps
   extends Omit<ITabsProps, 'orientation'>,
     Omit<VariantProps<typeof tabsVariants>, 'orientation'> {
-  /** 默认激活标签 */
-  defaultValue?: string;
-  /** 当前激活标签 */
-  value?: string;
   /** 标签变化回调 */
   onValueChange?: (value: string) => void;
   /** 是否激活动画 */
@@ -104,8 +100,6 @@ export interface TabsListProps
 export interface TabsTriggerProps
   extends Omit<ITabsTriggerProps, 'onClick'>,
     VariantProps<typeof tabsTriggerVariants> {
-  /** 是否禁用 */
-  disabled?: boolean;
   /** 加载状态 */
   loading?: boolean;
   /** 前缀图标 */

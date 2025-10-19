@@ -128,7 +128,7 @@ export type {
   SelectProps,
   TabsProps,
   EventHandlersProps,
-} from '@/components/ui/types.unified';
+} from '@/components/ui/ui.types';
 
 // 重新导出事件处理器类型（保持向后兼容）
 export type {
@@ -142,39 +142,44 @@ export type {
   FocusEventHandler,
   FormSubmitHandler,
   CustomEventHandler,
-  InputProps,
+} from '@/types/event-handlers';
+
+// 重新导出组件Props类型（避免命名冲突）
+export type {
+  InputProps as EventInputProps,
   SelectorProps,
-  ButtonProps,
+  ButtonProps as EventButtonProps,
 } from '@/types/event-handlers';
 
 // 重新导出Hook类型（保持向后兼容）
-export type {
-  UseVirtualScrollOptions,
-  VirtualScrollResult,
-  UseThemeResult,
-  KeyboardShortcut,
-  UseKeyboardManagerOptions,
-  UseKeyboardManagerResult,
-  UseChatOptions,
-  UseChatResult,
-  UseInputOptions,
-  UseInputResult,
-  UseDebounceOptions,
-  UseDebounceResult,
-  UseThrottleOptions,
-  UseThrottleResult,
-  UseLocalStorageOptions,
-  UseLocalStorageResult,
-  UseAsyncOptions,
-  UseAsyncResult,
-  UseWindowSizeOptions,
-  UseWindowSizeResult,
-  UseMediaQueryOptions,
-  UseDragOptions,
-  UseDragResult,
-  UseClipboardOptions,
-  UseClipboardResult,
-} from '@/hooks/types.hooks';
+// 暂时注释掉不存在的Hook类型文件
+// export type {
+//   UseVirtualScrollOptions,
+//   VirtualScrollResult,
+//   UseThemeResult,
+//   KeyboardShortcut,
+//   UseKeyboardManagerOptions,
+//   UseKeyboardManagerResult,
+//   UseChatOptions,
+//   UseChatResult,
+//   UseInputOptions,
+//   UseInputResult,
+//   UseDebounceOptions,
+//   UseDebounceResult,
+//   UseThrottleOptions,
+//   UseThrottleResult,
+//   UseLocalStorageOptions,
+//   UseLocalStorageResult,
+//   UseAsyncOptions,
+//   UseAsyncResult,
+//   UseWindowSizeOptions,
+//   UseWindowSizeResult,
+//   UseMediaQueryOptions,
+//   UseDragOptions,
+//   UseDragResult,
+//   UseClipboardOptions,
+//   UseClipboardResult,
+// } from '@/hooks/types.hooks';
 
 export interface ReasoningState {
   steps: import('@llmchat/shared-types').ReasoningStep[];

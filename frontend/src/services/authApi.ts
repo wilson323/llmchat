@@ -1,9 +1,7 @@
 import { api } from './api';
-import type { ApiSuccessPayload } from '@/types/dynamic';
 import type {
   AuthPayload,
   ChangePasswordPayload,
-  ApiResult,
   UserRole
 } from './types/api-common';
 import type {
@@ -12,6 +10,10 @@ import type {
   ApiErrorHandler,
   AuthenticationError
 } from './types/api-errors';
+import type {
+  ApiResponse,
+  ApiResult
+} from './types/api-response';
 
 // ============================================================================
 // 认证相关类型定义
@@ -124,7 +126,7 @@ export class AuthApiService {
    */
   static async login(credentials: AuthPayload): Promise<ApiResult<LoginResponse>> {
     try {
-      const response = await api.post<ApiSuccessPayload<LoginResponse>>(
+      const response = await api.post<ApiResponse<LoginResponse>>(
         '/auth/login',
         credentials
       );
@@ -185,7 +187,7 @@ export class AuthApiService {
    */
   static async register(payload: RegisterPayload): Promise<ApiResult<UserInfo>> {
     try {
-      const response = await api.post<ApiSuccessPayload<UserInfo>>(
+      const response = await api.post<ApiResponse<UserInfo>>(
         '/auth/register',
         payload
       );
@@ -252,7 +254,7 @@ export class AuthApiService {
    */
   static async getProfile(): Promise<ApiResult<UserInfo>> {
     try {
-      const response = await api.get<ApiSuccessPayload<{ user: UserInfo }>>(
+      const response = await api.get<ApiResponse<{ user: UserInfo }>>(
         '/auth/profile'
       );
 
@@ -284,7 +286,7 @@ export class AuthApiService {
    */
   static async updateProfile(updates: Partial<UserInfo>): Promise<ApiResult<UserInfo>> {
     try {
-      const response = await api.put<ApiSuccessPayload<UserInfo>>(
+      const response = await api.put<ApiResponse<UserInfo>>(
         '/auth/profile',
         updates
       );
@@ -333,7 +335,7 @@ export class AuthApiService {
         });
       }
 
-      const response = await api.post<ApiSuccessPayload<{ success: boolean }>>(
+      const response = await api.post<ApiResponse<{ success: boolean }>>(
         '/auth/change-password',
         {
           oldPassword: payload.oldPassword,
@@ -369,7 +371,7 @@ export class AuthApiService {
    */
   static async refreshToken(refreshToken: string): Promise<ApiResult<RefreshTokenResponse>> {
     try {
-      const response = await api.post<ApiSuccessPayload<RefreshTokenResponse>>(
+      const response = await api.post<ApiResponse<RefreshTokenResponse>>(
         '/auth/refresh',
         { refreshToken }
       );
@@ -416,7 +418,7 @@ export class AuthApiService {
    */
   static async requestPasswordReset(payload: PasswordResetRequest): Promise<ApiResult<{ message: string }>> {
     try {
-      const response = await api.post<ApiSuccessPayload<{ message: string }>>(
+      const response = await api.post<ApiResponse<{ message: string }>>(
         '/auth/password-reset-request',
         payload
       );
@@ -450,7 +452,7 @@ export class AuthApiService {
    */
   static async confirmPasswordReset(payload: PasswordResetConfirmation): Promise<ApiResult<{ success: boolean }>> {
     try {
-      const response = await api.post<ApiSuccessPayload<{ success: boolean }>>(
+      const response = await api.post<ApiResponse<{ success: boolean }>>(
         '/auth/password-reset-confirm',
         payload
       );
@@ -483,7 +485,7 @@ export class AuthApiService {
    */
   static async verifyToken(token: string): Promise<ApiResult<{ valid: boolean; payload?: any }>> {
     try {
-      const response = await api.post<ApiSuccessPayload<{ valid: boolean; payload?: any }>>(
+      const response = await api.post<ApiResponse<{ valid: boolean; payload?: any }>>(
         '/auth/verify',
         { token }
       );
@@ -516,7 +518,7 @@ export class AuthApiService {
    */
   static async getSessions(): Promise<ApiResult<SessionInfo[]>> {
     try {
-      const response = await api.get<ApiSuccessPayload<SessionInfo[]>>(
+      const response = await api.get<ApiResponse<SessionInfo[]>>(
         '/auth/sessions'
       );
 
@@ -576,7 +578,7 @@ export class AuthApiService {
    */
   static async revokeAllSessions(): Promise<ApiResult<{ revokedCount: number }>> {
     try {
-      const response = await api.post<ApiSuccessPayload<{ revokedCount: number }>>(
+      const response = await api.post<ApiResponse<{ revokedCount: number }>>(
         '/auth/sessions/revoke-all',
         {}
       );

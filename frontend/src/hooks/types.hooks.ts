@@ -437,56 +437,5 @@ export interface UseClipboardResult {
 // =============================================================================
 // 导出所有类型
 // =============================================================================
-
-export type {
-  // 虚拟化
-  UseVirtualScrollOptions,
-  VirtualScrollResult,
-
-  // 主题
-  UseThemeResult,
-
-  // 键盘管理
-  KeyboardShortcut,
-  UseKeyboardManagerOptions,
-  UseKeyboardManagerResult,
-
-  // 聊天
-  UseChatOptions,
-  UseChatResult,
-
-  // 输入框
-  UseInputOptions,
-  UseInputResult,
-
-  // 防抖
-  UseDebounceOptions,
-  UseDebounceResult,
-
-  // 节流
-  UseThrottleOptions,
-  UseThrottleResult,
-
-  // 本地存储
-  UseLocalStorageOptions,
-  UseLocalStorageResult,
-
-  // 异步状态
-  UseAsyncOptions,
-  UseAsyncResult,
-
-  // 窗口大小
-  UseWindowSizeOptions,
-  UseWindowSizeResult,
-
-  // 媒体查询
-  UseMediaQueryOptions,
-
-  // 拖拽
-  UseDragOptions,
-  UseDragResult,
-
-  // 复制到剪贴板
-  UseClipboardOptions,
-  UseClipboardResult,
-};
+// 注意: 所有类型已在定义处使用 export 关键字导出
+// 无需重复导出以避免TS2484错误

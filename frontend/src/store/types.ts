@@ -174,6 +174,42 @@ export interface PreferenceState {
   getState: () => PreferenceState;
 }
 
+// ==================== Base Store Types ====================
+
+/**
+ * Store 错误类型
+ */
+export interface StoreError {
+  code: string;
+  message: string;
+  details?: any;
+  timestamp?: number;
+}
+
+/**
+ * Store 状态类型
+ */
+export type StoreStatus = 'idle' | 'loading' | 'success' | 'error';
+
+/**
+ * 基础 Store 状态类型
+ */
+export interface BaseStoreState {
+  _status?: StoreStatus;
+  _error?: StoreError | null;
+  _lastUpdated?: number;
+  _version?: string;
+}
+
+/**
+ * 基础 Store Actions 类型
+ */
+export interface BaseStoreActions {
+  _setStatus?: (status: StoreStatus) => void;
+  _setError?: (error: StoreError | null) => void;
+  _reset?: () => void;
+}
+
 // ==================== Store Selector 工具类型 ====================
 
 /**

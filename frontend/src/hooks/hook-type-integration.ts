@@ -721,11 +721,5 @@ export const batchIntegrateHooks = (
 // ============================================================================
 // 导出
 // =============================================================================
-
-export {
-  HookTypeIntegrationManager,
-  getPredefinedHookTypeMappings,
-  getHookTypeIntegrationManager,
-  quickIntegrateHook,
-  batchIntegrateHooks
-};
+// 注意: 所有导出已在定义处使用 export 关键字完成
+// 无需重复导出以避免TS2484/TS2323错误

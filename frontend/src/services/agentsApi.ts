@@ -1,10 +1,8 @@
 
 import { api } from './api';
-import type { ApiSuccessPayload } from '@/types/dynamic';
 import type {
   AgentPayload as IAgentPayload,
   AgentListParams,
-  ApiResult,
   PaginatedResponse
 } from './types/api-common';
 import type {
@@ -12,6 +10,10 @@ import type {
   ApiErrorFactory,
   ApiErrorHandler
 } from './types/api-errors';
+import type {
+  ApiResponse,
+  ApiResult
+} from './types/api-response';
 
 // ============================================================================
 // 智能体相关类型定义
@@ -123,7 +125,7 @@ export class AgentsApiService {
    */
   static async listAgents(params?: AgentListParams): Promise<ApiResult<AgentItem[]>> {
     try {
-      const { data } = await api.get<ApiSuccessPayload<AgentItem[]>>(
+      const { data } = await api.get<ApiResponse<AgentItem[]>>(
         '/agents',
         {
           params: {
@@ -168,7 +170,7 @@ export class AgentsApiService {
    */
   static async getAgent(id: string): Promise<ApiResult<AgentItem>> {
     try {
-      const { data } = await api.get<ApiSuccessPayload<AgentItem>>(`/agents/${id}`);
+      const { data } = await api.get<ApiResponse<AgentItem>>(`/agents/${id}`);
 
       return {
         success: true,
@@ -199,7 +201,7 @@ export class AgentsApiService {
    */
   static async reloadAgents(): Promise<ApiResult<AgentReloadResult>> {
     try {
-      const { data } = await api.post<ApiSuccessPayload<AgentReloadResult>>(
+      const { data } = await api.post<ApiResponse<AgentReloadResult>>(
         '/agents/reload',
         {}
       );
@@ -232,7 +234,7 @@ export class AgentsApiService {
    */
   static async createAgent(payload: AgentPayload): Promise<ApiResult<AgentItem>> {
     try {
-      const { data } = await api.post<ApiSuccessPayload<AgentItem>>('/agents', payload);
+      const { data } = await api.post<ApiResponse<AgentItem>>('/agents', payload);
 
       return {
         success: true,
@@ -263,7 +265,7 @@ export class AgentsApiService {
    */
   static async updateAgent(id: string, updates: Partial<AgentPayload>): Promise<ApiResult<AgentItem>> {
     try {
-      const { data } = await api.put<ApiSuccessPayload<AgentItem>>(`/agents/${id}`, updates);
+      const { data } = await api.put<ApiResponse<AgentItem>>(`/agents/${id}`, updates);
 
       return {
         success: true,
@@ -322,7 +324,7 @@ export class AgentsApiService {
    */
   static async importAgents(payload: { agents: AgentPayload[] }): Promise<ApiResult<AgentImportResult>> {
     try {
-      const { data } = await api.post<ApiSuccessPayload<AgentItem[]>>('/agents/import', payload);
+      const { data } = await api.post<ApiResponse<AgentItem[]>>('/agents/import', payload);
 
       const result: AgentImportResult = {
         total: payload.agents.length,
@@ -360,7 +362,7 @@ export class AgentsApiService {
    */
   static async validateAgent(id: string): Promise<ApiResult<AgentValidationResult>> {
     try {
-      const { data } = await api.get<ApiSuccessPayload<AgentValidationResult>>(
+      const { data } = await api.get<ApiResponse<AgentValidationResult>>(
         `/agents/${id}/validate`
       );
 
@@ -398,7 +400,7 @@ export class AgentsApiService {
     appId?: string;
   }): Promise<ApiResult<AgentInfo>> {
     try {
-      const { data } = await api.post<ApiSuccessPayload<AgentInfo>>('/agents/fetch-info', params);
+      const { data } = await api.post<ApiResponse<AgentInfo>>('/agents/fetch-info', params);
 
       return {
         success: true,
@@ -432,7 +434,7 @@ export class AgentsApiService {
     agentIds: string[]
   ): Promise<ApiResult<{ success: number; failed: number; errors?: string[] }>> {
     try {
-      const { data } = await api.post<ApiSuccessPayload<{ success: number; failed: number; errors?: string[] }>>(
+      const { data } = await api.post<ApiResponse<{ success: number; failed: number; errors?: string[] }>>(
         '/agents/batch',
         { operation, agentIds }
       );

@@ -6,6 +6,20 @@
  */
 
 import * as React from 'react';
+import type { SyntheticEvent } from 'react';
+
+// =============================================================================
+// 基础类型定义（补充缺失的类型）
+// =============================================================================
+
+/** React事件类型定义 */
+export type ReactEvent = SyntheticEvent;
+
+/** 通用事件处理器类型 */
+export type EventHandler<T = any> = (event: T) => void;
+
+/** 变更事件处理器类型 */
+export type ChangeHandler<T = string> = (value: T, event?: ReactEvent) => void;
 
 // =============================================================================
 // 基础组件Props接口 (基于shared-types扩展)

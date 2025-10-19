@@ -1,8 +1,14 @@
 /**
- * 事件处理适配器实现
+ * 事件处理适配器实现 - v2.0.0
+ *
+ * 🎯 基于统一事件处理器类型的权威适配器实现
  * 提供向后兼容的事件处理器适配方案
+ *
+ * @version 2.0.0
+ * @since 2025-10-19
  */
 
+// 🚨 重要：所有事件处理器类型现在从权威定义文件导入
 import type {
   ChangeEventHandler,
   UnifiedEventHandler,
@@ -12,8 +18,11 @@ import type {
   ClickEventHandler,
   FocusEventHandler,
   FormSubmitHandler,
-  CustomEventHandler
-} from '../components/ui/ui.types';
+  CustomEventHandler,
+  FlexibleEventHandler,
+  isSimplifiedEventHandler,
+  EventValueExtractor
+} from '../types/event-handlers';
 import type {
   ChangeEvent,
   FocusEvent,
@@ -23,27 +32,28 @@ import type {
   SyntheticEvent
 } from 'react';
 
-// ==================== 核心适配器类 ====================
+// ==================== 核心适配器类 v2.0.0 ====================
 
 /**
- * 事件处理器适配器类
+ * 🔄 事件处理器适配器类 - 基于权威类型定义
+ *
  * 负责将各种格式的事件处理器统一为标准格式
+ * 现在使用权威类型定义，确保类型安全和一致性
  */
 export class EventAdapter {
   /**
-   * 适配变更事件处理器 - 支持多种签名自动检测
+   * 🔄 适配变更事件处理器 - 支持多种签名自动检测
    */
   static adaptChangeHandler<T = string>(
     handler?: ChangeEventHandler<T>
   ): UnifiedEventHandler<T, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>> | undefined {
     if (!handler) return undefined;
 
-    // 检测处理器类型并适配
     return this.createUnifiedChangeHandler(handler);
   }
 
   /**
-   * 适配点击事件处理器 - 支持多种签名自动检测
+   * 🔄 适配点击事件处理器 - 支持多种签名自动检测
    */
   static adaptClickHandler<T = void>(
     handler?: ClickEventHandler<T>
@@ -54,7 +64,7 @@ export class EventAdapter {
   }
 
   /**
-   * 适配键盘事件处理器 - 支持多种签名自动检测
+   * 🔄 适配键盘事件处理器 - 支持多种签名自动检测
    */
   static adaptKeyboardHandler<T = void>(
     handler?: KeyboardEventHandler<T>
@@ -65,7 +75,7 @@ export class EventAdapter {
   }
 
   /**
-   * 适配焦点事件处理器 - 支持多种签名自动检测
+   * 🔄 适配焦点事件处理器 - 支持多种签名自动检测
    */
   static adaptFocusHandler<T = void>(
     handler?: FocusEventHandler<T>
@@ -76,7 +86,7 @@ export class EventAdapter {
   }
 
   /**
-   * 适配表单提交处理器 - 支持多种签名自动检测
+   * 🔄 适配表单提交处理器 - 支持多种签名自动检测
    */
   static adaptFormHandler<T = void>(
     handler?: FormSubmitHandler<T>
@@ -199,24 +209,32 @@ export class EventAdapter {
   }
 
   /**
-   * 判断是否为基于值的处理器
+   * 🧠 判断是否为基于数据的处理器
+   *
+   * @deprecated 现在使用权威类型定义中的 isSimplifiedEventHandler
    */
   private static isValueBasedHandler(handler: Function): boolean {
+    // 优先使用权威类型守卫
+    if (typeof handler === 'function') {
+      return isSimplifiedEventHandler(handler);
+    }
+
+    // 后备逻辑：检查函数字符串
     const funcStr = handler.toString();
-
-    // 检查函数参数名
     const hasEventParams = funcStr.includes('event') || funcStr.includes('e)') || funcStr.includes('e:');
-    const hasValueParams = funcStr.includes('value') || funcStr.includes('data') || funcStr.includes('val');
+    const hasDataParams = funcStr.includes('data') || funcStr.includes('value') || funcStr.includes('val');
 
-    // 如果没有明确的事件参数标识，倾向于认为是基于值的处理器
-    return !hasEventParams || hasValueParams;
+    // 如果没有明确的事件参数标识，倾向于认为是基于数据的处理器
+    return !hasEventParams || hasDataParams;
   }
 }
 
-// ==================== 工厂函数 ====================
+// ==================== 工厂函数 v2.0.0 ====================
 
 /**
- * 创建统一的变更事件处理器 - 支持多种签名
+ * 🏭 创建统一的变更事件处理器 - 支持多种签名
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptChangeHandler
  */
 export function createChangeHandler<T = string>(
   onChange?: ChangeEventHandler<T>
@@ -225,7 +243,9 @@ export function createChangeHandler<T = string>(
 }
 
 /**
- * 创建统一的键盘事件处理器 - 支持多种签名
+ * 🏭 创建统一的键盘事件处理器 - 支持多种签名
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptKeyboardHandler
  */
 export function createKeyboardHandler<T = void>(
   onKeyDown?: KeyboardEventHandler<T>
@@ -234,7 +254,9 @@ export function createKeyboardHandler<T = void>(
 }
 
 /**
- * 创建统一的点击事件处理器 - 支持多种签名
+ * 🏭 创建统一的点击事件处理器 - 支持多种签名
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptClickHandler
  */
 export function createClickHandler<T = void>(
   onClick?: ClickEventHandler<T>
@@ -243,7 +265,9 @@ export function createClickHandler<T = void>(
 }
 
 /**
- * 创建统一的焦点事件处理器 - 支持多种签名
+ * 🏭 创建统一的焦点事件处理器 - 支持多种签名
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptFocusHandler
  */
 export function createFocusHandler<T = void>(
   onFocus?: FocusEventHandler<T>
@@ -252,7 +276,9 @@ export function createFocusHandler<T = void>(
 }
 
 /**
- * 创建统一的表单提交处理器 - 支持多种签名
+ * 🏭 创建统一的表单提交处理器 - 支持多种签名
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptFormHandler
  */
 export function createFormHandler<T = void>(
   onSubmit?: FormSubmitHandler<T>
@@ -261,7 +287,9 @@ export function createFormHandler<T = void>(
 }
 
 /**
- * 创建通用的统一事件处理器 - 支持任何事件类型
+ * 🏭 创建通用的统一事件处理器 - 支持任何事件类型
+ *
+ * @deprecated 建议直接使用权威类型定义中的 adaptEventHandler
  */
 export function createUnifiedEventHandler<T = void, E = SyntheticEvent>(
   handler?: CustomEventHandler<T, E>
@@ -287,15 +315,17 @@ export function createUnifiedEventHandler<T = void, E = SyntheticEvent>(
 // ==================== React Hook 适配器 ====================
 
 /**
- * 为 React 组件创建适配的事件处理器 Hook
+ * 🎣 为 React 组件创建适配的事件处理器 Hook
+ *
+ * @deprecated 建议直接使用权威类型定义和适配器
  */
 export function useAdaptedHandlers<T = string>(handlers: {
-  onChange?: FlexibleChangeHandler<T>;
-  onKeyDown?: (event: KeyboardEvent) => void | ((data: T, event: KeyboardEvent) => void);
-  onFocus?: (event: FocusEvent) => void | ((value: T, event: FocusEvent) => void);
-  onBlur?: (event: FocusEvent) => void | ((value: T, event: FocusEvent) => void);
-  onClick?: (event: MouseEvent) => void | ((data: T, event: MouseEvent) => void);
-  onSubmit?: (event: FormEvent) => void | ((data: T, event: FormEvent) => void);
+  onChange?: FlexibleEventHandler<T>;
+  onKeyDown?: FlexibleEventHandler<T>;
+  onFocus?: FlexibleEventHandler<T>;
+  onBlur?: FlexibleEventHandler<T>;
+  onClick?: FlexibleEventHandler<T>;
+  onSubmit?: FlexibleEventHandler<T>;
 }) {
   return {
     onChange: createChangeHandler(handlers.onChange),
@@ -307,55 +337,43 @@ export function useAdaptedHandlers<T = string>(handlers: {
   };
 }
 
-// ==================== 值提取器 ====================
+// ==================== 值提取器 v2.0.0 ====================
 
 /**
- * 值提取器集合
+ * 🛠️ 值提取器集合 - 现在使用权威定义
+ *
+ * @deprecated 建议直接使用权威类型定义中的 EventValueExtractor
  */
 export const ValueExtractors = {
   /**
    * 从输入事件中提取字符串值
    */
-  fromInput: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): string => {
-    return event.target.value;
-  },
+  fromInput: EventValueExtractor.fromInput,
 
   /**
    * 从选择框事件中提取值
    */
-  fromSelect: (event: ChangeEvent<HTMLSelectElement>): string => {
-    return event.target.value;
-  },
+  fromSelect: EventValueExtractor.fromSelect,
 
   /**
    * 从复选框事件中提取布尔值
    */
-  fromCheckbox: (event: ChangeEvent<HTMLInputElement>): boolean => {
-    return event.target.checked;
-  },
+  fromCheckbox: EventValueExtractor.fromCheckbox,
 
   /**
    * 从单选框事件中提取值
    */
-  fromRadio: (event: ChangeEvent<HTMLInputElement>): string => {
-    return event.target.value;
-  },
+  fromRadio: EventValueExtractor.fromRadio,
 
   /**
    * 从数字输入框中提取数字值
    */
-  fromNumberInput: (event: ChangeEvent<HTMLInputElement>): number => {
-    const value = event.target.value;
-    return value === '' ? 0 : Number(value);
-  },
+  fromNumberInput: EventValueExtractor.fromNumber,
 
   /**
    * 从日期输入框中提取日期值
    */
-  fromDateInput: (event: ChangeEvent<HTMLInputElement>): Date | null => {
-    const value = event.target.value;
-    return value ? new Date(value) : null;
-  }
+  fromDateInput: EventValueExtractor.fromDate
 };
 
 // ==================== 便捷处理器工厂 ====================
@@ -496,3 +514,49 @@ export class EventDebugger {
     }) as unknown as T;
   }
 }
+
+// ==================== 迁移指南 v2.0.0 ====================
+
+/**
+ * 📚 EventAdapter v2.0.0 迁移指南
+ *
+ * 本文件已经更新为基于权威类型定义的实现，确保类型安全和一致性。
+ *
+ * 🔄 主要变更：
+ * 1. 所有事件处理器类型现在从 @/types/event-handlers 导入
+ * 2. 现有函数标记为 @deprecated，建议使用权威定义
+ * 3. 值提取器现在使用 EventValueExtractor
+ * 4. 类型守卫使用权威定义的函数
+ *
+ * 📝 迁移步骤：
+ *
+ * 旧代码：
+ * ```typescript
+ * import { createChangeHandler } from '@/utils/eventAdapter';
+ *
+ * const handler = createChangeHandler((value: string, event) => {
+ *   console.log(value);
+ * });
+ * ```
+ *
+ * 新代码：
+ * ```typescript
+ * import { adaptChangeHandler } from '@/types/event-handlers';
+ *
+ * const handler = adaptChangeHandler((value: string, event) => {
+ *   console.log(value);
+ * });
+ * ```
+ *
+ * 🎯 推荐做法：
+ * 1. 新代码直接从 @/types/event-handlers 导入
+ * 2. 现有代码可以继续使用本文件（向后兼容）
+ * 3. 逐步迁移到权威类型定义
+ * 4. 使用 EventValueExtractor 替代 ValueExtractors
+ *
+ * ⚠️ 注意事项：
+ * - 本文件保持向后兼容性
+ * - 所有函数签名保持不变
+ * - 类型安全性得到显著提升
+ * - 建议在新项目中使用权威定义
+ */

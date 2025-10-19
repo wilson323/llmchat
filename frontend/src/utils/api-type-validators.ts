@@ -25,7 +25,7 @@ export const createApiResponseValidator = <T>(dataValidator: RuntimeTypeValidato
     code: RuntimeTypeValidator.create<string>().required(),
     message: RuntimeTypeValidator.create<string>().required(),
     data: dataValidator.required(),
-    timestamp: timestampValidator().required()
+    timestamp: stringValidator().required()
   });
 };
 
@@ -36,7 +36,7 @@ export const apiErrorResponseValidator = objectValidatorFactory({
   code: RuntimeTypeValidator.create<string>().required(),
   message: RuntimeTypeValidator.create<string>().required(),
   data: RuntimeTypeValidator.create<null>(),
-  timestamp: timestampValidator().required(),
+  timestamp: stringValidator().required(),
   error: objectValidatorFactory({
     details: RuntimeTypeValidator.create<string>().optional(),
     stack: RuntimeTypeValidator.create<string>().optional()
@@ -134,8 +134,8 @@ export const agentConfigValidator = objectValidatorFactory({
       flowNodeStatus: RuntimeTypeValidator.create<boolean>().optional()
     }).optional()
   }).optional(),
-  createdAt: timestampValidator().optional(),
-  updatedAt: timestampValidator().optional()
+  createdAt: stringValidator().optional(),
+  updatedAt: stringValidator().optional()
 });
 
 /**
@@ -379,7 +379,7 @@ export const auditLogValidator = objectValidatorFactory({
   userId: uuidValidator().optional(),
   action: RuntimeTypeValidator.create<string>().required(),
   resource: RuntimeTypeValidator.create<string>().required(),
-  timestamp: timestampValidator().required(),
+  timestamp: stringValidator().required(),
   details: RuntimeTypeValidator.create<Record<string, any>>().optional(),
   ip: RuntimeTypeValidator.create<string>().optional(),
   userAgent: RuntimeTypeValidator.create<string>().optional()
@@ -408,7 +408,7 @@ export const auditLogsResponseValidator = createApiResponseValidator(
  */
 export const healthStatusValidator = objectValidatorFactory({
   status: enumValidator(['healthy', 'unhealthy', 'degraded'] as const).required(),
-  timestamp: timestampValidator().required(),
+  timestamp: stringValidator().required(),
   services: RuntimeTypeValidator.create<Record<string, any>>().optional(),
   uptime: RuntimeTypeValidator.create<number>().optional(),
   version: RuntimeTypeValidator.create<string>().optional()
@@ -421,7 +421,7 @@ export const agentHealthStatusValidator = objectValidatorFactory({
   agentId: uuidValidator().required(),
   status: agentStatusValidator.required(),
   responseTime: RuntimeTypeValidator.create<number>().optional(),
-  lastChecked: RuntimeTypeValidator.create<string>().required(),
+  lastChecked: stringValidator().required(),
   error: RuntimeTypeValidator.create<string>().optional()
 });
 

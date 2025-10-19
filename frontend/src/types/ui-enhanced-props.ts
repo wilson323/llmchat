@@ -181,10 +181,7 @@ export type ToEnhancedProps<T> = NonEventProps<T> & EnhancedEventHandlersProps;
  * 将增强Props转换为标准React组件Props
  */
 export type ToReactProps<T> = Omit<T, 'onClick' | 'onFocus' | 'onBlur' | 'onKeyDown' | 'onKeyUp' | 'onChange' | 'onSubmit'> &
-  React.HTMLAttributes<T extends { type: 'button' } ? HTMLButtonElement :
-    T extends { type: 'input' } ? HTMLInputElement :
-    T extends { type: 'form' } ? HTMLFormElement :
-    HTMLElement>;
+  React.HTMLAttributes<HTMLElement>;
 
 // ==================== 预设组件类型 ====================
 

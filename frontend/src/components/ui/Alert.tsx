@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createSubComponent, attachSubComponents } from './types.unified';
+import { createSubComponent, attachSubComponents } from './ui.types';
 import type { ComponentWithSubComponents } from './ui.types';
 
 export interface AlertProps {

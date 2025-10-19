@@ -3,8 +3,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import type { ButtonProps, ForwardRefComponent } from './ui.types';
-import type { ClickEventHandler } from '@/types/event-handlers';
-import { createClickHandler } from '@/utils/eventAdapter';
+// 简化的事件处理器，避免循环依赖
+const createClickHandler = (handler?: React.MouseEventHandler<HTMLButtonElement>) => handler;
 
 // 按钮变体配置
 const buttonVariants = cva(
@@ -58,15 +58,12 @@ const buttonVariants = cva(
   },
 );
 
-// 本地ButtonProps接口，用于CVA变体
-interface LocalButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'variant'> {
-  /** CVA变体 - variant */
+// Button变体Props类型（从ui.types.ts导入的类型已包含所有必要属性）
+type ButtonVariantProps = {
   variant?: VariantProps<typeof buttonVariants>['variant'];
-  /** CVA变体 - size */
   size?: VariantProps<typeof buttonVariants>['size'];
-  /** CVA变体 - shape */
   shape?: VariantProps<typeof buttonVariants>['shape'];
-}
+};
 
 // Button实现组件
 const ButtonImpl = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -118,7 +115,7 @@ const ButtonImpl = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // 构建按钮属性 - 排除onClick以避免冲突
     const buttonProps = React.useMemo(() => {
-      const { onClick: _, ...restProps } = props as LocalButtonProps;
+      const { onClick: _, ...restProps } = props;
       return {
         ...restProps,
         disabled: disabled || loading,

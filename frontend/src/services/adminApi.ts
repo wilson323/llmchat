@@ -1,17 +1,20 @@
 
 import { api } from './api';
-import type { ApiSuccessPayload } from '@/types/dynamic';
 import type {
-  ApiResult,
   PaginatedResponse,
   UserManagementParams,
   LogQueryParams,
   LogLevel,
   UserRole,
-  CreateUserPayload
+  CreateUserPayload,
+  QueryParams
 } from './types/api-common';
 import type { ApiErrorType } from './types/api-errors';
 import { ApiErrorFactory, ApiErrorHandler } from './types/api-errors';
+import type {
+  ApiResponse,
+  ApiResult
+} from './types/api-response';
 
 // ============================================================================
 // 管理后台相关类型定义
@@ -262,7 +265,7 @@ export class AdminApiService {
    */
   static async getSystemInfo(): Promise<ApiResult<SystemInfo>> {
     try {
-      const response = await api.get<ApiSuccessPayload<SystemInfo>>('/admin/system-info');
+      const response = await api.get<ApiResponse<SystemInfo>>('/admin/system-info');
 
       return {
         success: true,
@@ -292,7 +295,7 @@ export class AdminApiService {
    */
   static async getSystemStats(): Promise<ApiResult<SystemStats>> {
     try {
-      const response = await api.get<ApiSuccessPayload<SystemStats>>('/admin/stats');
+      const response = await api.get<ApiResponse<SystemStats>>('/admin/stats');
 
       return {
         success: true,
@@ -322,7 +325,7 @@ export class AdminApiService {
    */
   static async getLogsPage(params?: GetLogsParams): Promise<ApiResult<LogsPage>> {
     try {
-      const response = await api.get<ApiSuccessPayload<LogsPage>>('/admin/logs', {
+      const response = await api.get<ApiResponse<LogsPage>>('/admin/logs', {
         params: {
           level: params?.level,
           start: params?.startDate,
@@ -442,7 +445,7 @@ export class AdminApiService {
    */
   static async getUsers(params?: UserManagementParams): Promise<ApiResult<PaginatedResponse<AdminUser>>> {
     try {
-      const response = await api.get<ApiSuccessPayload<PaginatedResponse<AdminUser>>>('/admin/users', {
+      const response = await api.get<ApiResponse<PaginatedResponse<AdminUser>>>('/admin/users', {
         params: {
           page: params?.page || 1,
           pageSize: params?.pageSize || 20,
@@ -483,7 +486,7 @@ export class AdminApiService {
    */
   static async getUserStats(): Promise<ApiResult<UserStats>> {
     try {
-      const response = await api.get<ApiSuccessPayload<UserStats>>('/admin/users/stats');
+      const response = await api.get<ApiResponse<UserStats>>('/admin/users/stats');
 
       return {
         success: true,
@@ -528,7 +531,7 @@ export class AdminApiService {
         });
       }
 
-      const response = await api.post<ApiSuccessPayload<AdminUser>>('/admin/users/create', payload);
+      const response = await api.post<ApiResponse<AdminUser>>('/admin/users/create', payload);
 
       return {
         success: true,
@@ -564,7 +567,7 @@ export class AdminApiService {
     email?: string;
   }): Promise<ApiResult<AdminUser>> {
     try {
-      const response = await api.post<ApiSuccessPayload<AdminUser>>('/admin/users/update', payload);
+      const response = await api.post<ApiResponse<AdminUser>>('/admin/users/update', payload);
 
       return {
         success: true,
@@ -659,7 +662,7 @@ export class AdminApiService {
    */
   static async getAuditLogs(params?: AuditLogParams): Promise<ApiResult<PaginatedResponse<AuditLogItem>>> {
     try {
-      const response = await api.get<ApiSuccessPayload<PaginatedResponse<AuditLogItem>>>('/admin/audit-logs', {
+      const response = await api.get<ApiResponse<PaginatedResponse<AuditLogItem>>>('/admin/audit-logs', {
         params: {
           page: params?.page || 1,
           pageSize: params?.pageSize || 50,
@@ -703,7 +706,7 @@ export class AdminApiService {
    */
   static async getSystemConfig(category?: string): Promise<ApiResult<SystemConfig[]>> {
     try {
-      const response = await api.get<ApiSuccessPayload<SystemConfig[]>>('/admin/config', {
+      const response = await api.get<ApiResponse<SystemConfig[]>>('/admin/config', {
         params: { category }
       });
 
@@ -736,7 +739,7 @@ export class AdminApiService {
    */
   static async updateSystemConfig(configId: string, value: string): Promise<ApiResult<SystemConfig>> {
     try {
-      const response = await api.put<ApiSuccessPayload<SystemConfig>>(`/admin/config/${configId}`, {
+      const response = await api.put<ApiResponse<SystemConfig>>(`/admin/config/${configId}`, {
         value
       });
 
@@ -769,7 +772,7 @@ export class AdminApiService {
    */
   static async getBackups(): Promise<ApiResult<BackupInfo[]>> {
     try {
-      const response = await api.get<ApiSuccessPayload<BackupInfo[]>>('/admin/backups');
+      const response = await api.get<ApiResponse<BackupInfo[]>>('/admin/backups');
 
       return {
         success: true,
@@ -799,7 +802,7 @@ export class AdminApiService {
    */
   static async createBackup(type: 'full' | 'incremental', description?: string): Promise<ApiResult<BackupInfo>> {
     try {
-      const response = await api.post<ApiSuccessPayload<BackupInfo>>('/admin/backups', {
+      const response = await api.post<ApiResponse<BackupInfo>>('/admin/backups', {
         type,
         description
       });
@@ -833,7 +836,7 @@ export class AdminApiService {
    */
   static async getMaintenanceTasks(): Promise<ApiResult<MaintenanceTask[]>> {
     try {
-      const response = await api.get<ApiSuccessPayload<MaintenanceTask[]>>('/admin/maintenance/tasks');
+      const response = await api.get<ApiResponse<MaintenanceTask[]>>('/admin/maintenance/tasks');
 
       return {
         success: true,
@@ -863,7 +866,7 @@ export class AdminApiService {
    */
   static async executeMaintenanceTask(taskId: string): Promise<ApiResult<MaintenanceTask>> {
     try {
-      const response = await api.post<ApiSuccessPayload<MaintenanceTask>>(`/admin/maintenance/tasks/${taskId}/execute`);
+      const response = await api.post<ApiResponse<MaintenanceTask>>(`/admin/maintenance/tasks/${taskId}/execute`);
 
       return {
         success: true,

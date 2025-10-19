@@ -45,49 +45,73 @@ const toastVariants = cva(
 export type ToastType = IToastType;
 
 // Toast选项扩展
-export interface ToastOptions extends IToastOptions {
-  /** 自定义图标 */
-  icon?: React.ReactNode;
+export interface ToastOptions {
+  /** Toast 类型 */
+  type?: ToastType;
+  /** Toast 标题 */
+  title?: string;
+  /** Toast 描述 */
+  description?: string;
+  /** Toast 位置 */
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  /** Toast 持续时间（毫秒） */
+  duration?: number;
   /** 是否可关闭 */
   closable?: boolean;
-  /** 操作按钮 */
+  /** Toast 操作按钮 */
   action?: {
     label: string;
     onClick: () => void;
     variant?: 'default' | 'destructive';
   };
+  /** Toast 图标 */
+  icon?: React.ReactNode;
   /** 自定义渲染函数 */
   render?: (toast: ToastItem) => React.ReactNode;
-  /** 位置 */
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
   /** 是否在挂载时显示 */
   showWhenMounted?: boolean;
 }
 
-// Toast项扩展
-export interface ToastItem extends IToastItem {
-  /** 自定义图标 */
-  icon?: React.ReactNode;
+// Toast项接口（用于状态管理）
+export interface ToastItem {
+  /** Toast ID */
+  id: string;
+  /** Toast 类型 */
+  type: ToastType;
+  /** Toast 标题 */
+  title?: string;
+  /** Toast 描述 */
+  description?: string;
+  /** Toast 位置 */
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+  /** Toast 持续时间（毫秒） */
+  duration?: number;
   /** 是否可关闭 */
   closable?: boolean;
-  /** 操作按钮 */
+  /** Toast 操作按钮 */
   action?: {
     label: string;
     onClick: () => void;
     variant?: 'default' | 'destructive';
   };
+  /** Toast 图标 */
+  icon?: React.ReactNode;
   /** 自定义渲染函数 */
   render?: (toast: ToastItem) => React.ReactNode;
-  /** 位置 */
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
-  /** 创建时间 */
+  /** 创建时间（时间戳） */
   createdAt: number;
   /** 是否正在悬停 */
   isPaused?: boolean;
 }
 
-// Toast状态扩展
-export interface ToastState extends IToastState {
+// Toast状态接口
+export interface ToastState {
+  /** Toast列表 */
+  toasts: ToastItem[];
+  /** 添加Toast */
+  add: (toast: ToastItem) => void;
+  /** 移除Toast */
+  remove: (id: string) => void;
   /** 暂停计时器 */
   pauseTimer: (id: string) => void;
   /** 恢复计时器 */
@@ -98,6 +122,8 @@ export interface ToastState extends IToastState {
   setPosition: (position: string) => void;
   /** 获取指定位置的Toasts */
   getToastsByPosition: (position: string) => ToastItem[];
+  /** 获取当前状态 */
+  getState: () => ToastState;
 }
 
 // Toast组件Props
@@ -425,31 +451,59 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
 // 为ToastProvider添加Toast子组件
 ToastProvider.Toast = ToastComponent;
 
-// 全局toast函数
-export const toast = (options: ToastOptions | string) => {
-  const { toast: toastFn } = useToast.getState();
-  return toastFn(options);
+// 创建toast实例
+const createToast = (options: ToastOptions | string): string => {
+  const id = genId();
+  const opts = typeof options === 'string' ? { title: options } : options;
+
+  const item: ToastItem = {
+    id,
+    type: opts.type || 'info',
+    title: opts.title || '',
+    description: opts.description || '',
+    duration: opts.duration || 3000,
+    icon: opts.icon,
+    closable: opts.closable !== false,
+    action: opts.action,
+    render: opts.render,
+    position: opts.position || 'top-right',
+    createdAt: Date.now(),
+    isPaused: false,
+  };
+
+  // 直接使用store的add方法
+  useToastStore.getState().add(item);
+
+  // 自动关闭
+  if (item.duration > 0) {
+    const timer = setTimeout(() => {
+      useToastStore.getState().remove(id);
+    }, item.duration);
+
+    return () => clearTimeout(timer);
+  }
+
+  return id;
 };
+
+// 全局toast函数
+export const toast = createToast;
 
 // 便捷函数
 export const toastSuccess = (options: Omit<ToastOptions, 'type'> | string) => {
-  const { toast: toastFn } = useToast.getState();
-  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'success' });
+  return createToast({ ...(typeof options === 'string' ? { title: options } : options), type: 'success' });
 };
 
 export const toastError = (options: Omit<ToastOptions, 'type'> | string) => {
-  const { toast: toastFn } = useToast.getState();
-  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'error' });
+  return createToast({ ...(typeof options === 'string' ? { title: options } : options), type: 'error' });
 };
 
 export const toastWarning = (options: Omit<ToastOptions, 'type'> | string) => {
-  const { toast: toastFn } = useToast.getState();
-  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'warning' });
+  return createToast({ ...(typeof options === 'string' ? { title: options } : options), type: 'warning' });
 };
 
 export const toastInfo = (options: Omit<ToastOptions, 'type'> | string) => {
-  const { toast: toastFn } = useToast.getState();
-  return toastFn({ ...(typeof options === 'string' ? { title: options } : options), type: 'info' });
+  return createToast({ ...(typeof options === 'string' ? { title: options } : options), type: 'info' });
 };
 
 // Toaster组件导出 - 提供统一导出接口

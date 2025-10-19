@@ -109,10 +109,15 @@ export {
   ApiErrorGuards
 } from './types/api-errors';
 
-// 类型验证工具
-export {
+// 类型验证工具（接口）
+export type {
   TypeValidator,
   ValidationResult,
+  ValidatorFactory
+} from './utils/type-validator';
+
+// 类型验证工具（类和对象）
+export {
   StringValidator,
   NumberValidator,
   BooleanValidator,
@@ -123,10 +128,6 @@ export {
   ApiResponseValidator,
   RuntimeTypeChecker,
   CommonValidators
-} from './utils/type-validator';
-
-export type {
-  ValidatorFactory
 } from './utils/type-validator';
 
 // 便捷验证器函数

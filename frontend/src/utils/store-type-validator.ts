@@ -9,6 +9,7 @@
  * @since 2025-10-18
  */
 
+import React from 'react';
 import { RuntimeTypeValidator, objectValidatorFactory, createBatchValidator } from './runtime-type-validator';
 import { BaseStoreState, BaseStoreActions, StoreError, StoreStatus } from '@/store/types';
 
@@ -410,7 +411,7 @@ export const useStoreValidation = <T extends Record<string, any>>(
   const { validateOnMount = true, validateOnChange = true, onError } = options;
 
   // 验证状态
-  const validateState = React.useCallback((state: T) => {
+  const validateState = (state: T) => {
     const result = validator.validate(state);
 
     if (!result.isValid && onError) {
@@ -418,7 +419,7 @@ export const useStoreValidation = <T extends Record<string, any>>(
     }
 
     return result;
-  }, [validator, onError]);
+  };
 
   // 组件挂载时验证
   React.useEffect(() => {
@@ -426,7 +427,7 @@ export const useStoreValidation = <T extends Record<string, any>>(
       const currentState = store.getState();
       validateState(currentState);
     }
-  }, [validateOnMount, store, validateState]);
+  }, [validateOnMount, store]);
 
   // 监听状态变化
   React.useEffect(() => {
@@ -438,7 +439,7 @@ export const useStoreValidation = <T extends Record<string, any>>(
     });
 
     return unsubscribe;
-  }, [validateOnChange, store, validateState]);
+  }, [validateOnChange, store]);
 };
 
 /**

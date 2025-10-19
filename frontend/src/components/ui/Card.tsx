@@ -10,7 +10,7 @@ import type {
   BaseComponentProps,
   EventHandlersProps,
 } from './ui.types';
-import { createSubComponent, attachSubComponents } from './types.unified';
+import { createSubComponent, attachSubComponents } from './ui.types';
 
 // 子组件实现
 const CardHeaderImpl = React.forwardRef<HTMLDivElement, CardHeaderProps>(

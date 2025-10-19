@@ -60,7 +60,7 @@ const selectTriggerVariants = cva(
   },
 );
 
-// 扩展Props接口
+// Select组件Props - 扩展ui.types.ts中的类型，添加CVA变体和特定功能
 export interface SelectProps
   extends ISelectProps,
     VariantProps<typeof selectVariants> {
@@ -70,14 +70,6 @@ export interface SelectProps
   error?: string;
   /** 帮助文本 */
   helperText?: string;
-  /** 是否必填 */
-  required?: boolean;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 是否为只读 */
-  readonly?: boolean;
-  /** 占位符 */
-  placeholder?: string;
   /** 是否可搜索 */
   searchable?: boolean;
   /** 搜索值 */
@@ -93,10 +85,6 @@ export interface SelectProps
 export interface SelectTriggerProps
   extends ISelectTriggerProps,
     VariantProps<typeof selectTriggerVariants> {
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 是否只读 */
-  readonly?: boolean;
   /** 占位符 */
   placeholder?: string;
 }
@@ -116,8 +104,6 @@ export interface SelectContentProps extends ISelectContentProps {
 }
 
 export interface SelectItemProps extends ISelectItemProps {
-  /** 是否禁用 */
-  disabled?: boolean;
   /** 是否选中 */
   selected?: boolean;
   /** 前缀图标 */

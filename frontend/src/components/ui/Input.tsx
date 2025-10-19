@@ -32,13 +32,8 @@ const inputVariants = cva(
   },
 );
 
-// 扩展InputProps接口
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants>,
-    Omit<IInputProps, 'size'> {
-  /** 输入框类型 */
-  type?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'time' | 'datetime-local' | 'file';
+// Input组件Props - 直接使用ui.types.ts中的InputProps，只添加CVA变体
+export interface InputProps extends IInputProps, VariantProps<typeof inputVariants> {
   /** 是否显示清除按钮 */
   allowClear?: boolean;
   /** 前缀元素 */
@@ -51,28 +46,6 @@ export interface InputProps
   error?: string;
   /** 帮助文本 */
   helperText?: string;
-  /** 是否必填 */
-  required?: boolean;
-  /** 是否只读 */
-  readonly?: boolean;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 占位符 */
-  placeholder?: string;
-  /** 最大长度 */
-  maxLength?: number;
-  /** 最小长度 */
-  minLength?: number;
-  /** 输入模式 */
-  inputMode?: 'text' | 'numeric' | 'tel' | 'email' | 'url' | 'search' | 'none';
-  /** 自动完成 */
-  autoComplete?: string;
-  /** 自动纠正 */
-  autoCorrect?: 'on' | 'off';
-  /** 自动大写 */
-  autoCapitalize?: 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';
-  /** 是否检查拼写 */
-  spellCheck?: boolean;
   /** 清除回调 */
   onClear?: () => void;
   /** 变化回调 */
