@@ -12,7 +12,6 @@
 
 import React, { useRef, useMemo, useCallback, useEffect, useState } from 'react';
 import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
-import { usePerformanceMonitor, memoryMonitor } from '@/utils/performanceOptimizer';
 
 type NonNullable<T> = T extends null | undefined ? never : T;
 
@@ -83,8 +82,6 @@ export function OptimizedVirtualizedList<T>({
   cacheSize = 1000,
 }: OptimizedVirtualizedListProps<T>) {
   // Performance monitoring
-  usePerformanceMonitor('OptimizedVirtualizedList');
-
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
   const heightCache = useRef(createHeightCache(cacheSize));
@@ -347,7 +344,7 @@ export function useVirtualListPerformance() {
       renderCount: prev.renderCount + 1,
       averageRenderTime,
       maxRenderTime,
-      memoryUsage: memoryMonitor.getCurrentUsage().heapUsed,
+      memoryUsage: 0,
     }));
 
     lastRenderTime.current = now;

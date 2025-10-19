@@ -10,9 +10,6 @@ import messageStore from '@/store/messageStore';
 import agentStore from '@/store/agentStore';
 import type { MessageState, AgentState } from '@/store/types';
 import { useI18n } from '@/i18n';
-import {
-  usePerformanceMonitor,
-} from '@/utils/performanceOptimizer';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -31,10 +28,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
     onInteractiveFormSubmit,
     onRetryMessage,
   }) => {
-    // 🚀 性能监控
-    usePerformanceMonitor('MessageList');
-
-    // 🚀 性能优化：智能虚拟化阈值
+        // 🚀 性能优化：智能虚拟化阈值
     const shouldUseVirtualization = useMemo(() => {
       return messages.length > 10; // 超过10条消息使用虚拟滚动
     }, [messages.length]);

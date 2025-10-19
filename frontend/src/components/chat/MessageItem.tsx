@@ -16,9 +16,6 @@ import { ReasoningTrail } from './ReasoningTrail';
 import { EventTrail } from './EventTrail';
 import { useA11yAnnouncer } from '@/hooks/useA11yAnnouncer';
 import { useI18n } from '@/i18n';
-import {
-  usePerformanceMonitor,
-} from '@/utils/performanceOptimizer';
 
 // 回调函数类型定义
 interface InteractiveCallbacks {
@@ -56,9 +53,6 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
   onInteractiveSelect,
   onInteractiveFormSubmit,
 }) => {
-  // 🚀 性能监控
-  usePerformanceMonitor('MessageItem');
-
   const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
   const {

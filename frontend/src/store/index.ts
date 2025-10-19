@@ -27,34 +27,9 @@ export type { AuthUser, LoginPayload } from './authStore';
 export type {
   BaseStoreState,
   BaseStoreActions,
-  BaseStore,
-  SetState,
-  GetState,
-  StoreCreator,
-  PersistConfig,
-  PersistedStore,
   StoreError,
   StoreStatus,
-  ExtractState,
-  ExtractActions,
-  CreateStoreType,
-  CreatePersistedStoreType,
-  StoreFactoryConfig,
-  StoreFactory,
-  AsyncState,
-  AsyncActions,
-  AsyncStore,
-  StoreMiddleware,
-  DevtoolsOptions,
-  DEFAULT_PERSIST_CONFIG,
-  DEFAULT_DEVTOOLS_CONFIG,
 } from './types';
-
-// ============================================================================
-// 工具函数导出
-// ============================================================================
-
-export { isStore, isPersistedStore } from './types';
 
 // ============================================================================
 // Store组合Hook（可选）

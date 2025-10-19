@@ -8,9 +8,6 @@ import agentStore from '@/store/agentStore';
 import type { MessageState, AgentState } from '@/store/types';
 import { useI18n } from '@/i18n';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
-import {
-  usePerformanceMonitor,
-} from '@/utils/performanceOptimizer';
 
 interface VirtualizedMessageListProps {
   messages: ChatMessage[];
@@ -81,9 +78,6 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
   onInteractiveFormSubmit,
   onRetryMessage,
 }) => {
-  // 🚀 性能监控
-  usePerformanceMonitor('VirtualizedMessageList');
-
   const currentAgent = agentStore((state: AgentState) => state.currentAgent);
   const streamingStatus = messageStore((state: MessageState) => state.streamingStatus);
   const { t } = useI18n();

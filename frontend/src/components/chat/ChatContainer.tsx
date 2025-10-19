@@ -23,15 +23,8 @@ import type { MessageState, AgentState, SessionState } from '@/store/types';
 import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
-import { perfMonitor } from '@/utils/performanceMonitor';
-import {
-  memoryMonitor,
-  resourceManager,
-  usePerformanceMonitor,
-} from '@/utils/performanceOptimizer';
+
 export const ChatContainer: React.FC = () => {
-  // 🚀 性能监控和资源管理
-  usePerformanceMonitor('ChatContainer');
   // 🚀 性能优化：使用拆分的store，精确订阅需要的状态
   const messages = messageStore((state: MessageState) => state.messages);
   const isStreaming = messageStore((state: MessageState) => state.isStreaming);

@@ -22,9 +22,6 @@ import { sanitizeHTML, sanitizeMarkdown, detectXSS, secureContentSanitizer } fro
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import {
-  usePerformanceMonitor,
-} from '@/utils/performanceOptimizer';
 
 interface OptimizedMessageItemProps {
   message: ChatMessage;
@@ -58,11 +55,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   onCopy,
   onFeedback,
 }) => {
-  // Performance monitoring
-  usePerformanceMonitor('OptimizedMessageItem');
-  const { renderCount } = MessageItemPerfMonitor();
-
-  const { t } = useI18n();
+    const { t } = useI18n();
   const messageRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
