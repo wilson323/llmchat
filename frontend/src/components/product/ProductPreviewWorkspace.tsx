@@ -285,7 +285,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
       return;
     }
 
-    const request = metadata?.request as {
+    const request = (metadata?.request as {
       productQuery?: string;
       personalization?: string;
       sceneImage?: string;
@@ -294,11 +294,11 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
       generatedImage?: {
         imageUrl?: string;
       };
-    } ?? {};
-    const response = metadata?.response as {
+    }) || {};
+    const response = (metadata?.response as {
       generatedImage?: string;
       imageUrl?: string;
-    } ?? {};
+    }) || {};
 
     if (typeof request.productQuery === 'string') {
       setProductQuery(request.productQuery);

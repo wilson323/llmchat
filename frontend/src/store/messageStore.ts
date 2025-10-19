@@ -11,7 +11,6 @@ import { create } from 'zustand';
 import { ChatMessage, StreamStatus, ReasoningStepUpdate, ReasoningStep, FastGPTEvent } from '@/types';
 // import { normalizeReasoningDisplay } from '@/lib/reasoning';
 import { debugLog } from '@/lib/debug';
-import { perfMonitor } from '@/utils/performanceMonitor';
 
 // 辅助函数：查找最后一个助手消息的索引
 const findLastAssistantMessageIndex = (messages: ChatMessage[]): number => {

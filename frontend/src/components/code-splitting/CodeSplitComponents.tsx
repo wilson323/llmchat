@@ -18,7 +18,7 @@ import Badge from '@/components/ui/Badge';
 import Alert from '@/components/ui/Alert';
 
 
-import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
+// performanceOptimizer已删除
 
 // Error boundary for lazy loaded components
 interface ErrorBoundaryState {
@@ -283,14 +283,7 @@ export const LazyChatAttachments = createLazyComponent(
   },
 );
 
-export const LazyVoiceChat = createLazyComponent(
-  () => import('@/components/voice/VoiceCallWorkspace'),
-  {
-    prefetch: false,
-    timeout: 10000,
-    loadingType: 'spinner',
-  },
-);
+// LazyVoiceChat已删除 - voice/VoiceCallWorkspace组件已清理
 
 export const LazyInteractiveComponents = createLazyComponent(
   () => import('@/components/chat/InteractiveComponent'),

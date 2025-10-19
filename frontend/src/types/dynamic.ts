@@ -41,7 +41,6 @@ export type {
 export {
   DynamicTypeGuard,
   DynamicDataConverter,
-  SafeAccess,
 } from '@llmchat/shared-types';
 
 export type ApiSuccessPayload<TData> = Omit<ApiSuccessResponse<JsonValue>, 'data'> & {

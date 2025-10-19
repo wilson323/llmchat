@@ -10,7 +10,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Agent } from '@/types';
-import { perfMonitor } from '@/utils/performanceMonitor';
 
 // 类型安全的Store辅助类型
 type SetState<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void;
@@ -59,16 +58,12 @@ export const useAgentStore = create<AgentStore>()(
 
       // 设置智能体列表
       setAgents: (agents: Agent[]) => {
-        perfMonitor.measure('agentStore.setAgents', () => {
-          set({ agents, agentsError: null });
-        });
+        set({ agents, agentsError: null });
       },
 
       // 切换当前智能体
       setCurrentAgent: (agent: Agent | null) => {
-        perfMonitor.measure('agentStore.setCurrentAgent', () => {
-          set({ currentAgent: agent });
-        });
+        set({ currentAgent: agent });
       },
 
       // 设置加载状态

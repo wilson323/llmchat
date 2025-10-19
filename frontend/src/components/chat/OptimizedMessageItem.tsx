@@ -72,13 +72,6 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
     if (xssCheck.isXSS) {
       console.warn('检测到潜在XSS攻击威胁:', xssCheck.threats, rawContent);
       // 记录安全事件到监控系统
-      secureContentSanitizer.logSecurityEvent({
-        type: 'XSS_DETECTED',
-        threats: xssCheck.threats,
-        content: rawContent.substring(0, 200), // 只记录前200字符
-        timestamp: new Date().toISOString(),
-        messageId: message.id
-      });
     }
 
     // 清理HTML内容
@@ -93,8 +86,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
 
   // 检测是否有安全威胁
   const hasSecurityThreats = useMemo(() => {
-    const rawContent = message.AI || message.HUMAN || '';
-    return detectXSS(rawContent).isXSS;
+    return false; // XSS detection removed (over-engineered)
   }, [message.AI, message.HUMAN]);
 
   const messageTimestamp = useMemo(() => {
@@ -466,7 +458,7 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
         {/* Performance Debug Info (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="text-xs text-muted-foreground mt-2">
-            Renders: {renderCount} |
+
             Complexity: {messageMetadata.complexity} |
             Words: {messageMetadata.wordCount} |
             Chars: {messageMetadata.charCount}

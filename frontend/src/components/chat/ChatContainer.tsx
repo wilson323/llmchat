@@ -49,7 +49,6 @@ export const ChatContainer: React.FC = () => {
   const [pendingInitVars, setPendingInitVars] = useState<Record<string, any> | null>(null);
   // 将 FastGPT init 返回的 variables 转为交互气泡
   const renderVariablesAsInteractive = (initData: Record<string, unknown>) => {
-    return perfMonitor.measure('ChatContainer.renderVariablesAsInteractive', () => {
       try {
         const app = initData.app as Record<string, unknown> | undefined;
         const chatConfig = app?.chatConfig as Record<string, unknown> | undefined;
@@ -139,7 +138,6 @@ export const ChatContainer: React.FC = () => {
   };
   // 发送消息：若存在 init 变量，则在首次发送时一并携带
   const handleSendMessage = async (content: string, extraOptions?: ChatOptions) => {
-    return perfMonitor.measureAsync('ChatContainer.handleSendMessage', async () => {
       const vars = pendingInitVars || undefined;
       const mergedOptions: ChatOptions = {
         ...(extraOptions || {}),

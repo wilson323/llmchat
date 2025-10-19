@@ -12,7 +12,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ChatSession, AgentSessionsMap, ChatMessage } from '@/types';
 import { updateSessionTitleIfNeeded } from '@/utils/titleGeneration';
-import { perfMonitor } from '@/utils/performanceMonitor';
 import { debugLog } from '@/lib/debug';
 
 // 类型安全的Store辅助类型
