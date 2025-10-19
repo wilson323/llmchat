@@ -167,7 +167,7 @@ export function attachSubComponents<
   const Component = MainComponent as ComponentWithSubComponents<TMainProps, TSubComponents>;
 
   Object.entries(subComponents).forEach(([key, SubComponent]) => {
-    Component[key] = SubComponent;
+    (Component as any)[key] = SubComponent;
   });
 
   return Component;
@@ -315,47 +315,6 @@ export interface ToastComponent {
 }
 
 // =============================================================================
-// 导出所有类型
-// =============================================================================
-
-export type {
-  // 基础类型
-  BaseUIProps,
-  BaseButtonProps,
-  BaseInputProps,
-  BaseCardProps,
-
-  // 子组件类型
-  SubComponentProps,
-  ComponentWithSubComponents,
-  SubComponentFactory,
-
-  // Card组件类型
-  CardHeaderProps,
-  CardTitleProps,
-  CardContentProps,
-  CardFooterProps,
-  CardComponent,
-
-  // Select组件类型
-  SelectTriggerProps,
-  SelectValueProps,
-  SelectContentProps,
-  SelectItemProps,
-  SelectComponent,
-
-  // Tabs组件类型
-  TabsListProps,
-  TabsTriggerProps,
-  TabsContentProps,
-  TabsComponent,
-
-  // Toast组件类型
-  ToastType,
-  ToastOptions,
-  ToastState,
-  ToastComponent,
-};
-
 // 导出工具函数
-export { createSubComponent, attachSubComponents };
+// =============================================================================
+// 工具函数已在定义处export，无需重复

@@ -48,7 +48,7 @@ export interface TypeIntegrationStrategy {
   /** 新类型定义 */
   newTypes: string[];
   /** 验证测试 */
-  validation: ValidationTest[];
+  validation: string[];
   /** 风险等级 */
   risk: RiskLevel;
   /** 预估时间 */
@@ -386,11 +386,7 @@ export const MIGRATION_TOOLS: MigrationTool[] = [
 // 导出策略配置
 // =============================================================================
 
-export {
-  TypeIntegrationStrategy,
-  ValidationTest,
-  MigrationTool
-};
+// 导出已在接口定义处处理
 
 export default {
   strategies: INTEGRATION_STRATEGIES,

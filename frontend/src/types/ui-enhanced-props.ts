@@ -39,14 +39,14 @@ export interface EnhancedEventHandlersProps<T = HTMLElement> {
  * 增强的ButtonProps - 支持灵活的onClick签名
  */
 export interface EnhancedButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'onClick' | 'onFocus' | 'onBlur' | 'onKeyDown' | 'onKeyUp'> {
   /** 点击事件 - 支持多种签名 */
   onClick?: ClickEventHandler<void>;
   /** 其他事件处理器 */
-  onFocus?: FocusEventHandler<void>;
-  onBlur?: FocusEventHandler<void>;
-  onKeyDown?: KeyboardEventHandler<void>;
-  onKeyUp?: KeyboardEventHandler<void>;
+  onFocus?: (event: React.FocusEvent<HTMLButtonElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLButtonElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  onKeyUp?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
 // ==================== 输入组件增强Props ====================
@@ -55,16 +55,16 @@ export interface EnhancedButtonProps
  * 增强的InputProps - 支持灵活的onChange签名
  */
 export interface EnhancedInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange' | 'onFocus' | 'onBlur' | 'onKeyDown' | 'onKeyUp'> {
   /** 变更事件 - 支持多种签名 */
   onChange?: ChangeEventHandler<string>;
   /** 焦点事件 - 支持多种签名 */
-  onFocus?: FocusEventHandler<string>;
+  onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
   /** 失焦事件 - 支持多种签名 */
-  onBlur?: FocusEventHandler<string>;
+  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
   /** 键盘事件 - 支持多种签名 */
-  onKeyDown?: KeyboardEventHandler<string>;
-  onKeyUp?: KeyboardEventHandler<string>;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyUp?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 // ==================== 表单组件增强Props ====================
@@ -72,9 +72,10 @@ export interface EnhancedInputProps
 /**
  * 增强的FormProps - 支持灵活的onSubmit签名
  */
-export interface EnhancedFormProps extends React.FormHTMLAttributes<HTMLFormElement> {
+export interface EnhancedFormProps
+  extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
   /** 提交事件 - 支持多种签名 */
-  onSubmit?: FormSubmitHandler<void>;
+  onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
 // ==================== 选择器组件增强Props ====================

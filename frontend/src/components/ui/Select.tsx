@@ -60,10 +60,8 @@ const selectTriggerVariants = cva(
   },
 );
 
-// Select组件Props - 扩展ui.types.ts中的类型，添加CVA变体和特定功能
-export interface SelectProps
-  extends ISelectProps,
-    VariantProps<typeof selectVariants> {
+// Select组件Props - 使用类型别名避免循环引用
+export type SelectProps = ISelectProps & VariantProps<typeof selectVariants> & {
   /** 标签 */
   label?: string;
   /** 错误信息 */
@@ -80,14 +78,12 @@ export interface SelectProps
   allowClear?: boolean;
   /** 最大显示标签数量 */
   maxTagCount?: number;
-}
+};
 
-export interface SelectTriggerProps
-  extends ISelectTriggerProps,
-    VariantProps<typeof selectTriggerVariants> {
+export type SelectTriggerProps = ISelectTriggerProps & VariantProps<typeof selectTriggerVariants> & {
   /** 占位符 */
   placeholder?: string;
-}
+};
 
 export interface SelectValueProps extends ISelectValueProps {
   /** 占位符 */

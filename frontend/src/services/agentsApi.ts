@@ -6,7 +6,9 @@ import type {
   PaginatedResponse
 } from './types/api-common';
 import type {
-  ApiErrorType,
+  ApiErrorType
+} from './types/api-errors';
+import {
   ApiErrorFactory,
   ApiErrorHandler
 } from './types/api-errors';

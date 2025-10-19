@@ -638,11 +638,4 @@ export {
 };
 
 // 导出类型定义
-export type {
-  ValidationResult,
-  TypeValidator,
-  SyncValidator,
-  AsyncValidator,
-  PropertyValidation,
-  ObjectValidationConfig,
-};
+// 所有类型已在定义处export，无需重复

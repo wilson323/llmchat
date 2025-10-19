@@ -39,10 +39,8 @@ const modalVariants = cva(
   },
 );
 
-// Modal组件Props - 扩展ui.types.ts中的ModalProps，添加CVA变体和特定功能
-export interface ModalProps
-  extends IModalProps,
-    VariantProps<typeof modalVariants> {
+// Modal组件Props - 使用类型别名避免循环引用
+export type ModalProps = IModalProps & VariantProps<typeof modalVariants> & {
   /** 是否显示关闭按钮 */
   closable?: boolean;
   /** 关闭图标 */
@@ -81,7 +79,7 @@ export interface ModalProps
   keyboard?: boolean;
   /** 初始焦点 */
   initialFocus?: 'confirm' | 'cancel' | 'close';
-}
+};
 
 // ModalContext
 interface ModalContextType {

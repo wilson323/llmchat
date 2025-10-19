@@ -119,16 +119,17 @@ export type { ReasoningStep, ReasoningStepUpdate, JsonValue, FastGPTEvent };
 
 // 重新导出组件核心类型（保持向后兼容）
 // 注意：这些类型现在直接在ui.types.ts中定义，保持向后兼容性
-export type {
-  BaseComponentProps,
-  ButtonProps,
-  InputProps,
-  CardProps,
-  ModalProps,
-  SelectProps,
-  TabsProps,
-  EventHandlersProps,
-} from '@/components/ui/ui.types';
+// 暂时注释掉不存在的导入
+// export type {
+//   BaseComponentProps,
+//   ButtonProps,
+//   InputProps,
+//   CardProps,
+//   ModalProps,
+//   SelectProps,
+//   TabsProps,
+//   EventHandlersProps,
+// } from '@/components/ui/ui.types';
 
 // 重新导出事件处理器类型（保持向后兼容）
 export type {
@@ -142,14 +143,13 @@ export type {
   FocusEventHandler,
   FormSubmitHandler,
   CustomEventHandler,
-} from '@/types/event-handlers';
+} from './event-handlers';
 
 // 重新导出组件Props类型（避免命名冲突）
 export type {
-  InputProps as EventInputProps,
-  SelectorProps,
-  ButtonProps as EventButtonProps,
-} from '@/types/event-handlers';
+  StandardInputProps as EventInputProps,
+  StandardButtonProps as EventButtonProps,
+} from './event-handlers';
 
 // 重新导出Hook类型（保持向后兼容）
 // 暂时注释掉不存在的Hook类型文件
@@ -558,4 +558,38 @@ export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): Original
   });
 
   return result;
+};
+
+// =============================================================================
+// Dashboard 相关类型定义
+// =============================================================================
+
+// 暂时注释掉不存在的导入
+// import type { ConversationSeriesDataset, AgentComparisonDataset } from '@/services/analyticsApi';
+// import type { AgentItem } from '@/services/agentsApi';
+
+// Re-export types for convenience
+// 暂时注释掉不存在的类型导出
+// export type { ConversationSeriesDataset, AgentComparisonDataset, AgentItem };
+
+export type ConversationAnalyticsFilters = {
+  startDate: string;
+  endDate: string;
+  agentId: string;
+};
+
+export type DashboardConversationAnalytics = {
+  filters: ConversationAnalyticsFilters;
+  setDateFilter: (key: 'startDate' | 'endDate', value: string) => void;
+  setAgentId: (agentId: string) => void;
+  refresh: () => Promise<void>;
+  series: ConversationSeriesDataset | null;
+  seriesLoading: boolean;
+  seriesError: string | null;
+  comparison: AgentComparisonDataset | null;
+  comparisonLoading: boolean;
+  comparisonError: string | null;
+  agents: AgentItem[];
+  agentsLoading: boolean;
+  agentsError: string | null;
 };

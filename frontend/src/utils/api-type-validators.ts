@@ -9,7 +9,7 @@
  * @since 2025-10-18
  */
 
-import { RuntimeTypeValidator, objectValidatorFactory, enumValidator, arrayValidator, uuidValidator, timestampValidator } from './runtime-type-validator';
+import { RuntimeTypeValidator, objectValidatorFactory, enumValidator, arrayValidator, uuidValidator, timestampValidator, stringValidator } from './runtime-type-validator';
 import { ApiResponse, ApiErrorResponse, PaginatedData, BatchOperationResult } from '@/types/api';
 import { Agent, AgentConfig, AgentStatus, ChatMessage, ChatSession, ThemeMode, MessageStatus, WorkspaceType } from '@/types';
 
@@ -530,27 +530,4 @@ export const createApiClientWrapper = <TConfig extends Record<string, RuntimeTyp
 // 导出所有验证器
 // ============================================================================
 
-export {
-  // 基础验证器
-  agentValidator,
-  agentConfigValidator,
-  chatMessageValidator,
-  chatSessionValidator,
-  userPreferencesValidator,
-
-  // API响应验证器
-  agentsListResponseValidator,
-  agentDetailResponseValidator,
-  chatApiResponseValidator,
-  chatHistoryResponseValidator,
-  chatSessionResponseValidator,
-  userPreferencesResponseValidator,
-  statsResponseValidator,
-  auditLogsResponseValidator,
-  healthCheckResponseValidator,
-  agentHealthStatusResponseValidator,
-
-  // 工具类
-  ApiResponseValidator,
-  createApiClientWrapper,
-};
+// 所有验证器已在定义处export，无需重复导出

@@ -240,9 +240,7 @@ export interface BaseButtonProps extends UIComponentProps {
 }
 
 /** Button组件Props - 继承HTMLButtonElement属性但排除冲突项 */
-export interface ButtonProps extends
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'variant' | 'onBlur' | 'onFocus'>,
-  Omit<BaseButtonProps, 'onBlur' | 'onFocus'> {}
+export type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'variant'> & BaseButtonProps;
 
 /** IconButton组件Props */
 export interface IconButtonProps extends Omit<ButtonProps, 'size' | 'leftIcon' | 'rightIcon' | 'loadingText'> {
@@ -289,9 +287,7 @@ export interface BaseInputProps extends UIComponentProps {
 }
 
 /** Input组件Props - 继承HTMLInputElement属性但排除冲突项 */
-export interface InputProps extends
-  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'state' | 'defaultValue' | 'onChange'>,
-  Omit<BaseInputProps, 'defaultValue' | 'onChange'> {}
+export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'state'> & BaseInputProps;
 
 // =============================================================================
 // Card组件类型定义
@@ -316,9 +312,7 @@ export interface BaseCardProps extends UIComponentProps {
 }
 
 /** Card组件Props */
-export interface CardProps extends
-  Omit<React.HTMLAttributes<HTMLDivElement>, 'title' | 'onBlur' | 'onFocus'>,
-  Omit<BaseCardProps, 'onBlur' | 'onFocus'> {}
+export type CardProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> & BaseCardProps;
 
 /** Card Header组件Props */
 export interface CardHeaderProps extends BaseComponentProps {
@@ -371,9 +365,7 @@ export interface BaseTabsProps extends UIComponentProps {
 }
 
 /** Tabs组件Props */
-export interface TabsProps extends
-  Omit<React.HTMLAttributes<HTMLDivElement>, 'orientation' | 'defaultValue'>,
-  Omit<BaseTabsProps, 'defaultValue'> {}
+export type TabsProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'orientation'> & BaseTabsProps;
 
 /** TabsList组件Props */
 export interface TabsListProps extends UIComponentProps {
@@ -442,9 +434,7 @@ export interface BaseModalProps extends UIComponentProps {
 }
 
 /** Modal组件Props */
-export interface ModalProps extends
-  Omit<React.HTMLAttributes<HTMLDivElement>, 'size' | 'onBlur' | 'onFocus'>,
-  Omit<BaseModalProps, 'onBlur' | 'onFocus'> {}
+export type ModalProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'size'> & BaseModalProps;
 
 // =============================================================================
 // Select组件类型定义
@@ -476,8 +466,8 @@ export interface BaseSelectProps extends UIComponentProps {
 
 /** Select组件Props */
 export interface SelectProps extends
-  Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'variant' | 'defaultValue'>,
-  Omit<BaseSelectProps, 'defaultValue'> {}
+  Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'variant'>,
+  BaseSelectProps {}
 
 /** Select Trigger组件Props */
 export interface SelectTriggerProps extends BaseComponentProps {}
@@ -879,8 +869,8 @@ export interface BaseDropdownProps extends UIComponentProps {
 
 /** Dropdown组件Props */
 export interface DropdownProps extends
-  Omit<React.HTMLAttributes<HTMLDivElement>, 'size' | 'onBlur' | 'onFocus'>,
-  Omit<BaseDropdownProps, 'onBlur' | 'onFocus'> {}
+  Omit<React.HTMLAttributes<HTMLDivElement>, 'size'>,
+  BaseDropdownProps {}
 
 // =============================================================================
 // 重新导出权威事件处理器类型

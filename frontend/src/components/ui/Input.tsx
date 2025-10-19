@@ -32,8 +32,8 @@ const inputVariants = cva(
   },
 );
 
-// Input组件Props - 直接使用ui.types.ts中的InputProps，只添加CVA变体
-export interface InputProps extends IInputProps, VariantProps<typeof inputVariants> {
+// Input组件Props - 使用类型别名避免循环引用
+export type InputProps = IInputProps & VariantProps<typeof inputVariants> & {
   /** 是否显示清除按钮 */
   allowClear?: boolean;
   /** 前缀元素 */
@@ -54,7 +54,7 @@ export interface InputProps extends IInputProps, VariantProps<typeof inputVarian
   onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
   /** 失焦回调 */
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
-}
+};
 
 // 清除按钮组件
 const ClearButton = React.forwardRef<HTMLButtonElement, {

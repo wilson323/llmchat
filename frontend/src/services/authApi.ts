@@ -6,9 +6,11 @@ import type {
 } from './types/api-common';
 import type {
   ApiErrorType,
-  ApiErrorFactory,
-  ApiErrorHandler,
   AuthenticationError
+} from './types/api-errors';
+import {
+  ApiErrorFactory,
+  ApiErrorHandler
 } from './types/api-errors';
 import type {
   ApiResponse,

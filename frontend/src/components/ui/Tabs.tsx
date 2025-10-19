@@ -80,26 +80,20 @@ const tabsTriggerVariants = cva(
   },
 );
 
-// Tabs组件Props - 扩展ui.types.ts中的类型，添加CVA变体和特定功能
-export interface TabsProps
-  extends Omit<ITabsProps, 'orientation'>,
-    Omit<VariantProps<typeof tabsVariants>, 'orientation'> {
+// Tabs组件Props - 使用类型别名避免循环引用
+export type TabsProps = Omit<ITabsProps, 'orientation'> & Omit<VariantProps<typeof tabsVariants>, 'orientation'> & {
   /** 标签变化回调 */
   onValueChange?: (value: string) => void;
   /** 是否激活动画 */
   activationMode?: 'automatic' | 'manual';
-}
+};
 
-export interface TabsListProps
-  extends ITabsListProps,
-    VariantProps<typeof tabsListVariants> {
+export type TabsListProps = ITabsListProps & VariantProps<typeof tabsListVariants> & {
   /** 是否可循环 */
   loop?: boolean;
-}
+};
 
-export interface TabsTriggerProps
-  extends Omit<ITabsTriggerProps, 'onClick'>,
-    VariantProps<typeof tabsTriggerVariants> {
+export type TabsTriggerProps = Omit<ITabsTriggerProps, 'onClick'> & VariantProps<typeof tabsTriggerVariants> & {
   /** 加载状态 */
   loading?: boolean;
   /** 前缀图标 */
@@ -108,7 +102,7 @@ export interface TabsTriggerProps
   suffix?: React.ReactNode;
   /** 徽标 */
   badge?: React.ReactNode;
-}
+};
 
 export interface TabsContentProps extends ITabsContentProps {
   /** 是否强制渲染 */

@@ -405,7 +405,7 @@ export function createValidatedChangeHandler<T = string>(
 ): ChangeEventHandler<T> {
   return (value: T, event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (validator(value)) {
-      handler(value, event);
+      (handler as UnifiedEventHandler<T, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(value, event);
     }
   };
 }
@@ -422,7 +422,7 @@ export function createDebouncedChangeHandler<T = string>(
   return (value: T, event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
-      handler(value, event);
+      (handler as UnifiedEventHandler<T, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(value, event);
     }, delay);
   };
 }
@@ -440,7 +440,7 @@ export function createThrottledChangeHandler<T = string>(
     const now = Date.now();
     if (now - lastCall >= delay) {
       lastCall = now;
-      handler(value, event);
+      (handler as UnifiedEventHandler<T, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(value, event);
     }
   };
 }
@@ -452,7 +452,7 @@ export function createThrottledChangeHandler<T = string>(
  */
 export const stringInputHandler = (handler: ChangeEventHandler<string>): ChangeEventHandler<string> => {
   return (value: string, event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    handler(value.trim(), event);
+    (handler as UnifiedEventHandler<string, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(value.trim(), event);
   };
 };
 
@@ -463,7 +463,7 @@ export const numberInputHandler = (handler: ChangeEventHandler<number>): ChangeE
   return (value: string, event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const numValue = Number(value);
     if (!isNaN(numValue)) {
-      handler(numValue, event);
+      (handler as UnifiedEventHandler<number, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(numValue, event);
     }
   };
 };
@@ -476,7 +476,7 @@ export const emailInputHandler = (handler: ChangeEventHandler<string>): ChangeEv
 
   return (value: string, event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     if (emailRegex.test(value)) {
-      handler(value, event);
+      (handler as UnifiedEventHandler<string, ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>)(value, event);
     }
   };
 };
