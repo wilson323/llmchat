@@ -356,7 +356,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/logs',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -390,7 +390,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/logs',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -430,7 +430,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/logs/export',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -471,7 +471,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/users',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -691,7 +691,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/audit-logs',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -907,7 +907,7 @@ export async function getSystemInfo(): Promise<SystemInfo> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -920,7 +920,7 @@ export async function getLogsPage(params?: GetLogsParams): Promise<LogsPage> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -933,7 +933,7 @@ export async function getLogs(params?: GetLogsParams): Promise<LogItem[]> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -967,7 +967,7 @@ export async function createUser(payload: {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -984,7 +984,7 @@ export async function updateUser(payload: {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -1000,7 +1000,7 @@ export async function resetUserPassword(payload: {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -1013,5 +1013,5 @@ export async function exportLogsCsv(params?: GetLogsParams): Promise<string> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }

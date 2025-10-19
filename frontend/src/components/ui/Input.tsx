@@ -101,7 +101,7 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputComponentProps>(
       error,
       helperText,
       required = false,
-      readonly = false,
+      readOnly: readonly = false,
       disabled = false,
       placeholder,
       maxLength,

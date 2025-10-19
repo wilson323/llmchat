@@ -12,7 +12,7 @@
 import { useCallback } from 'react';
 import { chatService } from '@/services/api';
 import { logger } from '@/lib/logger';
-import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter';
+// import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter'; // 已删除
 
 // 直接导入store实例以便在组件外部使用getState
 import messageStore from '@/store/messageStore';
@@ -34,130 +34,122 @@ export const useChat = () => {
     content: string,
     options?: ChatOptions,
   ) => {
-      // 从各个Store获取状态
-      const currentAgent = agentStore.getState().currentAgent;
-      const currentSession = sessionStore.getState().currentSession;
-      const preferences = preferenceStore.getState().preferences;
+    // 从各个Store获取状态
+    const currentAgent = agentStore.getState().currentAgent;
+    const currentSession = sessionStore.getState().currentSession;
+    const preferences = preferenceStore.getState().preferences;
 
-      if (!currentAgent) {
-        throw new Error(t('没有选择智能体'));
-      }
+    if (!currentAgent) {
+      throw new Error(t('没有选择智能体'));
+    }
 
-      // 如果没有当前会话，创建一个
-      if (!currentSession && currentAgent.id) {
-        sessionStore.getState().createNewSession(currentAgent.id);
-      }
+    // 如果没有当前会话，创建一个
+    if (!currentSession && currentAgent.id) {
+      sessionStore.getState().createNewSession(currentAgent.id);
+    }
 
-      const activeSession = sessionStore.getState().currentSession;
+    const activeSession = sessionStore.getState().currentSession;
 
-      // 添加用户消息
-      const userMessage: ChatMessage = {
-        HUMAN: content,
+    // 添加用户消息
+    const userMessage: ChatMessage = {
+      HUMAN: content,
+      timestamp: Date.now(),
+      ...(options?.attachments ? { attachments: options.attachments } : {}),
+      ...(options?.voiceNote ? { voiceNote: options.voiceNote } : {}),
+    };
+    messageStore.getState().addMessage(userMessage);
+
+    // 生成响应ID
+    const responseId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // 创建助手消息占位符
+    const assistantMessage: ChatMessage = {
+      AI: '',
+      id: responseId,
+      timestamp: Date.now(),
+    };
+    messageStore.getState().addMessage(assistantMessage);
+
+    // 读取会话ID
+    const sessionIdForChat = activeSession?.id;
+
+    // 构建聊天消息
+    const chatMessages: OriginalChatMessage[] = [
+      {
+        id: `${Date.now()}-user`,
+        role: 'user',
+        content,
         timestamp: Date.now(),
-        ...(options?.attachments ? { attachments: options.attachments } : {}),
-        ...(options?.voiceNote ? { voiceNote: options.voiceNote } : {}),
-      };
-      messageStore.getState().addMessage(userMessage);
-
-      // 生成响应ID
-      const responseId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-      // 创建助手消息占位符
-      const assistantMessage: ChatMessage = {
-        AI: '',
-        id: responseId,
-        timestamp: Date.now(),
-      };
-      messageStore.getState().addMessage(assistantMessage);
-
-      // 读取会话ID
-      const sessionIdForChat = activeSession?.id;
-
-      // 构建聊天消息
-      const chatMessages: OriginalChatMessage[] = [
-        {
-          id: `${Date.now()}-user`,
-          role: 'user',
-          content,
-          timestamp: Date.now(),
-          metadata: {
-            ...(options?.attachments ? { attachments: options.attachments } : {}),
-            ...(options?.voiceNote ? { voiceNote: options.voiceNote } : {}),
-          },
+        metadata: {
+          ...(options?.attachments ? { attachments: options.attachments } : {}),
+          ...(options?.voiceNote ? { voiceNote: options.voiceNote } : {}),
         },
-      ];
+      },
+    ];
 
-      // 透传 chatId 到后端
-      const mergedOptions: ChatOptions | undefined = sessionIdForChat
-        ? { ...options, chatId: sessionIdForChat, responseChatItemId: responseId }
-        : { ...options, responseChatItemId: responseId };
+    // 透传 chatId 到后端
+    const mergedOptions: ChatOptions | undefined = sessionIdForChat
+      ? { ...options, chatId: sessionIdForChat, responseChatItemId: responseId }
+      : { ...options, responseChatItemId: responseId };
 
-      try {
-        messageStore.getState().setIsStreaming(true);
+    try {
+      messageStore.getState().setIsStreaming(true);
 
-        if (preferences.streamingEnabled) {
-          const controller = new AbortController();
-          messageStore.getState().setStreamAbortController(controller);
+      if (preferences.streamingEnabled) {
+        const controller = new AbortController();
+        messageStore.getState().setStreamAbortController(controller);
 
-          // 🚀 性能优化：使用缓冲机制
-          await chatService.sendStreamMessage(
+        // 🚀 性能优化：使用缓冲机制
+        await chatService.sendStreamMessage(
             currentAgent.id,
             chatMessages,
             {
-              onChunk: (chunk) => {
-                // 关键优化：使用 appendToBuffer 而非 updateLastMessage
-                // 不会立即触发渲染，而是批量更新（约16ms一次）
-                messageStore.getState().appendToBuffer(chunk);
-              },
-              onStatus: (status) => {
-                messageStore.getState().setStreamingStatus(status);
-              },
-              onInteractive: (interactiveData) => {
-                try {
-                  // 转换 FastGPT 交互数据为前端格式
-                  const convertedData = convertFastGPTInteractiveData(interactiveData);
-                  if (convertedData) {
-                    messageStore.getState().addMessage({ interactive: convertedData });
-                  } else {
-                    logger.warn(t('无法转换 interactive 数据'), { interactiveData });
-                  }
-                } catch (e) {
-                  logger.warn(t('处理 interactive 事件失败'), { error: e, interactiveData });
-                }
-              },
-              onChatId: () => {},
-              signal: controller.signal,
+            onChunk: (chunk) => {
+              // 关键优化：使用 appendToBuffer 而非 updateLastMessage
+              // 不会立即触发渲染，而是批量更新（约16ms一次）
+              messageStore.getState().appendToBuffer(chunk);
             },
-            mergedOptions,
-          );
-        } else {
-          // 非流式响应
-          const response = await chatService.sendMessage(
-            currentAgent.id,
-            chatMessages,
-            mergedOptions,
-          );
+            onStatus: (status) => {
+              messageStore.getState().setStreamingStatus(status);
+            },
+            onInteractive: (interactiveData) => {
+              // 直接使用interactive数据（移除过度工程化的转换器）
+              if (interactiveData) {
+                messageStore.getState().addMessage({ interactive: interactiveData });
+              }
+            },
+            onChatId: () => {},
+            signal: controller.signal,
+          },
+          mergedOptions,
+        );
+      } else {
+        // 非流式响应
+        const response = await chatService.sendMessage(
+          currentAgent.id,
+          chatMessages,
+          mergedOptions,
+        );
 
-          const assistantContent = response.choices[0]?.message?.content || '';
-          messageStore.getState().updateLastMessage(assistantContent);
-        }
-
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          messageStore.getState().updateLastMessage(t('（生成已停止）'));
-        } else {
-          logger.error(t('发送消息失败'), error as Error, {
-            agentId: currentAgent?.id,
-            sessionId: currentSession?.id,
-          } as Record<string, unknown>);
-          messageStore.getState().updateLastMessage(t('抱歉，发送消息时出现错误。请稍后重试。'));
-        }
-      } finally {
-        messageStore.getState().setStreamAbortController(null);
-        messageStore.getState().setIsStreaming(false);
-        messageStore.getState().setStreamingStatus(null);
+        const assistantContent = response.choices[0]?.message?.content || '';
+        messageStore.getState().updateLastMessage(assistantContent);
       }
-    });
+
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        messageStore.getState().updateLastMessage(t('（生成已停止）'));
+      } else {
+        logger.error(t('发送消息失败'), error as Error, {
+          agentId: currentAgent?.id,
+          sessionId: currentSession?.id,
+        } as Record<string, unknown>);
+        messageStore.getState().updateLastMessage(t('抱歉，发送消息时出现错误。请稍后重试。'));
+      }
+    } finally {
+      messageStore.getState().setStreamAbortController(null);
+      messageStore.getState().setIsStreaming(false);
+      messageStore.getState().setStreamingStatus(null);
+    }
   }, [t]);
 
   // 继续运行：交互节点-用户选择
@@ -214,16 +206,9 @@ export const useChat = () => {
                 messageStore.getState().setStreamingStatus(status);
               },
               onInteractive: (interactiveData) => {
-                try {
-                  // 转换 FastGPT 交互数据为前端格式
-                  const convertedData = convertFastGPTInteractiveData(interactiveData);
-                  if (convertedData) {
-                    messageStore.getState().addMessage({ interactive: convertedData });
-                  } else {
-                    logger.warn(t('无法转换 retry interactive 数据'), { interactiveData });
-                  }
-                } catch (e) {
-                  logger.warn(t('处理 retry interactive 事件失败'), { error: e, interactiveData });
+                // 直接使用interactive数据（移除过度工程化的转换器）
+                if (interactiveData) {
+                  messageStore.getState().addMessage({ interactive: interactiveData });
                 }
               },
               onChatId: (cid: string) => {
@@ -280,7 +265,6 @@ export const useChat = () => {
         messageStore.getState().setIsStreaming(false);
         messageStore.getState().setStreamingStatus(null);
       }
-    });
   }, [t]);
 
   return {

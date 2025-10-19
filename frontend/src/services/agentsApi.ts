@@ -157,7 +157,7 @@ export class AgentsApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/agents',
         method: 'GET',
-        additional: { params }
+        additional: params as any
       });
 
       return {
@@ -482,7 +482,7 @@ export async function listAgents(opts?: { includeInactive?: boolean }): Promise<
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -511,7 +511,7 @@ export async function updateAgent(id: string, updates: Partial<AgentPayload>): P
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -524,7 +524,7 @@ export async function createAgent(payload: AgentPayload): Promise<AgentItem> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -561,7 +561,7 @@ export async function validateAgent(id: string): Promise<{ agentId: string; isVa
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -579,5 +579,5 @@ export async function fetchAgentInfo(params: {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }

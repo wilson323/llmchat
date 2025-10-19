@@ -3,17 +3,15 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearc
 import { ToastProvider as Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { createEnhancedLazyComponent } from '@/components/ui/EnhancedLazyComponent';
-import { initializeComponentRegistry, preloadCriticalComponents } from '@/utils/componentRegistry';
-import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
-import { preloadService } from '@/services/preloadService';
+// Component registry and code splitting removed - production optimization
 // import CodeSplittingMonitor from '@/components/dev/CodeSplittingMonitor'; // 已禁用
 
 // ========================================
 // 增强版代码分割：懒加载组件
 // ========================================
 
-// 确保组件注册表已初始化
-initializeComponentRegistry();
+// 组件注册表已删除 - 生产环境优化
+// initializeComponentRegistry();
 
 // 主要页面懒加载 - 使用增强版懒加载
 const ChatApp = createEnhancedLazyComponent(
@@ -28,16 +26,7 @@ const ChatApp = createEnhancedLazyComponent(
   },
 );
 
-const AgentWorkspace = createEnhancedLazyComponent(
-  'AgentWorkspace',
-  () => import('@/components/workspace/AgentWorkspace'),
-  {
-    priority: 9,
-    preloadStrategy: 'idle',
-    showProgress: true,
-    delay: 100,
-  },
-);
+// AgentWorkspace removed - production optimization
 
 const LoginPage = createEnhancedLazyComponent(
   'LoginPage',
@@ -148,28 +137,28 @@ function LoginPageWrapper() {
 }
 
 function App() {
-  // 初始化增强版代码分割系统
-  useEffect(() => {
-    // 1. 设置智能预加载（组件注册表已在模块加载时初始化）
-    EnhancedCodeSplitting.setupSmartPreloading();
-    EnhancedCodeSplitting.setupBehavioralPreloading();
-
-    // 2. 预加载关键组件
-    preloadCriticalComponents().catch(error => {
-      console.warn('关键组件预加载失败:', error);
-    });
-
-    // 3. 初始化原有预加载服务
-    preloadService.init().catch(error => {
-      console.warn('预加载服务初始化失败:', error);
-    });
-
-    // 清理函数
-    return () => {
-      preloadService.destroy();
-      EnhancedCodeSplitting.clearComponentCache();
-    };
-  }, []);
+  // 代码分割系统已简化 - 生产环境优化
+  // useEffect(() => {
+  //   // 1. 设置智能预加载（组件注册表已在模块加载时初始化）
+  //   EnhancedCodeSplitting.setupSmartPreloading();
+  //   EnhancedCodeSplitting.setupBehavioralPreloading();
+  //
+  //   // 2. 预加载关键组件
+  //   preloadCriticalComponents().catch(error => {
+  //     console.warn('关键组件预加载失败:', error);
+  //   });
+  //
+  //   // 3. 初始化原有预加载服务
+  //   preloadService.init().catch(error => {
+  //     console.warn('预加载服务初始化失败:', error);
+  //   });
+  //
+  //   // 清理函数
+  //   return () => {
+  //     preloadService.destroy();
+  //     EnhancedCodeSplitting.clearComponentCache();
+  //   };
+  // }, []);
 
   return (
     <ErrorBoundary>
@@ -180,8 +169,8 @@ function App() {
               {/* 主聊天页面 */}
               <Route path="/" element={<ChatApp />} />
 
-              {/* 智能体工作区路由 */}
-              <Route path="/chat/:agentId" element={<AgentWorkspace />} />
+              {/* 智能体工作区路由 - 已移除（生产环境优化） */}
+              {/* <Route path="/chat/:agentId" element={<AgentWorkspace />} /> */}
 
               {/* 登录页面（带跳转逻辑） */}
               <Route path="/login" element={<LoginPageWrapper />} />

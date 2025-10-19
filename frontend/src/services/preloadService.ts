@@ -97,14 +97,15 @@ class PreloadService {
    */
   private registerPreloadItems(): void {
     // 高优先级组件 - 用户可能立即需要的
-    this.registerItem({
-      id: 'product-preview-workspace',
-      name: 'ProductPreviewWorkspace',
-      importFn: () => import('@/components/product/ProductPreviewWorkspace').then(m => ({ default: m.ProductPreviewWorkspace || m.default })),
-      priority: PreloadPriority.HIGH,
-      strategy: PreloadStrategy.IDLE,
-      conditions: () => this.hasProductAgents(),
-    });
+    // ProductPreviewWorkspace已删除
+    // this.registerItem({
+    //   id: 'product-preview-workspace',
+    //   name: 'ProductPreviewWorkspace',
+    //   importFn: () => import('@/components/product/ProductPreviewWorkspace').then(m => ({ default: m.ProductPreviewWorkspace || m.default })),
+    //   priority: PreloadPriority.HIGH,
+    //   strategy: PreloadStrategy.IDLE,
+    //   conditions: () => this.hasProductAgents(),
+    // });
 
     // voice-call-workspace已删除（voice组件已清理）
 

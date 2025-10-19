@@ -623,7 +623,7 @@ export async function loginApi(username: string, password: string): Promise<Logi
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -636,7 +636,7 @@ export async function profileApi(): Promise<UserInfo> {
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }
 
 /**
@@ -665,5 +665,5 @@ export async function changePasswordApi(oldPassword: string, newPassword: string
     throw result.error;
   }
 
-  return result.data;
+  return result.data!;
 }

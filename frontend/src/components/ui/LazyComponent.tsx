@@ -284,7 +284,6 @@ export async function preloadComponents(
 // 导出便捷的创建函数
 export const createLazyWorkspace = (workspaceType: string) => {
   const workspaceImports: Record<string, () => Promise<{ default: ComponentType<any> }>> = {
-    'product-preview': () => import('@/components/product/ProductPreviewWorkspace'),
     // 'voice-call': () => import('@/components/voice/VoiceCallWorkspace'), // voice组件已删除
     'cad-viewer': () => import('@/components/cad/CadViewerEnhanced'),
     'cad-upload': () => import('@/components/cad/CadUploadEnhanced'),

@@ -113,11 +113,10 @@ const ButtonImpl = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const finalShape = getShapeFromRadius(radius);
     const Comp = asChild ? Slot : 'button';
 
-    // 构建按钮属性 - 排除onClick以避免冲突
+    // 构建按钮属性
     const buttonProps = React.useMemo(() => {
-      const { onClick: _, ...restProps } = props;
       return {
-        ...restProps,
+        ...props,
         disabled: disabled || loading,
         'aria-disabled': disabled || loading,
         'aria-busy': loading,

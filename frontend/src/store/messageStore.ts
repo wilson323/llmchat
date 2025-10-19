@@ -168,20 +168,17 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
   // 性能优化：追加到缓冲区（不触发渲染）
   appendToBuffer: (content: string) => {
-    
-      set((state: MessageState) => ({
-        streamBuffer: state.streamBuffer + content,
-      );
+    set((state: MessageState) => ({
+      streamBuffer: state.streamBuffer + content,
+    }));
 
-      // 自动调度flush
-      get()._scheduleFlush();
-    });
+    // 自动调度flush
+    get()._scheduleFlush();
   },
 
   // 性能优化：批量flush缓冲区（通过requestAnimationFrame调用）
   flushBuffer: () => {
-    
-      set((state: any) => {
+    set((state: any) => {
         if (!state.streamBuffer) {
           return { flushScheduled: false };
         }
@@ -203,7 +200,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             debugLog('📝 flush缓冲区:', {
               bufferedLength: state.streamBuffer.length,
               totalLength: updatedMessage.AI?.length,
-            
+            });
 
             return updatedMessage;
           }
@@ -215,14 +212,12 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
           streamBuffer: '',
           flushScheduled: false,
         };
-    });
-  },
+      });
   },
 
   // 兼容性：直接更新最后一条消息（不推荐，使用appendToBuffer代替）
   updateLastMessage: (content: string) => {
-    
-      set((state: any) => {
+    set((state: any) => {
         debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
 
         const targetIndex = findLastAssistantMessageIndex(state.messages);
@@ -240,11 +235,10 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             } as ChatMessage;
           }
           return msg;
-        
+        });
 
         return { messages };
     });
-  },
   },
 
   // 添加推理步骤
@@ -390,12 +384,12 @@ if (process.env.NODE_ENV === 'development') {
     // const stats = perfMonitor.getStats('messageStore.flushBuffer');
     // if (stats && stats.count > 0) {
     //   debugLog('MessageStore Performance', {
-        flushCount: stats.count,
-        avgFlushTime: `${stats.avg.toFixed(2)}ms`,
-        p95: `${stats.p95.toFixed(2)}ms`,
-      });
-    }
+    //     flushCount: stats.count,
+    //     avgFlushTime: `${stats.avg.toFixed(2)}ms`,
+    //     p95: `${stats.p95.toFixed(2)}ms`,
+    //   });
+    // }
   }, 30000); // 每30秒
-}
+};
 
 export default useMessageStore;

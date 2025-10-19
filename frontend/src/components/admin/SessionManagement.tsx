@@ -401,7 +401,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
               <Input
                 placeholder={t('搜索会话')}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
                 className="flex-1 pl-10"
               />

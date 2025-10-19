@@ -167,7 +167,7 @@ export const useToastStore = create<ToastState>((set, get) => ({
   })),
   clear: () => set({ toasts: [] }),
   setPosition: (position) => set((state) => ({
-    toasts: state.toasts.map((t) => ({ ...t, position })),
+    toasts: state.toasts.map((t) => ({ ...t, position: position as ToastItem['position'] })),
   })),
   getToastsByPosition: (position) => get().toasts.filter((t) => t.position === position),
   getState: () => get(),
@@ -199,10 +199,10 @@ export const useToast = () => {
     store.add(item);
 
     // 自动关闭
-    if (item.duration > 0) {
-      const timer = setTimeout(() => {
-        store.remove(id);
-      }, item.duration);
+    if ((item.duration ?? 3000) > 0) {
+      const timer =     setTimeout(() => {
+      store.remove(id);
+    }, item.duration || 3000);
 
       return () => clearTimeout(timer);
     }
@@ -249,10 +249,10 @@ const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
     const remainingTimeRef = React.useRef(toast.duration);
 
     React.useEffect(() => {
-      if (toast.duration <= 0) return;
+      if ((toast.duration ?? 3000) <= 0) return;
 
       const startTime = Date.now();
-      remainingTimeRef.current = toast.duration;
+        remainingTimeRef.current = toast.duration || 3000;
 
       timeoutRef.current = setTimeout(() => {
         if (!isHovered) {
@@ -271,13 +271,13 @@ const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
       setIsHovered(true);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
-        remainingTimeRef.current = Math.max(0, remainingTimeRef.current - (Date.now() - toast.createdAt));
+        remainingTimeRef.current = Math.max(0, (remainingTimeRef.current ?? 0) - (Date.now() - toast.createdAt));
       }
     }, [toast.createdAt]);
 
     const handleMouseLeave = React.useCallback(() => {
       setIsHovered(false);
-      if (remainingTimeRef.current > 0) {
+      if ((remainingTimeRef.current ?? 0) > 0) {
         timeoutRef.current = setTimeout(() => {
           onClose?.(toast.id);
         }, remainingTimeRef.current);
@@ -330,7 +330,7 @@ const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
         exit={{ opacity: 0, y: -50, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={cn(
-          toastVariants({ variant: toast.type, position: position || toast.position }),
+          toastVariants({ variant: toast.type, position: (position || toast.position) as ToastItem['position'] }),
           className
         )}
         role={toast.type === 'error' ? 'alert' : 'status'}
@@ -404,7 +404,7 @@ ToastComponent.displayName = 'Toast';
 
 // ToastProvider组件
 export const ToastProvider: React.FC<ToastProviderProps> = ({
-  position = 'top-right',
+  position = 'top-right' as const,
   maxToasts = 5,
   swipeToClose = false,
   className,
@@ -475,10 +475,10 @@ const createToast = (options: ToastOptions | string): string => {
   useToastStore.getState().add(item);
 
   // 自动关闭
-  if (item.duration > 0) {
+  if ((item.duration || 3000) > 0) {
     const timer = setTimeout(() => {
       useToastStore.getState().remove(id);
-    }, item.duration);
+    }, item.duration || 3000);
 
     return () => clearTimeout(timer);
   }
