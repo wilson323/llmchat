@@ -296,8 +296,6 @@ export const LazyInteractiveComponents = createLazyComponent(
 
 // Prefetching hook
 export function usePrefetchComponents() {
-  usePerformanceMonitor('usePrefetchComponents');
-
   const prefetchComponent = useCallback((componentName: string) => {
     const componentMap: Record<string, () => Promise<{ default: React.ComponentType<any> }>> = {
       'AdminDashboard': () => import('@/components/admin/AdminHome'),
@@ -309,7 +307,6 @@ export function usePrefetchComponents() {
       'ChartComponent': () => import('@/components/admin/SessionStatsChart').then(module => ({ default: module.SessionStatsChart })),
       'EChartsComponent': () => import('@/components/charts/EChartsPlaceholder'),
       'ChatAttachments': () => Promise.resolve({ default: ChatAttachmentsPlaceholder }),
-      'VoiceChat': () => import('@/components/voice/VoiceCallWorkspace'),
       'InteractiveComponents': () => import('@/components/chat/InteractiveComponent'),
     };
 

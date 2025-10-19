@@ -26,9 +26,10 @@ const ProductPreviewWorkspace = lazy(() =>
   })),
 );
 
-const VoiceCallWorkspace = lazy(() =>
-  import('@/components/voice/VoiceCallWorkspace'),
-);
+// VoiceCallWorkspace组件已删除
+// const VoiceCallWorkspace = lazy(() =>
+//   import('@/components/voice/VoiceCallWorkspace'),
+// );
 
 /**
  * 加载中组件
@@ -154,7 +155,8 @@ export const AgentWorkspace: React.FC = () => {
     case 'voice-call':
       return (
         <Suspense fallback={<LoadingSpinner />}>
-          <VoiceCallWorkspace agent={foundAgent} />
+          {/* VoiceCallWorkspace组件已删除 */}
+          <div>语音通话功能暂时不可用</div>
         </Suspense>
       );
 

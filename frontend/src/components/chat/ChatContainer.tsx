@@ -151,7 +151,6 @@ export const ChatContainer: React.FC = () => {
     });
   };
   useEffect(() => {
-    return perfMonitor.measure('ChatContainer.welcomeMessage', () => {
       // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面
       if (!currentAgent || !currentSession) {
         return;
@@ -163,7 +162,6 @@ export const ChatContainer: React.FC = () => {
       }
 
       if (messages.length === 0 && currentAgent.provider === 'fastgpt') {
-        perfMonitor.measureAsync('ChatContainer.fetchWelcome', async () => {
           try {
             const response = await chatService.init(currentAgent.id);
             const chatId = response.chatId;
@@ -183,30 +181,9 @@ export const ChatContainer: React.FC = () => {
           } catch (error) {
             console.error(t('获取开场白失败'), error);
           }
-        });
       }
-    });
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
-  // 内存监控
-  useEffect(() => {
-    const memoryCleanup = memoryMonitor.addMemoryObserver((): void => {
-      // 注意：实际使用时需要正确的类型定义
-      if (window.gc) {
-        window.gc();
-      }
-    });
-    return () => {
-      if (typeof memoryCleanup === 'function') {
-        memoryCleanup();
-      }
-    };
-  }, []);
-  // 组件卸载时清理资源
-  useEffect(() => {
-    return () => {
-      resourceManager.cleanup();
-    };
-  }, []);
+  // 性能监控已移除 - 过度工程化
   // 注意：特殊工作区的渲染逻辑已移至 AgentWorkspace 路由组件
   // 此组件现在只负责渲染标准聊天界面
 

@@ -109,7 +109,7 @@ class PreloadService {
     this.registerItem({
       id: 'voice-call-workspace',
       name: 'VoiceCallWorkspace',
-      importFn: () => import('@/components/voice/VoiceCallWorkspace'),
+      // importFn: () => import('@/components/voice/VoiceCallWorkspace'), // voice组件已删除
       priority: PreloadPriority.HIGH,
       strategy: PreloadStrategy.IDLE,
       conditions: () => this.hasVoiceAgents(),

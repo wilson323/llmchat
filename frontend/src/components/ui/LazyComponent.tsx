@@ -285,7 +285,7 @@ export async function preloadComponents(
 export const createLazyWorkspace = (workspaceType: string) => {
   const workspaceImports: Record<string, () => Promise<{ default: ComponentType<any> }>> = {
     'product-preview': () => import('@/components/product/ProductPreviewWorkspace'),
-    'voice-call': () => import('@/components/voice/VoiceCallWorkspace'),
+    // 'voice-call': () => import('@/components/voice/VoiceCallWorkspace'), // voice组件已删除
     'cad-viewer': () => import('@/components/cad/CadViewerEnhanced'),
     'cad-upload': () => import('@/components/cad/CadUploadEnhanced'),
     'admin-dashboard': () => import('@/components/admin/AdminHome'),

@@ -63,26 +63,10 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   const [isVisible, setIsVisible] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // 安全地处理和清理消息内容
+  // 获取消息内容（ReactMarkdown会自动处理安全性）
   const messageContent = useMemo(() => {
-    const rawContent = message.AI || message.HUMAN || '';
-
-    // XSS安全检测
-    const xssCheck = detectXSS(rawContent);
-    if (xssCheck.isXSS) {
-      console.warn('检测到潜在XSS攻击威胁:', xssCheck.threats, rawContent);
-      // 记录安全事件到监控系统
-    }
-
-    // 清理HTML内容
-    const sanitizedContent = sanitizeHTML(rawContent);
-
-    // 如果内容看起来像Markdown，则进行Markdown处理
-    const isMarkdown = /^#+\s|^\*|^\-|`[^`]+`|\[.*?\]\(.*?\)/.test(rawContent);
-    const finalContent = isMarkdown ? sanitizeMarkdown(rawContent) : sanitizedContent;
-
-    return finalContent;
-  }, [message.AI, message.HUMAN, message.id]);
+    return message.AI || message.HUMAN || '';
+  }, [message.AI, message.HUMAN]);
 
   // 检测是否有安全威胁
   const hasSecurityThreats = useMemo(() => {
