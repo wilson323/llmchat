@@ -287,7 +287,11 @@ export interface BaseInputProps extends UIComponentProps {
 }
 
 /** Input组件Props - 继承HTMLInputElement属性但排除冲突项 */
-export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'state'> & BaseInputProps;
+export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'state' | 'onChange'> & 
+  BaseInputProps & {
+    /** 变化事件处理器 - 支持简化签名和标准事件 */
+    onChange?: ((value: string) => void) | React.ChangeEventHandler<HTMLInputElement>;
+  };
 
 // =============================================================================
 // Card组件类型定义

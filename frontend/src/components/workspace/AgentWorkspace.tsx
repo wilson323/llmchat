@@ -141,34 +141,9 @@ export const AgentWorkspace: React.FC = () => {
     return <AgentNotFound agentId={agentId} />;
   }
 
-  // 根据工作区类型渲染对应的工作区
-  const workspaceType: WorkspaceType = foundAgent.workspaceType || 'chat';
-
-  switch (workspaceType) {
-    case 'product-preview':
-      return (
-        <Suspense fallback={<LoadingSpinner />}>
-          <ProductPreviewWorkspace agent={foundAgent} />
-        </Suspense>
-      );
-
-    case 'voice-call':
-      return (
-        <Suspense fallback={<LoadingSpinner />}>
-          {/* VoiceCallWorkspace组件已删除 */}
-          <div>语音通话功能暂时不可用</div>
-        </Suspense>
-      );
-
-    case 'custom':
-      // 未来可以扩展自定义工作区
-      console.warn(`自定义工作区类型 '${workspaceType}' 暂未实现，使用默认聊天界面`);
-      return <ChatContainer />;
-
-    case 'chat':
-    default:
-      return <ChatContainer />;
-  }
+  // 所有智能体使用统一的聊天工作区
+  // 注: product-preview和voice-call工作区已清理（过度工程化）
+  return <ChatContainer />;
 };
 
 export default AgentWorkspace;

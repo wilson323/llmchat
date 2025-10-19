@@ -34,7 +34,6 @@ export const useChat = () => {
     content: string,
     options?: ChatOptions,
   ) => {
-    return perfMonitor.measureAsync('useChat.sendMessage', async () => {
       // 从各个Store获取状态
       const currentAgent = agentStore.getState().currentAgent;
       const currentSession = sessionStore.getState().currentSession;
@@ -173,7 +172,6 @@ export const useChat = () => {
   }, [sendMessage]);
 
   const retryMessage = useCallback(async (messageId: string) => {
-    return perfMonitor.measureAsync('useChat.retryMessage', async () => {
       const currentAgent = agentStore.getState().currentAgent;
       const currentSession = sessionStore.getState().currentSession;
       const preferences = preferenceStore.getState().preferences;

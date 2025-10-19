@@ -22,8 +22,7 @@ export { CacheManager } from './cache/CacheManager';
 // 同步管理
 export { SyncManager } from './sync/SyncManager';
 
-// 监控服务
-export { PerformanceMonitor, ErrorHandlingService, globalErrorHandler, globalPerformanceMonitor } from './monitoring';
+// 监控服务已删除（过度工程化）
 
 // 类型定义
 export type {

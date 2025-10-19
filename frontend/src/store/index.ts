@@ -24,11 +24,15 @@ export type { AuthUser, LoginPayload } from './authStore';
 // 基础类型导出
 // ============================================================================
 
+// 导出实际存在的Store状态类型
 export type {
-  BaseStoreState,
-  BaseStoreActions,
-  StoreError,
-  StoreStatus,
+  MessageState,
+  AgentState,
+  SessionState,
+  AuthState,
+  UIState,
+  PreferenceState,
+  HybridChatState
 } from './types';
 
 // ============================================================================

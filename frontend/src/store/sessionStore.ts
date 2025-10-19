@@ -75,7 +75,7 @@ export const useSessionStore = create<SessionStore>()(
 
       // 创建新会话
       createNewSession: (agentId: string) => {
-        return perfMonitor.measure('sessionStore.createNewSession', () => {
+        return 
           const newSession: ChatSession = {
             id: `session_${Date.now()}`,
             title: '新对话',
@@ -98,7 +98,7 @@ export const useSessionStore = create<SessionStore>()(
               agentSessions: updatedAgentSessions,
               currentSession: newSession,
             };
-          });
+          
 
           return newSession;
         });
@@ -106,7 +106,7 @@ export const useSessionStore = create<SessionStore>()(
 
       // 删除会话
       deleteSession: (agentId: string, sessionId: string) => {
-        perfMonitor.measure('sessionStore.deleteSession', () => {
+        
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.filter((s: ChatSession) => s.id !== sessionId);
@@ -128,16 +128,16 @@ export const useSessionStore = create<SessionStore>()(
               agentSessions: updatedAgentSessions,
               currentSession: newCurrentSession,
             };
-          });
+          
         });
       },
 
       // 切换到指定会话
       switchToSession: (agentId: string, sessionId: string): void => {
-        perfMonitor.measure('sessionStore.switchToSession', () => {
+        
           const session = get().getSessionById(agentId, sessionId);
           if (session) {
-            set({ currentSession: session });
+            set({ currentSession: session 
             debugLog('🔄 切换会话:', sessionId);
           } else {
             console.warn('⚠️ 会话不存在:', sessionId);
@@ -147,7 +147,7 @@ export const useSessionStore = create<SessionStore>()(
 
       // 重命名会话
       renameSession: (agentId: string, sessionId: string, title: string) => {
-        perfMonitor.measure('sessionStore.renameSession', () => {
+        
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
@@ -167,7 +167,7 @@ export const useSessionStore = create<SessionStore>()(
                 ? { ...state.currentSession, title, updatedAt: new Date() }
                 : state.currentSession;
 
-            debugLog('✏️ 重命名会话:', { sessionId, title });
+            debugLog('✏️ 重命名会话:', { sessionId, title 
 
             return {
               agentSessions: updatedAgentSessions,
@@ -200,19 +200,19 @@ export const useSessionStore = create<SessionStore>()(
 
       // 设置指定智能体的会话列表
       setAgentSessionsForAgent: (agentId: string, sessions: ChatSession[]) => {
-        perfMonitor.measure('sessionStore.setAgentSessionsForAgent', () => {
+        
           set((state) => ({
             agentSessions: {
               ...state.agentSessions,
               [agentId]: sessions,
             },
-          }));
+          );
         });
       },
 
       // 绑定会话ID（将临时ID替换为服务器返回的ID）
       bindSessionId: (agentId: string, oldId: string, newId: string) => {
-        perfMonitor.measure('sessionStore.bindSessionId', () => {
+        
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
@@ -232,7 +232,7 @@ export const useSessionStore = create<SessionStore>()(
                 ? { ...state.currentSession, id: newId, updatedAt: new Date() }
                 : state.currentSession;
 
-            debugLog('🔗 绑定会话ID:', { oldId, newId });
+            debugLog('🔗 绑定会话ID:', { oldId, newId 
 
             return {
               agentSessions: updatedAgentSessions,
@@ -244,7 +244,7 @@ export const useSessionStore = create<SessionStore>()(
 
       // 设置会话的消息列表
       setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => {
-        perfMonitor.measure('sessionStore.setSessionMessages', () => {
+        
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
@@ -268,13 +268,13 @@ export const useSessionStore = create<SessionStore>()(
               agentSessions: updatedAgentSessions,
               currentSession: updatedCurrentSession,
             };
-          });
+          
         });
       },
 
       // 更新指定会话
       updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => {
-        perfMonitor.measure('sessionStore.updateSession', () => {
+        
           set((state) => {
             const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
@@ -296,7 +296,7 @@ export const useSessionStore = create<SessionStore>()(
               agentSessions: updatedAgentSessions,
               currentSession: updatedCurrentSession,
             };
-          });
+          
         });
       },
 
@@ -315,7 +315,7 @@ export const useSessionStore = create<SessionStore>()(
 
       // 智能更新会话标题
       updateSessionTitleIntelligently: (agentId: string, sessionId: string): void => {
-        perfMonitor.measure('sessionStore.updateSessionTitleIntelligently', () => {
+        
           const session = get().getSessionById(agentId, sessionId);
           if (!session) {
             return;
@@ -330,7 +330,7 @@ export const useSessionStore = create<SessionStore>()(
           if (result.shouldUpdate && result.newTitle !== session.title) {
             get().renameSession(agentId, sessionId, result.newTitle);
           }
-        });
+        
       },
 
       // 更新会话中的特定消息

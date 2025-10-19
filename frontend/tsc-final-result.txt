@@ -1,0 +1,4 @@
+src/components/chat/ChatContainer.tsx(98,6): error TS1005: ',' expected.
+src/components/chat/ChatContainer.tsx(151,6): error TS1005: ',' expected.
+src/components/chat/ChatContainer.tsx(152,3): error TS1128: Declaration or statement expected.
+src/components/chat/ChatContainer.tsx(256,1): error TS1128: Declaration or statement expected.

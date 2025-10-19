@@ -35,7 +35,7 @@ export function useLazyLoad<T = unknown>(
   options: LazyLoadOptions = {},
 ): LazyLoadResult<T> {
   // Performance monitoring
-  usePerformanceMonitor('useLazyLoad');
+  // usePerformanceMonitor('useLazyLoad'); // Performance monitoring disabled
 
   const {
     rootMargin = '50px',

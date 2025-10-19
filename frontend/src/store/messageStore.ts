@@ -100,7 +100,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
   // 添加消息
   addMessage: (message: ChatMessage) => {
-    perfMonitor.measure('messageStore.addMessage', () => {
+    
       set((state: any) => {
         // 确保消息有时间戳
         const messageWithTimestamp = {
@@ -113,7 +113,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
         return {
           messages: [...state.messages, messageWithTimestamp],
         };
-      });
+      
     });
   },
 
@@ -128,13 +128,11 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
   // 根据ID更新消息
   updateMessageById: (messageId: string, updater: (message: ChatMessage) => ChatMessage) => {
-    perfMonitor.measure('messageStore.updateMessageById', () => {
-      set((state: MessageState) => ({
-        messages: state.messages.map((msg: ChatMessage) =>
-          msg.id === messageId ? updater(msg) : msg,
-        ),
-      }));
-    });
+    set((state: MessageState) => ({
+      messages: state.messages.map((msg: ChatMessage) =>
+        msg.id === messageId ? updater(msg) : msg,
+      ),
+    }));
   },
 
   // 设置消息反馈
@@ -170,10 +168,10 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
   // 性能优化：追加到缓冲区（不触发渲染）
   appendToBuffer: (content: string) => {
-    perfMonitor.measure('messageStore.appendToBuffer', () => {
+    
       set((state: MessageState) => ({
         streamBuffer: state.streamBuffer + content,
-      }));
+      );
 
       // 自动调度flush
       get()._scheduleFlush();
@@ -182,7 +180,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
   // 性能优化：批量flush缓冲区（通过requestAnimationFrame调用）
   flushBuffer: () => {
-    perfMonitor.measure('messageStore.flushBuffer', () => {
+    
       set((state: any) => {
         if (!state.streamBuffer) {
           return { flushScheduled: false };
@@ -205,7 +203,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             debugLog('📝 flush缓冲区:', {
               bufferedLength: state.streamBuffer.length,
               totalLength: updatedMessage.AI?.length,
-            });
+            
 
             return updatedMessage;
           }
@@ -217,13 +215,13 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
           streamBuffer: '',
           flushScheduled: false,
         };
-      });
     });
+  },
   },
 
   // 兼容性：直接更新最后一条消息（不推荐，使用appendToBuffer代替）
   updateLastMessage: (content: string) => {
-    perfMonitor.measure('messageStore.updateLastMessage', () => {
+    
       set((state: any) => {
         debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
 
@@ -242,11 +240,11 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             } as ChatMessage;
           }
           return msg;
-        });
+        
 
         return { messages };
-      });
     });
+  },
   },
 
   // 添加推理步骤
@@ -388,10 +386,10 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 // 性能监控：定期输出messageStore的性能数据
 if (process.env.NODE_ENV === 'development') {
   setInterval(() => {
-    const stats = perfMonitor.getStats('messageStore.flushBuffer');
-    if (stats && stats.count > 0) {
-      // Performance metrics available via perfMonitor.getStats('messageStore.flushBuffer')
-      debugLog('MessageStore Performance', {
+    // Performance monitoring disabled for production
+    // const stats = perfMonitor.getStats('messageStore.flushBuffer');
+    // if (stats && stats.count > 0) {
+    //   debugLog('MessageStore Performance', {
         flushCount: stats.count,
         avgFlushTime: `${stats.avg.toFixed(2)}ms`,
         p95: `${stats.p95.toFixed(2)}ms`,

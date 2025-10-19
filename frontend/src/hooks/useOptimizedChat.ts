@@ -147,10 +147,10 @@ export function useOptimizedChat({
   enableScrollOptimization = true,
   enablePerformanceMonitoring = true,
 }: OptimizedChatOptions = {}) {
-  // Performance monitoring
-  if (enablePerformanceMonitoring) {
-    usePerformanceMonitor('useOptimizedChat');
-  }
+  // Performance monitoring disabled
+  // if (enablePerformanceMonitoring) {
+  //   usePerformanceMonitor('useOptimizedChat');
+  // }
 
   const {
     messages,
@@ -274,7 +274,8 @@ return;
     const totalCacheRequests = cacheHits.current + cacheMisses.current;
     const cacheHitRate = totalCacheRequests > 0 ? (cacheHits.current / totalCacheRequests) * 100 : 0;
 
-    const memoryUsage = memoryMonitor.getCurrentUsage().heapUsed;
+    // Memory monitoring disabled for production
+    const memoryUsage = 0; // memoryMonitor.getCurrentUsage().heapUsed;
 
     setMetrics((prev: ChatMetrics) => ({
       ...prev,

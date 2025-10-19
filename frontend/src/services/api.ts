@@ -84,9 +84,9 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 api.interceptors.request.use((config) => {
-  // 🚀 性能监控：记录请求开始时间
+  // Performance monitoring disabled - generate simple request ID
   const requestId = `${config.method?.toUpperCase()}-${config.url}-${Date.now()}`;
-  requestMonitor.startRequest(requestId, config.url || '');
+  // requestMonitor.startRequest(requestId, config.url || ''); // Disabled for production
 
   // 添加请求ID到header
   if (!config.headers) {
@@ -103,10 +103,10 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    // 🚀 性能监控：记录请求完成
+    // Performance monitoring disabled
     const requestId = response.config.headers?.['X-Request-ID'] as string;
     if (requestId) {
-      requestMonitor.endRequest(requestId, response.config.method?.toUpperCase() || 'GET', response.status);
+      // requestMonitor.endRequest(requestId, response.config.method?.toUpperCase() || 'GET', response.status); // Disabled for production
     }
     return response;
   },
@@ -120,10 +120,10 @@ api.interceptors.response.use(
     };
 
     if (isAxiosError(error)) {
-      // 🚀 性能监控：记录请求失败
+      // Performance monitoring disabled
       const requestId = error.config?.headers?.['X-Request-ID'] as string;
       if (requestId) {
-        requestMonitor.endRequest(requestId, error.config?.method?.toUpperCase() || 'GET', error.response?.status || 0);
+        // requestMonitor.endRequest(requestId, error.config?.method?.toUpperCase() || 'GET', error.response?.status || 0); // Disabled for production
       }
 
       logger.error(translate('API请求错误'), error, {

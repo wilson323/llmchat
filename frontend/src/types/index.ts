@@ -579,13 +579,13 @@ export type DashboardConversationAnalytics = {
   setDateFilter: (key: 'startDate' | 'endDate', value: string) => void;
   setAgentId: (agentId: string) => void;
   refresh: () => Promise<void>;
-  series: ConversationSeriesDataset | null;
+  series: any | null; // TODO: 定义ConversationSeriesDataset类型
   seriesLoading: boolean;
   seriesError: string | null;
-  comparison: AgentComparisonDataset | null;
+  comparison: any | null; // TODO: 定义AgentComparisonDataset类型
   comparisonLoading: boolean;
   comparisonError: string | null;
-  agents: AgentItem[];
+  agents: any[]; // TODO: 使用统一的AgentItem类型
   agentsLoading: boolean;
   agentsError: string | null;
 };

@@ -95,7 +95,6 @@ export const ChatContainer: React.FC = () => {
       } catch (e) {
         console.warn(t('渲染 variables 失败'), e);
       }
-    });
   };
   // 交互回调：区分 init 起源与普通交互
   const handleInteractiveSelect = (payload: string | Record<string, unknown>): void => {
@@ -148,7 +147,6 @@ export const ChatContainer: React.FC = () => {
       if (vars) {
         setPendingInitVars(null);
       }
-    });
   };
   useEffect(() => {
       // 注意：特殊工作区由 AgentWorkspace 处理，这里只处理标准聊天界面

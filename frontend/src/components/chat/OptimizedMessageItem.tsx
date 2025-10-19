@@ -18,7 +18,7 @@ import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-// Removed: secureContentSanitizer (over-engineered)
+// secureContentSanitizer已删除（过度工程化）
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -34,16 +34,7 @@ interface OptimizedMessageItemProps {
   onFeedback?: (messageId: string, feedback: 'good' | 'bad') => void;
 }
 
-// Performance monitoring
-const MessageItemPerfMonitor = () => {
-  const [renderCount, setRenderCount] = useState(0);
-
-  useEffect(() => {
-    setRenderCount((prev: number) => prev + 1);
-  });
-
-  return { renderCount };
-};
+// Performance monitoring removed - over-engineered
 
 export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   message,

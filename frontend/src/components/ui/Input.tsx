@@ -32,8 +32,8 @@ const inputVariants = cva(
   },
 );
 
-// Input组件Props - 使用类型别名避免循环引用
-export type InputProps = IInputProps & VariantProps<typeof inputVariants> & {
+// Input组件额外Props（扩展ui.types.ts中的InputProps）
+type InputExtraProps = {
   /** 是否显示清除按钮 */
   allowClear?: boolean;
   /** 前缀元素 */
@@ -48,13 +48,10 @@ export type InputProps = IInputProps & VariantProps<typeof inputVariants> & {
   helperText?: string;
   /** 清除回调 */
   onClear?: () => void;
-  /** 变化回调 */
-  onChange?: (value: string, event: React.ChangeEvent<HTMLInputElement>) => void;
-  /** 焦点回调 */
-  onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
-  /** 失焦回调 */
-  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
 };
+
+// 合并类型
+type InputComponentProps = IInputProps & VariantProps<typeof inputVariants> & InputExtraProps;
 
 // 清除按钮组件
 const ClearButton = React.forwardRef<HTMLButtonElement, {
@@ -90,7 +87,7 @@ const ClearButton = React.forwardRef<HTMLButtonElement, {
 ClearButton.displayName = 'ClearButton';
 
 // Input实现组件
-const InputImpl = React.forwardRef<HTMLInputElement, InputProps>(
+const InputImpl = React.forwardRef<HTMLInputElement, InputComponentProps>(
   (
     {
       className,
@@ -157,12 +154,17 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputProps>(
       onClear?.();
 
       // 触发change事件
-      const syntheticEvent = {
-        target: { value: '' },
-        currentTarget: { value: '' },
-      } as React.ChangeEvent<HTMLInputElement>;
-
-      onChange?.('', syntheticEvent);
+      if (onChange) {
+        if (onChange.length === 1) {
+          (onChange as (value: string) => void)('');
+        } else {
+          const syntheticEvent = {
+            target: { value: '' },
+            currentTarget: { value: '' },
+          } as React.ChangeEvent<HTMLInputElement>;
+          (onChange as React.ChangeEventHandler<HTMLInputElement>)(syntheticEvent);
+        }
+      }
     }, [disabled, readonly, value, onClear, onChange]);
 
     // 变化处理
@@ -174,7 +176,16 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputProps>(
           setInternalValue(newValue);
         }
 
-        onChange?.(newValue, event);
+        // 支持两种onChange签名
+        if (onChange) {
+          if (onChange.length === 1) {
+            // 简化签名: (value: string) => void
+            (onChange as (value: string) => void)(newValue);
+          } else {
+            // 标准签名: React.ChangeEventHandler
+            (onChange as React.ChangeEventHandler<HTMLInputElement>)(event);
+          }
+        }
       },
       [value, onChange]
     );
