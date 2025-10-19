@@ -1,0 +1,220 @@
+# ========================================
+# Cursor AI 排除配置
+# 排除所有不需要AI读取的文件和目录
+# ========================================
+
+# ============ 依赖包和锁文件 ============
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# ============ 构建产物 ============
+backend/dist/
+frontend/dist/
+shared-types/dist/
+frontend/.vite/
+*.tsbuildinfo
+.next/
+.nuxt/
+dist/
+build/
+
+# ============ 测试报告和结果 ============
+playwright-report/
+test-results/
+coverage/
+.nyc_output/
+*.lcov
+
+# ============ 日志文件 ============
+logs/
+*.log
+backend/log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# ============ 缓存文件 ============
+.eslintcache
+.cache/
+.parcel-cache/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.npm/
+.vite/
+
+# ============ IDE配置 ============
+.vscode/
+.idea/
+.claude-flow/
+.claude/
+*.swp
+*.swo
+*~
+.vscode-test/
+
+# ============ 临时文件 ============
+tmp/
+temp/
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+
+# ============ 环境变量 ============
+.env
+.env.*
+!.env.example
+
+# ============ 操作系统文件 ============
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ============ Git ============
+.git/
+.gitignore
+
+# ============ 质量报告（JSON） ============
+quality-reports/
+reports/
+*-eslint-*.json
+*-eslint-errors.json
+*-eslint-report.json
+quality-baseline.json
+quality-report.json
+backend-eslint-*.json
+frontend-eslint-*.json
+
+# ============ Docker & K8s ============
+docker-compose.*.yml
+k8s/
+filebeat/
+logstash/
+nginx/conf.d/
+
+# ============ 临时报告文档 ============
+# 保留核心文档，排除临时报告
+*_COMPLETION_REPORT.md
+*_SUMMARY*.md
+*_REPORT*.md
+ 
+# ============ PNPM 专项排除（避免索引浪费） ============
+# 全局/本地 pnpm store 与调试日志
+pnpm-store/
+.pnpm-store/
+**/pnpm-store/
+**/.pnpm-store/
+pnpm-debug.log*
+**/pnpm-debug.log*
+
+# pnpm 虚拟仓库目录（部分工具会深入扫描）
+**/node_modules/.pnpm/
+PHASE_*.md
+P0_TASKS_*.md
+OPTIMIZATION_*.md
+EXCEPTION_HANDLING_*.md
+TYPE_SAFETY_*.md
+REACT_MEMO_*.md
+VIRTUAL_SCROLL_*.md
+PERFORMANCE_ANALYSIS.md
+CODE_AUDIT_*.md
+CODE_REVIEW_TODOS.md
+MERGE_READY_CHECKLIST.md
+READY_TO_*.md
+ZERO_ERRORS_*.md
+FINAL_*.md
+EXECUTION_COMPLETE.md
+IMPROVEMENTS_SUMMARY.md
+COMMIT_SUMMARY.md
+COMPLETION_REPORT.md
+DEPENDENCY_ANALYSIS.md
+ENTERPRISE_IMPROVEMENTS_COMPLETE.md
+GLOBAL_CODE_QUALITY_*.md
+h origin main
+tatus
+optimization-*.md
+
+# ============ 脚本和配置 ============
+# 排除临时脚本，保留核心配置
+*.bat
+*.sh
+!quick-start.sh
+scripts/
+
+# ============ 其他临时文件 ============
+opencode.json
+typescript-recommendations.md
+verify-keyboard-shortcuts.js
+
+# ============ 保留的重要文件 ============
+# 这些文件不排除（使用 ! 前缀）
+!README.md
+!CLAUDE.md
+!DEVELOPMENT_STANDARDS.md
+!CODE_QUALITY_STANDARDS.md
+!TEAM_TECHNICAL_CONSTITUTION.md
+!START.md
+!package.json
+!tsconfig.json
+!pnpm-workspace.yaml
+# Prettier 排除配置
+
+# 构建产物
+dist/
+build/
+backend/dist/
+frontend/dist/
+shared-types/dist/
+*.tsbuildinfo
+
+# 依赖
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 测试报告
+playwright-report/
+test-results/
+coverage/
+
+# 日志
+logs/
+*.log
+
+# 缓存
+.cache/
+.eslintcache
+.parcel-cache/
+
+# 临时文件
+tmp/
+temp/
+
+# 配置文件
+*.min.js
+*.min.css
+
+# 生成的文件
+public/
+static/
+
+# IDE
+.vscode/
+.idea/
+
+# Markdown临时报告
+*_COMPLETION_REPORT.md
+*_SUMMARY*.md
+*_REPORT*.md

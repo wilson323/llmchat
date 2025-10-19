@@ -113,8 +113,8 @@ export const useAgentStore = create<AgentStore>()(
       partialize: (state: AgentStore) => ({
         currentAgent: state.currentAgent, // 持久化当前智能体
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useAgentStore;

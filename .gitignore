@@ -1,67 +1,163 @@
-# LLMChat Project Git Ignore Configuration
+# ========================================
+# Git 版本控制排除配置
+# ========================================
 
-# Privacy Protection - Cursor AI
-.cursor/
-.cursorignore
-
-# Node.js
+# ============ 依赖包和锁文件 ============
 node_modules/
-npm-debug.log*
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# ============ PNPM 专项排除 ============
+# 全局/本地 pnpm store 与调试日志
+pnpm-store/
+.pnpm-store/
+**/pnpm-store/
+**/.pnpm-store/
 pnpm-debug.log*
+**/pnpm-debug.log*
 
-# Build Output
+# pnpm 虚拟仓库目录
+**/node_modules/.pnpm/
+
+# ============ 构建产物 ============
+backend/dist/
+frontend/dist/
+shared-types/dist/
+frontend/.vite/
+*.tsbuildinfo
+.next/
+.nuxt/
 dist/
-dist-ssr/
 build/
-*.local
 
-# Environment Variables
-.env
-.env*.local
-backend/.env
-frontend/.env
-
-# Editors and IDEs
-.vscode/*
-!.vscode/extensions.json
-.idea/
-*.swp
-.DS_Store
-
-# Test Coverage and Reports
-coverage/
+# ============ 测试报告和结果 ============
 playwright-report/
 test-results/
-quality-reports/
-reports/
+coverage/
+.nyc_output/
+*.lcov
 
-# Logs
+# ============ 日志文件 ============
 logs/
 *.log
+backend/log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
 
-# Temporary Files
-*.tmp
+# ============ 缓存文件 ============
+.eslintcache
 .cache/
+.parcel-cache/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.npm/
+.vite/
+
+# ============ IDE配置 ============
+.vscode/
+.idea/
+.claude-flow/
+.claude/
+*.swp
+*.swo
+*~
+.vscode-test/
+
+# ============ 临时文件 ============
+tmp/
 temp/
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
 
-# Database Files
-*.db
-*.sqlite
+# ============ 环境变量（敏感信息） ============
+.env
+.env.*
+!.env.example
 
-# TypeScript Cache
-*.tsbuildinfo
+# ============ 操作系统文件 ============
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
-# Sensitive Config
-config/agents.json
-config/fastgpt-env.env
+# ============ 质量报告（JSON） ============
+quality-reports/
+reports/
+*-eslint-*.json
+*-eslint-errors.json
+*-eslint-report.json
+quality-baseline.json
+quality-report.json
+backend-eslint-*.json
+frontend-eslint-*.json
 
-# Certificates and Keys
-*.pem
-*.key
-*.cert
-*.crt
+# ============ Docker & K8s（临时产物） ============
+docker-compose.*.yml
+!docker-compose.yml
+!docker-compose.prod.yml
 
-# Frontend/Backend Specific
-frontend/dist/
-backend/dist/
-tests/e2e/screenshots/
+# ============ 临时报告文档 ============
+# 保留核心文档，排除临时报告
+*_COMPLETION_REPORT.md
+*_SUMMARY*.md
+*_REPORT*.md
+PHASE_*.md
+P0_TASKS_*.md
+OPTIMIZATION_*.md
+EXCEPTION_HANDLING_*.md
+TYPE_SAFETY_*.md
+REACT_MEMO_*.md
+VIRTUAL_SCROLL_*.md
+PERFORMANCE_ANALYSIS.md
+CODE_AUDIT_*.md
+CODE_REVIEW_TODOS.md
+MERGE_READY_CHECKLIST.md
+READY_TO_*.md
+ZERO_ERRORS_*.md
+FINAL_*.md
+EXECUTION_COMPLETE.md
+IMPROVEMENTS_SUMMARY.md
+COMMIT_SUMMARY.md
+COMPLETION_REPORT.md
+DEPENDENCY_ANALYSIS.md
+ENTERPRISE_IMPROVEMENTS_COMPLETE.md
+GLOBAL_CODE_QUALITY_*.md
+optimization-*.md
+
+# ============ 临时脚本（保留核心脚本） ============
+temp_*.cjs
+temp_*.js
+*.bat
+!quick-start.bat
+!start-dev.bat
+
+# ============ 其他临时文件 ============
+opencode.json
+typescript-recommendations.md
+verify-keyboard-shortcuts.js
+
+# ============ 保留的重要文件 ============
+# 这些文件不排除（使用 ! 前缀）
+!README.md
+!CLAUDE.md
+!DEVELOPMENT_STANDARDS.md
+!CODE_QUALITY_STANDARDS.md
+!TEAM_TECHNICAL_CONSTITUTION.md
+!START.md
+!package.json
+!tsconfig.json
+!pnpm-workspace.yaml
+!quick-start.sh
+!start-dev.sh

@@ -1,13 +1,5 @@
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {AlertCircle, Bot, Loader2, Mic, Phone, PhoneOff, User, Volume2} from 'lucide-react';
+
+import { AlertCircle, Bot, Loader2, Mic, Phone, PhoneOff, User, Volume2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LucideProps } from 'lucide-react';
 import { Agent } from '@/types';
@@ -23,7 +15,7 @@ import type {
 } from '@/types/voice-api';
 import {
   getSpeechRecognitionConstructor,
-  getAudioContextConstructor
+  getAudioContextConstructor,
 } from '@/types/voice-api';
 
 type CallStatus = 'idle' | 'connecting' | 'in-call' | 'ended';
@@ -217,7 +209,9 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
     }
 
     const latest = assistantMessages[assistantMessages.length - 1];
-    if (!latest) return;
+    if (!latest) {
+      return;
+    }
 
     const key = latest.message.id || `assistant-${latest.index}`;
 
@@ -290,7 +284,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
         const store = useChatStore.getState();
         const activeSession = store.currentSession;
         if (activeSession && activeSession.agentId === agent.id) {
-          const metadata = activeSession.metadata || {};
+          const metadata = activeSession?.metadata ?? {};
           if (metadata.type === 'voice-call' && !metadata.firstUtterance) {
             const summary = content.length > 30 ? `${content.slice(0, 30)}...` : content;
             if (summary) {
@@ -299,7 +293,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
             updateSession(agent.id, activeSession.id, (session: any) => ({
               ...session,
               metadata: {
-                ...(session.metadata || {}),
+                ...(session?.metadata ?? {}),
                 type: 'voice-call',
                 firstUtterance: content,
               },
@@ -362,7 +356,9 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
           let sumSquares = 0;
           for (let i = 0; i < dataArray.length; i += 1) {
             const dataValue = dataArray[i];
-            if (dataValue === undefined) continue;
+            if (dataValue === undefined) {
+              continue;
+            }
             const value = (dataValue - 128) / 128;
             sumSquares += value * value;
           }
@@ -443,7 +439,7 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
         updateSession(agent.id, createdSession.id, (session: any) => ({
           ...session,
           metadata: {
-            ...(session.metadata || {}),
+            ...(session?.metadata ?? {}),
             type: 'voice-call',
             startedAt: startedAt.toISOString(),
           },
@@ -484,9 +480,9 @@ const VoiceCallWorkspace: React.FC<VoiceCallWorkspaceProps> = ({ agent }) => {
       updateSession(agent.id, currentSession.id, (session: any) => ({
         ...session,
         metadata: {
-          ...(session.metadata || {}),
+          ...(session?.metadata ?? {}),
           type: 'voice-call',
-          startedAt: session.metadata?.startedAt || (callStartRef.current ? new Date(callStartRef.current).toISOString() : undefined),
+          startedAt: session?.metadata?.startedAt ?? (callStartRef.current ? new Date(callStartRef.current).toISOString() : undefined),
           endedAt: endedAt.toISOString(),
           durationMs,
           lastUtterance,

@@ -1,0 +1,98 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // 开发环境性能优化配置
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // 开发环境增量编译优化
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo-dev",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+
+    // 开发环境内存优化
+    "isolatedModules": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true,
+
+    // 开发环境类型检查 - 平衡严格性和性能
+    "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // 开发环境编译器优化
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    // 开发环境类型检查优化
+    "types": ["vite/client", "node"],
+    "typeRoots": ["./node_modules/@types"],
+
+    // 优化的路径映射
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/*": ["components/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/store/*": ["store/*"],
+      "@/services/*": ["services/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
+      "@/styles/*": ["styles/*"],
+      "@llmchat/shared-types": ["../../shared-types/src/index.ts"],
+      "@llmchat/shared-types/*": ["../../shared-types/src/*"]
+    },
+
+    // 开发环境特有优化
+    "preserveWatchOutput": true,
+    "pretty": true,
+    "sourceMap": true
+  },
+
+  // 开发环境包含范围 - 排除非必要文件
+  "include": [
+    "src/**/*",
+    "!src/**/*.{test,spec}.{ts,tsx}",
+    "!src/**/stories/**",
+    "!src/**/*.d.ts",
+    "!src/**/*.benchmark.*",
+    "!src/**/*.performance.*"
+  ],
+
+  // 开发环境排除范围
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.stories.tsx",
+    "**/*.d.ts",
+    "src/**/*.benchmark.*",
+    "src/**/*.performance.*",
+    "src/**/__mocks__/**",
+    "src/**/__fixtures__/**"
+  ],
+
+  // 移除项目引用以减少复杂度
+  "references": []
+}

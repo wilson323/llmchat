@@ -82,7 +82,7 @@ const safeLocalStorage = {
     } catch {
       return false;
     }
-  }
+  },
 };
 
 export const useAuthStore = create<AuthStore>((set: SetState<AuthStore>, get: GetState<AuthStore>): AuthStore => ({
@@ -166,7 +166,9 @@ export const useAuthStore = create<AuthStore>((set: SetState<AuthStore>, get: Ge
 
   updateUser: (userData: Partial<AuthUser>): void => {
     const { user } = get();
-    if (!user) return;
+    if (!user) {
+return;
+}
 
     const updatedUser = { ...user, ...userData };
     safeLocalStorage.setItem(LS_USER, JSON.stringify(updatedUser));
@@ -175,13 +177,17 @@ export const useAuthStore = create<AuthStore>((set: SetState<AuthStore>, get: Ge
 
   getToken: (): string | null => {
     const { token, expiresAt } = get();
-    if (!token || !expiresAt) return null;
+    if (!token || !expiresAt) {
+return null;
+}
     return Date.now() <= expiresAt ? token : null;
   },
 
   getTimeUntilExpiry: (): number => {
     const { expiresAt } = get();
-    if (!expiresAt) return 0;
+    if (!expiresAt) {
+return 0;
+}
     return Math.max(0, expiresAt - Date.now());
   },
 

@@ -82,7 +82,7 @@ export type TResult<TSuccess, TError> =
  */
 export const createSuccessResult = <T>(data: T): TResult<T, never> => ({
   success: true,
-  data
+  data,
 });
 
 /**
@@ -90,7 +90,7 @@ export const createSuccessResult = <T>(data: T): TResult<T, never> => ({
  */
 export const createErrorResult = <E>(error: E): TResult<never, E> => ({
   success: false,
-  error
+  error,
 });
 
 // ==================== 存储类型定义 ====================
@@ -143,7 +143,9 @@ export class StrictLocalStorage implements IStrictStorage {
   getItem<K extends StrictStorageKey>(key: K): StrictStorageValue | null {
     try {
       const item = this.storage.getItem(key);
-      if (item === null) return null;
+      if (item === null) {
+return null;
+}
 
       // 尝试JSON解析
       const parsed = JSON.parse(item);
@@ -249,7 +251,7 @@ export class StrictEventEmitter implements IStrictEventEmitter {
 
   on<TEvent extends StrictCustomEvent>(
     type: TEvent['type'],
-    listener: StrictEventListener<TEvent>
+    listener: StrictEventListener<TEvent>,
   ): () => void {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
@@ -282,7 +284,7 @@ export class StrictEventEmitter implements IStrictEventEmitter {
 
   off<TEvent extends StrictCustomEvent>(
     type: TEvent['type'],
-    listener: StrictEventListener<TEvent>
+    listener: StrictEventListener<TEvent>,
   ): void {
     const listeners = this.listeners.get(type);
     if (listeners) {
@@ -319,7 +321,7 @@ export class StrictAsyncOperation<TData, TError = Error> {
   private result: StrictAsyncResult<TData, TError> = {
     state: 'pending',
     isLoading: true,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 
   private promise: Promise<TResult<TData, TError>>;
@@ -342,7 +344,7 @@ export class StrictAsyncOperation<TData, TError = Error> {
         state: 'fulfilled',
         data: value,
         isLoading: false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.resolve(value);
     }
@@ -357,7 +359,7 @@ export class StrictAsyncOperation<TData, TError = Error> {
         state: 'rejected',
         error,
         isLoading: false,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.reject(error);
     }
@@ -384,7 +386,7 @@ export class StrictAsyncOperation<TData, TError = Error> {
     this.result = {
       state: 'pending',
       isLoading: true,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     this.promise = new Promise<TResult<TData, TError>>((res, rej) => {
       this.resolve = res;
@@ -445,7 +447,7 @@ export default {
   createSuccessResult,
   createErrorResult,
   createDeepReadonly,
-  createStrictUnionGuard
+  createStrictUnionGuard,
 };
 
 // 类型守卫

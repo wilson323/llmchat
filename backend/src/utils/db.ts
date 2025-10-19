@@ -6,6 +6,7 @@ import { readJsonc } from '@/utils/config';
 import { deepReplaceEnvVariables } from '@/utils/envHelper';
 import logger from '@/utils/logger';
 import MigrationManager from './MigrationManager';
+import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
 
 export interface PgConfig {
   database?: {
@@ -115,19 +116,20 @@ export function getPool(): Pool {
 export async function initDB(): Promise<void> {
   logger.info('[initDB] 开始初始化数据库...');
 
-  // 优先使用环境变量直接配置，避免依赖配置文件
+  // ✅ 使用统一配置服务（从环境变量读取，无硬编码）
+  const dbConfig = AppConfig.getDatabaseConfig();
   const rawPg: PostgresConfig = {
-    host: process.env.DB_HOST ?? 'localhost',
-    port: process.env.DB_PORT ?? 5432,
-    user: process.env.DB_USER ?? 'postgres',
-    password: process.env.DB_PASSWORD ?? 'password',
-    database: process.env.DB_NAME ?? 'postgres',
-    ssl: process.env.DB_SSL === 'true'
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    password: dbConfig.password,
+    database: dbConfig.database,
+    ssl: dbConfig.ssl
   };
 
   // 如果环境变量中的用户名或密码是默认值，尝试读取配置文件作为后备
-  if (rawPg.user === 'postgres' || rawPg.password === 'password') {
-    logger.info('[initDB] 尝试从配置文件加载数据库配置...');
+  if (rawPg.user === 'postgres' || rawPg.password === '123456' || rawPg.password === 'password') {
+    logger.info('[initDB] 检测到默认配置，尝试从配置文件加载数据库配置...');
     try {
       const rawCfg = await readJsonc<PgConfig>('config/config.jsonc');
       const cfg = deepReplaceEnvVariables(rawCfg);
@@ -137,7 +139,7 @@ export async function initDB(): Promise<void> {
         logger.info('[initDB] 配置文件加载成功');
       }
     } catch (error: any) {
-      logger.warn('[initDB] 配置文件加载失败，使用环境变量', { error });
+      logger.warn('[initDB] 配置文件加载失败，使用环境变量默认值', { error });
     }
   }
 
@@ -207,7 +209,7 @@ export async function initDB(): Promise<void> {
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    
+
     // ✅ T006: 动态连接池配置（环境变量控制）
     max: parseInt(process.env.DB_POOL_MAX || '50'),          // 最大连接数（默认50）
     min: parseInt(process.env.DB_POOL_MIN || '10'),          // 最小连接数（默认10）
@@ -215,7 +217,7 @@ export async function initDB(): Promise<void> {
     connectionTimeoutMillis: 5000,   // 5秒连接超时
     query_timeout: 5000,             // 5秒查询超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
-    
+
     // ✅ 应用标识
     application_name: 'llmchat-backend',
   });
@@ -225,7 +227,7 @@ export async function initDB(): Promise<void> {
     max: pool.options.max,
     idleTimeout: pool.options.idleTimeoutMillis,
   });
-  
+
   // ✅ T006: 连接池事件监听
   pool.on('connect', (_client) => {
     logger.info('DB Pool: 新连接已建立', {
@@ -297,11 +299,11 @@ export async function initDB(): Promise<void> {
     try {
       // 检查email列是否存在
       const emailColumnCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'email'
       `);
-      
+
       if (emailColumnCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN email TEXT;');
         await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;');
@@ -314,11 +316,11 @@ export async function initDB(): Promise<void> {
     try {
       // 检查email_verified列是否存在
       const emailVerifiedCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'email_verified'
       `);
-      
+
       if (emailVerifiedCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;');
         logger.info('[initDB] ✅ 添加email_verified列');
@@ -330,11 +332,11 @@ export async function initDB(): Promise<void> {
     try {
       // 添加failed_login_attempts列
       const failedLoginCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'failed_login_attempts'
       `);
-      
+
       if (failedLoginCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0;');
         logger.info('[initDB] ✅ 添加failed_login_attempts列');
@@ -346,11 +348,11 @@ export async function initDB(): Promise<void> {
     try {
       // 添加locked_until列
       const lockedUntilCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'locked_until'
       `);
-      
+
       if (lockedUntilCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加locked_until列');
@@ -362,11 +364,11 @@ export async function initDB(): Promise<void> {
     try {
       // 添加last_login_at列
       const lastLoginAtCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'last_login_at'
       `);
-      
+
       if (lastLoginAtCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加last_login_at列');
@@ -378,11 +380,11 @@ export async function initDB(): Promise<void> {
     try {
       // 添加last_login_ip列
       const lastLoginIpCheck = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
+        SELECT column_name
+        FROM information_schema.columns
         WHERE table_name = 'users' AND column_name = 'last_login_ip'
       `);
-      
+
       if (lastLoginIpCheck.rows.length === 0) {
         await client.query('ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(45);');
         logger.info('[initDB] ✅ 添加last_login_ip列');

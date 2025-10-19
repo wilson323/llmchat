@@ -9,21 +9,14 @@
  * 5. Component performance profiling
  */
 
-;
-;
-;
+
 import { Activity, Cpu, Globe, MemoryStick, RefreshCw, TrendingDown, TrendingUp, Zap } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Card, { CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-;
-;
-;
-;
-;
-;
-;
+
+
 import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
 
 interface PerformanceMonitorProps {
@@ -42,7 +35,7 @@ function useCoreWebVitals() {
     FID: 0,
     CLS: 0,
     FCP: 0,
-    TTFB: 0
+    TTFB: 0,
   });
 
   useEffect(() => {
@@ -96,7 +89,7 @@ function useMemoryUsage() {
     usedJSHeapSize: 0,
     totalJSHeapSize: 0,
     jsHeapSizeLimit: 0,
-    memoryUsagePercentage: 0
+    memoryUsagePercentage: 0,
   });
 
   useEffect(() => {
@@ -112,7 +105,7 @@ function useMemoryUsage() {
           usedJSHeapSize,
           totalJSHeapSize,
           jsHeapSizeLimit,
-          memoryUsagePercentage
+          memoryUsagePercentage,
         });
       }
     };
@@ -134,13 +127,13 @@ function useNetworkMetrics() {
     totalRequests: 0,
     failedRequests: 0,
     averageResponseTime: 0,
-    totalDataTransferred: 0
+    totalDataTransferred: 0,
   });
 
   useEffect(() => {
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      let responseTimes: number[] = [];
+      const responseTimes: number[] = [];
       let failedCount = 0;
       let dataTransferred = 0;
 
@@ -170,7 +163,7 @@ function useNetworkMetrics() {
         averageResponseTime: responseTimes.length > 0
           ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
           : prev.averageResponseTime,
-        totalDataTransferred: prev.totalDataTransferred + dataTransferred
+        totalDataTransferred: prev.totalDataTransferred + dataTransferred,
       }));
     });
 
@@ -200,7 +193,7 @@ export function PerformanceMonitor({
   enabled = true,
   refreshInterval = 1000,
   showComponentMetrics = true,
-  maxComponentMetrics = 10
+  maxComponentMetrics = 10,
 }: PerformanceMonitorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [componentMetrics, setComponentMetrics] = useState<ComponentMetric[]>([]);
@@ -231,7 +224,9 @@ export function PerformanceMonitor({
 
   // Auto-refresh metrics
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     const interval = setInterval(updateComponentMetrics, refreshInterval);
     updateComponentMetrics(); // Initial update
@@ -241,7 +236,9 @@ export function PerformanceMonitor({
 
   // Format bytes for display
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0) {
+      return '0 B';
+    }
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -250,7 +247,9 @@ export function PerformanceMonitor({
 
   // Format time for display
   const formatTime = (ms: number): string => {
-    if (ms < 1000) return `${ms.toFixed(1)}ms`;
+    if (ms < 1000) {
+      return `${ms.toFixed(1)}ms`;
+    }
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
@@ -260,11 +259,15 @@ export function PerformanceMonitor({
       coreWebVitals.LCP < 2500 ? 1 : 0,        // Good LCP
       coreWebVitals.FID < 100 ? 1 : 0,        // Good FID
       coreWebVitals.CLS < 0.1 ? 1 : 0,        // Good CLS
-      memory.memoryUsagePercentage < 70 ? 1 : 0  // Good memory usage
+      memory.memoryUsagePercentage < 70 ? 1 : 0,  // Good memory usage
     ].reduce((a, b) => a + b, 0);
 
-    if (vitalsScore >= 3) return { status: 'good', color: 'text-green-600', icon: TrendingUp };
-    if (vitalsScore >= 2) return { status: 'warning', color: 'text-yellow-600', icon: Activity };
+    if (vitalsScore >= 3) {
+      return { status: 'good', color: 'text-green-600', icon: TrendingUp };
+    }
+    if (vitalsScore >= 2) {
+      return { status: 'warning', color: 'text-yellow-600', icon: Activity };
+    }
     return { status: 'poor', color: 'text-red-600', icon: TrendingDown };
   }, [coreWebVitals, memory]);
 
@@ -279,12 +282,12 @@ export function PerformanceMonitor({
   return (
     <div className="fixed top-4 right-4 z-50 min-w-80">
       <Card className="bg-background/95 backdrop-blur-md border-border/50 shadow-lg">
-        <CardHeader className="pb-2">
+        <Card.Header className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Card.Title className="text-sm font-medium flex items-center gap-2">
               <StatusIcon className={`w-4 h-4 ${performanceStatus.color}`} />
               Performance Monitor
-            </CardTitle>
+            </Card.Title>
             <div className="flex items-center gap-1">
               <Badge variant={performanceStatus.status === 'good' ? 'default' : 'destructive'} className="text-xs">
                 {performanceStatus.status.toUpperCase()}
@@ -299,10 +302,10 @@ export function PerformanceMonitor({
               </Button>
             </div>
           </div>
-        </CardHeader>
+        </Card.Header>
 
         {!isExpanded ? (
-          <CardContent className="pt-0">
+          <Card.Content className="pt-0">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-1">
                 <MemoryStick className="w-3 h-3" />
@@ -313,9 +316,9 @@ export function PerformanceMonitor({
                 <span>{formatTime(coreWebVitals.LCP)}</span>
               </div>
             </div>
-          </CardContent>
+          </Card.Content>
         ) : (
-          <CardContent className="space-y-3">
+          <Card.Content className="space-y-3">
             {/* Core Web Vitals */}
             <div className="space-y-2">
               <h4 className="text-xs font-medium flex items-center gap-1">
@@ -421,7 +424,7 @@ export function PerformanceMonitor({
             <div className="pt-2 border-t border-border/50 text-xs text-muted-foreground">
               Last updated: {new Date(lastUpdate.current).toLocaleTimeString()}
             </div>
-          </CardContent>
+          </Card.Content>
         )}
       </Card>
     </div>

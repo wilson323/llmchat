@@ -85,7 +85,7 @@ export const errorHandler = (
 
 /**
  * 根据错误类型确定HTTP状态码
- * 
+ *
  * 完整的HTTP状态码映射：
  * - 4xx: 客户端错误
  * - 5xx: 服务器错误
@@ -95,105 +95,105 @@ function getErrorStatusCode(error: BaseError): number {
   const message = error.message.toLowerCase();
 
   // ==================== 客户端错误 (4xx) ====================
-  
+
   // 400 Bad Request - 请求参数错误
   if (code === 'VALIDATION_ERROR' || code === 'INVALID_PARAMS' || code === 'BAD_REQUEST') {
     return 400;
   }
-  
+
   // 401 Unauthorized - 未认证
-  if (code === 'UNAUTHORIZED' || code === 'AUTHENTICATION_FAILED' || 
+  if (code === 'UNAUTHORIZED' || code === 'AUTHENTICATION_FAILED' ||
       code === 'AUTHENTICATION_ERROR' || code === 'TOKEN_INVALID' || code === 'TOKEN_EXPIRED') {
     return 401;
   }
-  
+
   // 403 Forbidden - 权限不足
-  if (code === 'FORBIDDEN' || code === 'PERMISSION_DENIED' || 
+  if (code === 'FORBIDDEN' || code === 'PERMISSION_DENIED' ||
       code === 'ACCESS_DENIED' || code === 'INSUFFICIENT_PERMISSIONS') {
     return 403;
   }
-  
+
   // 404 Not Found - 资源不存在
-  if (code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND' || 
+  if (code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND' ||
       code === 'AGENT_NOT_FOUND' || code === 'SESSION_NOT_FOUND') {
     return 404;
   }
-  
+
   // 405 Method Not Allowed - HTTP方法不允许
   if (code === 'METHOD_NOT_ALLOWED') {
     return 405;
   }
-  
+
   // 406 Not Acceptable - 无法提供可接受的内容
   if (code === 'NOT_ACCEPTABLE') {
     return 406;
   }
-  
+
   // 408 Request Timeout - 请求超时
   if (code === 'TIMEOUT_ERROR' || code === 'REQUEST_TIMEOUT') {
     return 408;
   }
-  
+
   // 409 Conflict - 资源冲突
   if (code === 'CONFLICT' || code === 'RESOURCE_CONFLICT' || code === 'DUPLICATE_RESOURCE') {
     return 409;
   }
-  
+
   // 410 Gone - 资源已永久删除
   if (code === 'RESOURCE_GONE') {
     return 410;
   }
-  
+
   // 413 Payload Too Large - 请求体过大
   if (code === 'PAYLOAD_TOO_LARGE' || code === 'FILE_TOO_LARGE') {
     return 413;
   }
-  
+
   // 415 Unsupported Media Type - 不支持的媒体类型
   if (code === 'UNSUPPORTED_MEDIA_TYPE') {
     return 415;
   }
-  
+
   // 422 Unprocessable Entity - 语义错误
   if (code === 'VALIDATION_FAILED' || code === 'SEMANTIC_ERROR') {
     return 422;
   }
-  
+
   // 429 Too Many Requests - 速率限制
   if (code === 'RATE_LIMIT_EXCEEDED' || code === 'TOO_MANY_REQUESTS') {
     return 429;
   }
 
   // ==================== 服务器错误 (5xx) ====================
-  
+
   // 500 Internal Server Error - 内部错误
   if (code === 'INTERNAL_SERVER_ERROR' || code === 'INTERNAL_ERROR') {
     return 500;
   }
-  
+
   // 501 Not Implemented - 功能未实现
   if (code === 'NOT_IMPLEMENTED') {
     return 501;
   }
-  
+
   // 502 Bad Gateway - 上游服务错误
   if (code === 'BAD_GATEWAY' || code === 'UPSTREAM_ERROR') {
     return 502;
   }
-  
+
   // 503 Service Unavailable - 服务不可用
-  if (code === 'SERVICE_UNAVAILABLE' || code === 'CIRCUIT_BREAKER_OPEN' || 
+  if (code === 'SERVICE_UNAVAILABLE' || code === 'CIRCUIT_BREAKER_OPEN' ||
       code === 'SERVICE_DEGRADED') {
     return 503;
   }
-  
+
   // 504 Gateway Timeout - 网关超时
   if (code === 'GATEWAY_TIMEOUT' || code === 'UPSTREAM_TIMEOUT') {
     return 504;
   }
 
   // ==================== 基于消息内容的智能判断 ====================
-  
+
   if (message.includes('timeout')) {
     return 408;
   }
@@ -374,7 +374,7 @@ export const getErrorDescription = (code: string): string => {
     'NOT_FOUND': '请求的资源不存在',
     'CONFLICT': '资源冲突',
     'RATE_LIMIT_EXCEEDED': '请求频率超过限制',
-    
+
     // 服务器错误
     'INTERNAL_SERVER_ERROR': '服务器内部错误',
     'SERVICE_UNAVAILABLE': '服务暂时不可用',

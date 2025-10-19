@@ -141,7 +141,7 @@ export class CadParserService {
           type: entity.type as 'TEXT' | 'MTEXT',
           position: this.toPoint3D(entity.startPoint || entity.position),
           text: entity.text ?? 3500,
-          height: entity.textHeight || entity.height ?? 1,
+          height: (entity.textHeight || entity.height) ?? 1,
           rotation: entity.rotation ?? 0,
         } as TextEntity;
 

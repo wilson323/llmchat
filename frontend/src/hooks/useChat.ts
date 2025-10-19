@@ -184,7 +184,7 @@ export const useChat = () => {
         throw new Error(t('没有选择智能体或会话'));
       }
 
-      const targetMessage = messages.find((msg: any) => msg.id === messageId);
+      const targetMessage = messages.find((msg: ChatMessage) => msg.id === messageId);
       if (!targetMessage) {
         throw new Error(t('未找到需要重新生成的消息'));
       }

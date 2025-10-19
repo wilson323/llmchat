@@ -44,7 +44,7 @@ export function convertFastGPTInteractiveData(
       key: 'userInput',
       label: prompt,
       ...(defaultValue !== undefined && { defaultValue }),
-    }
+    },
   ];
 
   const inputParams: InteractiveInputParams = {

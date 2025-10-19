@@ -5,6 +5,7 @@ import type { Pool } from 'pg';
 import { ValidationError, SystemError } from '@/types/errors';
 import logger from '@/utils/logger';
 import { getPool } from '@/utils/db';
+import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
 
 export interface TokenPayload {
   userId: string;
@@ -36,32 +37,26 @@ export class TokenService {
   }
 
   constructor() {
-    const redisConfig: {
-      host: string;
-      port: number;
-      password?: string;
-      db: number;
-      keyPrefix: string;
-      retryStrategy: (times: number) => number;
-      lazyConnect: boolean;
-    } = {
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-      db: parseInt(process.env.REDIS_DB ?? '0', 10),
+    const appRedisConfig = AppConfig.getRedisConfig();
+
+    // ✅ 构建Redis配置，仅在password存在时包含
+    const redisOptions: any = {
+      host: appRedisConfig.host,
+      port: appRedisConfig.port,
+      db: appRedisConfig.db,
       keyPrefix: 'token:',
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
-      lazyConnect: true, // 延迟连接,避免测试环境启动失败
+      lazyConnect: true // 延迟连接,避免测试环境启动失败
     };
 
-    // 只在有密码时添加password字段
-    if (process.env.REDIS_PASSWORD) {
-      redisConfig.password = process.env.REDIS_PASSWORD;
+    if (appRedisConfig.password) {
+      redisOptions.password = appRedisConfig.password;
     }
 
-    this.redis = new Redis(redisConfig);
+    this.redis = new Redis(redisOptions);
     this.secret = process.env.JWT_SECRET ?? this.generateSecret();
     this.ttl = parseInt(process.env.TOKEN_TTL ?? '604800', 10); // 7 天
     this.refreshTtl = parseInt(process.env.REFRESH_TOKEN_TTL ?? '2592000', 10); // 30 天

@@ -1,4 +1,4 @@
-;
+
 import { ReasoningStepUpdate } from '@/types';
 import type {
   FastGPTReasoningData,

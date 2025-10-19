@@ -1,26 +1,11 @@
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {AlertTriangle, Bell, CheckCircle, ChevronDown, Clock, Info, User, XCircle} from 'lucide-react';
+
+import { AlertTriangle, Bell, CheckCircle, ChevronDown, Clock, Info, User, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-;
-;
-;
-;
-;
-;
-;
+
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/services/slaApi';
@@ -322,7 +307,7 @@ export function AlertList({
                           </div>
 
                           {/* 详细信息 */}
-                          {alert.metadata && Object.keys(alert.metadata).length > 0 && (
+                          {alert.metadata && Object.keys(alert.metadata ?? {}).length > 0 && (
                             <button
                               onClick={() => toggleExpanded(alert.id)}
                               className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -378,7 +363,7 @@ export function AlertList({
                             <div className="mt-3 pt-3 border-t border-border/50">
                               <h4 className="text-xs font-medium text-muted-foreground mb-2">详细信息:</h4>
                               <div className="grid grid-cols-1 gap-2 text-xs">
-                                {Object.entries(alert.metadata).map(([key, value]) => (
+                                {Object.entries(alert.metadata ?? {}).map(([key, value]) => (
                                   <div key={key} className="flex gap-2">
                                     <span className="font-medium text-muted-foreground min-w-0">
                                       {key}:

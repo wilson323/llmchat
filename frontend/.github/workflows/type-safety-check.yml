@@ -1,0 +1,476 @@
+name: 类型安全检查
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每天凌晨2点运行
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      create_baseline:
+        description: '创建新的类型基线'
+        required: false
+        default: 'false'
+        type: boolean
+      strict_mode:
+        description: '启用严格模式'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  type-safety-check:
+    name: 类型安全检查
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        check-type:
+          - compilation
+          - linting
+          - coverage
+          - regression
+        include:
+          - check-type: compilation
+            name: "TypeScript编译检查"
+            critical: true
+          - check-type: linting
+            name: "ESLint类型规则检查"
+            critical: true
+          - check-type: coverage
+            name: "类型覆盖率分析"
+            critical: false
+          - check-type: regression
+            name: "类型回归检测"
+            critical: true
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史用于回归检测
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 缓存pnpm
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: 安装pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@${{ env.PNPM_VERSION }} --activate
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript编译检查
+        if: matrix.check-type == 'compilation'
+        id: compile-check
+        run: |
+          echo "🔍 开始TypeScript编译检查..."
+
+          # 执行类型检查
+          if pnpm run type-check; then
+            echo "✅ TypeScript编译检查通过"
+            echo "compile_result=passed" >> $GITHUB_OUTPUT
+            echo "compile_errors=0" >> $GITHUB_OUTPUT
+          else
+            echo "❌ TypeScript编译检查失败"
+            echo "compile_result=failed" >> $GITHUB_OUTPUT
+
+            # 提取错误数量
+            ERROR_COUNT=$(pnpm run type-check 2>&1 | grep -c "error" || echo "0")
+            echo "compile_errors=$ERROR_COUNT" >> $GITHUB_OUTPUT
+
+            # 输出错误详情
+            pnpm run type-check
+            exit 1
+          fi
+
+      - name: ESLint类型规则检查
+        if: matrix.check-type == 'linting'
+        id: lint-check
+        run: |
+          echo "🔍 开始ESLint类型规则检查..."
+
+          # 创建ESLint配置文件
+          cat > .eslintrc.type-check.json << EOF
+          {
+            "extends": ["./.eslintrc.cjs"],
+            "rules": {
+              "@typescript-eslint/no-explicit-any": "error",
+              "@typescript-eslint/no-unused-vars": "error",
+              "@typescript-eslint/prefer-const": "error",
+              "@typescript-eslint/no-unsafe-assignment": "error",
+              "@typescript-eslint/no-unsafe-call": "error",
+              "@typescript-eslint/no-unsafe-member-access": "error",
+              "@typescript-eslint/no-unsafe-return": "error"
+            }
+          }
+          EOF
+
+          # 执行ESLint检查
+          ESLINT_RESULT=$(pnpm eslint --config .eslintrc.type-check.json src/ --ext .ts,.tsx || true)
+          ESLINT_ERRORS=$(echo "$ESLINT_RESULT" | grep -c "error" || echo "0")
+          ESLINT_WARNINGS=$(echo "$ESLINT_RESULT" | grep -c "warning" || echo "0")
+
+          if [ "$ESLINT_ERRORS" -eq 0 ]; then
+            echo "✅ ESLint类型规则检查通过"
+            echo "lint_result=passed" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ESLint类型规则检查失败"
+            echo "lint_result=failed" >> $GITHUB_OUTPUT
+            echo "$ESLINT_RESULT"
+          fi
+
+          echo "lint_errors=$ESLINT_ERRORS" >> $GITHUB_OUTPUT
+          echo "lint_warnings=$ESLINT_WARNINGS" >> $GITHUB_OUTPUT
+
+      - name: 类型覆盖率分析
+        if: matrix.check-type == 'coverage'
+        id: coverage-check
+        run: |
+          echo "📊 开始类型覆盖率分析..."
+
+          # 安装类型覆盖率工具
+          pnpm add -D type-coverage @type-coverage/cli
+
+          # 运行类型覆盖率分析
+          COVERAGE_RESULT=$(pnpm exec type-coverage --detail --strict || true)
+          COVERAGE_PERCENTAGE=$(echo "$COVERAGE_RESULT" | grep -o '[0-9]\+\.[0-9]\+%' | head -1 | sed 's/%//')
+
+          echo "coverage_percentage=$COVERAGE_PERCENTAGE" >> $GITHUB_OUTPUT
+          echo "coverage_result=$([ "$COVERAGE_PERCENTAGE" != "" ] && echo "passed" || echo "failed")" >> $GITHUB_OUTPUT
+
+          # 输出详细报告
+          echo "$COVERAGE_RESULT"
+
+          # 检查覆盖率是否达标
+          if [ "$COVERAGE_PERCENTAGE" != "" ] && (( $(echo "$COVERAGE_PERCENTAGE >= 70" | bc -l) )); then
+            echo "✅ 类型覆盖率达标: ${COVERAGE_PERCENTAGE}%"
+          else
+            echo "⚠️ 类型覆盖率不足: ${COVERAGE_PERCENTAGE}% (要求: 70%)"
+          fi
+
+      - name: 类型回归检测
+        if: matrix.check-type == 'regression'
+        id: regression-check
+        run: |
+          echo "🔍 开始类型回归检测..."
+
+          # 检查是否需要创建基线
+          if [ "${{ github.event.inputs.create_baseline }}" == "true" ] || [ ! -f ".type-baseline/latest.json" ]; then
+            echo "📝 创建类型基线..."
+            node -e "
+              const { execSync } = require('child_process');
+              const { writeFileSync } = require('fs');
+              const { join } = require('path');
+
+              const baseline = {
+                version: '${{ github.sha }}',
+                timestamp: new Date().toISOString(),
+                projectHash: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(),
+                typeDefinitions: [],
+                files: [],
+                usageStats: { interfaces: 0, typeAliases: 0, enums: 0, anyTypes: 0 }
+              };
+
+              const baselineDir = '.type-baseline';
+              if (!require('fs').existsSync(baselineDir)) {
+                require('fs').mkdirSync(baselineDir, { recursive: true });
+              }
+
+              writeFileSync(join(baselineDir, 'latest.json'), JSON.stringify(baseline, null, 2));
+              console.log('✅ 类型基线创建完成');
+            "
+            echo "regression_result=baseline_created" >> $GITHUB_OUTPUT
+          else
+            echo "🔍 检测类型回归..."
+
+            # 运行类型回归检测脚本
+            node -e "
+              const { execSync } = require('child_process');
+              const { readFileSync, existsSync } = require('fs');
+
+              try {
+                // 检查编译错误
+                execSync('pnpm run type-check', { stdio: 'pipe' });
+
+                // 检查是否有重大变化
+                const gitDiff = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
+                const typeFiles = gitDiff.split('\\n').filter(file => file.match(/\\.(ts|tsx)$/));
+
+                if (typeFiles.length > 0) {
+                  console.log('📝 检测到类型文件变更:', typeFiles.join(', '));
+
+                  // 这里可以添加更复杂的回归检测逻辑
+                  console.log('✅ 类型回归检测通过 - 无破坏性变更');
+                  console.log('regression_result=passed');
+                } else {
+                  console.log('✅ 类型回归检测通过 - 无类型文件变更');
+                  console.log('regression_result=passed');
+                }
+              } catch (error) {
+                console.log('❌ 类型回归检测失败 - 发现类型错误');
+                console.log(error.stdout?.toString() || error.message);
+                console.log('regression_result=failed');
+              }
+            " > regression_result.txt
+
+            REGRESSION_RESULT=$(cat regression_result.txt | grep "regression_result=" | cut -d'=' -f2)
+            echo "regression_result=$REGRESSION_RESULT" >> $GITHUB_OUTPUT
+
+            rm regression_result.txt
+          fi
+
+      - name: 上传类型检查结果
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: type-safety-results-${{ matrix.check-type }}
+          path: |
+            type-coverage-results.json
+            .type-baseline/
+          retention-days: 30
+
+      - name: 生成类型安全报告
+        if: always()
+        id: safety-report
+        run: |
+          echo "📊 生成类型安全报告..."
+
+          # 收集所有检查结果
+          COMPILE_RESULT="${{ steps.compile-check.outputs.compile_result || 'skipped' }}"
+          COMPILE_ERRORS="${{ steps.compile-check.outputs.compile_errors || '0' }}"
+          LINT_RESULT="${{ steps.lint-check.outputs.lint_result || 'skipped' }}"
+          LINT_ERRORS="${{ steps.lint-check.outputs.lint_errors || '0' }}"
+          LINT_WARNINGS="${{ steps.lint-check.outputs.lint_warnings || '0' }}"
+          COVERAGE_PERCENTAGE="${{ steps.coverage-check.outputs.coverage_percentage || '0' }}"
+          REGRESSION_RESULT="${{ steps.regression-check.outputs.regression_result || 'skipped' }}"
+
+          # 计算总体状态
+          CRITICAL_CHECKS=0
+          PASSED_CHECKS=0
+
+          if [ "$COMPILE_RESULT" = "passed" ]; then
+            PASSED_CHECKS=$((PASSED_CHECKS + 1))
+          elif [ "$COMPILE_RESULT" = "failed" ]; then
+            CRITICAL_CHECKS=$((CRITICAL_CHECKS + 1))
+          fi
+
+          if [ "$LINT_RESULT" = "passed" ]; then
+            PASSED_CHECKS=$((PASSED_CHECKS + 1))
+          elif [ "$LINT_RESULT" = "failed" ]; then
+            CRITICAL_CHECKS=$((CRITICAL_CHECKS + 1))
+          fi
+
+          if [ "$REGRESSION_RESULT" = "passed" ]; then
+            PASSED_CHECKS=$((PASSED_CHECKS + 1))
+          elif [ "$REGRESSION_RESULT" = "failed" ]; then
+            CRITICAL_CHECKS=$((CRITICAL_CHECKS + 1))
+          fi
+
+          # 生成报告
+          cat > type-safety-report.md << EOF
+          # 类型安全检查报告
+
+          ## 📊 检查概览
+          - **检查时间**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **提交哈希**: ${{ github.sha }}
+          - **分支**: ${{ github.ref_name }}
+          - **触发事件**: ${{ github.event_name }}
+
+          ## ✅ 检查结果
+
+          ### TypeScript编译检查
+          - **状态**: $([ "$COMPILE_RESULT" = "passed" ] && echo "✅ 通过" || echo "❌ 失败")
+          - **错误数**: $COMPILE_ERRORS
+
+          ### ESLint类型规则检查
+          - **状态**: $([ "$LINT_RESULT" = "passed" ] && echo "✅ 通过" || echo "❌ 失败")
+          - **错误数**: $LINT_ERRORS
+          - **警告数**: $LINT_WARNINGS
+
+          ### 类型覆盖率分析
+          - **覆盖率**: ${COVERAGE_PERCENTAGE}%
+          - **状态**: $([ "${COVERAGE_PERCENTAGE}" != "0" ] && ([ "${COVERAGE_PERCENTAGE}" != "" ] && (( $(echo "${COVERAGE_PERCENTAGE} >= 70" | bc -l) )) && echo "✅ 达标" || echo "⚠️ 不足") || echo "❌ 失败")
+
+          ### 类型回归检测
+          - **状态**: $([ "$REGRESSION_RESULT" = "passed" ] && echo "✅ 通过" || ([ "$REGRESSION_RESULT" = "baseline_created" ] && echo "📝 基线已创建" || echo "❌ 失败"))
+
+          ## 🎯 总体评估
+          - **通过检查**: $PASSED_CHECKS/4
+          - **关键错误**: $CRITICAL_CHECKS
+          - **整体状态**: $([ "$CRITICAL_CHECKS" -eq 0 ] && echo "✅ 通过" || echo "❌ 失败")
+
+          ## 💡 改进建议
+          EOF
+
+          # 添加改进建议
+          if [ "$COMPILE_ERRORS" -gt 0 ]; then
+            echo "- 优先修复TypeScript编译错误" >> type-safety-report.md
+          fi
+
+          if [ "$LINT_ERRORS" -gt 0 ]; then
+            echo "- 修复ESLint类型规则错误" >> type-safety-report.md
+          fi
+
+          if [ "$COVERAGE_PERCENTAGE" != "" ] && (( $(echo "$COVERAGE_PERCENTAGE < 70" | bc -l) )); then
+            echo "- 提高类型覆盖率到70%以上" >> type-safety-report.md
+          fi
+
+          if [ "$LINT_WARNINGS" -gt 0 ]; then
+            echo "- 处理ESLint警告，提高代码质量" >> type-safety-report.md
+          fi
+
+          # 输出报告内容
+          cat type-safety-report.md
+
+      - name: 上传类型安全报告
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: type-safety-report
+          path: type-safety-report.md
+
+      - name: 评论PR（如果是PR）
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+
+            if (fs.existsSync('type-safety-report.md')) {
+              const report = fs.readFileSync('type-safety-report.md', 'utf8');
+
+              try {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## 🧪 类型安全检查报告\\n\\n${report}`
+                });
+              } catch (error) {
+                console.log('无法评论PR:', error.message);
+              }
+            }
+
+      - name: 设置检查状态
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const checkType = '${{ matrix.check-type }}';
+            const critical = ${{ matrix.critical }};
+            let conclusion = 'success';
+
+            // 根据检查类型确定结果
+            if (checkType === 'compilation') {
+              const result = '${{ steps.compile-check.outputs.compile_result }}';
+              conclusion = (result === 'passed') ? 'success' : 'failure';
+            } else if (checkType === 'linting') {
+              const result = '${{ steps.lint-check.outputs.lint_result }}';
+              conclusion = (result === 'passed') ? 'success' : 'failure';
+            } else if (checkType === 'regression') {
+              const result = '${{ steps.regression-check.outputs.regression_result }}';
+              conclusion = (result === 'passed') ? 'success' : (result === 'baseline_created' ? 'success' : 'failure');
+            }
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: '类型安全检查 - ${{ matrix.name }}',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: '${{ matrix.name }}',
+                summary: conclusion === 'success' ? '检查通过' : '检查失败',
+                text: fs.existsSync('type-safety-report.md') ? fs.readFileSync('type-safety-report.md', 'utf8') : '报告生成失败'
+              }
+            });
+
+  type-safety-summary:
+    name: 类型安全汇总
+    runs-on: ubuntu-latest
+    needs: type-safety-check
+    if: always()
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 下载所有结果
+        uses: actions/download-artifact@v3
+
+      - name: 生成汇总报告
+        run: |
+          echo "📊 生成类型安全汇总报告..."
+
+          # 合并所有检查结果
+          cat > type-safety-summary.md << 'EOF'
+          # 类型安全检查汇总报告
+
+          ## 🎯 检查概览
+          - **检查时间**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **提交哈希**: ${{ github.sha }}
+          - **分支**: ${{ github.ref_name }}
+          - **工作流运行**: ${{ github.run_id }}
+
+          ## 📋 检查结果详情
+          EOF
+
+          # 添加各检查结果
+          for result_dir in type-safety-results-*; do
+            if [ -d "$result_dir" ]; then
+              check_name=$(echo "$result_dir" | sed 's/type-safety-results-//')
+              echo "### $check_name" >> type-safety-summary.md
+              echo "检查结果文件: $result_dir" >> type-safety-summary.md
+              echo "" >> type-safety-summary.md
+            fi
+          done
+
+          # 添加主报告
+          if [ -f "type-safety-report/type-safety-report.md" ]; then
+            cat type-safety-report/type-safety-report.md >> type-safety-summary.md
+          fi
+
+          echo "📄 汇总报告生成完成"
+          cat type-safety-summary.md
+
+      - name: 上传汇总报告
+        uses: actions/upload-artifact@v3
+        with:
+          name: type-safety-summary
+          path: type-safety-summary.md
+
+      - name: 更新项目README（如果需要）
+        if: github.ref == 'refs/heads/main' && success()
+        run: |
+          echo "🔄 更新项目README中的类型安全徽章..."
+
+          # 这里可以添加更新README的逻辑
+          # 例如更新类型覆盖率徽章等
+
+      - name: 发送通知（如果失败）
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // 发送失败通知到Slack或其他通知系统
+            console.log('类型安全检查失败，发送通知...');

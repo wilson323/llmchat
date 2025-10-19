@@ -1,12 +1,11 @@
 import React from 'react';
 
-export interface BadgeProps {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
   variant?: 'default' | 'secondary' | 'success' | 'warning' | 'error' | 'destructive' | 'outline';
-  className?: string;
 }
 
-export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '' }) => {
+export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', className = '', ...props }) => {
   const variantStyles = {
     default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
     secondary: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
@@ -18,7 +17,10 @@ export const Badge: React.FC<BadgeProps> = ({ children, variant = 'default', cla
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}>
+    <span 
+      {...props}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}
+    >
       {children}
     </span>
   );

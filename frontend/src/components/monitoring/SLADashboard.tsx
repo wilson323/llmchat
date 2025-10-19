@@ -1,16 +1,10 @@
 'use client';
-;
-;
-;
-;
-;
-;
-import {Clock, Maximize2, Minimize2, RefreshCw, Shield} from 'lucide-react';
+
+
+import { Clock, Maximize2, Minimize2, RefreshCw, Shield } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-;
-;
-;
-;
+
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 

@@ -250,7 +250,9 @@ export const useBatchImageOptimization = (imageUrls: string[], options: ImageOpt
           return new Promise<boolean>((resolve) => {
             const img = new Image();
             img.onload = (): void => resolve(true);
-            img.onerror = (): void => { setTimeout(() => resolve(false), 100); };
+            img.onerror = (): void => {
+ setTimeout(() => resolve(false), 100);
+};
             img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpY2FzAAAAAAHAAAAAApbWFhZAAAAAA=' +
               'AAAAAAAAAAAAAAAAAAoAAFBhY3FwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
           });
@@ -260,7 +262,9 @@ export const useBatchImageOptimization = (imageUrls: string[], options: ImageOpt
           return new Promise<boolean>((resolve) => {
             const img = new Image();
             img.onload = (): void => resolve(true);
-            img.onerror = (): void => { setTimeout(() => resolve(false), 100); };
+            img.onerror = (): void => {
+ setTimeout(() => resolve(false), 100);
+};
             img.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
           });
         };

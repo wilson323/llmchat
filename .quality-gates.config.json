@@ -1,0 +1,262 @@
+{
+  "metadata": {
+    "version": "1.1.0",
+    "description": "LLMChat 前端项目类型安全质量门禁配置",
+    "lastUpdated": "2025-10-18",
+    "focus": "type-safety"
+  },
+  "thresholds": {
+    "typescript": 100,
+    "eslint": 0,
+    "tests": 80,
+    "security": 0,
+    "build": 100,
+    "typeCoverage": 90,
+    "overall": {
+      "development": 70,
+      "staging": 85,
+      "production": 95
+    }
+  },
+  "rules": {
+    "failOnWarning": true,
+    "skipSlowChecks": false,
+    "generateReports": true,
+    "enforceZeroTolerance": true,
+    "typeSafetyStrict": true
+  },
+  "scoring": {
+    "weights": {
+      "typescript": 0.30,
+      "eslint": 0.20,
+      "tests": 0.20,
+      "typeCoverage": 0.15,
+      "security": 0.10,
+      "build": 0.05
+    },
+    "penalties": {
+      "typescript": {
+        "error": 10,
+        "anyType": 15,
+        "unsafeType": 10
+      },
+      "eslint": {
+        "error": 5,
+        "warning": 2,
+        "typeRelatedError": 8
+      },
+      "tests": {
+        "failure": 100,
+        "coverageGap": 1
+      },
+      "typeCoverage": {
+        "belowThreshold": 5,
+        "criticalBelow": 15
+      },
+      "security": {
+        "critical": 50,
+        "high": 25,
+        "moderate": 10,
+        "low": 5
+      },
+      "build": {
+        "failure": 100
+      }
+    }
+  },
+  "checks": {
+    "typescript": {
+      "enabled": true,
+      "strict": true,
+      "exactOptionalPropertyTypes": true,
+      "noImplicitAny": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "noUncheckedIndexedAccess": true,
+      "noImplicitOverride": true,
+      "noPropertyAccessFromIndexSignature": false
+    },
+    "typeCoverage": {
+      "enabled": true,
+      "minimum": 90,
+      "target": 95,
+      "strict": true,
+      "detail": true,
+      "ignoreCatch": true
+    },
+    "eslint": {
+      "enabled": true,
+      "typeFocused": true,
+      "rules": {
+        "no-console": "error",
+        "no-debugger": "error",
+        "no-alert": "error",
+        "no-eval": "error",
+        "no-implied-eval": "error",
+        "no-new-func": "error",
+        "prefer-const": "error",
+        "no-var": "error",
+        "@typescript-eslint/no-explicit-any": "error",
+        "@typescript-eslint/no-unsafe-assignment": "error",
+        "@typescript-eslint/no-unsafe-call": "error",
+        "@typescript-eslint/no-unsafe-member-access": "error",
+        "@typescript-eslint/no-unsafe-return": "error",
+        "@typescript-eslint/prefer-nullish-coalescing": "error",
+        "@typescript-eslint/prefer-optional-chain": "error",
+        "@typescript-eslint/prefer-as-const": "error",
+        "@typescript-eslint/no-non-null-assertion": "error",
+        "@typescript-eslint/no-unnecessary-type-assertion": "error"
+      }
+    },
+    "tests": {
+      "enabled": true,
+      "coverage": {
+        "lines": 80,
+        "functions": 80,
+        "branches": 70,
+        "statements": 80
+      },
+      "thresholds": {
+        "development": 70,
+        "staging": 80,
+        "production": 90
+      }
+    },
+    "security": {
+      "enabled": true,
+      "auditLevel": "moderate",
+      "zeroToleranceVulnerabilities": ["critical", "high"],
+      "secretScanning": {
+        "enabled": true,
+        "patterns": [
+          "password",
+          "secret",
+          "token",
+          "api[_-]?key",
+          "private[_-]?key"
+        ]
+      }
+    },
+    "build": {
+      "enabled": true,
+      "validateArtifacts": true,
+      "checkBundleSize": true,
+      "maxBundleSize": "10MB"
+    }
+  },
+  "environments": {
+    "development": {
+      "mode": "standard",
+      "threshold": 70,
+      "skipSlowChecks": true,
+      "preCommitMode": true,
+      "quickFeedback": true,
+      "typeSafety": {
+        "strict": false,
+        "typeCoverage": 80,
+        "allowAnyInTests": true,
+        "maxTypeWarnings": 50
+      }
+    },
+    "staging": {
+      "mode": "strict",
+      "threshold": 85,
+      "skipSlowChecks": false,
+      "preCommitMode": false,
+      "comprehensiveScans": true,
+      "typeSafety": {
+        "strict": true,
+        "typeCoverage": 90,
+        "allowAnyInTests": false,
+        "maxTypeWarnings": 10,
+        "enforceZeroTolerance": true
+      }
+    },
+    "production": {
+      "mode": "strict",
+      "threshold": 95,
+      "skipSlowChecks": false,
+      "preCommitMode": false,
+      "comprehensiveScans": true,
+      "additionalChecks": [
+        "performance",
+        "accessibility",
+        "load-testing"
+      ],
+      "typeSafety": {
+        "strict": true,
+        "typeCoverage": 95,
+        "allowAnyInTests": false,
+        "maxTypeWarnings": 0,
+        "maxTypeErrors": 0,
+        "enforceZeroTolerance": true,
+        "regressionTesting": true
+      }
+    }
+  },
+  "reporting": {
+    "enabled": true,
+    "formats": ["json", "markdown", "console"],
+    "artifacts": {
+      "retentionDays": 90,
+      "includeDetails": true,
+      "includeRecommendations": true
+    },
+    "notifications": {
+      "slack": {
+        "enabled": false,
+        "webhook": "${SLACK_WEBHOOK_URL}",
+        "channels": ["#quality-alerts"]
+      },
+      "email": {
+        "enabled": false,
+        "recipients": ["team@example.com"]
+      }
+    }
+  },
+  "integration": {
+    "github": {
+      "prComments": true,
+      "statusChecks": true,
+      "issueCreation": true
+    },
+    "sonarqube": {
+      "enabled": false,
+      "serverUrl": "${SONAR_SERVER_URL}",
+      "projectKey": "llmchat"
+    },
+    "codecov": {
+      "enabled": true,
+      "token": "${CODECOV_TOKEN}"
+    }
+  },
+  "customRules": {
+    "maxFileSize": "1MB",
+    "maxFunctionLines": 50,
+    "maxComplexity": 10,
+    "requireDocumentation": [
+      "src/controllers/**/*.ts",
+      "src/services/**/*.ts"
+    ],
+    "forbiddenPatterns": [
+      "console\\.log",
+      "debugger",
+      "TODO",
+      "FIXME"
+    ]
+  },
+  "exemptions": {
+    "paths": [
+      "node_modules/**",
+      "dist/**",
+      "coverage/**",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+    ],
+    "rules": {
+      "no-console": ["**/*.test.ts", "**/*.spec.ts"],
+      "max-function-lines": ["**/*.test.ts", "**/*.spec.ts"]
+    }
+  }
+}

@@ -25,12 +25,18 @@ function LogsPanel() {
     try {
       setLoading(true);
       const params: { page: number; pageSize: number; level?: 'INFO' | 'WARN' | 'ERROR'; start?: string; end?: string } = { page: p, pageSize };
-      if (level) params.level = level;
-      if (start) params.start = start;
-      if (end) params.end = end;
+      if (level) {
+        params.level = level;
+      }
+      if (start) {
+        params.start = start;
+      }
+      if (end) {
+        params.end = end;
+      }
       const d = await getLogsPage(params);
-      setLogs(d.data);
-      setTotal(d.total);
+      setLogs(d.items);
+      setTotal(d.pagination.total);
       setErr(null);
     } catch (e) {
       setErr('加载日志失败');
@@ -46,9 +52,15 @@ function LogsPanel() {
   const onExport = async () => {
     try {
       const params: { level?: 'INFO' | 'WARN' | 'ERROR'; start?: string; end?: string } = {};
-      if (level) params.level = level;
-      if (start) params.start = start;
-      if (end) params.end = end;
+      if (level) {
+        params.level = level;
+      }
+      if (start) {
+        params.start = start;
+      }
+      if (end) {
+        params.end = end;
+      }
       const csv = await exportLogsCsv(params);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);

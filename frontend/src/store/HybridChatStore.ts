@@ -764,7 +764,7 @@ useHybridChatStore.subscribe(
         });
       }, 1000);
     }
-  }
+  },
 );
 
 // 监听网络状态变化

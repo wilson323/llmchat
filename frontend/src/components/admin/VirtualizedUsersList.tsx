@@ -4,14 +4,8 @@
  */
 
 'use client';
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Edit, Filter, RefreshCw, Search, Shield, ShieldAlert, Trash2, User } from 'lucide-react';
 import React, { useState, memo, useCallback } from 'react';
 import { VirtualScroll } from '@/components/ui/VirtualScroll';
@@ -188,7 +182,7 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索用户名或邮箱...')}
             value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearch?.(e.target.value)}
+            onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => onSearch?.(value)}
             className="pl-10"
           />
         </div>
@@ -287,13 +281,13 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
         {...(onLoadMore && { onEndReached: onLoadMore })}
         hasMore={hasMore}
         loading={loading}
-        loadingComponent={
+        loadingComponent={() => (
           <div className="flex items-center justify-center p-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
             <span className="text-sm text-muted-foreground">{t('加载中...')}</span>
           </div>
-        }
-        emptyComponent={
+        )}
+        emptyComponent={() => (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Filter className="w-6 h-6 text-muted-foreground" />
@@ -305,7 +299,7 @@ export const VirtualizedUsersList: React.FC<VirtualizedUsersListProps> = memo(fu
               {searchQuery ? t('没有找到匹配的用户') : t('系统中暂无用户')}
             </div>
           </div>
-        }
+        )}
       />
     </div>
   );

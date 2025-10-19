@@ -65,7 +65,7 @@ export function loadAppConfig(): AppConfig {
       // 应用环境变量覆盖（环境变量优先级更高）
       if (config.database?.postgres) {
         config.database.postgres.host = getEnvString('DB_HOST', config.database.postgres.host);
-        config.database.postgres.port = getEnvNumber('DB_PORT', config.database.postgres.port ?? 5432);
+        config.database.postgres.port = getEnvNumber('DB_PORT', config.database.postgres.port ?? 5443);
         config.database.postgres.user = getEnvString('DB_USER', config.database.postgres.user);
         config.database.postgres.password = getEnvString('DB_PASSWORD', config.database.postgres.password);
         config.database.postgres.database = getEnvString('DB_NAME', config.database.postgres.database);

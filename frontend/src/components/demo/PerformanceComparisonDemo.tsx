@@ -5,7 +5,7 @@
  * 可以通过切换开关来对比两种实现
  */
 
-;
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { perfMonitor } from '@/utils/performanceMonitor';

@@ -2,28 +2,62 @@
  * LLMChat 前后端共享类型定义
  *
  * 统一管理所有跨模块使用的类型，避免重复定义和同步问题
+ * @version 2.0.0
+ * @author LLMChat Team
  */
 
 // ============================================================================
-// Enhanced Types (类型安全增强)
+// 核心类型导出
 // ============================================================================
 
-export * from './enhanced-types';
+// 实体类型
+export * from './entities';
 
-// ============================================================================
-// CAD 相关类型
-// ============================================================================
+// 组件类型
+export * from './components/ui';
 
+// API类型 - 使用选择导出避免冲突
+export {
+  ChatRequest,
+  ChatResponse,
+  StreamChatRequest,
+  StreamChatResponse
+} from './api';
+
+// 提供商类型
+export * from './providers';
+
+// 工具类型 - 使用选择导出避免冲突
+export {
+  MessageConverter,
+  AgentConverter,
+  SessionConverter,
+  UserConverter,
+  UniversalConverter,
+  TypeSafeConverter,
+  Validator,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning
+} from './utils';
+
+// 增强类型 - 使用选择导出避免冲突
+export {
+  LogMetadata,
+  LogEntry,
+  Logger,
+  EnhancedRequest,
+  EnhancedResponse
+} from './enhanced-types';
+
+// CAD类型
 export * from './cad';
 
-// ============================================================================
-// SSE 事件类型
-// ============================================================================
-
+// SSE事件类型
 export * from './sse-events';
 
 // ============================================================================
-// 核心动态数据类型
+// 核心基础类型（保持向后兼容）
 // ============================================================================
 
 /**
@@ -32,13 +66,14 @@ export * from './sse-events';
 export type JsonArray = JsonValue[];
 
 /**
- * JSON值类型
+ * JSON值类型 - 支持undefined以处理可选字段
  */
 export type JsonValue =
   | string
   | number
   | boolean
   | null
+  | undefined
   | JsonArray
   | { readonly [key: string]: JsonValue };
 
@@ -72,6 +107,24 @@ export interface DataPayload<T extends JsonValue = JsonValue> {
   type?: string;
   timestamp?: string;
   metadata?: JsonObject;
+}
+
+/**
+ * 速率限制配置
+ */
+export interface RateLimit {
+  /** 每分钟请求数 */
+  requestsPerMinute: number;
+  /** 每分钟令牌数 */
+  tokensPerMinute: number;
+  /** 每小时请求数 */
+  requestsPerHour?: number;
+  /** 每小时令牌数 */
+  tokensPerHour?: number;
+  /** 每日请求数 */
+  requestsPerDay?: number;
+  /** 每日令牌数 */
+  tokensPerDay?: number;
 }
 
 // ============================================================================
@@ -127,11 +180,6 @@ export type APIResponse<T extends JsonValue = JsonValue> =
       timestamp: string;
       requestId?: string;
     };
-
-/**
- * 导出EnhancedError类型以供前端使用
- */
-export type { EnhancedError } from './enhanced-types';
 
 /**
  * 外部服务通用响应
@@ -286,7 +334,101 @@ export interface FastGPTEvent {
 }
 
 // ============================================================================
-// 类型守卫和验证器
+// 查询参数类型
+// ============================================================================
+
+/**
+ * 分页查询参数
+ */
+export interface PaginationParams {
+  page?: number;
+  pageSize?: number;
+  offset?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * 时间范围查询参数
+ */
+export interface DateRangeParams {
+  startDate?: string; // ISO 8601格式
+  endDate?: string;   // ISO 8601格式
+}
+
+/**
+ * 搜索过滤参数
+ */
+export interface SearchFilterParams {
+  search?: string;
+  filters?: JsonObject;
+  tags?: string[];
+}
+
+/**
+ * 组合查询参数
+ */
+export interface QueryParams extends PaginationParams, DateRangeParams, SearchFilterParams {
+  [key: string]: UnknownValue;
+}
+
+// ============================================================================
+// 导出增强错误类型
+// ============================================================================
+
+export type { EnhancedError } from './enhanced-types';
+
+// ============================================================================
+// 版本信息
+// ============================================================================
+
+/**
+ * 类型系统版本信息
+ */
+export const TYPE_SYSTEM_VERSION = '2.0.0';
+
+/**
+ * 类型系统构建信息
+ */
+export interface TypeInfo {
+  version: string;
+  buildTime: string;
+  supportedFeatures: string[];
+  deprecatedFeatures: string[];
+  migrationNotes: string[];
+}
+
+/**
+ * 获取类型系统信息
+ */
+export function getTypeInfo(): TypeInfo {
+  return {
+    version: TYPE_SYSTEM_VERSION,
+    buildTime: new Date().toISOString(),
+    supportedFeatures: [
+      'strict-type-checking',
+      'runtime-validation',
+      'message-format-conversion',
+      'agent-management',
+      'session-management',
+      'user-authentication',
+      'ui-component-typing'
+    ],
+    deprecatedFeatures: [
+      'legacy-message-format',
+      'non-strict-agent-config'
+    ],
+    migrationNotes: [
+      'v2.0.0: 统一消息格式，提供转换工具',
+      'v2.0.0: 增强类型安全，移除any类型',
+      'v2.0.0: 新增运行时验证支持'
+    ]
+  };
+}
+
+// ============================================================================
+// 工具函数（向后兼容）
 // ============================================================================
 
 /**
@@ -396,10 +538,6 @@ export class DynamicDataConverter {
   }
 }
 
-// ============================================================================
-// 工具函数
-// ============================================================================
-
 /**
  * 安全的属性访问工具
  */
@@ -467,44 +605,4 @@ export class SafeAccess {
 
     return undefined;
   }
-}
-
-// ============================================================================
-// 查询参数类型
-// ============================================================================
-
-/**
- * 分页查询参数
- */
-export interface PaginationParams {
-  page?: number;
-  pageSize?: number;
-  offset?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
-
-/**
- * 时间范围查询参数
- */
-export interface DateRangeParams {
-  startDate?: string; // ISO 8601格式
-  endDate?: string;   // ISO 8601格式
-}
-
-/**
- * 搜索过滤参数
- */
-export interface SearchFilterParams {
-  search?: string;
-  filters?: JsonObject;
-  tags?: string[];
-}
-
-/**
- * 组合查询参数
- */
-export interface QueryParams extends PaginationParams, DateRangeParams, SearchFilterParams {
-  [key: string]: UnknownValue;
 }

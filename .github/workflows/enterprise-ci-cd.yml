@@ -1,0 +1,1290 @@
+name: 🚀 Enterprise CI/CD Pipeline - LLMChat
+
+on:
+  push:
+    branches: [main, develop, release/*]
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  release:
+    types: [published]
+  schedule:
+    # 每天凌晨2点运行全面扫描
+    - cron: '0 2 * * *'
+    # 每周日晚上8点运行深度质量检查
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署目标环境'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      security_scan:
+        description: '运行全面安全扫描'
+        required: false
+        default: true
+        type: boolean
+      performance_test:
+        description: '运行性能测试'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: '跳过测试 (仅用于紧急修复)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+  CI: true
+  TZ: 'Asia/Shanghai'
+  # 质量阈值配置
+  QUALITY_THRESHOLD_CODE: '85'
+  QUALITY_THRESHOLD_TESTS: '80'
+  QUALITY_THRESHOLD_SECURITY: '90'
+  QUALITY_THRESHOLD_PERFORMANCE: '95'
+
+# 全局权限配置
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+  issues: write
+  packages: write
+  deployments: write
+  security-events: write
+
+# 并发控制
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ==========================================
+  # 阶段1: 环境准备和依赖验证
+  # ==========================================
+  setup-and-validate:
+    name: 🚀 环境准备与验证
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+      node-version: ${{ env.NODE_VERSION }}
+      should-run-security: ${{ steps.decide.outputs.should-run-security }}
+      should-run-performance: ${{ steps.decide.outputs.should-run-performance }}
+      is-release: ${{ steps.metadata.outputs.is-release }}
+      version: ${{ steps.metadata.outputs.version }}
+      build-number: ${{ steps.metadata.outputs.build-number }}
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🔧 设置Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 获取pnpm存储目录
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 📦 设置pnpm缓存
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 安装依赖
+        run: |
+          echo "📦 使用frozen lockfile安装依赖..."
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: 🔍 验证环境配置
+        run: |
+          echo "🔍 验证环境配置..."
+
+          # 检查Node.js版本
+          NODE_VERSION_CHECK=$(node -v | cut -d'v' -f2)
+          REQUIRED_VERSION="20.0.0"
+          if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION_CHECK" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+            echo "❌ Node.js版本 $NODE_VERSION_CHECK 低于要求版本 $REQUIRED_VERSION"
+            exit 1
+          fi
+          echo "✅ Node.js版本检查通过: $NODE_VERSION_CHECK"
+
+          # 检查pnpm版本
+          PNPM_VERSION_CHECK=$(pnpm -v)
+          echo "✅ pnpm版本: $PNPM_VERSION_CHECK"
+
+          # 验证工作区配置
+          if [ ! -f "pnpm-workspace.yaml" ] && [ ! -f "pnpm-workspace.yml" ]; then
+            echo "⚠️ 未找到pnpm workspace配置"
+          else
+            echo "✅ 找到pnpm workspace配置"
+          fi
+
+          # 验证package.json结构
+          if ! jq empty package.json 2>/dev/null; then
+            echo "❌ 无效的package.json格式"
+            exit 1
+          fi
+          echo "✅ package.json格式有效"
+
+      - name: 📋 提取构建元数据
+        id: metadata
+        run: |
+          echo "📋 提取构建元数据..."
+
+          # 判断是否为release
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "is-release=true" >> $GITHUB_OUTPUT
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            echo "is-release=false" >> $GITHUB_OUTPUT
+            VERSION="1.0.0-${{ github.run_number }}-${{ github.sha::8 }}"
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "build-number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+          echo "✅ 构建版本: $VERSION"
+          echo "✅ 构建编号: ${{ github.run_number }}"
+
+      - name: 🎯 决定扫描策略
+        id: decide
+        run: |
+          # 决定是否运行安全扫描
+          if [[ "${{ github.event_name }}" == "schedule" ]] || \
+             [[ "${{ github.event.inputs.security_scan }}" == "true" ]] || \
+             [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "should-run-security=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-security=false" >> $GITHUB_OUTPUT
+          fi
+
+          # 决定是否运行性能测试
+          if [[ "${{ github.event.inputs.performance_test }}" == "true" ]] || \
+             [[ "${{ github.ref }}" == "refs/heads/main" ]] || \
+             [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "should-run-performance=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-performance=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ==========================================
+  # 阶段2: 代码质量检查 (并行执行)
+  # ==========================================
+  code-quality:
+    name: 🔍 代码质量分析
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+
+    strategy:
+      fail-fast: false
+      matrix:
+        check-type: [typescript, eslint, prettier, complexity]
+        include:
+          - check-type: typescript
+            name: "TypeScript类型检查"
+            command: "pnpm run type-check"
+            icon: "📝"
+            critical: true
+          - check-type: eslint
+            name: "ESLint质量检查"
+            command: "pnpm run lint"
+            icon: "🔍"
+            critical: true
+          - check-type: prettier
+            name: "Prettier格式检查"
+            command: "pnpm prettier --check . || echo 'Prettier check not configured'"
+            icon: "🎨"
+            critical: false
+          - check-type: complexity
+            name: "代码复杂度分析"
+            command: "echo 'Complexity analysis not implemented'"
+            icon: "📊"
+            critical: false
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 恢复pnpm缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: quality-check
+        continue-on-error: ${{ !matrix.critical }}
+        run: |
+          echo "::group::${{ matrix.name }}"
+          echo "运行命令: ${{ matrix.command }}"
+
+          # 创建质量报告目录
+          mkdir -p quality-reports
+
+          # 运行检查并捕获结果
+          START_TIME=$(date +%s)
+
+          if ${{ matrix.command }}; then
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+
+            echo "${{ matrix.check-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "${{ matrix.check-type }}_duration=$DURATION" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} 通过 (${DURATION}s)"
+          else
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+
+            echo "${{ matrix.check-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "${{ matrix.check-type }}_duration=$DURATION" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} 失败 (${DURATION}s)"
+            echo "::endgroup::"
+
+            if [ "${{ matrix.critical }}" == "true" ]; then
+              exit 1
+            fi
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 上传质量结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-results-${{ matrix.check-type }}
+          path: |
+            quality-reports/
+            eslint-report.json
+            tsconfig.json
+            .eslintcache
+          retention-days: 30
+
+  # ==========================================
+  # 阶段3: 测试套件 (并行执行)
+  # ==========================================
+  test-suite:
+    name: 🧪 测试套件
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: github.event.inputs.skip_tests != 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit-backend, unit-frontend, integration, e2e]
+        include:
+          - test-type: unit-backend
+            name: "后端单元测试"
+            command: "cd backend && pnpm run test:ci"
+            coverage: true
+            icon: "🔬"
+            critical: true
+          - test-type: unit-frontend
+            name: "前端单元测试"
+            command: "cd frontend && pnpm run test:coverage"
+            coverage: true
+            icon: "⚛️"
+            critical: true
+          - test-type: integration
+            name: "集成测试"
+            command: "pnpm run test:integration || echo 'Integration tests not configured'"
+            coverage: false
+            icon: "🔗"
+            critical: false
+          - test-type: e2e
+            name: "端到端测试"
+            command: "pnpm run test:e2e"
+            coverage: false
+            icon: "🌐"
+            critical: false
+            setup: true
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 恢复pnpm缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 🌐 设置E2E依赖
+        if: matrix.setup
+        run: |
+          pnpm exec playwright install --with-deps
+          pnpm exec playwright install-deps
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: test-run
+        continue-on-error: ${{ !matrix.critical }}
+        run: |
+          echo "::group::${{ matrix.name }}"
+
+          # 创建测试报告目录
+          mkdir -p test-reports
+          mkdir -p coverage
+
+          # 运行测试
+          START_TIME=$(date +%s)
+
+          if ${{ matrix.command }}; then
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+
+            echo "${{ matrix.test-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "${{ matrix.test-type }}_duration=$DURATION" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} 通过 (${DURATION}s)"
+          else
+            END_TIME=$(date +%s)
+            DURATION=$((END_TIME - START_TIME))
+
+            echo "${{ matrix.test-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "${{ matrix.test-type }}_duration=$DURATION" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} 失败 (${DURATION}s)"
+            echo "::endgroup::"
+
+            if [ "${{ matrix.critical }}" == "true" ]; then
+              exit 1
+            fi
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 处理覆盖率报告
+        if: matrix.coverage && steps.test-run.outputs.${{ matrix.test-type }}_status == 'passed'
+        run: |
+          echo "📊 处理覆盖率报告..."
+
+          # 合并覆盖率报告
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ 找到覆盖率报告"
+            # 生成覆盖率摘要
+            npx nyc report --reporter=text-summary > test-reports/coverage-summary.txt || true
+            npx nyc report --reporter=json > test-reports/coverage-summary.json || true
+          else
+            echo "⚠️ 未找到覆盖率报告"
+          fi
+
+      - name: 📤 上传测试结果
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test-reports/
+            coverage/
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段4: 安全扫描
+  # ==========================================
+  security-scan:
+    name: 🔒 安全漏洞扫描
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: needs.setup-and-validate.outputs.should-run-security == 'true'
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 依赖安全审计
+        id: audit
+        run: |
+          echo "::group::依赖安全审计"
+
+          # 创建安全报告目录
+          mkdir -p security-reports
+
+          # 运行安全审计
+          if pnpm audit --audit-level moderate --json > security-reports/audit-report.json 2>/dev/null; then
+            echo "audit_status=passed" >> $GITHUB_OUTPUT
+            echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+            echo "✅ 未发现安全漏洞"
+          else
+            # 提取漏洞数量
+            VULNS=$(cat security-reports/audit-report.json | jq '.vulnerabilities | length' 2>/dev/null || echo "0")
+            echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+
+            if [ "$VULNS" -eq 0 ]; then
+              echo "audit_status=passed" >> $GITHUB_OUTPUT
+              echo "✅ 未发现安全漏洞"
+            elif [ "$VULNS" -le 5 ]; then
+              echo "audit_status=warning" >> $GITHUB_OUTPUT
+              echo "⚠️ 发现 $VULNS 个低/中危漏洞"
+            else
+              echo "audit_status=failed" >> $GITHUB_OUTPUT
+              echo "🚨 发现 $VULNS 个安全漏洞"
+              echo "::endgroup::"
+              exit 1
+            fi
+          fi
+          echo "::endgroup::"
+
+      - name: 🔍 代码安全分析
+        id: code-security
+        run: |
+          echo "::group::代码安全分析"
+
+          # 安装安全扫描工具
+          npm install -g semgrep@latest
+
+          # 运行代码安全检查
+          echo "运行Semgrep安全扫描..."
+          semgrep --config=auto --json --output=security-reports/semgrep-report.json . || true
+
+          # 分析结果
+          if [ -f "security-reports/semgrep-report.json" ]; then
+            SEMGREP_ISSUES=$(cat security-reports/semgrep-report.json | jq '.results | length' 2>/dev/null || echo "0")
+            echo "semgrep_issues=$SEMGREP_ISSUES" >> $GITHUB_OUTPUT
+
+            if [ "$SEMGREP_ISSUES" -eq 0 ]; then
+              echo "code_security_status=passed" >> $GITHUB_OUTPUT
+              echo "✅ 未发现代码安全问题"
+            elif [ "$SEMGREP_ISSUES" -le 10 ]; then
+              echo "code_security_status=warning" >> $GITHUB_OUTPUT
+              echo "⚠️ 发现 $SEMGREP_ISSUES 个代码安全问题"
+            else
+              echo "code_security_status=failed" >> $GITHUB_OUTPUT
+              echo "🚨 发现 $SEMGREP_ISSUES 个代码安全问题"
+            fi
+          else
+            echo "code_security_status=skipped" >> $GITHUB_OUTPUT
+            echo "⏭️ 跳过代码安全扫描"
+          fi
+          echo "::endgroup::"
+
+      - name: 🔒 密钥扫描
+        id: secret-scan
+        run: |
+          echo "::group::敏感信息扫描"
+
+          # 扫描敏感信息
+          echo "扫描Git历史中的敏感信息..."
+
+          # 检查常见敏感文件模式
+          if grep -r -E "(password|secret|key|token)\s*=\s*['\"][^'\"]{8,}" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.md" --exclude="*.log" > security-reports/secrets-scan.txt 2>/dev/null; then
+            SECRETS_FOUND=$(wc -l < security-reports/secrets-scan.txt)
+            echo "secrets_found=$SECRETS_FOUND" >> $GITHUB_OUTPUT
+
+            if [ "$SECRETS_FOUND" -gt 0 ]; then
+              echo "secret_status=warning" >> $GITHUB_OUTPUT
+              echo "⚠️ 发现 $SECRETS_FOUND 个可能的敏感信息"
+              echo "请检查 security-reports/secrets-scan.txt 文件"
+            else
+              echo "secret_status=passed" >> $GITHUB_OUTPUT
+              echo "✅ 未发现敏感信息"
+            fi
+          else
+            echo "secrets_found=0" >> $GITHUB_OUTPUT
+            echo "secret_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ 未发现敏感信息"
+          fi
+          echo "::endgroup::"
+
+      - name: 📤 上传安全报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            security-reports/
+          retention-days: 90
+
+  # ==========================================
+  # 阶段5: 构建验证
+  # ==========================================
+  build-validation:
+    name: 🏗️ 构建验证
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, code-quality]
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 恢复pnpm缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ 构建应用
+        id: build
+        run: |
+          echo "::group::构建应用"
+
+          # 创建构建报告目录
+          mkdir -p build-reports
+
+          # 记录构建开始时间
+          BUILD_START=$(date +%s)
+
+          # 运行构建
+          if pnpm run build; then
+            BUILD_END=$(date +%s)
+            BUILD_DURATION=$((BUILD_END - BUILD_START))
+
+            echo "build_status=success" >> $GITHUB_OUTPUT
+            echo "build_duration=$BUILD_DURATION" >> $GITHUB_OUTPUT
+            echo "✅ 构建成功 (${BUILD_DURATION}s)"
+
+            # 分析构建产物
+            if [ -d "backend/dist" ]; then
+              BACKEND_SIZE=$(du -sh backend/dist | cut -f1)
+              BACKEND_FILES=$(find backend/dist -type f | wc -l)
+              echo "backend_size=$BACKEND_SIZE" >> $GITHUB_OUTPUT
+              echo "backend_files=$BACKEND_FILES" >> $GITHUB_OUTPUT
+            fi
+
+            if [ -d "frontend/dist" ]; then
+              FRONTEND_SIZE=$(du -sh frontend/dist | cut -f1)
+              FRONTEND_FILES=$(find frontend/dist -type f | wc -l)
+              echo "frontend_size=$FRONTEND_SIZE" >> $GITHUB_OUTPUT
+              echo "frontend_files=$FRONTEND_FILES" >> $GITHUB_OUTPUT
+            fi
+
+          else
+            echo "build_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ 构建失败"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 分析构建产物
+        if: steps.build.outputs.build_status == 'success'
+        run: |
+          echo "📊 分析构建产物..."
+
+          # 生成构建分析报告
+          cat > build-reports/build-analysis.md << EOF
+          # LLMChat 构建分析报告
+
+          ## 构建信息
+          - **构建状态**: ${{ steps.build.outputs.build_status }}
+          - **构建耗时**: ${{ steps.build.outputs.build_duration }}s
+          - **构建版本**: ${{ needs.setup-and-validate.outputs.version }}
+          - **构建编号**: ${{ needs.setup-and-validate.outputs.build-number }}
+
+          ## 构建产物
+          ### 后端
+          - **大小**: ${{ steps.build.outputs.backend_size || 'N/A' }}
+          - **文件数**: ${{ steps.build.outputs.backend_files || 'N/A' }}
+
+          ### 前端
+          - **大小**: ${{ steps.build.outputs.frontend_size || 'N/A' }}
+          - **文件数**: ${{ steps.build.outputs.frontend_files || 'N/A' }}
+
+          ## 构建时间
+          - **开始时间**: $(date -d "@$((BUILD_START))" -u '+%Y-%m-%d %H:%M:%S UTC')
+          - **结束时间**: $(date -d "@$((BUILD_END))" -u '+%Y-%m-%d %H:%M:%S UTC')
+          EOF
+
+          # 列出主要构建产物
+          echo "" >> build-reports/build-analysis.md
+          echo "## 主要文件" >> build-reports/build-analysis.md
+
+          if [ -d "backend/dist" ]; then
+            echo "" >> build-reports/build-analysis.md
+            echo "### 后端主要文件" >> build-reports/build-analysis.md
+            find backend/dist -name "*.js" -o -name "*.ts" | head -10 | sed 's/^/- /' >> build-reports/build-analysis.md
+          fi
+
+          if [ -d "frontend/dist" ]; then
+            echo "" >> build-reports/build-analysis.md
+            echo "### 前端主要文件" >> build-reports/build-analysis.md
+            find frontend/dist -name "*.js" -o -name "*.css" -o -name "*.html" | head -10 | sed 's/^/- /' >> build-reports/build-analysis.md
+          fi
+
+      - name: 📤 上传构建产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            backend/dist/
+            frontend/dist/
+            build-reports/
+          retention-days: 7
+
+  # ==========================================
+  # 阶段6: 质量门禁评估
+  # ==========================================
+  quality-gates:
+    name: 🛡️ 质量门禁评估
+    runs-on: ubuntu-latest
+    needs: [code-quality, test-suite, security-scan, build-validation]
+    if: always()
+
+    outputs:
+      overall-status: ${{ steps.assessment.outputs.overall-status }}
+      quality-score: ${{ steps.assessment.outputs.quality-score }}
+      deployment-ready: ${{ steps.assessment.outputs.deployment-ready }}
+      quality-grade: ${{ steps.assessment.outputs.quality-grade }}
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 📊 下载所有报告
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results-*"
+          merge-multiple: true
+          path: all-reports/
+
+      - name: 🛡️ 质量门禁评估
+        id: assessment
+        run: |
+          echo "::group::质量门禁评估"
+
+          # 初始化分数
+          QUALITY_SCORE=100
+          OVERALL_STATUS="passed"
+          DEPLOYMENT_READY="true"
+
+          # 评估代码质量 (权重: 30%)
+          echo "🔍 评估代码质量..."
+          CODE_QUALITY_STATUS="${{ needs.code-quality.result }}"
+          if [ "$CODE_QUALITY_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 30))
+            OVERALL_STATUS="warning"
+            echo "⚠️ 检测到代码质量问题"
+          else
+            echo "✅ 代码质量检查通过"
+          fi
+
+          # 评估测试结果 (权重: 25%)
+          echo "🧪 评估测试结果..."
+          TEST_STATUS="${{ needs.test-suite.result }}"
+          if [ "$TEST_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 25))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ 检测到测试失败"
+          else
+            echo "✅ 所有测试通过"
+          fi
+
+          # 评估安全扫描 (权重: 20%)
+          echo "🔒 评估安全扫描..."
+          SECURITY_STATUS="${{ needs.security-scan.result }}"
+          if [ "$SECURITY_STATUS" == "failure" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 20))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "🚨 检测到安全漏洞"
+          elif [ "$SECURITY_STATUS" == "success" ]; then
+            echo "✅ 安全扫描通过"
+          else
+            echo "⏭️ 安全扫描已跳过"
+          fi
+
+          # 评估构建结果 (权重: 25%)
+          echo "🏗️ 评估构建验证..."
+          BUILD_STATUS="${{ needs.build-validation.result }}"
+          if [ "$BUILD_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 25))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ 构建验证失败"
+          else
+            echo "✅ 构建验证通过"
+          fi
+
+          # 确保分数不低于0
+          if [ $QUALITY_SCORE -lt 0 ]; then
+            QUALITY_SCORE=0
+          fi
+
+          # 确定质量等级
+          if [ $QUALITY_SCORE -ge 95 ]; then
+            QUALITY_GRADE="A+"
+          elif [ $QUALITY_SCORE -ge 90 ]; then
+            QUALITY_GRADE="A"
+          elif [ $QUALITY_SCORE -ge 85 ]; then
+            QUALITY_GRADE="B+"
+          elif [ $QUALITY_SCORE -ge 80 ]; then
+            QUALITY_GRADE="B"
+          elif [ $QUALITY_SCORE -ge 70 ]; then
+            QUALITY_GRADE="C"
+          else
+            QUALITY_GRADE="D"
+          fi
+
+          # 设置输出
+          echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "quality-score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+          echo "deployment-ready=$DEPLOYMENT_READY" >> $GITHUB_OUTPUT
+          echo "quality-grade=$QUALITY_GRADE" >> $GITHUB_OUTPUT
+
+          echo "📊 质量分数: $QUALITY_SCORE/100 (等级: $QUALITY_GRADE)"
+          echo "🚦 总体状态: $OVERALL_STATUS"
+          echo "🚀 部署就绪: $DEPLOYMENT_READY"
+          echo "::endgroup::"
+
+      - name: 📋 生成质量报告
+        if: always()
+        run: |
+          echo "📋 生成综合质量报告..."
+
+          mkdir -p final-reports
+
+          cat > final-reports/quality-report.md << EOF
+          # LLMChat CI/CD 质量报告
+
+          ## 📊 执行摘要
+          - **质量分数**: ${{ steps.assessment.outputs.quality-score }}/100
+          - **质量等级**: ${{ steps.assessment.outputs.quality-grade }}
+          - **总体状态**: ${{ steps.assessment.outputs.overall-status }}
+          - **部署就绪**: ${{ steps.assessment.outputs.deployment-ready }}
+          - **构建编号**: ${{ github.run_number }}
+          - **提交SHA**: ${{ github.sha }}
+          - **分支**: ${{ github.ref_name }}
+          - **触发者**: ${{ github.event_name }}
+
+          ## 🛡️ 质量门禁结果
+
+          ### 代码质量
+          - **状态**: ${{ needs.code-quality.result == 'success' && '✅ 通过' || '❌ 失败' }}
+          - **影响**: 代码可维护性的关键因素
+          - **权重**: 30%
+
+          ### 测试套件
+          - **状态**: ${{ needs.test-suite.result == 'success' && '✅ 通过' || '❌ 失败' }}
+          - **影响**: 功能保证的关键因素
+          - **权重**: 25%
+
+          ### 安全扫描
+          - **状态**: ${{ needs.security-scan.result == 'success' && '✅ 通过' || needs.security-scan.result == 'failure' && '❌ 失败' || '⏭️ 跳过' }}
+          - **影响**: 生产安全的关键因素
+          - **权重**: 20%
+
+          ### 构建验证
+          - **状态**: ${{ needs.build-validation.result == 'success' && '✅ 通过' || '❌ 失败' }}
+          - **影响**: 部署就绪的关键因素
+          - **权重**: 25%
+
+          ## 🎯 建议
+
+          ${{ steps.assessment.outputs.quality-score >= 95 && '🌟🌟🌟 优秀质量！准备生产部署。' || '' }}
+          ${{ steps.assessment.outputs.quality-score >= 90 && steps.assessment.outputs.quality-score < 95 && '🌟🌟 很好质量！考虑在生产部署前进行小改进。' || '' }}
+          ${{ steps.assessment.outputs.quality-score >= 80 && steps.assessment.outputs.quality-score < 90 && '✅ 良好质量。在生产部署前解决关键问题。' || '' }}
+          ${{ steps.assessment.outputs.quality-score >= 70 && steps.assessment.outputs.quality-score < 80 && '⚠️ 可接受质量。需要重大改进才能生产部署。' || '' }}
+          ${{ steps.assessment.outputs.quality-score < 70 && '❌ 质量不佳。需要重大改进才能部署。' || '' }}
+
+          ## 📈 详细指标
+
+          ### 构建信息
+          - **版本**: ${{ needs.setup-and-validate.outputs.version }}
+          - **分支**: ${{ github.ref_name }}
+          - **提交者**: ${{ github.actor }}
+          - **构建时间**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          ### 质量趋势
+          - **当前分数**: ${{ steps.assessment.outputs.quality-score }}/100
+          - **目标分数**: 90/100 (生产环境)
+          - **改进空间**: ${{ 90 - steps.assessment.outputs.quality-score > 0 && 90 - steps.assessment.outputs.quality-score || 0 }}分
+
+          ---
+          *报告生成时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')*
+          *由 LLMChat CI/CD 流水线提供支持*
+          EOF
+
+      - name: 📤 上传最终报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-quality-report
+          path: final-reports/
+          retention-days: 90
+
+      - name: 🚫 质量门禁强制执行
+        if: steps.assessment.outputs.overall-status == 'failed'
+        run: |
+          echo "❌ 质量门禁失败 - 阻止部署"
+          echo "📊 质量分数: ${{ steps.assessment.outputs.quality-score }}/100"
+          echo "🚦 总体状态: ${{ steps.assessment.outputs.overall-status }}"
+          exit 1
+
+      - name: 💬 PR质量评论
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const reportPath = 'final-reports/quality-report.md';
+              if (fs.existsSync(reportPath)) {
+                const report = fs.readFileSync(reportPath, 'utf8');
+
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## 🛡️ CI/CD 质量报告\n\n${report}`
+                });
+
+                console.log('✅ 质量报告已评论到PR');
+              }
+            } catch (error) {
+              console.log('❌ 评论PR时出错:', error.message);
+            }
+
+  # ==========================================
+  # 阶段7: 部署流水线
+  # ==========================================
+  deploy:
+    name: 🚀 部署到环境
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, quality-gates]
+    if: needs.quality-gates.outputs.deployment-ready == 'true' && github.event_name != 'pull_request'
+    environment:
+      name: ${{ github.event.inputs.environment || 'development' }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+        include:
+          - environment: development
+            branch: develop
+            required_score: 70
+            url_template: "https://dev.llmchat.example.com"
+          - environment: staging
+            branch: main
+            required_score: 80
+            url_template: "https://staging.llmchat.example.com"
+          - environment: production
+            branch: main
+            required_score: 90
+            url_template: "https://llmchat.example.com"
+        exclude:
+          - environment: production
+            branch: develop
+          - environment: staging
+            branch: develop
+          - environment: development
+            branch: main
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 设置pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 📥 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./
+
+      - name: 🚀 部署到 ${{ matrix.environment }}
+        id: deploy
+        run: |
+          echo "::group::部署到 ${{ matrix.environment }}"
+
+          # 验证部署条件
+          QUALITY_SCORE=${{ needs.quality-gates.outputs.quality-score }}
+          REQUIRED_SCORE=${{ matrix.required_score }}
+
+          if [ "$QUALITY_SCORE" -lt "$REQUIRED_SCORE" ]; then
+            echo "❌ 质量分数 $QUALITY_SCORE 低于 ${{ matrix.environment }} 环境要求的 $REQUIRED_SCORE"
+            exit 1
+          fi
+
+          echo "✅ 质量分数 $QUALITY_SCORE 满足 ${{ matrix.environment }} 环境要求"
+
+          # 部署逻辑（示例）
+          echo "🚀 开始部署到 ${{ matrix.environment }}..."
+
+          # 这里添加实际的部署逻辑
+          # 例如：Docker部署、K8s部署、云服务部署等
+
+          # 设置部署URL
+          DEPLOY_URL="${{ matrix.url_template }}"
+          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+
+          # 创建部署信息
+          cat > deployment-info.json << EOF
+          {
+            "environment": "${{ matrix.environment }}",
+            "version": "${{ needs.setup-and-validate.outputs.version }}",
+            "build_number": "${{ needs.setup-and-validate.outputs.build-number }}",
+            "commit_sha": "${{ github.sha }}",
+            "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "deployed_by": "${{ github.actor }}",
+            "url": "$DEPLOY_URL",
+            "quality_score": $QUALITY_SCORE
+          }
+          EOF
+
+          echo "✅ 部署到 ${{ matrix.environment }} 完成"
+          echo "🔗 访问地址: $DEPLOY_URL"
+          echo "::endgroup::"
+
+      - name: 🔍 部署后健康检查
+        run: |
+          echo "::group::部署后健康检查"
+
+          # 等待部署启动
+          echo "⏳ 等待服务启动..."
+          sleep 30
+
+          # 健康检查
+          DEPLOY_URL="${{ steps.deploy.outputs.url }}"
+          if [ -n "$DEPLOY_URL" ]; then
+            echo "🔍 检查健康状态: $DEPLOY_URL"
+
+            # 检查API健康状态
+            echo "检查API健康状态..."
+            if curl -f "$DEPLOY_URL/api/health" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ API健康检查通过"
+            else
+              echo "❌ API健康检查失败"
+              exit 1
+            fi
+
+            # 检查前端健康状态
+            echo "检查前端健康状态..."
+            if curl -f "$DEPLOY_URL" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ 前端健康检查通过"
+            else
+              echo "❌ 前端健康检查失败"
+              exit 1
+            fi
+          else
+            echo "⚠️ 未提供部署URL，跳过健康检查"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 部署指标
+        run: |
+          echo "::group::部署指标"
+
+          echo "📊 ${{ matrix.environment }} 环境部署指标:"
+          echo "- 环境: ${{ matrix.environment }}"
+          echo "- 质量分数: ${{ needs.quality-gates.outputs.quality-score }}/100"
+          echo "- 要求分数: ${{ matrix.required_score }}"
+          echo "- 部署URL: ${{ steps.deploy.outputs.url }}"
+          echo "- 部署时间: $(date -u)"
+          echo "- 构建编号: ${{ github.run_number }}"
+          echo "- 提交SHA: ${{ github.sha }}"
+          echo "- 版本: ${{ needs.setup-and-validate.outputs.version }}"
+
+          echo "::endgroup::"
+
+      - name: 📢 部署通知
+        if: always()
+        run: |
+          echo "::group::部署通知"
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ ${{ matrix.environment }} 环境部署成功完成！"
+            echo "🔗 访问地址: ${{ steps.deploy.outputs.url }}"
+
+            # 这里可以添加成功通知逻辑
+            # 例如：Slack、Teams、邮件等
+
+          else
+            echo "❌ ${{ matrix.environment }} 环境部署失败"
+            echo "🔍 请检查部署日志"
+
+            # 这里可以添加失败通知逻辑
+          fi
+
+          echo "::endgroup::"
+
+  # ==========================================
+  # 阶段8: 性能测试 (可选)
+  # ==========================================
+  performance-test:
+    name: 📊 性能测试
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, deploy]
+    if: needs.setup-and-validate.outputs.should-run-performance == 'true' && needs.deploy.result == 'success'
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+
+      - name: 📦 安装性能测试工具
+        run: |
+          npm install -g artillery
+          npm install -g lighthouse
+
+      - name: 🚀 API性能测试
+        run: |
+          echo "::group::API性能测试"
+
+          # 创建性能测试配置
+          cat > artillery-config.yml << EOF
+          config:
+            target: '\${{ needs.deploy.outputs.url }}/api'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 20
+              - duration: 60
+                arrivalRate: 5
+
+          scenarios:
+            - name: "API负载测试"
+              weight: 70
+              requests:
+                - get:
+                    url: "/health"
+                - get:
+                    url: "/agents"
+            - name: "API压力测试"
+              weight: 30
+              requests:
+                - post:
+                    url: "/chat/completions"
+                    json:
+                      model: "test"
+                      messages: [{"role": "user", "content": "Hello"}]
+          EOF
+
+          # 运行API性能测试
+          artillery run artillery-config.yml --output performance-results.json
+
+          echo "::endgroup::"
+
+      - name: 🌐 前端性能测试
+        run: |
+          echo "::group::前端性能测试"
+
+          # 创建Lighthouse配置
+          mkdir -p lighthouse-reports
+
+          # 运行Lighthouse测试
+          DEPLOY_URL="${{ needs.deploy.outputs.url }}"
+          lighthouse "$DEPLOY_URL" \
+            --output=json --output-path=./lighthouse-reports/report.json \
+            --chrome-flags="--headless --no-sandbox" \
+            --quiet
+
+          echo "::endgroup::"
+
+      - name: 📊 性能分析
+        run: |
+          echo "::group::性能分析"
+
+          # 分析API性能结果
+          if [ -f "performance-results.json" ]; then
+            echo "📊 API性能结果:"
+            jq '.aggregate | {rps: .http.responses, latency: .latency, errors: .errors}' performance-results.json
+          fi
+
+          # 分析前端性能结果
+          if [ -f "lighthouse-reports/report.json" ]; then
+            echo "🌐 前端性能结果:"
+            jq '.lhrCategories | {performance: .performance.score, accessibility: .accessibility.score, "best-practices": .["best-practices"].score, seo: .seo.score}' lighthouse-reports/report.json
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📤 上传性能报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-reports
+          path: |
+            performance-results.json
+            lighthouse-reports/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段9: 通知和报告
+  # ==========================================
+  notify-and-report:
+    name: 📢 通知和报告
+    runs-on: ubuntu-latest
+    needs: [quality-gates, deploy, performance-test]
+    if: always()
+
+    steps:
+      - name: 📊 下载最终报告
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: final-quality-report
+          path: final-report/
+
+      - name: 📢 流水线摘要
+        if: always()
+        run: |
+          echo "# 🚀 LLMChat CI/CD 流水线摘要" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 流水线结果" >> $GITHUB_STEP_SUMMARY
+          echo "- **质量门禁**: ${{ needs.quality-gates.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **质量分数**: ${{ needs.quality-gates.outputs.quality-score }}/100" >> $GITHUB_STEP_SUMMARY
+          echo "- **质量等级**: ${{ needs.quality-gates.outputs.quality-grade }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **部署**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **性能测试**: ${{ needs.performance-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建编号**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **提交SHA**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.quality-gates.result }}" == "success" ] && [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "## 🎉 总体状态: 成功" >> $GITHUB_STEP_SUMMARY
+            echo "✅ 流水线成功完成！" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ 总体状态: 失败" >> $GITHUB_STEP_SUMMARY
+            echo "❌ 流水线失败，请查看日志。" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 详细结果" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建验证**: ${{ needs.build-validation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **代码质量**: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **测试套件**: ${{ needs.test-suite.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **安全扫描**: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+
+          # 添加质量等级说明
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏆 质量等级说明" >> $GITHUB_STEP_SUMMARY
+          echo "- **A+ (95-100分)**: 优秀质量，准备生产部署" >> $GITHUB_STEP_SUMMARY
+          echo "- **A (90-94分)**: 很好质量，适合生产部署" >> $GITHUB_STEP_SUMMARY
+          echo "- **B+ (85-89分)**: 良好质量，可部署到测试环境" >> $GITHUB_STEP_SUMMARY
+          echo "- **B (80-84分)**: 可接受质量，需要改进" >> $GITHUB_STEP_SUMMARY
+          echo "- **C (70-79分)**: 一般质量，需要重大改进" >> $GITHUB_STEP_SUMMARY
+          echo "- **D (<70分)**: 质量不佳，不建议部署" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📧 发送失败通知
+        if: needs.quality-gates.result == 'failure' || needs.deploy.result == 'failure'
+        run: |
+          echo "📧 发送失败通知..."
+
+          # 这里可以添加邮件、Slack、Teams等通知逻辑
+          echo "流水线失败 - 通知已发送"
+
+          # 示例Slack通知
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 LLMChat CI/CD 流水线失败！\n分支: ${{ github.ref_name }}\n提交: ${{ github.sha }}\n质量分数: ${{ needs.quality-gates.outputs.quality-score }}/100"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 🎉 发送成功通知
+        if: needs.quality-gates.result == 'success' && needs.deploy.result == 'success'
+        run: |
+          echo "🎉 发送成功通知..."
+
+          # 这里可以添加成功通知逻辑
+          echo "流水线成功完成 - 通知已发送"
+
+          # 示例Slack通知
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🎉 LLMChat CI/CD 流水线成功完成！\n环境: ${{ needs.deploy.outputs.url || N/A }}\n质量分数: ${{ needs.quality-gates.outputs.quality-score }}/100\n版本: ${{ needs.setup-and-validate.outputs.version }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}

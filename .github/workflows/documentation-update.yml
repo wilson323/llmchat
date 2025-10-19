@@ -1,0 +1,116 @@
+name: Documentation Update
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - 'CLAUDE.md'
+      - 'README.md'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - index
+        - validation
+        - compliance
+
+jobs:
+  documentation-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          cd scripts
+          npm install
+
+      - name: Run documentation manager
+        run: |
+          node scripts/documentation-manager.js
+
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "docs: 自动更新文档索引和报告
+
+🤖 Generated with GitHub Actions
+
+Co-Authored-By: GitHub Actions <action@github.com>"
+          git push
+
+      - name: Generate compliance report
+        run: |
+          node scripts/documentation-manager.js --compliance-only
+
+      - name: Upload compliance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: compliance-report
+          path: reports/documentation/compliance-report.json
+
+  documentation-quality-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Check markdown format
+        uses: DavidAnson/markdownlint-action@v1
+        with:
+          files: 'docs/**/*.md'
+          config: '.markdownlint.json'
+
+      - name: Check links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          folder-path: 'docs'
+          file-extension: '.md'
+
+      - name: Spell check
+        uses: streetsidesoftware/cspell-action@v2
+        with:
+          files: 'docs/**/*.md'
+          config: '.cspell.json'

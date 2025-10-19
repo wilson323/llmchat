@@ -1,6 +1,15 @@
 import { Router } from 'express';
 import { AuthController } from '@/controllers/AuthController';
-import { loginRateLimiter } from '@/middleware/rateLimiterV2';
+// 简化模式：使用基础express-rate-limit替代复杂的rateLimiterV2
+import rateLimit from 'express-rate-limit';
+
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: 5, // 限制每个IP 5次登录尝试
+  message: '登录尝试过于频繁，请稍后再试',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 import { authenticateJWT } from '@/middleware/jwtAuth';
 
 const router: Router = Router();

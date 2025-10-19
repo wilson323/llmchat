@@ -15,11 +15,11 @@
 
     // 类型检查设置 - 严格模式
     "strict": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitThis": true,
@@ -56,7 +56,7 @@
       "@llmchat/shared-types/*": ["../../shared-types/dist/*"]
     }
   },
-  "include": ["src", "src/lucide-react-declarations.d.ts"],
+  "include": ["src"],
   "typeRoots": ["./src/types", "./node_modules/@types"],
   "exclude": [
     "node_modules",

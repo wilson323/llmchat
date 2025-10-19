@@ -1,14 +1,9 @@
-;
-;
-;
-;
-;
-;
-import {AlertCircle, AlertTriangle, CheckCircle, Info} from 'lucide-react';
+
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { FastGPTEvent } from '@/types';
-;
-;
+
+
 import clsx from 'clsx';
 import { getNormalizedEventKey, isToolEvent } from '@/lib/fastgptEvents';
 

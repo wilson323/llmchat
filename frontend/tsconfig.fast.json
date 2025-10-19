@@ -1,0 +1,88 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // 快速开发配置 - 最小化类型检查
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // 最快增量编译
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo-fast",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+
+    // 内存优化
+    "isolatedModules": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true,
+
+    // 最小类型检查 - 仅核心安全检查
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": false,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": false,
+    "noImplicitThis": false,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // 编译器优化
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    // 最小类型检查
+    "types": ["vite/client"],
+    "typeRoots": ["./node_modules/@types"],
+
+    // 简化路径映射
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    },
+
+    // 快速编译优化
+    "preserveWatchOutput": true,
+    "pretty": false
+  },
+
+  // 最小包含范围
+  "include": [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.test.*",
+    "!src/**/*.spec.*",
+    "!src/**/*.stories.*",
+    "!src/**/*.d.ts"
+  ],
+
+  // 最大排除范围
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/*.stories.*",
+    "**/*.d.ts",
+    "**/*.benchmark.*",
+    "**/*.performance.*",
+    "**/coverage/**",
+    "**/__mocks__/**",
+    "**/__fixtures__/**"
+  ],
+
+  "references": []
+}

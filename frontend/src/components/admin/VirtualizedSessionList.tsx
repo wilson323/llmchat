@@ -4,24 +4,15 @@
  */
 
 'use client';
-;
-;
-;
-;
-;
-;
+
+
 import { Download, Eye, MessageSquare, RefreshCw, Search, Trash2 } from 'lucide-react';
 import React, { useState, memo } from 'react';
 import { VirtualScroll } from '@/components/ui/VirtualScroll';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-;
-;
-;
-;
-;
-;
-;
+
+
 import { useCallback } from 'react';
 import { useI18n } from '@/i18n';
 
@@ -209,7 +200,7 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索会话标题...')}
             value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearch(e.target.value)}
+            onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => onSearch(value)}
             className="pl-10"
           />
         </div>
@@ -319,13 +310,13 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
         {...(onLoadMore && { onEndReached: onLoadMore })}
         hasMore={hasMore}
         loading={loading}
-        loadingComponent={
+        loadingComponent={() => (
           <div className="flex items-center justify-center p-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
             <span className="text-sm text-muted-foreground">{t('加载中...')}</span>
           </div>
-        }
-        emptyComponent={
+        )}
+        emptyComponent={() => (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <MessageSquare className="w-6 h-6 text-muted-foreground" />
@@ -337,7 +328,7 @@ export const VirtualizedSessionList: React.FC<VirtualizedSessionListProps> = mem
               {searchQuery ? t('没有找到匹配的会话') : t('系统中暂无会话')}
             </div>
           </div>
-        }
+        )}
       />
     </div>
   );

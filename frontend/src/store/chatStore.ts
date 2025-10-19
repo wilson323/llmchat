@@ -368,12 +368,12 @@ export const useChatStore = create<ChatStore>()(
                 content: merged.body,
                 // 使用条件属性展开满足 exactOptionalPropertyTypes
                 ...(step.title || normalized.title || previousStep?.title ? {
-                  title: step.title ?? normalized.title ?? previousStep?.title ?? merged.title
+                  title: step.title ?? normalized.title ?? previousStep?.title ?? merged.title,
                 } : {}),
                 text: merged.body,
                 status: previousStep?.status ?? 'completed' as const,
                 ...(step.raw !== undefined || previousStep?.raw !== undefined ? {
-                  raw: step.raw ?? previousStep?.raw ?? null
+                  raw: step.raw ?? previousStep?.raw ?? null,
                 } : {}),
               };
             } else {
@@ -387,7 +387,7 @@ export const useChatStore = create<ChatStore>()(
                 status: 'completed',
                 // 使用条件属性展开来满足 exactOptionalPropertyTypes
                 ...(step.title || normalized.title ? {
-                  title: step.title ?? normalized.title ?? `步骤 ${normalizedOrder}`
+                  title: step.title ?? normalized.title ?? `步骤 ${normalizedOrder}`,
                 } : {}),
                 ...(step.raw ? { raw: step.raw } : {}),
               };
@@ -748,7 +748,7 @@ export const useChatStore = create<ChatStore>()(
         // 如果是当前会话，同时更新当前会话标题
         if (state.currentSession?.id === sessionId) {
           set({
-            currentSession: { ...state.currentSession, title, updatedAt: new Date() }
+            currentSession: { ...state.currentSession, title, updatedAt: new Date() },
           });
         }
       },
@@ -991,8 +991,8 @@ export const useChatStore = create<ChatStore>()(
           }, 0);
         }
       },
-    }
-  )
+    },
+  ),
 );
 
 /**

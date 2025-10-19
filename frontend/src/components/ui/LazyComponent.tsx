@@ -4,30 +4,10 @@
  * 提供统一的懒加载组件接口，支持加载状态、错误处理、重试等功能
  */
 
-;
-;
-;
-;
-;
-import {AlertCircle, RefreshCw} from 'lucide-react';
-import React, { Suspense, ComponentType, ReactNode } from 'react';
-;
 
-// 懒加载组件配置
-interface LazyComponentConfig {
-  /** 加载中显示的组件 */
-  fallback?: ComponentType | ReactNode;
-  /** 错误时显示的组件 */
-  errorFallback?: ComponentType<{ error?: Error; onRetry: () => void }>;
-  /** 错误重试次数 */
-  retryCount?: number;
-  /** 超时时间（毫秒） */
-  timeout?: number;
-  /** 延迟显示加载状态（毫秒） */
-  delay?: number;
-  /** 预加载 */
-  preload?: boolean;
-}
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import React, { Suspense, ComponentType, ReactNode } from 'react';
+import type { LazyComponentConfig, LazyComponentProps } from './ui.types';
 
 // 默认加载中组件
 const DefaultLoadingFallback: ComponentType<{ delay?: number }> = ({ delay = 200 }) => {
@@ -118,10 +98,7 @@ export function LazyComponent<P extends object = {}>({
   component,
   config = {},
   ...props
-}: {
-  component: ComponentType<P>;
-  config?: LazyComponentConfig;
-} & P) {
+}: LazyComponentProps<P>) {
   const {
     fallback: Fallback = DefaultLoadingFallback,
     errorFallback: ErrorFallback = DefaultErrorFallback,
@@ -230,8 +207,8 @@ export function createLazyComponent<P extends object = {}>(
   const LazyLoadedComponent = React.lazy(importFn);
 
   return React.memo((props: P) => (
-    <LazyComponent component={LazyLoadedComponent} config={config} {...(props as any)} />
-  )) as any as ComponentType<P>;
+    <LazyComponent component={LazyLoadedComponent} config={config} {...props} />
+  )) as ComponentType<P>;
 }
 
 /**

@@ -273,7 +273,7 @@ export class RedisConnectionPool extends EventEmitter {
       this.stats.lastUsed = new Date();
       // ✅ 移除高频debug日志
     }
-    
+
     // ✅ 添加定时统计
     this.logStatsIfNeeded();
   }

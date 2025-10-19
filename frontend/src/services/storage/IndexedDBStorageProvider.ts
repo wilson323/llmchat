@@ -3,9 +3,7 @@
  * 提供持久化的本地存储，支持复杂查询和索引
  */
 
-;
-;
-;
+
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery, CacheEntry, DataTemperature, SyncStatus } from '@/types/hybrid-storage';
 
 interface IndexedDBSchema {

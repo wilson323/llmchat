@@ -1,0 +1,189 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-01-18",
+  "project": "llmchat",
+  "description": "Enterprise Quality Gates Configuration",
+  "thresholds": {
+    "overall_quality": {
+      "excellent": 90,
+      "good": 80,
+      "acceptable": 70,
+      "minimum": 60,
+      "critical": 40
+    },
+    "code_quality": {
+      "typescript_errors": 0,
+      "eslint_errors": 0,
+      "eslint_warnings": 5,
+      "prettier_violations": 0,
+      "complexity_score": 10,
+      "maintainability_index": 80,
+      "duplicated_lines": 50,
+      "test_coverage": {
+        "statements": 80,
+        "branches": 75,
+        "functions": 80,
+        "lines": 80
+      }
+    },
+    "security": {
+      "high_vulnerabilities": 0,
+      "medium_vulnerabilities": 2,
+      "low_vulnerabilities": 10,
+      "secret_leaks": 0,
+      "insecure_dependencies": 0,
+      "security_hotspots": 3
+    },
+    "performance": {
+      "build_time": 300,
+      "bundle_size": {
+        "backend": "50MB",
+        "frontend": "5MB"
+      },
+      "memory_usage": 512,
+      "api_response_time": 200,
+      "lighthouse_score": 80,
+      "bundle_analysis": {
+        "max_chunk_size": "1MB",
+        "total_chunks": 50
+      }
+    },
+    "testing": {
+      "unit_test_coverage": 80,
+      "integration_test_coverage": 70,
+      "e2e_test_coverage": 60,
+      "test_flakiness": 5,
+      "test_timeout": 30000,
+      "critical_test_paths": {
+        "authentication": 100,
+        "data_protection": 100,
+        "api_endpoints": 90,
+        "ui_components": 80
+      }
+    },
+    "documentation": {
+      "api_coverage": 90,
+      "code_comment_ratio": 0.15,
+      "readme_completeness": 100,
+      "changelog_updated": true,
+      "architecture_docs": true
+    }
+  },
+  "weights": {
+    "code_quality": 0.35,
+    "security": 0.25,
+    "performance": 0.20,
+    "testing": 0.15,
+    "documentation": 0.05
+  },
+  "environments": {
+    "development": {
+      "overall_quality": {
+        "minimum": 60,
+        "acceptable": 70
+      },
+      "security": {
+        "high_vulnerabilities": 1,
+        "medium_vulnerabilities": 5
+      },
+      "performance": {
+        "build_time": 600,
+        "bundle_size": {
+          "backend": "100MB",
+          "frontend": "10MB"
+        }
+      }
+    },
+    "staging": {
+      "overall_quality": {
+        "minimum": 80,
+        "acceptable": 85
+      },
+      "security": {
+        "high_vulnerabilities": 0,
+        "medium_vulnerabilities": 2
+      },
+      "performance": {
+        "build_time": 300,
+        "bundle_size": {
+          "backend": "75MB",
+          "frontend": "7.5MB"
+        }
+      }
+    },
+    "production": {
+      "overall_quality": {
+        "minimum": 90,
+        "acceptable": 95
+      },
+      "security": {
+        "high_vulnerabilities": 0,
+        "medium_vulnerabilities": 0,
+        "low_vulnerabilities": 3
+      },
+      "performance": {
+        "build_time": 180,
+        "bundle_size": {
+          "backend": "50MB",
+          "frontend": "5MB"
+        },
+        "api_response_time": 100,
+        "lighthouse_score": 90
+      }
+    }
+  },
+  "alerting": {
+    "channels": ["github_issues", "email", "slack"],
+    "escalation": {
+      "critical": {
+        "immediate": true,
+        "notify_team": true,
+        "block_deployment": true
+      },
+      "high": {
+        "immediate": false,
+        "notify_team": true,
+        "block_deployment": false
+      },
+      "medium": {
+        "immediate": false,
+        "notify_team": false,
+        "block_deployment": false
+      }
+    }
+  },
+  "trends": {
+    "retention_days": 90,
+    "analysis_window": 30,
+    "comparison_periods": {
+      "previous_week": 7,
+      "previous_month": 30,
+      "same_week_last_year": 365
+    }
+  },
+  "exemptions": {
+    "experimental_features": {
+      "code_quality": {
+        "test_coverage": {
+          "statements": 60,
+          "branches": 50,
+          "functions": 60,
+          "lines": 60
+        }
+      },
+      "documentation": {
+        "api_coverage": 70
+      }
+    },
+    "legacy_code": {
+      "eslint_warnings": 15,
+      "complexity_score": 15,
+      "test_coverage": {
+        "statements": 60,
+        "branches": 50,
+        "functions": 60,
+        "lines": 60
+      }
+    }
+  }
+}

@@ -113,6 +113,69 @@ export type InteractiveData =
 import type { ReasoningStep, ReasoningStepUpdate, JsonValue, FastGPTEvent } from '@llmchat/shared-types';
 export type { ReasoningStep, ReasoningStepUpdate, JsonValue, FastGPTEvent };
 
+// ============================================================================
+// 新增类型定义导出 - 安全集成
+// =============================================================================
+
+// 重新导出组件核心类型（保持向后兼容）
+// 注意：这些类型现在直接在ui.types.ts中定义，保持向后兼容性
+export type {
+  BaseComponentProps,
+  ButtonProps,
+  InputProps,
+  CardProps,
+  ModalProps,
+  SelectProps,
+  TabsProps,
+  EventHandlersProps,
+} from '@/components/ui/types.unified';
+
+// 重新导出事件处理器类型（保持向后兼容）
+export type {
+  UnifiedEventHandler,
+  SimplifiedEventHandler,
+  LegacyEventHandler,
+  FlexibleEventHandler,
+  ChangeEventHandler,
+  ClickEventHandler,
+  KeyboardEventHandler,
+  FocusEventHandler,
+  FormSubmitHandler,
+  CustomEventHandler,
+  InputProps,
+  SelectorProps,
+  ButtonProps,
+} from '@/types/event-handlers';
+
+// 重新导出Hook类型（保持向后兼容）
+export type {
+  UseVirtualScrollOptions,
+  VirtualScrollResult,
+  UseThemeResult,
+  KeyboardShortcut,
+  UseKeyboardManagerOptions,
+  UseKeyboardManagerResult,
+  UseChatOptions,
+  UseChatResult,
+  UseInputOptions,
+  UseInputResult,
+  UseDebounceOptions,
+  UseDebounceResult,
+  UseThrottleOptions,
+  UseThrottleResult,
+  UseLocalStorageOptions,
+  UseLocalStorageResult,
+  UseAsyncOptions,
+  UseAsyncResult,
+  UseWindowSizeOptions,
+  UseWindowSizeResult,
+  UseMediaQueryOptions,
+  UseDragOptions,
+  UseDragResult,
+  UseClipboardOptions,
+  UseClipboardResult,
+} from '@/hooks/types.hooks';
+
 export interface ReasoningState {
   steps: import('@llmchat/shared-types').ReasoningStep[];
   totalSteps?: number;
@@ -145,7 +208,7 @@ export interface FastGPTChatHistoryDetail {
   appId?: string;
   title?: string;
   messages: FastGPTChatHistoryMessage[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ProductPreviewBoundingBox {
@@ -232,7 +295,7 @@ export interface ChatOptions {
   temperature?: number;
   maxTokens?: number;
   // FastGPT 特有参数
-  variables?: Record<string, any>; // 模块变量，会替换模块中输入框内容里的 [key]
+  variables?: Record<string, unknown>; // 模块变量，会替换模块中输入框内容里的 [key]
   responseChatItemId?: string;     // 响应消息的 ID，FastGPT 会自动将该 ID 存入数据库
   attachments?: ChatAttachmentMetadata[];
   voiceNote?: VoiceNoteMetadata | null;
@@ -326,7 +389,7 @@ export interface ChatSession {
   isPinned?: boolean;        // 是否置顶
   tags?: string[];          // 会话标签
   isArchived?: boolean;     // 是否已归档
-  metadata?: Record<string, any>; // 会话元数据（用于特殊智能体存储额外信息）
+  metadata?: Record<string, unknown>; // 会话元数据（用于特殊智能体存储额外信息）
 }
 
 /**

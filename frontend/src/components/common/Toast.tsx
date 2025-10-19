@@ -2,17 +2,10 @@
  * Toast 通知组件
  */
 
-;
-;
-;
-;
-;
-;
-import {AlertCircle, CheckCircle, Info, X, XCircle} from 'lucide-react';
+
+import { AlertCircle, CheckCircle, Info, X, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-;
-;
-;
+
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 

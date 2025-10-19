@@ -4,16 +4,10 @@
  * 仅在开发环境中显示，用于监控代码分割的性能表现
  */
 
-;
-;
-;
-;
-;
-;
-;
-import {Activity, AlertCircle, Clock, Package, RefreshCw, Trash2} from 'lucide-react';
+
+import { Activity, AlertCircle, Clock, Package, RefreshCw, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-;
+
 import { useEnhancedCodeSplitting } from '@/hooks/useEnhancedCodeSplitting';
 
 interface CodeSplittingMonitorProps {

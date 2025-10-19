@@ -3,7 +3,7 @@
  * 与FastGPT API交互，获取和同步对话数据
  */
 
-;
+
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery } from '@/types/hybrid-storage';
 import { FastGPTChatHistorySummary, FastGPTChatHistoryDetail } from '@/types';
 

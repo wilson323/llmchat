@@ -9,10 +9,9 @@
  * 5. Batch rendering optimization
  */
 
-;
-;
+
 import React, { useRef, useMemo, useCallback, useEffect, useState } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import { usePerformanceMonitor, memoryMonitor } from '@/utils/performanceOptimizer';
 
 type NonNullable<T> = T extends null | undefined ? never : T;
@@ -59,7 +58,9 @@ function createHeightCache(maxSize: number = 1000): HeightCache {
       cache.set(key, height);
     },
     clear: () => cache.clear(),
-    get size() { return cache.size; }
+    get size() {
+      return cache.size;
+    },
   };
 }
 
@@ -79,7 +80,7 @@ export function OptimizedVirtualizedList<T>({
   loadingComponent,
   emptyComponent,
   enableDynamicHeight = true,
-  cacheSize = 1000
+  cacheSize = 1000,
 }: OptimizedVirtualizedListProps<T>) {
   // Performance monitoring
   usePerformanceMonitor('OptimizedVirtualizedList');
@@ -96,8 +97,12 @@ export function OptimizedVirtualizedList<T>({
     const itemCount = items.length;
 
     // Dynamically adjust overscan based on list size
-    if (itemCount < 20) return Math.min(3, itemCount);
-    if (itemCount < 100) return Math.min(5, Math.ceil(containerRatio / 10));
+    if (itemCount < 20) {
+      return Math.min(3, itemCount);
+    }
+    if (itemCount < 100) {
+      return Math.min(5, Math.ceil(containerRatio / 10));
+    }
     return Math.min(overscan, Math.ceil(containerRatio / 5));
   }, [containerHeight, estimatedItemHeight, items.length, overscan]);
 
@@ -150,8 +155,8 @@ export function OptimizedVirtualizedList<T>({
           }
         }
         return 0;
-      }
-    } : {})
+      },
+    } : {}),
   } as any);
 
   // Handle scroll events for performance optimization
@@ -194,7 +199,7 @@ export function OptimizedVirtualizedList<T>({
   useEffect(() => {
     const virtualItems = virtualizer.getVirtualItems();
     const visibleItems = virtualItems
-      .map((virtualItem: any) => {
+      .map((virtualItem: VirtualItem) => {
         const item = items[virtualItem.index];
         return item !== undefined ? { index: virtualItem.index, item } : null;
       })
@@ -208,7 +213,7 @@ export function OptimizedVirtualizedList<T>({
     const virtualItems = virtualizer.getVirtualItems();
     const range = virtualizer.range;
 
-    return virtualItems.map((virtualItem: any) => {
+    return virtualItems.map((virtualItem: VirtualItem) => {
       const item = items[virtualItem.index];
       if (item === undefined) {
         return null;
@@ -241,9 +246,9 @@ export function OptimizedVirtualizedList<T>({
             width: '100%',
             height: `${virtualItem.size}px`,
             transform: `translateY(${virtualItem.start}px)`,
-            willChange: isScrolling ? 'transform' : 'auto'
+            willChange: isScrolling ? 'transform' : 'auto',
           }}
-        >
+          >
           {renderItem(item, virtualItem.index, isVisible || false)}
         </div>
       );
@@ -273,12 +278,12 @@ export function OptimizedVirtualizedList<T>({
       style={{ height: containerHeight }}
       onScroll={handleScroll}
       data-testid="optimized-virtual-list"
-    >
+      >
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
           width: '100%',
-          position: 'relative'
+          position: 'relative',
         }}
       >
         {renderedItems}
@@ -302,12 +307,12 @@ export const MemoizedOptimizedVirtualizedList = React.memo(
       prevProps.enableDynamicHeight === nextProps.enableDynamicHeight &&
       prevProps.cacheSize === nextProps.cacheSize
     );
-  }
+  },
 ) as typeof OptimizedVirtualizedList;
 
 Object.defineProperty(MemoizedOptimizedVirtualizedList, 'displayName', {
   value: 'MemoizedOptimizedVirtualizedList',
-  writable: false
+  writable: false,
 });
 
 /**
@@ -319,7 +324,7 @@ export function useVirtualListPerformance() {
     averageRenderTime: 0,
     maxRenderTime: 0,
     cacheHitRate: 0,
-    memoryUsage: 0
+    memoryUsage: 0,
   });
 
   const renderTimes = useRef<number[]>([]);
@@ -334,15 +339,15 @@ export function useVirtualListPerformance() {
       renderTimes.current = renderTimes.current.slice(-100);
     }
 
-    const averageRenderTime = renderTimes.current.reduce((a: any, b: any) => a + b, 0) / renderTimes.current.length;
+    const averageRenderTime = renderTimes.current.reduce((a: number, b: number) => a + b, 0) / renderTimes.current.length;
     const maxRenderTime = Math.max(...renderTimes.current);
 
-    setMetrics((prev: any) => ({
+    setMetrics((prev) => ({
       ...prev,
       renderCount: prev.renderCount + 1,
       averageRenderTime,
       maxRenderTime,
-      memoryUsage: memoryMonitor.getCurrentUsage().heapUsed
+      memoryUsage: memoryMonitor.getCurrentUsage().heapUsed,
     }));
 
     lastRenderTime.current = now;

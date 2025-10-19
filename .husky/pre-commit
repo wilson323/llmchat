@@ -1,16 +1,75 @@
-﻿#!/bin/sh
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-# Windows兼容pre-commit hook
-echo "🔍 Running pre-commit quality checks..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔍 Pre-commit质量检查开始..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# 运行lint-staged检查所有staged文件
-npx lint-staged
-
-# 如果lint-staged失败，阻止提交
+# 步骤1: TypeScript类型检查
+echo ""
+echo "📝 [1/5] TypeScript类型检查中..."
+pnpm run type-check
 if [ $? -ne 0 ]; then
-  echo "❌ Pre-commit checks failed. Please fix the issues before committing."
+  echo ""
+  echo "❌ TS类型检查失败！"
+  echo "   请修复所有TypeScript类型错误后重试。"
+  echo "   命令: pnpm run type-check"
   exit 1
 fi
+echo "✅ TypeScript类型检查通过"
 
-echo "✅ Pre-commit checks passed!"
+# 步骤2: 代码质量检查（仅变更文件）
+echo ""
+echo "🔍 [2/5] ESLint代码质量检查中..."
+npx lint-staged
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "⚠️  ESLint检查发现问题"
+  echo "   请检查修改后的文件。"
+  exit 1
+fi
+echo "✅ ESLint检查通过"
+
+# 步骤3: 重复导出检查
+echo ""
+echo "🔍 [3/5] 重复导出检查中..."
+cd frontend && node scripts/duplicate-export-checker.cjs
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ 发现重复导出！"
+  echo "   请删除重复的导出声明后重试。"
+  exit 1
+fi
+echo "✅ 重复导出检查通过"
+
+# 步骤4: 文件大小检查
+echo ""
+echo "📏 [4/5] 文件大小检查中..."
+cd frontend && node scripts/file-size-limiter.cjs
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "⚠️  发现超大文件！"
+  echo "   请将大文件拆分为小文件或重构代码结构。"
+  exit 1
+fi
+echo "✅ 文件大小检查通过"
+
+# 步骤5: 构建验证
+echo ""
+echo "🔨 [5/5] 构建验证中..."
+cd frontend && pnpm run build
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ 构建失败！"
+  echo "   请修复构建错误后重试。"
+  exit 1
+fi
+echo "✅ 构建验证通过"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ 所有检查通过！提交准备完成。"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
 exit 0

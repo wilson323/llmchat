@@ -1,8 +1,7 @@
-;
-;
+
 import { Keyboard, Menu } from 'lucide-react';
 import React, { useState } from 'react';
-;
+
 import { IconButton } from '@/components/ui/IconButton';
 import { AgentSelector } from './agents/AgentSelector';
 import { ThemeToggle } from './theme/ThemeToggle';

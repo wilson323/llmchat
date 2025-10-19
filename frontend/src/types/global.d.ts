@@ -10,7 +10,7 @@ declare global {
     gtag?: (
       command: 'config' | 'set' | 'event' | 'js',
       targetIdOrEventName: string,
-      configOrParams?: Record<string, any>
+      configOrParams?: Record<string, unknown>
     ) => void;
 
     // Performance API 扩展

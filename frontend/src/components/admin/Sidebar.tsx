@@ -3,31 +3,13 @@
  */
 
 'use client';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { BarChart3, FileText, Home, LogOut, Menu, MessageSquare, Monitor, Settings, Users, X } from 'lucide-react';
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 

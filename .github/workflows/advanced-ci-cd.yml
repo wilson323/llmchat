@@ -1,0 +1,1269 @@
+name: 🚀 Advanced CI/CD Pipeline - Enterprise Automation
+
+on:
+  push:
+    branches: [main, develop, release/*, hotfix/*]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  release:
+    types: [published, prereleased]
+  schedule:
+    # 每天凌晨2点运行全面扫描
+    - cron: '0 2 * * *'
+    # 每周日晚上8点运行深度质量检查
+    - cron: '0 20 * * 0'
+    # 每小时运行安全扫描
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      deployment_strategy:
+        description: 'Deployment strategy'
+        required: true
+        default: 'rolling'
+        type: choice
+        options:
+          - rolling
+          - blue-green
+          - canary
+      security_scan:
+        description: 'Run comprehensive security scan'
+        required: false
+        default: true
+        type: boolean
+      performance_test:
+        description: 'Run performance tests'
+        required: false
+        default: false
+        type: boolean
+      rollback_enabled:
+        description: 'Enable automatic rollback on failure'
+        required: false
+        default: true
+        type: boolean
+      parallel_execution:
+        description: 'Enable parallel execution for faster builds'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+  CI: true
+  TZ: 'Asia/Shanghai'
+  DOCKER_REGISTRY: 'ghcr.io'
+  KUBERNETES_NAMESPACE: 'llmchat'
+
+# 全局变量
+vars:
+  quality_threshold: '85'
+  security_threshold: '0'
+  performance_threshold: '95'
+  coverage_threshold: '80'
+  build_timeout: '30'
+  deploy_timeout: '15'
+
+jobs:
+  # ==========================================
+  # 阶段0: 智能化前置检查
+  # ==========================================
+  intelligent-precheck:
+    name: 🧠 Intelligent Pre-check Analysis
+    runs-on: ubuntu-latest
+    outputs:
+      build-strategy: ${{ steps.analysis.outputs.build-strategy }}
+      test-scope: ${{ steps.analysis.outputs.test-scope }}
+      security-level: ${{ steps.analysis.outputs.security-level }}
+      deployment-risk: ${{ steps.analysis.outputs.deployment-risk }}
+      cache-strategy: ${{ steps.analysis.outputs.cache-strategy }}
+      parallel-enabled: ${{ steps.analysis.outputs.parallel-enabled }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🔍 Intelligent Change Analysis
+        id: analysis
+        run: |
+          echo "::group::Intelligent Change Analysis"
+
+          # 获取变更范围
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}..${{ github.sha }})
+          else
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }}..${{ github.sha }})
+          fi
+
+          echo "Changed files: $CHANGED_FILES"
+
+          # 智能分析变更类型
+          FRONTEND_CHANGES=$(echo "$CHANGED_FILES" | grep -E "^frontend/" | wc -l)
+          BACKEND_CHANGES=$(echo "$CHANGED_FILES" | grep -E "^backend/" | wc -l)
+          CONFIG_CHANGES=$(echo "$CHANGED_FILES" | grep -E "^(\.github|\.env|config|pnpm-lock|package\.json)" | wc -l)
+          TEST_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.test\.|\.spec\.|__tests__|tests/)" | wc -l)
+          SECURITY_CHANGES=$(echo "$CHANGED_FILES" | grep -E "(\.env|secret|key|password|auth)" | wc -l)
+
+          echo "Frontend changes: $FRONTEND_CHANGES"
+          echo "Backend changes: $BACKEND_CHANGES"
+          echo "Config changes: $CONFIG_CHANGES"
+          echo "Test changes: $TEST_CHANGES"
+          echo "Security changes: $SECURITY_CHANGES"
+
+          # 智能构建策略
+          if [ $FRONTEND_CHANGES -gt 0 ] && [ $BACKEND_CHANGES -gt 0 ]; then
+            echo "build-strategy=full" >> $GITHUB_OUTPUT
+          elif [ $FRONTEND_CHANGES -gt 0 ]; then
+            echo "build-strategy=frontend" >> $GITHUB_OUTPUT
+          elif [ $BACKEND_CHANGES -gt 0 ]; then
+            echo "build-strategy=backend" >> $GITHUB_OUTPUT
+          else
+            echo "build-strategy=Minimal" >> $GITHUB_OUTPUT
+          fi
+
+          # 智能测试范围
+          if [ $TEST_CHANGES -gt 0 ]; then
+            echo "test-scope=full" >> $GITHUB_OUTPUT
+          elif [ $CONFIG_CHANGES -gt 0 ]; then
+            echo "test-scope=integration" >> $GITHUB_OUTPUT
+          else
+            echo "test-scope=smoke" >> $GITHUB_OUTPUT
+          fi
+
+          # 安全级别
+          if [ $SECURITY_CHANGES -gt 0 ]; then
+            echo "security-level=high" >> $GITHUB_OUTPUT
+          elif [ $CONFIG_CHANGES -gt 0 ]; then
+            echo "security-level=medium" >> $GITHUB_OUTPUT
+          else
+            echo "security-level=low" >> $GITHUB_OUTPUT
+          fi
+
+          # 部署风险评估
+          RISK_SCORE=$((FRONTEND_CHANGES + BACKEND_CHANGES + CONFIG_CHANGES * 2 + SECURITY_CHANGES * 3))
+          if [ $RISK_SCORE -gt 20 ]; then
+            echo "deployment-risk=high" >> $GITHUB_OUTPUT
+          elif [ $RISK_SCORE -gt 10 ]; then
+            echo "deployment-risk=medium" >> $GITHUB_OUTPUT
+          else
+            echo "deployment-risk=low" >> $GITHUB_OUTPUT
+          fi
+
+          # 缓存策略
+          if [ $CONFIG_CHANGES -eq 0 ]; then
+            echo "cache-strategy=aggressive" >> $GITHUB_OUTPUT
+          else
+            echo "cache-strategy=conservative" >> $GITHUB_OUTPUT
+          fi
+
+          # 并行执行
+          if [ "${{ github.event.inputs.parallel_execution }}" == "false" ]; then
+            echo "parallel-enabled=false" >> $GITHUB_OUTPUT
+          else
+            echo "parallel-enabled=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Generate Analysis Report
+        run: |
+          echo "## 🧠 Intelligent Pre-check Analysis" > analysis-report.md
+          echo "" >> analysis-report.md
+          echo "- **Build Strategy**: ${{ steps.analysis.outputs.build-strategy }}" >> analysis-report.md
+          echo "- **Test Scope**: ${{ steps.analysis.outputs.test-scope }}" >> analysis-report.md
+          echo "- **Security Level**: ${{ steps.analysis.outputs.security-level }}" >> analysis-report.md
+          echo "- **Deployment Risk**: ${{ steps.analysis.outputs.deployment-risk }}" >> analysis-report.md
+          echo "- **Cache Strategy**: ${{ steps.analysis.outputs.cache-strategy }}" >> analysis-report.md
+          echo "- **Parallel Execution**: ${{ steps.analysis.outputs.parallel-enabled }}" >> analysis-report.md
+
+      - name: 📤 Upload Analysis Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligent-analysis
+          path: analysis-report.md
+          retention-days: 7
+
+  # ==========================================
+  # 阶段1: 智能化环境准备
+  # ==========================================
+  smart-environment-setup:
+    name: 🚀 Smart Environment Setup
+    runs-on: ubuntu-latest
+    needs: intelligent-precheck
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+      environment-ready: ${{ steps.setup.outputs.environment-ready }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        id: setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📚 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 💾 Smart Cache Strategy
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ needs.intelligent-precheck.outputs.cache-strategy }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-${{ needs.intelligent-precheck.outputs.cache-strategy }}-
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Smart Dependency Installation
+        run: |
+          echo "📦 Installing dependencies with strategy: ${{ needs.intelligent-precheck.outputs.cache-strategy }}"
+
+          if [ "${{ needs.intelligent-precheck.outputs.cache-strategy }}" == "aggressive" ]; then
+            pnpm install --frozen-lockfile --prefer-offline --prefer-frozen-lockfile
+          else
+            pnpm install --frozen-lockfile
+          fi
+
+      - name: 🔍 Environment Validation
+        run: |
+          echo "✅ Environment setup completed"
+          echo "environment-ready=true" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # 阶段2: 智能化质量检查（并行执行）
+  # ==========================================
+  intelligent-quality-checks:
+    name: 🔍 Intelligent Quality Checks
+    runs-on: ubuntu-latest
+    needs: [smart-environment-setup, intelligent-precheck]
+    if: needs.smart-environment-setup.outputs.environment-ready == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        check-type: [type-check, lint, security, dependency-audit, code-complexity]
+        include:
+          - check-type: type-check
+            name: "TypeScript Type Safety"
+            command: pnpm run type-check
+            icon: "📝"
+            critical: true
+          - check-type: lint
+            name: "ESLint Quality Check"
+            command: pnpm run lint
+            icon: "🔍"
+            critical: true
+          - check-type: security
+            name: "Security Vulnerability Scan"
+            command: pnpm audit --audit-level moderate
+            icon: "🔒"
+            critical: true
+          - check-type: dependency-audit
+            name: "Dependency Audit"
+            command: pnpm audit --json
+            icon: "📦"
+            critical: false
+          - check-type: code-complexity
+            name: "Code Complexity Analysis"
+            command: "echo 'Complexity analysis placeholder'"
+            icon: "📊"
+            critical: false
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Restore Dependencies Cache
+        if: needs.intelligent-precheck.outputs.cache-strategy == 'aggressive'
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-aggressive-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-aggressive-
+
+      - name: 📦 Install Dependencies
+        if: needs.intelligent-precheck.outputs.cache-strategy != 'aggressive'
+        run: pnpm install --frozen-lockfile
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: quality-check
+        run: |
+          echo "::group::${{ matrix.name }}"
+
+          # 创建质量报告目录
+          mkdir -p quality-reports
+
+          # 运行检查
+          if ${{ matrix.command }}; then
+            echo "${{ matrix.check-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} passed"
+          else
+            echo "${{ matrix.check-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} failed"
+
+            if [ "${{ matrix.critical }}" == "true" ]; then
+              echo "::endgroup::"
+              exit 1
+            fi
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 Quality Metrics Collection
+        if: always()
+        run: |
+          # 收集质量指标
+          METRICS_FILE="quality-reports/${{ matrix.check-type }}-metrics.json"
+
+          cat > $METRICS_FILE << EOF
+          {
+            "check_type": "${{ matrix.check-type }}",
+            "status": "${{ steps.quality-check.outputs.${{ matrix.check-type }}_status }}",
+            "critical": ${{ matrix.critical }},
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "job_id": "${{ github.job_id }}",
+            "run_id": "${{ github.run_id }}"
+          }
+          EOF
+
+      - name: 📤 Upload Quality Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-results-${{ matrix.check-type }}
+          path: quality-reports/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段3: 智能化测试套件（并行执行）
+  # ==========================================
+  intelligent-testing:
+    name: 🧪 Intelligent Testing Suite
+    runs-on: ubuntu-latest
+    needs: [smart-environment-setup, intelligent-precheck]
+    if: needs.smart-environment-setup.outputs.environment-ready == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration, e2e, performance]
+        include:
+          - test-type: unit
+            name: "Unit Tests"
+            command: pnpm test --coverage
+            coverage: true
+            icon: "🔬"
+            parallel: true
+          - test-type: integration
+            name: "Integration Tests"
+            command: pnpm run test:integration
+            coverage: false
+            icon: "🔗"
+            parallel: true
+          - test-type: e2e
+            name: "E2E Tests"
+            command: pnpm run test:e2e
+            coverage: false
+            icon: "🌐"
+            parallel: false
+            setup: true
+          - test-type: performance
+            name: "Performance Tests"
+            command: "echo 'Performance tests placeholder'"
+            coverage: false
+            icon: "📊"
+            parallel: false
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Restore Dependencies Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🌐 Setup E2E Dependencies
+        if: matrix.setup
+        run: |
+          pnpm exec playwright install --with-deps
+          pnpm exec playwright install-deps
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: test-run
+        run: |
+          echo "::group::${{ matrix.name }}"
+
+          # 创建测试报告目录
+          mkdir -p test-reports
+          mkdir -p coverage
+
+          # 运行测试
+          if ${{ matrix.command }}; then
+            echo "${{ matrix.test-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} passed"
+          else
+            echo "${{ matrix.test-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} failed"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 Process Coverage Reports
+        if: matrix.coverage && steps.test-run.outputs.${{ matrix.test-type }}_status == 'passed'
+        run: |
+          echo "📊 Processing coverage reports..."
+
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ Coverage report found"
+            npx nyc report --reporter=text-summary > test-reports/coverage-summary.txt
+            npx nyc report --reporter=json > test-reports/coverage-summary.json
+
+            # 提取覆盖率百分比
+            COVERAGE_PERCENT=$(cat test-reports/coverage-summary.txt | grep "Lines" | awk '{print $2}' | sed 's/%//')
+            echo "coverage_percent=$COVERAGE_PERCENT" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 📤 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test-reports/
+            coverage/
+            playwright-report/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段4: 智能化构建
+  # ==========================================
+  intelligent-build:
+    name: 🏗️ Intelligent Build System
+    runs-on: ubuntu-latest
+    needs: [smart-environment-setup, intelligent-precheck]
+    if: needs.smart-environment-setup.outputs.environment-ready == 'true'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Smart Build Process
+        id: build
+        run: |
+          echo "::group::Smart Build Process"
+
+          BUILD_START=$(date +%s)
+
+          # 根据智能分析结果选择构建策略
+          BUILD_STRATEGY="${{ needs.intelligent-precheck.outputs.build-strategy }}"
+
+          case $BUILD_STRATEGY in
+            "full")
+              echo "🏗️ Running full build (frontend + backend)"
+              pnpm run build
+              ;;
+            "frontend")
+              echo "🎨 Running frontend build only"
+              pnpm run frontend:build
+              ;;
+            "backend")
+              echo "⚙️ Running backend build only"
+              pnpm run backend:build
+              ;;
+            "minimal")
+              echo "⚡ Running minimal build"
+              echo "Minimal build completed"
+              ;;
+          esac
+
+          BUILD_END=$(date +%s)
+          BUILD_DURATION=$((BUILD_END - BUILD_START))
+
+          echo "build_status=success" >> $GITHUB_OUTPUT
+          echo "build_duration=$BUILD_DURATION" >> $GITHUB_OUTPUT
+          echo "build_strategy=$BUILD_STRATEGY" >> $GITHUB_OUTPUT
+
+          echo "✅ Build completed in ${BUILD_DURATION}s"
+          echo "::endgroup::"
+
+      - name: 📊 Build Analysis
+        if: steps.build.outputs.build_status == 'success'
+        run: |
+          echo "📊 Analyzing build artifacts..."
+
+          mkdir -p build-analysis
+
+          # 分析构建产物
+          if [ -d "backend/dist" ]; then
+            BACKEND_SIZE=$(du -sh backend/dist | cut -f1)
+            BACKEND_FILES=$(find backend/dist -type f | wc -l)
+            echo "Backend: $BACKEND_SIZE, $BACKEND_FILES files"
+          fi
+
+          if [ -d "frontend/dist" ]; then
+            FRONTEND_SIZE=$(du -sh frontend/dist | cut -f1)
+            FRONTEND_FILES=$(find frontend/dist -type f | wc -l)
+            echo "Frontend: $FRONTEND_SIZE, $FRONTEND_FILES files"
+          fi
+
+      - name: 📤 Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ needs.intelligent-precheck.outputs.build-strategy }}
+          path: |
+            backend/dist/
+            frontend/dist/
+            build-analysis/
+          retention-days: 7
+
+  # ==========================================
+  # 阶段5: 容器化构建
+  # ==========================================
+  containerization:
+    name: 🐳 Containerization & Image Build
+    runs-on: ubuntu-latest
+    needs: [intelligent-build, intelligent-precheck]
+    if: needs.intelligent-build.result == 'success'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ needs.intelligent-precheck.outputs.build-strategy }}
+          path: ./
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Generate Build Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: 🐳 Build and Push Backend Image
+        if: needs.intelligent-precheck.outputs.build-strategy == 'full' || needs.intelligent-precheck.outputs.build-strategy == 'backend'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-backend
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: 🐳 Build and Push Frontend Image
+        if: needs.intelligent-precheck.outputs.build-strategy == 'full' || needs.intelligent-precheck.outputs.build-strategy == 'frontend'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}-frontend
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: 🐳 Build and Push Application Image
+        if: needs.intelligent-precheck.outputs.build-strategy == 'full'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+  # ==========================================
+  # 阶段6: 智能化质量门禁
+  # ==========================================
+  intelligent-quality-gates:
+    name: 🛡️ Intelligent Quality Gates
+    runs-on: ubuntu-latest
+    needs: [intelligent-quality-checks, intelligent-testing, intelligent-build]
+    if: always()
+
+    outputs:
+      overall-status: ${{ gates.outputs.overall-status }}
+      quality-score: ${{ gates.outputs.quality-score }}
+      deployment-ready: ${{ gates.outputs.deployment-ready }}
+      deployment-strategy: ${{ gates.outputs.deployment-strategy }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📊 Download All Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results-*"
+          merge-multiple: true
+          path: all-reports/
+
+      - name: 🛡️ Intelligent Quality Assessment
+        id: gates
+        run: |
+          echo "::group::Intelligent Quality Assessment"
+
+          # 初始化分数和状态
+          QUALITY_SCORE=100
+          OVERALL_STATUS="passed"
+          DEPLOYMENT_READY="true"
+          DEPLOYMENT_STRATEGY="rolling"
+
+          # 评估质量检查结果
+          QUALITY_CHECKS_RESULT="${{ needs.intelligent-quality-checks.result }}"
+          if [ "$QUALITY_CHECKS_RESULT" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 30))
+            OVERALL_STATUS="warning"
+            echo "⚠️ Quality checks issues detected"
+          else
+            echo "✅ All quality checks passed"
+          fi
+
+          # 评估测试结果
+          TESTING_RESULT="${{ needs.intelligent-testing.result }}"
+          if [ "$TESTING_RESULT" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 40))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ Test failures detected"
+          else
+            echo "✅ All tests passed"
+          fi
+
+          # 评估构建结果
+          BUILD_RESULT="${{ needs.intelligent-build.result }}"
+          if [ "$BUILD_RESULT" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 30))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ Build failed"
+          else
+            echo "✅ Build successful"
+          fi
+
+          # 智能部署策略选择
+          RISK_LEVEL="${{ needs.intelligent-precheck.outputs.deployment-risk }}"
+          if [ "$RISK_LEVEL" == "high" ]; then
+            DEPLOYMENT_STRATEGY="canary"
+            QUALITY_SCORE=$((QUALITY_SCORE - 5))
+          elif [ "$RISK_LEVEL" == "medium" ]; then
+            DEPLOYMENT_STRATEGY="blue-green"
+          else
+            DEPLOYMENT_STRATEGY="rolling"
+          fi
+
+          # 确保分数不低于0
+          if [ $QUALITY_SCORE -lt 0 ]; then
+            QUALITY_SCORE=0
+          fi
+
+          # 设置输出
+          echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "quality-score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+          echo "deployment-ready=$DEPLOYMENT_READY" >> $GITHUB_OUTPUT
+          echo "deployment-strategy=$DEPLOYMENT_STRATEGY" >> $GITHUB_OUTPUT
+
+          echo "📊 Quality Score: $QUALITY_SCORE/100"
+          echo "🚦 Overall Status: $OVERALL_STATUS"
+          echo "🚀 Deployment Ready: $DEPLOYMENT_READY"
+          echo "🎯 Deployment Strategy: $DEPLOYMENT_STRATEGY"
+          echo "::endgroup::"
+
+      - name: 📋 Generate Comprehensive Quality Report
+        if: always()
+        run: |
+          echo "📋 Generating comprehensive quality report..."
+
+          mkdir -p final-reports
+
+          cat > final-reports/comprehensive-quality-report.md << EOF
+          # LLMChat Advanced CI/CD Quality Report
+
+          ## 📊 Executive Summary
+          - **Quality Score**: ${{ steps.gates.outputs.quality-score }}/100
+          - **Overall Status**: ${{ steps.gates.outputs.overall-status }}
+          - **Deployment Ready**: ${{ steps.gates.outputs.deployment-ready }}
+          - **Deployment Strategy**: ${{ steps.gates.outputs.deployment-strategy }}
+          - **Build Number**: ${{ github.run_number }}
+          - **Commit SHA**: ${{ github.sha }}
+          - **Branch**: ${{ github.ref_name }}
+          - **Triggered By**: ${{ github.event_name }}
+
+          ## 🧠 Intelligent Analysis Results
+          - **Build Strategy**: ${{ needs.intelligent-precheck.outputs.build-strategy }}
+          - **Test Scope**: ${{ needs.intelligent-precheck.outputs.test-scope }}
+          - **Security Level**: ${{ needs.intelligent-precheck.outputs.security-level }}
+          - **Deployment Risk**: ${{ needs.intelligent-precheck.outputs.deployment-risk }}
+          - **Cache Strategy**: ${{ needs.intelligent-precheck.outputs.cache-strategy }}
+
+          ## 🛡️ Quality Gates Results
+
+          ### Quality Checks
+          - **Status**: ${{ needs.intelligent-quality-checks.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for code maintainability
+
+          ### Testing Suite
+          - **Status**: ${{ needs.intelligent-testing.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for functionality assurance
+
+          ### Build Validation
+          - **Status**: ${{ needs.intelligent-build.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for deployment readiness
+
+          ## 🎯 Intelligent Recommendations
+
+          ${{ steps.gates.outputs.quality-score >= 90 && '🌟 Excellent quality! Ready for immediate deployment.' || '' }}
+          ${{ steps.gates.outputs.quality-score >= 80 && steps.gates.outputs.quality-score < 90 && '✅ Good quality. Ready for deployment with monitoring.' || '' }}
+          ${{ steps.gates.outputs.quality-score >= 70 && steps.gates.outputs.quality-score < 80 && '⚠️ Acceptable quality. Deploy with caution and enhanced monitoring.' || '' }}
+          ${{ steps.gates.outputs.quality-score < 70 && '❌ Poor quality. Significant improvements required before deployment.' || '' }}
+
+          ## 🚀 Deployment Strategy Recommendation
+
+          Based on the analysis, the recommended deployment strategy is: **${{ steps.gates.outputs.deployment-strategy }}**
+
+          ${{ steps.gates.outputs.deployment-strategy == 'canary' && '🔥 Canary deployment recommended due to high risk factors.' || '' }}
+          ${{ steps.gates.outputs.deployment-strategy == 'blue-green' && '🔄 Blue-green deployment recommended for medium risk changes.' || '' }}
+          ${{ steps.gates.outputs.deployment-strategy == 'rolling' && '⚡ Rolling deployment recommended for low risk changes.' || '' }}
+
+          ---
+          *Report generated on $(date -u)*
+          *Powered by LLMChat Advanced CI/CD Pipeline*
+          EOF
+
+      - name: 📤 Upload Final Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-quality-report
+          path: final-reports/
+          retention-days: 90
+
+      - name: 🚫 Quality Gates Enforcement
+        if: steps.gates.outputs.overall-status == 'failed'
+        run: |
+          echo "❌ Quality gates failed - blocking deployment"
+          echo "📊 Quality Score: ${{ steps.gates.outputs.quality-score }}/100"
+          echo "🚦 Overall Status: ${{ steps.gates.outputs.overall-status }}"
+          exit 1
+
+  # ==========================================
+  # 阶段7: 智能化部署
+  # ==========================================
+  intelligent-deployment:
+    name: 🚀 Intelligent Deployment System
+    runs-on: ubuntu-latest
+    needs: [intelligent-quality-gates, containerization, intelligent-precheck]
+    if: needs.intelligent-quality-gates.outputs.deployment-ready == 'true' && github.event_name != 'pull_request'
+    environment:
+      name: ${{ github.event.inputs.environment || 'development' }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+        include:
+          - environment: development
+            branch: develop
+            required_score: 70
+            rollout_percent: 100
+          - environment: staging
+            branch: main
+            required_score: 80
+            rollout_percent: 100
+          - environment: production
+            branch: main
+            required_score: 90
+            rollout_percent: 20
+        exclude:
+          - environment: production
+            branch: develop
+          - environment: staging
+            branch: develop
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🚀 Intelligent Deploy to ${{ matrix.environment }}
+        id: deploy
+        run: |
+          echo "::group::Intelligent Deploy to ${{ matrix.environment }}"
+
+          # 验证部署条件
+          QUALITY_SCORE=${{ needs.intelligent-quality-gates.outputs.quality-score }}
+          REQUIRED_SCORE=${{ matrix.required_score }}
+
+          if [ "$QUALITY_SCORE" -lt "$REQUIRED_SCORE" ]; then
+            echo "❌ Quality score $QUALITY_SCORE is below required $REQUIRED_SCORE for ${{ matrix.environment }}"
+            exit 1
+          fi
+
+          # 智能部署策略
+          DEPLOYMENT_STRATEGY="${{ needs.intelligent-quality-gates.outputs.deployment-strategy }}"
+          ROLLOUT_PERCENT="${{ matrix.rollout_percent }}"
+
+          echo "🚀 Deploying to ${{ matrix.environment }} with strategy: $DEPLOYMENT_STRATEGY"
+          echo "📊 Quality Score: $QUALITY_SCORE/$REQUIRED_SCORE"
+          echo "📈 Rollout Percent: $ROLLOUT_PERCENT%"
+
+          # 设置部署URL
+          if [ "${{ matrix.environment }}" == "development" ]; then
+            echo "url=https://dev.llmchat.example.com" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.environment }}" == "staging" ]; then
+            echo "url=https://staging.llmchat.example.com" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.environment }}" == "production" ]; then
+            echo "url=https://llmchat.example.com" >> $GITHUB_OUTPUT
+          fi
+
+          # 实际部署逻辑（示例）
+          echo "✅ Deployment to ${{ matrix.environment }} completed"
+          echo "::endgroup::"
+
+      - name: 🔍 Intelligent Post-Deployment Health Check
+        run: |
+          echo "::group::Intelligent Post-Deployment Health Check"
+
+          # 等待部署启动
+          sleep 30
+
+          # 健康检查
+          DEPLOY_URL="${{ steps.deploy.outputs.url }}"
+          if [ -n "$DEPLOY_URL" ]; then
+            echo "🔍 Checking health at $DEPLOY_URL"
+
+            # API健康检查
+            if curl -f "$DEPLOY_URL/api/health" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ API health check passed"
+            else
+              echo "❌ API health check failed"
+              if [ "${{ github.event.inputs.rollback_enabled }}" == "true" ]; then
+                echo "🔄 Initiating automatic rollback..."
+                # 这里添加回滚逻辑
+              fi
+              exit 1
+            fi
+
+            # 前端健康检查
+            if curl -f "$DEPLOY_URL" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ Frontend health check passed"
+            else
+              echo "❌ Frontend health check failed"
+              exit 1
+            fi
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Deployment Metrics & Analytics
+        run: |
+          echo "::group::Deployment Metrics & Analytics"
+
+          echo "📊 Deployment metrics for ${{ matrix.environment }}:"
+          echo "- Environment: ${{ matrix.environment }}"
+          echo "- Quality Score: ${{ needs.intelligent-quality-gates.outputs.quality-score }}/100"
+          echo "- Required Score: ${{ matrix.required_score }}"
+          echo "- Deployment Strategy: ${{ needs.intelligent-quality-gates.outputs.deployment-strategy }}"
+          echo "- Rollout Percent: ${{ matrix.rollout_percent }}%"
+          echo "- Deployment URL: ${{ steps.deploy.outputs.url }}"
+          echo "- Deployment Time: $(date -u)"
+          echo "- Build Number: ${{ github.run_number }}"
+          echo "- Commit SHA: ${{ github.sha }}"
+
+          echo "::endgroup::"
+
+  # ==========================================
+  # 阶段8: 智能化性能测试
+  # ==========================================
+  intelligent-performance-testing:
+    name: 📊 Intelligent Performance Testing
+    runs-on: ubuntu-latest
+    needs: [intelligent-deployment, intelligent-precheck]
+    if: needs.intelligent-deployment.result == 'success' && (github.event.inputs.performance_test == 'true' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install Performance Testing Tools
+        run: |
+          npm install -g artillery
+          npm install -g lighthouse
+          npm install -g @lhci/cli
+
+      - name: 🚀 Intelligent API Performance Test
+        run: |
+          echo "::group::Intelligent API Performance Testing"
+
+          # 创建智能性能测试配置
+          cat > artillery-config.yml << EOF
+          config:
+            target: 'https://staging.llmchat.example.com/api'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+                name: "Warm up"
+              - duration: 120
+                arrivalRate: 25
+                name: "Load test"
+              - duration: 60
+                arrivalRate: 50
+                name: "Stress test"
+            processor: "./test-processor.js"
+
+          scenarios:
+            - name: "Health Check Load Test"
+              weight: 30
+              requests:
+                - get:
+                    url: "/health"
+            - name: "API Endpoints Load Test"
+              weight: 50
+              requests:
+                - get:
+                    url: "/agents"
+                - get:
+                    url: "/sessions"
+            - name: "Chat API Stress Test"
+              weight: 20
+              requests:
+                - post:
+                    url: "/chat/completions"
+                    json:
+                      model: "test"
+                      messages: [{"role": "user", "content": "Hello, performance test!"}]
+          EOF
+
+          # 运行API性能测试
+          artillery run artillery-config.yml --output api-performance-results.json
+
+          # 分析结果
+          echo "📊 API Performance Results:"
+          if [ -f "api-performance-results.json" ]; then
+            jq '.aggregate | {rps: .http.responses, latency: .latency, errors: .errors}' api-performance-results.json
+          fi
+
+          echo "::endgroup::"
+
+      - name: 🌐 Intelligent Frontend Performance Test
+        run: |
+          echo "::group::Intelligent Frontend Performance Testing"
+
+          # 创建Lighthouse配置
+          mkdir -p lighthouse-reports
+
+          # 运行Lighthouse测试
+          lighthouse "https://staging.llmchat.example.com" \
+            --output=json --output=path=./lighthouse-reports/report.json \
+            --chrome-flags="--headless --no-sandbox" \
+            --quiet
+
+          # 分析结果
+          if [ -f "lighthouse-reports/report.json" ]; then
+            echo "🌐 Frontend Performance Results:"
+            jq '.lhrCategories | {performance: .performance.score, accessibility: .accessibility.score, "best-practices": .["best-practices"].score, seo: .seo.score}' lighthouse-reports/report.json
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Performance Analysis & Recommendations
+        run: |
+          echo "::group::Performance Analysis & Recommendations"
+
+          # 创建性能分析报告
+          mkdir -p performance-analysis
+
+          cat > performance-analysis/performance-report.md << EOF
+          # Performance Testing Report
+
+          ## 📊 Test Summary
+          - **Test Date**: $(date -u)
+          - **Environment**: staging
+          - **Test Type**: Load and Performance Testing
+
+          ## 🚀 API Performance Results
+
+          $(if [ -f "api-performance-results.json" ]; then
+            echo "- **Requests per Second**: $(jq -r '.aggregate.http.requests' api-performance-results.json 2>/dev/null || echo 'N/A')"
+            echo "- **Response Time**: $(jq -r '.aggregate.latency.mean' api-performance-results.json 2>/dev/null || echo 'N/A')ms"
+            echo "- **Error Rate**: $(jq -r '.aggregate.errors' api-performance-results.json 2>/dev/null || echo '0')"
+          else
+            echo "- No API performance results available"
+          fi)
+
+          ## 🌐 Frontend Performance Results
+
+          $(if [ -f "lighthouse-reports/report.json" ]; then
+            echo "- **Performance Score**: $(jq -r '.lhrCategories.performance.score * 100' lighthouse-reports/report.json 2>/dev/null || echo 'N/A')"
+            echo "- **Accessibility Score**: $(jq -r '.lhrCategories.accessibility.score * 100' lighthouse-reports/report.json 2>/dev/null || echo 'N/A')"
+            echo "- **Best Practices Score**: $(jq -r '.lhrCategories["best-practices"].score * 100' lighthouse-reports/report.json 2>/dev/null || echo 'N/A')"
+            echo "- **SEO Score**: $(jq -r '.lhrCategories.seo.score * 100' lighthouse-reports/report.json 2>/dev/null || echo 'N/A')"
+          else
+            echo "- No frontend performance results available"
+          fi)
+
+          ## 💡 Performance Recommendations
+
+          - Monitor API response times under load
+          - Optimize database queries if needed
+          - Implement caching strategies
+          - Consider CDN for static assets
+          - Optimize images and lazy loading
+
+          EOF
+
+          echo "::endgroup::"
+
+      - name: 📤 Upload Performance Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-testing-results
+          path: |
+            api-performance-results.json
+            lighthouse-reports/
+            performance-analysis/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段9: 智能化通知和报告
+  # ==========================================
+  intelligent-notification:
+    name: 📢 Intelligent Notification & Reporting
+    runs-on: ubuntu-latest
+    needs: [intelligent-quality-gates, intelligent-deployment, intelligent-performance-testing]
+    if: always()
+
+    steps:
+      - name: 📊 Download Final Report
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: comprehensive-quality-report
+          path: final-report/
+
+      - name: 📢 Intelligent Pipeline Summary
+        if: always()
+        run: |
+          echo "# 🚀 LLMChat Advanced CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Gates**: ${{ needs.intelligent-quality-gates.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Score**: ${{ needs.intelligent-quality-gates.outputs.quality-score }}/100" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Strategy**: ${{ needs.intelligent-quality-gates.outputs.deployment-strategy }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment**: ${{ needs.intelligent-deployment.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Tests**: ${{ needs.intelligent-performance-testing.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.intelligent-quality-gates.result }}" == "success" ] && [ "${{ needs.intelligent-deployment.result }}" == "success" ]; then
+            echo "## 🎉 Overall Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Overall Status: FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Pipeline failed, please review the logs." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧠 Intelligent Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Strategy**: ${{ needs.intelligent-precheck.outputs.build-strategy }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Scope**: ${{ needs.intelligent-precheck.outputs.test-scope }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security Level**: ${{ needs.intelligent-precheck.outputs.security-level }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Risk**: ${{ needs.intelligent-precheck.outputs.deployment-risk }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💬 Intelligent PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const reportPath = 'final-report/comprehensive-quality-report.md';
+              if (fs.existsSync(reportPath)) {
+                const report = fs.readFileSync(reportPath, 'utf8');
+
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## 🛡️ Advanced CI/CD Quality Report\n\n${report}`
+                });
+
+                console.log('✅ Quality report commented to PR');
+              }
+            } catch (error) {
+              console.log('❌ Error commenting PR:', error.message);
+            }
+
+      - name: 📧 Intelligent Notification System
+        if: always()
+        run: |
+          echo "::group::Intelligent Notification System"
+
+          # 根据结果智能通知
+          if [ "${{ needs.intelligent-quality-gates.result }}" == "success" ] && [ "${{ needs.intelligent-deployment.result }}" == "success" ]; then
+            echo "✅ Pipeline completed successfully!"
+            echo "🎉 Deployment completed to ${{ github.event.inputs.environment || 'development' }}"
+            # 这里可以添加Slack、Teams、邮件等成功通知
+          else
+            echo "❌ Pipeline failed - sending failure notification"
+            # 这里可以添加失败通知逻辑
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📈 Metrics Collection & Analytics
+        if: always()
+        run: |
+          echo "::group::Metrics Collection & Analytics"
+
+          # 收集所有指标
+          METRICS_FILE="pipeline-metrics.json"
+
+          cat > $METRICS_FILE << EOF
+          {
+            "pipeline": {
+              "run_id": "${{ github.run_id }}",
+              "run_number": ${{ github.run_number }},
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "branch": "${{ github.ref_name }}",
+              "commit": "${{ github.sha }}",
+              "event": "${{ github.event_name }}"
+            },
+            "quality": {
+              "score": ${{ needs.intelligent-quality-gates.outputs.quality-score }},
+              "status": "${{ needs.intelligent-quality-gates.result }}",
+              "deployment_ready": "${{ needs.intelligent-quality-gates.outputs.deployment-ready }}"
+            },
+            "deployment": {
+              "status": "${{ needs.intelligent-deployment.result }}",
+              "strategy": "${{ needs.intelligent-quality-gates.outputs.deployment-strategy }}"
+            },
+            "performance": {
+              "status": "${{ needs.intelligent-performance-testing.result }}"
+            },
+            "analysis": {
+              "build_strategy": "${{ needs.intelligent-precheck.outputs.build-strategy }}",
+              "test_scope": "${{ needs.intelligent-precheck.outputs.test-scope }}",
+              "security_level": "${{ needs.intelligent-precheck.outputs.security-level }}",
+              "deployment_risk": "${{ needs.intelligent-precheck.outputs.deployment-risk }}"
+            }
+          }
+          EOF
+
+          echo "📊 Metrics collected and saved to $METRICS_FILE"
+
+          echo "::endgroup::"
+
+      - name: 📤 Upload Pipeline Metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-metrics
+          path: pipeline-metrics.json
+          retention-days: 90

@@ -19,47 +19,63 @@ export type {
   ShapeVariant,
 
   // 组件类型
+  CardComponent,
+  SelectComponent,
+
+  // 组件Props
+  ButtonProps,
+  InputProps,
+  ModalProps,
   CardProps,
   CardHeaderProps,
   CardTitleProps,
   CardContentProps,
   CardFooterProps,
-  CardComponent,
-
-  ButtonProps,
-  InputProps,
-  ModalProps,
+  CardDescriptionProps,
 
   SelectProps,
   SelectTriggerProps,
   SelectValueProps,
   SelectContentProps,
   SelectItemProps,
-  SelectComponent,
 
   TabsProps,
   TabsListProps,
   TabsTriggerProps,
   TabsContentProps,
-  TabsComponent,
 
   ToastOptions,
   ToastItem,
   ToastState,
   ToastType,
+  ToastPosition,
 
   // 主题类型
   ThemeMode,
-  ColorScheme,
-  ThemeConfig,
+  ThemeContextType,
+  ThemeProviderProps,
+
+  // 虚拟滚动类型
+  VirtualItem,
+  VirtualScrollItem,
+  VirtualScrollRef,
+  VirtualScrollResult,
+  VirtualScrollOptions,
+  VirtualScrollProps,
+
+  // 事件增强器类型
+  EventEnhancerProps,
+  InputEventEnhancerProps,
+  FormEventEnhancerProps,
+
+  // 组件工厂类型
+  ComponentFactoryOptions,
+  ComponentFactoryResult,
+  ComponentFactory,
 
   // 工具类型
-  RequiredFields,
-  ConditionalRequired,
   SubComponentProps,
-  MergeProps,
-  PolymorphicRef,
-  ComponentRef,
+  ComponentWithSubComponents,
   ForwardRefComponent,
 } from './ui.types';
 
@@ -69,65 +85,27 @@ export type {
 
 // Card组件系列
 export { default as Card } from './Card';
-export type {
-  CardProps as ICardProps,
-  CardHeaderProps as ICardHeaderProps,
-  CardTitleProps as ICardTitleProps,
-  CardContentProps as ICardContentProps,
-  CardFooterProps as ICardFooterProps,
-} from './Card';
 
 // Button组件
 export { default as Button } from './Button';
-export type { ButtonProps as IButtonProps } from './Button';
 
 // IconButton组件
 export { IconButton } from './IconButton';
-export type { IconButtonProps } from './IconButton';
 
 // Input组件
 export { default as Input } from './Input';
-export type { InputProps as IInputProps } from './Input';
 
 // Modal组件
 export { default as Modal } from './Modal';
-export type {
-  ModalProps as IModalProps,
-  ModalHeaderProps as IModalHeaderProps,
-  ModalTitleProps as IModalTitleProps,
-  ModalContentProps as IModalContentProps,
-  ModalFooterProps as IModalFooterProps,
-} from './Modal';
 
 // Dropdown组件
 export { default as Dropdown } from './Dropdown';
-export type {
-  DropdownProps as IDropdownProps,
-  DropdownTriggerProps as IDropdownTriggerProps,
-  DropdownContentProps as IDropdownContentProps,
-  DropdownItemProps as IDropdownItemProps,
-  DropdownSeparatorProps as IDropdownSeparatorProps,
-  DropdownGroupProps as IDropdownGroupProps,
-} from './Dropdown';
 
 // Select组件
 export { default as Select } from './Select';
-export type {
-  SelectProps as ISelectProps,
-  SelectTriggerProps as ISelectTriggerProps,
-  SelectValueProps as ISelectValueProps,
-  SelectContentProps as ISelectContentProps,
-  SelectItemProps as ISelectItemProps,
-} from './Select';
 
 // Tabs组件
 export { default as Tabs } from './Tabs';
-export type {
-  TabsProps as ITabsProps,
-  TabsListProps as ITabsListProps,
-  TabsTriggerProps as ITabsTriggerProps,
-  TabsContentProps as ITabsContentProps,
-} from './Tabs';
 
 // Toast组件
 export {
@@ -142,45 +120,22 @@ export {
   useToast,
   useToastStore,
 } from './Toast';
-export type {
-  ToastProps as IToastProps,
-  ToastProviderProps as IToastProviderProps,
-  ToastOptions as IToastOptions,
-  ToastItem as IToastItem,
-  ToastState as IToastState,
-  ToastType as IToastType,
-} from './Toast';
 
 // Dialog组件
 export { default as Dialog } from './Dialog';
-export type { DialogProps as IDialogProps } from './Dialog';
 
 // Switch组件
 export { default as Switch } from './Switch';
-export type { SwitchProps as ISwitchProps } from './Switch';
 
 // Tooltip组件
 export { Tooltip, HelpIcon } from './Tooltip';
-export type {
-  TooltipProps as ITooltipProps,
-  HelpIconProps as IHelpIconProps,
-} from './Tooltip';
 
 // 其他基础组件
 export { default as Label } from './Label';
-export type { LabelProps as ILabelProps } from './Label';
-
 export { default as Badge } from './Badge';
-export type { BadgeProps as IBadgeProps } from './Badge';
-
 export { default as Avatar } from './Avatar';
-export type { AvatarProps as IAvatarProps } from './Avatar';
-
 export { default as Alert } from './Alert';
-export type { AlertProps as IAlertProps } from './Alert';
-
-export { default as ConfirmDialog } from './ConfirmDialog';
-export type { ConfirmDialogProps as IConfirmDialogProps } from './ConfirmDialog';
+export { ConfirmDialog } from './ConfirmDialog';
 
 // =============================================================================
 // 重新导出常用组件（带默认前缀）
@@ -228,7 +183,7 @@ export * from '../utils/type-guards';
 export * from '../utils/performanceOptimizer';
 
 // 主题相关工具
-export * from '../utils/typeSafety';
+// export * from '../utils/typeSafety'; // 文件不存在，暂时注释
 
 // =============================================================================
 // 样式系统导出

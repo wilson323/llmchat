@@ -116,7 +116,12 @@
       "Bash(ts-node:*)",
       "Bash(python3:*)",
       "Bash(killall:*)",
-      "Bash(specify init:*)"
+      "Bash(specify init:*)",
+      "mcp__serena__think_about_collected_information",
+      "Bash(NODE_ENV=production npx eslint:*)",
+      "Read(//tmp/**)",
+      "Bash(tee:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

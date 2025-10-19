@@ -344,7 +344,7 @@ const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
           {toast.action && (
             <button
               onClick={() => {
-                toast.action.onClick();
+                toast.action?.onClick();
                 handleClose();
               }}
               className={cn(
@@ -455,13 +455,6 @@ export const toastInfo = (options: Omit<ToastOptions, 'type'> | string) => {
 // Toaster组件导出 - 提供统一导出接口
 export const Toaster = ToastProvider;
 
-// 默认导出
+// 导出（所有类型已在定义处使用 export 关键字导出）
 export default ToastProvider;
-export {
-  ToastComponent,
-  useToast,
-  useToastStore,
-  Toaster,
-  type ToastProps,
-  type ToastProviderProps,
-};
+// 已在定义处 export，无需重复导出

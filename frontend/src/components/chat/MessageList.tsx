@@ -1,4 +1,4 @@
-;
+
 import React, { useEffect, useRef, memo, useMemo } from 'react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
@@ -8,6 +8,7 @@ import { VirtualizedMessageList } from './VirtualizedMessageList';
 // 使用拆分的store架构
 import messageStore from '@/store/messageStore';
 import agentStore from '@/store/agentStore';
+import type { MessageState, AgentState } from '@/store/types';
 import { useI18n } from '@/i18n';
 import {
   usePerformanceMonitor,
@@ -51,8 +52,8 @@ export const MessageList: React.FC<MessageListProps> = memo(
     }
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const lastMessageRef = useRef<HTMLDivElement | null>(null);
-    const currentAgent = agentStore((state: any) => state.currentAgent);
-    const streamingStatus = messageStore((state: any) => state.streamingStatus);
+    const currentAgent = agentStore((state: AgentState) => state.currentAgent);
+    const streamingStatus = messageStore((state: MessageState) => state.streamingStatus);
     const { t } = useI18n();
 
     // 自动滚动到底部
@@ -94,7 +95,7 @@ export const MessageList: React.FC<MessageListProps> = memo(
                     {...(onInteractiveSelect && { onInteractiveSelect })}
                     {...(onInteractiveFormSubmit && { onInteractiveFormSubmit })}
                     {...(message.id && onRetryMessage && {
-                      onRetry: () => onRetryMessage(message.id!)
+                      onRetry: () => onRetryMessage(message.id!),
                     })}
                   />
                   {/* 最后一个消息的占位元素 */}

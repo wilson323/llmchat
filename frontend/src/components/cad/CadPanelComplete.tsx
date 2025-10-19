@@ -10,23 +10,8 @@
  * - 帮助系统
  */
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {ChevronDown, ChevronRight, Download, Eye, EyeOff, FileText, HelpCircle, History, Info, Layers, Redo2, Search, Trash2, Undo2, X} from 'lucide-react';
+
+import { ChevronDown, ChevronRight, Download, Eye, EyeOff, FileText, HelpCircle, History, Info, Layers, Redo2, Search, Trash2, Undo2, X } from 'lucide-react';
 import React, { useState, useCallback } from 'react';
 import CadUploadEnhanced from './CadUploadEnhanced';
 import CadViewerEnhanced from './CadViewerEnhanced';

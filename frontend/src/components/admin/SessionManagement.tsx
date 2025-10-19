@@ -1,47 +1,12 @@
 'use client';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Archive, ArchiveRestore, BarChart3, CheckCircle, CheckSquare, ChevronDown, ChevronUp, Clock, Download, Eye, Filter, MessageSquare, RefreshCw, Search, Square, Tag, Trash2, Users, X } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useResponsive } from '@/hooks/useResponsive';
 import { motion, AnimatePresence } from 'framer-motion';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/i18n';
@@ -124,9 +89,15 @@ export function SessionManagement({ className }: SessionManagementProps) {
     setStatsLoading(true);
     try {
       const statsParams: { dateFrom?: string; dateTo?: string; agentId?: string } = {};
-      if (filters.dateFrom) statsParams.dateFrom = filters.dateFrom;
-      if (filters.dateTo) statsParams.dateTo = filters.dateTo;
-      if (filters.agentId) statsParams.agentId = filters.agentId;
+      if (filters.dateFrom) {
+        statsParams.dateFrom = filters.dateFrom;
+      }
+      if (filters.dateTo) {
+        statsParams.dateTo = filters.dateTo;
+      }
+      if (filters.agentId) {
+        statsParams.agentId = filters.agentId;
+      }
       const statsData = await getSessionStats(statsParams);
       setStats(statsData);
     } catch (error) {
@@ -430,7 +401,7 @@ export function SessionManagement({ className }: SessionManagementProps) {
               <Input
                 placeholder={t('搜索会话')}
                 value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(value)}
                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
                 className="flex-1 pl-10"
               />

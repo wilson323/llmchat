@@ -67,12 +67,12 @@ class PerformanceBenchmark {
       iterations?: number;
       warmupIterations?: number;
       memoryTracking?: boolean;
-    } = {}
+    } = {},
   ): Promise<BenchmarkResult> {
     const {
       iterations = 100,
       warmupIterations = 10,
-      memoryTracking = true
+      memoryTracking = true,
     } = options;
 
     // Warmup phase
@@ -97,7 +97,7 @@ class PerformanceBenchmark {
         memorySnapshots.push({
           usedJSHeapSize: memory.usedJSHeapSize,
           totalJSHeapSize: memory.totalJSHeapSize,
-          jsHeapSizeLimit: memory.jsHeapSizeLimit
+          jsHeapSizeLimit: memory.jsHeapSizeLimit,
         });
       }
 
@@ -121,7 +121,7 @@ class PerformanceBenchmark {
     const memoryUsage: MemoryInfo | undefined = memoryTracking && memorySnapshots.length > 0 ? {
       usedJSHeapSize: memorySnapshots.reduce((sum, mem) => sum + mem.usedJSHeapSize, 0) / memorySnapshots.length,
       totalJSHeapSize: memorySnapshots.reduce((sum, mem) => sum + mem.totalJSHeapSize, 0) / memorySnapshots.length,
-      jsHeapSizeLimit: memorySnapshots[0]!.jsHeapSizeLimit
+      jsHeapSizeLimit: memorySnapshots[0]!.jsHeapSizeLimit,
     } : undefined;
 
     const result: BenchmarkResult = {
@@ -133,7 +133,7 @@ class PerformanceBenchmark {
       maxTime,
       standardDeviation,
       ...(memoryUsage && { memoryUsage }),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.results.push(result);
@@ -149,12 +149,12 @@ class PerformanceBenchmark {
     options: {
       iterations?: number;
       warmupIterations?: number;
-    } = {}
+    } = {},
   ): Promise<BenchmarkResult> {
     return this.runBenchmark(
       `Component: ${componentName}`,
       renderFn,
-      options
+      options,
     );
   }
 
@@ -167,12 +167,12 @@ class PerformanceBenchmark {
     options: {
       iterations?: number;
       warmupIterations?: number;
-    } = {}
+    } = {},
   ): Promise<BenchmarkResult> {
     return this.runBenchmark(
       `Interaction: ${interactionName}`,
       interactionFn,
-      options
+      options,
     );
   }
 
@@ -187,20 +187,20 @@ class PerformanceBenchmark {
       { name: 'react-vendor.js', size: 131072, type: 'js', modules: ['react', 'react-dom'] },
       { name: 'ui-vendor.js', size: 65536, type: 'js', modules: ['lucide-react', 'framer-motion'] },
       { name: 'three-vendor.js', size: 524288, type: 'js', modules: ['three', '@react-three/fiber'] },
-      { name: 'main.css', size: 32768, type: 'css', modules: ['tailwind'] }
+      { name: 'main.css', size: 32768, type: 'css', modules: ['tailwind'] },
     ];
 
     const mockDependencies: DependencyInfo[] = [
       { name: 'react', version: '18.2.0', size: 45056, used: true },
       { name: 'three', version: '0.155.0', size: 524288, used: true },
-      { name: 'echarts', version: '5.4.3', size: 196608, used: false }
+      { name: 'echarts', version: '5.4.3', size: 196608, used: false },
     ];
 
     return {
       totalSize: mockChunks.reduce((sum, chunk) => sum + chunk.size, 0),
       chunks: mockChunks,
       dependencies: mockDependencies,
-      unusedAssets: ['legacy-polyfills.js', 'unused-component.js']
+      unusedAssets: ['legacy-polyfills.js', 'unused-component.js'],
     };
   }
 
@@ -216,7 +216,7 @@ class PerformanceBenchmark {
           measurements.push({
             usedJSHeapSize: memory.usedJSHeapSize,
             totalJSHeapSize: memory.totalJSHeapSize,
-            jsHeapSizeLimit: memory.jsHeapSizeLimit
+            jsHeapSizeLimit: memory.jsHeapSizeLimit,
           });
         }
       }, 100);
@@ -244,7 +244,7 @@ class PerformanceBenchmark {
         FID: 0,
         CLS: 0,
         FCP: 0,
-        TTFB: 0
+        TTFB: 0,
       };
 
       const observer = new PerformanceObserver((list) => {
@@ -311,10 +311,10 @@ class PerformanceBenchmark {
           totalBenchmarks: 0,
           averageRenderTime: 0,
           worstPerforming: 'N/A',
-          bestPerforming: 'N/A'
+          bestPerforming: 'N/A',
         },
         benchmarks: [],
-        recommendations: ['Run some benchmarks to see performance analysis']
+        recommendations: ['Run some benchmarks to see performance analysis'],
       };
     }
 
@@ -339,7 +339,7 @@ class PerformanceBenchmark {
     }
 
     const memoryIntensiveBenchmarks = benchmarks.filter(b =>
-      b.memoryUsage && b.memoryUsage.usedJSHeapSize > 50 * 1024 * 1024
+      b.memoryUsage && b.memoryUsage.usedJSHeapSize > 50 * 1024 * 1024,
     );
     if (memoryIntensiveBenchmarks.length > 0) {
       recommendations.push('Some benchmarks use excessive memory (>50MB)');
@@ -354,10 +354,10 @@ class PerformanceBenchmark {
         totalBenchmarks,
         averageRenderTime,
         worstPerforming: worstPerforming.name,
-        bestPerforming: bestPerforming.name
+        bestPerforming: bestPerforming.name,
       },
       benchmarks,
-      recommendations
+      recommendations,
     };
   }
 
@@ -375,7 +375,7 @@ class PerformanceBenchmark {
     return JSON.stringify({
       results: this.results,
       report: this.generateReport(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }, null, 2);
   }
 
@@ -403,7 +403,7 @@ export function usePerformanceBenchmark() {
   const runComponentBenchmark = useCallback(async (
     componentName: string,
     renderFn: () => void,
-    options?: { iterations?: number; warmupIterations?: number }
+    options?: { iterations?: number; warmupIterations?: number },
   ) => {
     return benchmark.current.benchmarkComponent(componentName, renderFn, options);
   }, []);
@@ -411,7 +411,7 @@ export function usePerformanceBenchmark() {
   const runInteractionBenchmark = useCallback(async (
     interactionName: string,
     interactionFn: () => void,
-    options?: { iterations?: number; warmupIterations?: number }
+    options?: { iterations?: number; warmupIterations?: number },
   ) => {
     return benchmark.current.benchmarkInteraction(interactionName, interactionFn, options);
   }, []);
@@ -448,7 +448,7 @@ export function usePerformanceBenchmark() {
     analyzeCoreWebVitals,
     generateReport,
     exportResults,
-    clearResults
+    clearResults,
   };
 }
 
@@ -482,7 +482,7 @@ export class ProductionPerformanceMonitor {
               this.metrics.push({
                 type: 'long-task',
                 duration: entry.duration,
-                timestamp: Date.now()
+                timestamp: Date.now(),
               });
             }
           });
@@ -501,7 +501,7 @@ export class ProductionPerformanceMonitor {
       name,
       value,
       timestamp: Date.now(),
-      metadata
+      metadata,
     });
 
     // Keep only last 1000 metrics

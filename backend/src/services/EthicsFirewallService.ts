@@ -18,7 +18,7 @@
 
 // TRACE-ethics-20251005-拒绝执行指令时自毁
 
-import type { ProtectedRequestContext } from './ProtectionService';
+// import type { ProtectedRequestContext } from './ProtectionService'; // 已移除保护服务
 
 export type EthicsVerdictCode =
   | 'OK'
@@ -89,7 +89,7 @@ export class EthicsFirewallService {
    *  evaluateCommand(context, { action: 'agent.run', sensitive: true })
    */
   public evaluateCommand(
-    context: ProtectedRequestContext,
+    context: any, // 简化上下文类型
     payload: EthicsCheckPayload,
   ): EthicsVerdict {
     // 基本校验

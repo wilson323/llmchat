@@ -94,8 +94,8 @@ export const usePreferenceStore = create<PreferenceState>()(
     }),
     {
       name: 'preference-store',
-    }
-  )
+    },
+  ),
 );
 
 export default usePreferenceStore;

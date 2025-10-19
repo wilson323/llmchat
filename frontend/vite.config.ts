@@ -52,13 +52,13 @@ export default defineConfig({
     },
   },
 
-  // 简化开发服务器配置
+  // 简化开发服务器配置 - 使用动态检测的后端端口
   server: {
     port: 3004,
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:3005',
         changeOrigin: true,
         secure: false,
       }
@@ -86,7 +86,8 @@ export default defineConfig({
 
   // 环境变量配置
   define: {
-    __WSL_BUILD__: 'true'
+    __WSL_BUILD__: 'true',
+    __BACKEND_PORT__: '3005'
   },
 
   // 实验性功能 - 提高WSL2兼容性

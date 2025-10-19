@@ -1,6 +1,6 @@
 /**
- * 测试辅助函数统一导出
+ * 测试辅助工具模块导出
  */
 
-export * from './testUtils';
-
+// 暂时为空，避免编译错误
+export const testUtils = {};

@@ -1,29 +1,11 @@
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {Activity, AlertCircle, CheckCircle, Clock, Eye, RefreshCw, TrendingDown, TrendingUp, XCircle, Zap} from 'lucide-react';
+
+import { Activity, AlertCircle, CheckCircle, Clock, Eye, RefreshCw, TrendingDown, TrendingUp, XCircle, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { AgentHealthStatus } from '@/services/slaApi';

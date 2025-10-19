@@ -1,0 +1,1023 @@
+name: 📊 Performance Monitoring & Auto-Optimization
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # 每小时运行性能监控
+    - cron: '0 * * * *'
+    # 每天凌晨2点运行深度性能分析
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      monitoring_type:
+        description: 'Type of monitoring'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - basic
+          - comprehensive
+          - deep-analysis
+          - regression-test
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      generate_optimization:
+        description: 'Generate optimization recommendations'
+        required: false
+        default: true
+        type: boolean
+      alert_threshold:
+        description: 'Performance alert threshold (ms)'
+        required: false
+        default: '2000'
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+
+jobs:
+  # ==========================================
+  # 智能化性能监控设置
+  # ==========================================
+  performance-monitoring-setup:
+    name: 🔧 Performance Monitoring Setup
+    runs-on: ubuntu-latest
+    outputs:
+      monitoring-scope: ${{ steps.setup.outputs.monitoring-scope }}
+      test-environment: ${{ steps.setup.outputs.test-environment }}
+      monitoring-targets: ${{ steps.setup.outputs.monitoring-targets }}
+      optimization-enabled: ${{ steps.setup.outputs.optimization-enabled }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Performance Monitoring Configuration
+        id: setup
+        run: |
+          echo "::group::Performance Monitoring Configuration"
+
+          # 确定监控范围
+          MONITORING_TYPE="${{ github.event.inputs.monitoring_type || 'comprehensive' }}"
+          ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+
+          case $MONITORING_TYPE in
+            "basic")
+              MONITORING_SCOPE="basic"
+              MONITORING_TARGETS='["frontend", "backend"]'
+              ;;
+            "comprehensive")
+              MONITORING_SCOPE="comprehensive"
+              MONITORING_TARGETS='["frontend", "backend", "database", "network"]'
+              ;;
+            "deep-analysis")
+              MONITORING_SCOPE="deep"
+              MONITORING_TARGETS='["frontend", "backend", "database", "network", "memory", "cpu"]'
+              ;;
+            "regression-test")
+              MONITORING_SCOPE="regression"
+              MONITORING_TARGETS='["frontend", "backend"]'
+              ;;
+          esac
+
+          # 设置输出
+          echo "monitoring-scope=$MONITORING_SCOPE" >> $GITHUB_OUTPUT
+          echo "test-environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "monitoring-targets=$MONITORING_TARGETS" >> $GITHUB_OUTPUT
+          echo "optimization-enabled=${{ github.event.inputs.generate_optimization || 'true' }}" >> $GITHUB_OUTPUT
+
+          echo "✅ Performance monitoring configured"
+          echo "- Scope: $MONITORING_SCOPE"
+          echo "- Environment: $ENVIRONMENT"
+          echo "- Targets: $MONITORING_TARGETS"
+          echo "- Optimization: ${{ github.event.inputs.generate_optimization || 'true' }}"
+          echo "::endgroup::"
+
+  # ==========================================
+  # 前端性能监控
+  # ==========================================
+  frontend-performance-monitoring:
+    name: 🌐 Frontend Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: performance-monitoring-setup
+    if: contains(needs.performance-monitoring-setup.outputs.monitoring-targets, 'frontend')
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build Frontend
+        run: pnpm run frontend:build
+
+      - name: 🌐 Lighthouse Performance Audit
+        id: lighthouse
+        run: |
+          echo "::group::Lighthouse Performance Audit"
+
+          # 安装 Lighthouse
+          npm install -g @lhci/cli@0.12.x
+
+          # 创建 Lighthouse 配置
+          mkdir -p lighthouse-reports
+
+          # 运行 Lighthouse 审计
+          lhci autorun \
+            --config=.lighthouserc.js \
+            --upload.target=temporary-public-storage \
+            --collect.url=http://localhost:3000 \
+            --collect.numberOfRuns=3 || echo "Lighthouse audit completed with warnings"
+
+          # 分析结果
+          if [ -f "lighthouse-reports/lhr.json" ]; then
+            # 提取关键指标
+            PERFORMANCE_SCORE=$(cat lighthouse-reports/lhr.json | jq -r '.lhrCategories.performance.score * 100' 2>/dev/null || echo "0")
+            FCP=$(cat lighthouse-reports/lhr.json | jq -r '.audits["first-contentful-paint"].numericValue' 2>/dev/null || echo "0")
+            LCP=$(cat lighthouse-reports/lhr.json | jq -r '.audits["largest-contentful-paint"].numericValue' 2>/dev/null || echo "0")
+            TTI=$(cat lighthouse-reports/lhr.json | jq -r '.audits["interactive"].numericValue' 2>/dev/null || echo "0")
+            CLS=$(cat lighthouse-reports/lhr.json | jq -r '.audits["cumulative-layout-shift"].numericValue' 2>/dev/null || echo "0")
+            FID=$(cat lighthouse-reports/lhr.json | jq -r '.audits["max-potential-fid"].numericValue' 2>/dev/null || echo "0")
+
+            echo "performance-score=$PERFORMANCE_SCORE" >> $GITHUB_OUTPUT
+            echo "fcp=$FCP" >> $GITHUB_OUTPUT
+            echo "lcp=$LCP" >> $GITHUB_OUTPUT
+            echo "tti=$TTI" >> $GITHUB_OUTPUT
+            echo "cls=$CLS" >> $GITHUB_OUTPUT
+            echo "fid=$FID" >> $GITHUB_OUTPUT
+
+            echo "📊 Frontend Performance Metrics:"
+            echo "- Performance Score: $PERFORMANCE_SCORE"
+            echo "- First Contentful Paint: ${FCP}ms"
+            echo "- Largest Contentful Paint: ${LCP}ms"
+            echo "- Time to Interactive: ${TTI}ms"
+            echo "- Cumulative Layout Shift: $CLS"
+            echo "- First Input Delay: ${FID}ms"
+          else
+            echo "⚠️ Lighthouse report not found"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Bundle Size Analysis
+        id: bundle-analysis
+        run: |
+          echo "::group::Bundle Size Analysis"
+
+          if [ -d "frontend/dist" ]; then
+            # 分析前端构建产物大小
+            FRONTEND_SIZE=$(du -sh frontend/dist | cut -f1)
+            JS_SIZE=$(du -sh frontend/dist/**/*.js 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+            CSS_SIZE=$(du -sh frontend/dist/**/*.css 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+
+            # 分析主要文件
+            MAIN_JS_SIZE=$(du -sh frontend/dist/**/*.js 2>/dev/null | sort -hr | head -1 | cut -f1 || echo "0")
+            MAIN_CSS_SIZE=$(du -sh frontend/dist/**/*.css 2>/dev/null | sort -hr | head -1 | cut -f1 || echo "0")
+
+            echo "frontend-size=$FRONTEND_SIZE" >> $GITHUB_OUTPUT
+            echo "js-size=$JS_SIZE" >> $GITHUB_OUTPUT
+            echo "css-size=$CSS_SIZE" >> $GITHUB_OUTPUT
+            echo "main-js-size=$MAIN_JS_SIZE" >> $GITHUB_OUTPUT
+            echo "main-css-size=$MAIN_CSS_SIZE" >> $GITHUB_OUTPUT
+
+            echo "📦 Bundle Size Analysis:"
+            echo "- Total Frontend Size: $FRONTEND_SIZE"
+            echo "- Total JS Size: $JS_SIZE"
+            echo "- Total CSS Size: $CSS_SIZE"
+            echo "- Largest JS File: $MAIN_JS_SIZE"
+            echo "- Largest CSS File: $MAIN_CSS_SIZE"
+
+            # 生成详细报告
+            find frontend/dist -type f -exec ls -lh {} \; | sort -k5 -hr > bundle-analysis.txt
+          else
+            echo "❌ Frontend dist directory not found"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 🚀 WebPageTest Performance Test
+        if: needs.performance-monitoring-setup.outputs.monitoring-scope == 'deep'
+        run: |
+          echo "::group::WebPageTest Performance Test"
+
+          # 这里可以集成 WebPageTest API
+          echo "📝 WebPageTest integration would go here"
+          echo "⚠️ WebPageTest not configured in this example"
+
+          echo "::endgroup::"
+
+      - name: 📊 Generate Frontend Performance Report
+        run: |
+          echo "::group::Generating Frontend Performance Report"
+
+          mkdir -p frontend-performance-reports
+
+          cat > frontend-performance-reports/performance-summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "performance_score": ${{ steps.lighthouse.outputs.performance-score || '0' }},
+            "metrics": {
+              "fcp": ${{ steps.lighthouse.outputs.fcp || '0' }},
+              "lcp": ${{ steps.lighthouse.outputs.lcp || '0' }},
+              "tti": ${{ steps.lighthouse.outputs.tti || '0' }},
+              "cls": ${{ steps.lighthouse.outputs.cls || '0' }},
+              "fid": ${{ steps.lighthouse.outputs.fid || '0' }}
+            },
+            "bundle_analysis": {
+              "total_size": "${{ steps.bundle-analysis.outputs.frontend-size || '0' }}",
+              "js_size": "${{ steps.bundle-analysis.outputs.js-size || '0' }}",
+              "css_size": "${{ steps.bundle-analysis.outputs.css-size || '0' }}",
+              "main_js_size": "${{ steps.bundle-analysis.outputs.main-js-size || '0' }}",
+              "main_css_size": "${{ steps.bundle-analysis.outputs.main-css-size || '0' }}"
+            },
+            "environment": "${{ needs.performance-monitoring-setup.outputs.test-environment }}",
+            "monitoring_scope": "${{ needs.performance-monitoring-setup.outputs.monitoring-scope }}"
+          }
+          EOF
+
+          echo "✅ Frontend performance report generated"
+          echo "::endgroup::"
+
+      - name: 📤 Upload Frontend Performance Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-performance-reports
+          path: |
+            frontend-performance-reports/
+            lighthouse-reports/
+            bundle-analysis.txt
+          retention-days: 30
+
+  # ==========================================
+  # 后端性能监控
+  # ==========================================
+  backend-performance-monitoring:
+    name: ⚙️ Backend Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: performance-monitoring-setup
+    if: contains(needs.performance-monitoring-setup.outputs.monitoring-targets, 'backend')
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build Backend
+        run: pnpm run backend:build
+
+      - name: 🔧 Setup Test Environment
+        run: |
+          echo "::group::Setting Up Test Environment"
+
+          # 设置环境变量
+          echo "DATABASE_URL=postgresql://postgres:testpassword@localhost:5432/testdb" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "NODE_ENV=test" >> .env
+          echo "PORT=3001" >> .env
+
+          echo "✅ Test environment configured"
+          echo "::endgroup::"
+
+      - name: 🚀 Start Backend Server
+        id: backend-server
+        run: |
+          echo "::group::Starting Backend Server"
+
+          # 启动后端服务器
+          pnpm run backend:start &
+          BACKEND_PID=$!
+
+          # 等待服务器启动
+          sleep 10
+
+          # 检查服务器是否启动成功
+          for i in {1..10}; do
+            if curl -f http://localhost:3001/health; then
+              echo "✅ Backend server started successfully (PID: $BACKEND_PID)"
+              echo "backend-pid=$BACKEND_PID" >> $GITHUB_OUTPUT
+              break
+            else
+              echo "⏳ Waiting for backend server to start... ($i/10)"
+              sleep 5
+            fi
+          done
+
+          echo "::endgroup::"
+
+      - name: ⚡ API Performance Testing
+        id: api-performance
+        run: |
+          echo "::group::API Performance Testing"
+
+          # 安装性能测试工具
+          npm install -g artillery
+
+          # 创建 Artillery 配置
+          cat > artillery-config.yml << EOF
+          config:
+            target: 'http://localhost:3001'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+                name: "Warm up"
+              - duration: 120
+                arrivalRate: 25
+                name: "Load test"
+              - duration: 60
+                arrivalRate: 50
+                name: "Stress test"
+            processor: "./artillery-processor.js"
+
+          scenarios:
+            - name: "Health Check Load Test"
+              weight: 30
+              requests:
+                - get:
+                    url: "/health"
+            - name: "API Endpoints Load Test"
+              weight: 50
+              requests:
+                - get:
+                    url: "/api/agents"
+                - get:
+                    url: "/api/sessions"
+            - name: "Chat API Stress Test"
+              weight: 20
+              requests:
+                - post:
+                    url: "/api/chat/completions"
+                    json:
+                      model: "test"
+                      messages: [{"role": "user", "content": "Hello, performance test!"}]
+          EOF
+
+          # 运行性能测试
+          artillery run artillery-config.yml --output api-performance-results.json
+
+          # 分析结果
+          if [ -f "api-performance-results.json" ]; then
+            RPS=$(cat api-performance-results.json | jq -r '.aggregate.http.requests' 2>/dev/null || echo "0")
+            AVG_LATENCY=$(cat api-performance-results.json | jq -r '.aggregate.latency.mean' 2>/dev/null || echo "0")
+            P95_LATENCY=$(cat api-performance-results.json | jq -r '.aggregate.latency.p95' 2>/dev/null || echo "0")
+            P99_LATENCY=$(cat api-performance-results.json | jq -r '.aggregate.latency.p99' 2>/dev/null || echo "0")
+            ERROR_RATE=$(cat api-performance-results.json | jq -r '.aggregate.errors / .aggregate.http.requests * 100' 2>/dev/null || echo "0")
+
+            echo "rps=$RPS" >> $GITHUB_OUTPUT
+            echo "avg-latency=$AVG_LATENCY" >> $GITHUB_OUTPUT
+            echo "p95-latency=$P95_LATENCY" >> $GITHUB_OUTPUT
+            echo "p99-latency=$P99_LATENCY" >> $GITHUB_OUTPUT
+            echo "error-rate=$ERROR_RATE" >> $GITHUB_OUTPUT
+
+            echo "📊 API Performance Results:"
+            echo "- Requests per Second: $RPS"
+            echo "- Average Latency: ${AVG_LATENCY}ms"
+            echo "- P95 Latency: ${P95_LATENCY}ms"
+            echo "- P99 Latency: ${P99_LATENCY}ms"
+            echo "- Error Rate: ${ERROR_RATE}%"
+          else
+            echo "❌ API performance results not found"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Database Performance Testing
+        if: needs.performance-monitoring-setup.outputs.monitoring-scope == 'deep'
+        run: |
+          echo "::group::Database Performance Testing"
+
+          # 这里可以添加数据库性能测试
+          echo "📝 Database performance testing would go here"
+          echo "⚠️ Database performance testing not configured in this example"
+
+          echo "::endgroup::"
+
+      - name: 🔍 Memory and CPU Profiling
+        if: needs.performance-monitoring-setup.outputs.monitoring-scope == 'deep'
+        run: |
+          echo "::group::Memory and CPU Profiling"
+
+          # 获取后端进程内存使用情况
+          if [ -n "${{ steps.backend-server.outputs.backend-pid }}" ]; then
+            echo "📊 Memory usage for backend PID: ${{ steps.backend-server.outputs.backend-pid }}"
+            ps -p ${{ steps.backend-server.outputs.backend-pid }} -o pid,ppid,cmd,%mem,%cpu --no-headers || echo "Process not found"
+          fi
+
+          echo "📝 Memory and CPU profiling would go here"
+          echo "⚠️ Advanced profiling not configured in this example"
+
+          echo "::endgroup::"
+
+      - name: 📊 Generate Backend Performance Report
+        run: |
+          echo "::group::Generating Backend Performance Report"
+
+          mkdir -p backend-performance-reports
+
+          cat > backend-performance-reports/performance-summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "api_performance": {
+              "rps": ${{ steps.api-performance.outputs.rps || '0' }},
+              "avg_latency": ${{ steps.api-performance.outputs.avg-latency || '0' }},
+              "p95_latency": ${{ steps.api-performance.outputs.p95-latency || '0' }},
+              "p99_latency": ${{ steps.api-performance.outputs.p99-latency || '0' }},
+              "error_rate": ${{ steps.api-performance.outputs.error-rate || '0' }}
+            },
+            "environment": "${{ needs.performance-monitoring-setup.outputs.test-environment }}",
+            "monitoring_scope": "${{ needs.performance-monitoring-setup.outputs.monitoring-scope }}"
+          }
+          EOF
+
+          echo "✅ Backend performance report generated"
+          echo "::endgroup::"
+
+      - name: 🛑 Cleanup Backend Server
+        if: always()
+        run: |
+          if [ -n "${{ steps.backend-server.outputs.backend-pid }}" ]; then
+            echo "🛑 Stopping backend server..."
+            kill ${{ steps.backend-server.outputs.backend-pid }} || echo "Process already stopped"
+          fi
+
+      - name: 📤 Upload Backend Performance Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-performance-reports
+          path: |
+            backend-performance-reports/
+            api-performance-results.json
+          retention-days: 30
+
+  # ==========================================
+  # 智能化性能分析
+  # ==========================================
+  intelligent-performance-analysis:
+    name: 🧠 Intelligent Performance Analysis
+    runs-on: ubuntu-latest
+    needs: [performance-monitoring-setup, frontend-performance-monitoring, backend-performance-monitoring]
+    if: always() && (needs.frontend-performance-monitoring.result == 'success' || needs.backend-performance-monitoring.result == 'success')
+
+    outputs:
+      overall-performance-score: ${{ steps.analysis.outputs.overall-performance-score }}
+      performance-status: ${{ steps.analysis.outputs.performance-status }}
+      optimization-recommendations: ${{ steps.analysis.outputs.optimization-recommendations }}
+      performance-trends: ${{ steps.analysis.outputs.performance-trends }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📊 Download Performance Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-performance-reports"
+          merge-multiple: true
+          path: performance-data/
+
+      - name: 🧠 Intelligent Performance Analysis
+        id: analysis
+        run: |
+          echo "::group::Intelligent Performance Analysis"
+
+          # 初始化分析变量
+          OVERALL_SCORE=100
+          PERFORMANCE_STATUS="excellent"
+          RECOMMENDATIONS=""
+          TRENDS=""
+
+          # 分析前端性能
+          if [ -f "performance-data/frontend-performance-reports/performance-summary.json" ]; then
+            echo "🌐 Analyzing frontend performance..."
+
+            FRONTEND_SCORE=$(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.performance_score' 2>/dev/null || echo "0")
+
+            if [ "${FRONTEND_SCORE%.*}" -lt 90 ]; then
+              OVERALL_SCORE=$((OVERALL_SCORE - 20))
+              PERFORMANCE_STATUS="needs_improvement"
+              RECOMMENDATIONS="$RECOMMENDATIONS Optimize frontend performance (Lighthouse score: $FRONTEND_SCORE);"
+            fi
+
+            # 分析包大小
+            BUNDLE_SIZE=$(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.bundle_analysis.total_size' 2>/dev/null || echo "0")
+            echo "   Frontend bundle size: $BUNDLE_SIZE"
+          fi
+
+          # 分析后端性能
+          if [ -f "performance-data/backend-performance-reports/performance-summary.json" ]; then
+            echo "⚙️ Analyzing backend performance..."
+
+            AVG_LATENCY=$(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.avg_latency' 2>/dev/null || echo "0")
+            ERROR_RATE=$(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.error_rate' 2>/dev/null || echo "0")
+            RPS=$(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.rps' 2>/dev/null || echo "0")
+
+            # 评估API响应时间
+            if [ "${AVG_LATENCY%.*}" -gt 1000 ]; then
+              OVERALL_SCORE=$((OVERALL_SCORE - 25))
+              PERFORMANCE_STATUS="poor"
+              RECOMMENDATIONS="$RECOMMENDATIONS Optimize API response time (avg: ${AVG_LATENCY}ms);"
+            elif [ "${AVG_LATENCY%.*}" -gt 500 ]; then
+              OVERALL_SCORE=$((OVERALL_SCORE - 15))
+              PERFORMANCE_STATUS="needs_improvement"
+              RECOMMENDATIONS="$RECOMMENDATIONS Improve API performance (avg: ${AVG_LATENCY}ms);"
+            fi
+
+            # 评估错误率
+            if [ "${ERROR_RATE%.*}" -gt 5 ]; then
+              OVERALL_SCORE=$((OVERALL_SCORE - 20))
+              PERFORMANCE_STATUS="poor"
+              RECOMMENDATIONS="$RECOMMENDATIONS Fix API stability issues (error rate: ${ERROR_RATE}%);"
+            elif [ "${ERROR_RATE%.*}" -gt 1 ]; then
+              OVERALL_SCORE=$((OVERALL_SCORE - 10))
+              PERFORMANCE_STATUS="needs_improvement"
+              RECOMMENDATIONS="$RECOMMENDATIONS Reduce API error rate (error rate: ${ERROR_RATE}%);"
+            fi
+
+            echo "   API avg latency: ${AVG_LATENCY}ms"
+            echo "   API error rate: ${ERROR_RATE}%"
+            echo "   API RPS: $RPS"
+          fi
+
+          # 确保分数不低于0
+          if [ $OVERALL_SCORE -lt 0 ]; then
+            OVERALL_SCORE=0
+          fi
+
+          # 确定性能状态
+          if [ $OVERALL_SCORE -ge 90 ]; then
+            PERFORMANCE_STATUS="excellent"
+          elif [ $OVERALL_SCORE -ge 80 ]; then
+            PERFORMANCE_STATUS="good"
+          elif [ $OVERALL_SCORE -ge 70 ]; then
+            PERFORMANCE_STATUS="acceptable"
+          else
+            PERFORMANCE_STATUS="poor"
+          fi
+
+          # 生成智能建议
+          if [ -z "$RECOMMENDATIONS" ]; then
+            RECOMMENDATIONS="Performance is excellent! Continue current practices."
+          else
+            RECOMMENDATIONS="$RECOMMENDATIONS Consider performance monitoring and optimization."
+          fi
+
+          # 设置输出
+          echo "overall-performance-score=$OVERALL_SCORE" >> $GITHUB_OUTPUT
+          echo "performance-status=$PERFORMANCE_STATUS" >> $GITHUB_OUTPUT
+          echo "optimization-recommendations=$RECOMMENDATIONS" >> $GITHUB_OUTPUT
+          echo "performance-trends=stable" >> $GITHUB_OUTPUT
+
+          echo "📊 Performance Analysis Results:"
+          echo "- Overall Score: $OVERALL_SCORE/100"
+          echo "- Performance Status: $PERFORMANCE_STATUS"
+          echo "- Recommendations: $RECOMMENDATIONS"
+          echo "::endgroup::"
+
+      - name: 📊 Generate Comprehensive Performance Report
+        run: |
+          echo "::group::Generating Comprehensive Performance Report"
+
+          mkdir -p comprehensive-performance-reports
+
+          cat > comprehensive-performance-reports/performance-analysis.md << EOF
+          # LLMChat Intelligent Performance Analysis Report
+
+          ## 📊 Executive Summary
+          - **Overall Performance Score**: ${{ steps.analysis.outputs.overall-performance-score }}/100
+          - **Performance Status**: ${{ steps.analysis.outputs.performance-status }}
+          - **Monitoring Environment**: ${{ needs.performance-monitoring-setup.outputs.test-environment }}
+          - **Monitoring Scope**: ${{ needs.performance-monitoring-setup.outputs.monitoring-scope }}
+          - **Analysis Timestamp**: $(date -u)
+
+          ## 🌐 Frontend Performance Analysis
+
+          ### Lighthouse Metrics
+          $(if [ -f "performance-data/frontend-performance-reports/performance-summary.json" ]; then
+            echo "- **Performance Score**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.performance_score' || 'N/A')"
+            echo "- **First Contentful Paint**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.metrics.fcp' || 'N/A')ms"
+            echo "- **Largest Contentful Paint**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.metrics.lcp' || 'N/A')ms"
+            echo "- **Time to Interactive**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.metrics.tti' || 'N/A')ms"
+            echo "- **Cumulative Layout Shift**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.metrics.cls' || 'N/A')"
+            echo "- **First Input Delay**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.metrics.fid' || 'N/A')ms"
+          else
+            echo "- Frontend performance data not available"
+          fi)
+
+          ### Bundle Analysis
+          $(if [ -f "performance-data/frontend-performance-reports/performance-summary.json" ]; then
+            echo "- **Total Bundle Size**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.bundle_analysis.total_size' || 'N/A')"
+            echo "- **JS Bundle Size**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.bundle_analysis.js_size' || 'N/A')"
+            echo "- **CSS Bundle Size**: $(cat performance-data/frontend-performance-reports/performance-summary.json | jq -r '.bundle_analysis.css_size' || 'N/A')"
+          else
+            echo "- Bundle analysis data not available"
+          fi)
+
+          ## ⚙️ Backend Performance Analysis
+
+          ### API Performance Metrics
+          $(if [ -f "performance-data/backend-performance-reports/performance-summary.json" ]; then
+            echo "- **Requests per Second**: $(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.rps' || 'N/A')"
+            echo "- **Average Response Time**: $(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.avg_latency' || 'N/A')ms"
+            echo "- **P95 Response Time**: $(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.p95_latency' || 'N/A')ms"
+            echo "- **P99 Response Time**: $(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.p99_latency' || 'N/A')ms"
+            echo "- **Error Rate**: $(cat performance-data/backend-performance-reports/performance-summary.json | jq -r '.api_performance.error_rate' || 'N/A')%"
+          else
+            echo "- Backend performance data not available"
+          fi)
+
+          ## 🧠 Intelligent Recommendations
+
+          ${{ steps.analysis.outputs.optimization-recommendations }}
+
+          ### Optimization Priorities
+          ${{ steps.analysis.outputs.overall-performance-score >= 90 && '🌟 **High Priority**: Maintain current performance standards' || '' }}
+          ${{ steps.analysis.outputs.overall-performance-score >= 80 && steps.analysis.outputs.overall-performance-score < 90 && '✅ **Medium Priority**: Implement minor optimizations' || '' }}
+          ${{ steps.analysis.outputs.overall-performance-score >= 70 && steps.analysis.outputs.overall-performance-score < 80 && '⚠️ **High Priority**: Address performance bottlenecks' || '' }}
+          ${{ steps.analysis.outputs.overall-performance-score < 70 && '🚨 **Critical Priority**: Immediate performance optimization required' || '' }}
+
+          ### Specific Recommendations
+          - **Frontend Optimization**: Implement code splitting, lazy loading, and bundle optimization
+          - **Backend Optimization**: Focus on API response time and error rate reduction
+          - **Database Optimization**: Consider query optimization and indexing strategies
+          - **Caching Strategy**: Implement appropriate caching mechanisms
+          - **Monitoring Enhancement**: Set up comprehensive performance monitoring
+
+          ## 📈 Performance Trends
+
+          - **Current Status**: ${{ steps.analysis.outputs.performance-trends }}
+          - **Trend Analysis**: Based on current metrics, performance is ${{ steps.analysis.outputs.performance-status }}
+          - **Expected Impact**: Implementing recommended optimizations should improve performance score by 10-20 points
+
+          ## 🎯 Next Steps
+
+          1. **Immediate Actions** (if score < 80)
+              - Address critical performance bottlenecks
+              - Implement high-impact optimizations
+              - Set up performance monitoring alerts
+
+          2. **Short-term Goals** (next 2 weeks)
+              - Implement bundle size optimization
+              - Improve API response times
+              - Enhance error handling
+
+          3. **Long-term Goals** (next month)
+              - Implement advanced caching strategies
+              - Set up comprehensive performance monitoring
+              - Optimize database queries
+
+          ---
+          *Report generated by LLMChat Intelligent Performance Monitoring System*
+          *Generated on $(date -u)*
+          EOF
+
+          echo "✅ Comprehensive performance report generated"
+          echo "::endgroup::"
+
+      - name: 📤 Upload Comprehensive Performance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-performance-report
+          path: comprehensive-performance-reports/
+          retention-days: 90
+
+      - name: 🚫 Performance Threshold Enforcement
+        if: steps.analysis.outputs.overall-performance-score < 70
+        run: |
+          echo "❌ Performance score below threshold - requires attention"
+          echo "📊 Performance Score: ${{ steps.analysis.outputs.overall-performance-score }}/100"
+          echo "🚦 Performance Status: ${{ steps.analysis.outputs.performance-status }}"
+          echo "💡 Recommendations: ${{ steps.analysis.outputs.optimization-recommendations }}"
+          exit 1
+
+  # ==========================================
+  # 性能优化建议生成
+  # ==========================================
+  optimization-recommendations:
+    name: 💡 Performance Optimization Recommendations
+    runs-on: ubuntu-latest
+    needs: [performance-monitoring-setup, intelligent-performance-analysis]
+    if: always() && needs.intelligent-performance-analysis.result == 'success' && needs.performance-monitoring-setup.outputs.optimization-enabled == 'true'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download Performance Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: comprehensive-performance-report
+          path: performance-reports/
+          merge-multiple: true
+
+      - name: 💡 Generate Optimization Recommendations
+        run: |
+          echo "::group::Generating Optimization Recommendations"
+
+          mkdir -p optimization-recommendations
+
+          # 创建优化建议文档
+          cat > optimization-recommendations/optimization-plan.md << EOF
+          # LLMChat Performance Optimization Plan
+
+          ## 📊 Current Performance Status
+          - **Overall Score**: ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score }}/100
+          - **Status**: ${{ needs.intelligent-performance-analysis.outputs.performance-status }}
+
+          ## 🎯 Optimization Priorities
+
+          ### High Priority (Critical Issues)
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score < 70 && '1. Address critical performance bottlenecks immediately' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score < 70 && '2. Implement essential performance optimizations' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score < 70 && '3. Set up performance monitoring and alerting' || '' }}
+
+          ### Medium Priority (Important Improvements)
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 70 && needs.intelligent-performance-analysis.outputs.overall-performance-score < 90 && '1. Implement bundle size optimization' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 70 && needs.intelligent-performance-analysis.outputs.overall-performance-score < 90 && '2. Improve API response times' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 70 && needs.intelligent-performance-analysis.outputs.overall-performance-score < 90 && '3. Enhance caching mechanisms' || '' }}
+
+          ### Low Priority (Nice to Have)
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 90 && '1. Fine-tune performance metrics' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 90 && '2. Implement advanced optimization techniques' || '' }}
+          ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score >= 90 && '3. Consider performance monitoring enhancements' || '' }}
+
+          ## 🌐 Frontend Optimizations
+
+          ### Bundle Size Optimization
+          - Implement code splitting with dynamic imports
+          - Remove unused dependencies and code
+          - Optimize images and static assets
+          - Implement tree shaking for dead code elimination
+
+          ### Loading Performance
+          - Implement lazy loading for non-critical components
+          - Add preloading for critical resources
+          - Optimize initial JavaScript payload
+          - Implement service worker caching
+
+          ### Runtime Performance
+          - Optimize React component re-renders
+          - Implement virtual scrolling for long lists
+          - Use React.memo for component memoization
+          - Optimize state management patterns
+
+          ## ⚙️ Backend Optimizations
+
+          ### API Performance
+          - Implement response caching strategies
+          - Optimize database queries and indexing
+          - Use connection pooling for database connections
+          - Implement request batching where appropriate
+
+          ### Error Handling
+          - Implement comprehensive error logging
+          - Add circuit breakers for external services
+          - Optimize error response formats
+          - Implement graceful degradation strategies
+
+          ### Resource Management
+          - Implement memory optimization techniques
+          - Optimize CPU-intensive operations
+          - Use background job processing for heavy tasks
+          - Implement rate limiting and throttling
+
+          ## 🗄️ Database Optimizations
+
+          ### Query Optimization
+          - Analyze and optimize slow queries
+          - Implement appropriate indexing strategies
+          - Use query result caching
+          - Optimize database connection management
+
+          ### Data Management
+          - Implement data archiving strategies
+          - Optimize table structures and relationships
+          - Use database-specific optimizations
+          - Implement backup and recovery strategies
+
+          ## 📊 Monitoring and Analytics
+
+          ### Performance Monitoring
+          - Set up comprehensive performance monitoring
+          - Implement real-time performance metrics
+          - Create performance dashboards and alerts
+          - Track performance trends over time
+
+          ### User Experience Metrics
+          - Monitor Core Web Vitals
+          - Track user interaction metrics
+          - Implement A/B testing for performance changes
+          - Collect user feedback on performance
+
+          ## 🚀 Implementation Timeline
+
+          ### Phase 1 (Week 1-2): Critical Issues
+          - Address immediate performance bottlenecks
+          - Implement essential optimizations
+          - Set up basic monitoring
+
+          ### Phase 2 (Week 3-4): Important Improvements
+          - Implement bundle optimization
+          - Improve API performance
+          - Enhance caching mechanisms
+
+          ### Phase 3 (Week 5-8): Advanced Optimizations
+          - Implement advanced monitoring
+          - Fine-tune performance metrics
+          - Optimize user experience
+
+          ## 📈 Success Metrics
+
+          ### Performance Targets
+          - Lighthouse Performance Score: ≥ 90
+          - API Response Time: ≤ 500ms (average)
+          - Error Rate: ≤ 1%
+          - Bundle Size: ≤ 1MB (compressed)
+
+          ### Monitoring Metrics
+          - Page Load Time: ≤ 3s
+          - Time to Interactive: ≤ 2s
+          - Cumulative Layout Shift: ≤ 0.1
+          - First Input Delay: ≤ 100ms
+
+          ## 🔧 Tools and Technologies
+
+          ### Frontend Tools
+          - Lighthouse CI for automated performance testing
+          - Webpack Bundle Analyzer for bundle analysis
+          - Chrome DevTools Performance Profiler
+          - React DevTools Profiler
+
+          ### Backend Tools
+          - Artillery for API load testing
+          - APM tools (New Relic, DataDog, etc.)
+          - Database query analyzers
+          - Performance monitoring platforms
+
+          ## 📚 Resources and Documentation
+
+          - [Web Performance Best Practices](https://web.dev/performance/)
+          - [React Performance Optimization](https://reactjs.org/docs/optimizing-performance.html)
+          - [Node.js Performance Tuning](https://nodejs.org/en/docs/guides/simple-profiling.html)
+          - [Database Performance Optimization](https://www.postgresql.org/docs/performance-tips.html)
+
+          ---
+          *Optimization plan generated by LLMChat Performance Monitoring System*
+          *Generated on $(date -u)*
+          EOF
+
+          echo "✅ Optimization recommendations generated"
+          echo "::endgroup::"
+
+      - name: 📊 Generate Optimization Tasks
+        run: |
+          echo "::group::Generating Optimization Tasks"
+
+          # 创建优化任务清单
+          cat > optimization-recommendations/optimization-tasks.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "performance_score": ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score }},
+            "performance_status": "${{ needs.intelligent-performance-analysis.outputs.performance-status }}",
+            "tasks": [
+              {
+                "id": "opt-001",
+                "title": "Implement bundle size optimization",
+                "priority": "high",
+                "estimated_effort": "2 days",
+                "description": "Reduce frontend bundle size through code splitting and tree shaking",
+                "impact": "20-30% performance improvement"
+              },
+              {
+                "id": "opt-002",
+                "title": "Optimize API response times",
+                "priority": "high",
+                "estimated_effort": "3 days",
+                "description": "Improve backend API performance through caching and query optimization",
+                "impact": "15-25% performance improvement"
+              },
+              {
+                "id": "opt-003",
+                "title": "Implement comprehensive performance monitoring",
+                "priority": "medium",
+                "estimated_effort": "1 week",
+                "description": "Set up performance monitoring and alerting systems",
+                "impact": "10-15% performance improvement"
+              }
+            ],
+            "environment": "${{ needs.performance-monitoring-setup.outputs.test-environment }}"
+          }
+          EOF
+
+          echo "✅ Optimization tasks generated"
+          echo "::endgroup::"
+
+      - name: 📤 Upload Optimization Recommendations
+        uses: actions/upload-artifact@v4
+        with:
+          name: optimization-recommendations
+          path: optimization-recommendations/
+          retention-days: 90
+
+      - name: 💬 Create Optimization Issues (Optional)
+        if: needs.intelligent-performance-analysis.outputs.overall-performance-score < 80
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const planPath = 'optimization-recommendations/optimization-plan.md';
+              if (fs.existsSync(planPath)) {
+                const plan = fs.readFileSync(planPath, 'utf8');
+                const score = ${{ needs.intelligent-performance-analysis.outputs.overall-performance-score }};
+
+                // Create GitHub issue for optimization
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `Performance Optimization Required - Score: ${score}/100`,
+                  body: `## 🚨 Performance Optimization Required
+
+                  **Current Performance Score**: ${score}/100
+                  **Status**: ${{ needs.intelligent-performance-analysis.outputs.performance-status }}
+
+                  ## 📋 Optimization Plan
+
+                  ${plan}
+
+                  ## 🎯 Next Steps
+
+                  1. Review the optimization recommendations
+                  2. Create implementation tasks
+                  3. Track progress regularly
+                  4. Monitor performance improvements
+
+                  ---
+                  *This issue was automatically generated by the Performance Monitoring System*`,
+                  labels: ['performance', 'optimization', 'priority-high']
+                });
+
+                console.log('✅ Performance optimization issue created');
+              }
+            } catch (error) {
+              console.log('❌ Error creating issue:', error.message);
+            }

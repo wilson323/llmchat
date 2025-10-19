@@ -339,10 +339,12 @@ export const useSessionStore = create<SessionStore>()(
         set((state) => {
           const existingSessions = state.agentSessions[agentId] || [];
           const updatedSessions = existingSessions.map((session) => {
-            if (session.id !== sessionId) return session;
+            if (session.id !== sessionId) {
+return session;
+}
 
             const updatedMessages = session.messages.map((message) =>
-              message.id === messageId ? updater(message) : message
+              message.id === messageId ? updater(message) : message,
             );
 
             return {
@@ -427,8 +429,8 @@ export const useSessionStore = create<SessionStore>()(
         agentSessions: state.agentSessions,
         currentSession: state.currentSession,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useSessionStore;

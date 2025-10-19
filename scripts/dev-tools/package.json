@@ -1,0 +1,91 @@
+{
+  "name": "@llmchat/dev-tools",
+  "version": "1.0.0",
+  "description": "LLMChat 开发工具生态系统",
+  "main": "index.js",
+  "bin": {
+    "llmchat-dev": "./cli.js",
+    "dev-setup": "./dev-setup.js",
+    "health-check": "./health-check.js",
+    "code-generator": "./code-generator.js",
+    "scaffold": "./scaffold.js",
+    "debug-helper": "./debug-helper.js",
+    "performance-profiler": "./performance-profiler.js",
+    "task-automation": "./task-automation.js",
+    "ci-pipeline": "./ci-pipeline.js",
+    "team-collaboration": "./team-collaboration.js",
+    "communication-center": "./communication-center.js"
+  },
+  "scripts": {
+    "setup": "node dev-setup.js",
+    "check": "node health-check.js",
+    "debug": "node debug-helper.js full",
+    "profile": "node performance-profiler.js full",
+    "build-pipeline": "node task-automation.js build",
+    "test-pipeline": "node task-automation.js test",
+    "quality-pipeline": "node task-automation.js quality",
+    "review": "node team-collaboration.js --review",
+    "docs": "node team-collaboration.js --docs",
+    "ci": "node ci-pipeline.js --run",
+    "notify": "node communication-center.js",
+    "kb": "node communication-center.js --kb-search",
+    "monitor": "node debug-helper.js monitor"
+  },
+  "keywords": [
+    "llmchat",
+    "development-tools",
+    "code-generator",
+    "debugging",
+    "performance",
+    "automation",
+    "team-collaboration"
+  ],
+  "author": "LLMChat Development Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.0",
+    "ora": "^7.0.0",
+    "boxen": "^7.1.0",
+    "cli-table3": "^0.6.3",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.0",
+    "semver": "^7.5.4",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/inquirer": "^9.0.0",
+    "@types/fs-extra": "^11.0.0",
+    "typescript": "^5.3.0",
+    "nodemon": "^3.0.0",
+    "jest": "^29.7.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/llmchat/llmchat",
+    "directory": "scripts/dev-tools"
+  },
+  "bugs": {
+    "url": "https://github.com/llmchat/llmchat/issues"
+  },
+  "homepage": "https://github.com/llmchat/llmchat/tree/main/scripts/dev-tools#readme",
+  "files": [
+    "*.js",
+    "*.json",
+    "*.md",
+    "README.md",
+    "QUICK_START.md",
+    "templates/"
+  ],
+  "preferGlobal": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

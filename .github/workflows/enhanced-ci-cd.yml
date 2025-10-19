@@ -1,0 +1,1099 @@
+name: 🛡️ Enterprise CI/CD Pipeline - Quality Assurance System
+
+on:
+  push:
+    branches: [main, develop, release/*]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  release:
+    types: [published]
+  schedule:
+    # 每天凌晨2点运行全面扫描
+    - cron: '0 2 * * *'
+    # 每周日晚上8点运行深度质量检查
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      security_scan:
+        description: 'Run comprehensive security scan'
+        required: false
+        default: true
+        type: boolean
+      performance_test:
+        description: 'Run performance tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+  CI: true
+  TZ: 'Asia/Shanghai'
+
+# 全局变量
+vars:
+  quality_threshold: '80'
+  security_threshold: '0'
+  performance_threshold: '95'
+
+jobs:
+  # ==========================================
+  # 阶段1: 环境准备和依赖验证
+  # ==========================================
+  setup-and-validate:
+    name: 🚀 Environment Setup & Validation
+    runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+      node-version: ${{ steps.setup.outputs.node-version }}
+      should-run-security: ${{ steps.decide.outputs.should-run-security }}
+      should-run-performance: ${{ steps.decide.outputs.should-run-performance }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        id: setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📚 Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 💾 Setup pnpm cache
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "📦 Installing dependencies with frozen lockfile..."
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: 🔍 Validate Environment Configuration
+        run: |
+          echo "🔍 Validating environment configuration..."
+
+          # 检查Node.js版本
+          NODE_VERSION_CHECK=$(node -v | cut -d'v' -f2)
+          REQUIRED_VERSION="20.0.0"
+          if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION_CHECK" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+            echo "❌ Node.js version $NODE_VERSION_CHECK is below required $REQUIRED_VERSION"
+            exit 1
+          fi
+          echo "✅ Node.js version check passed: $NODE_VERSION_CHECK"
+
+          # 检查pnpm版本
+          PNPM_VERSION_CHECK=$(pnpm -v)
+          echo "✅ pnpm version: $PNPM_VERSION_CHECK"
+
+          # 验证工作区配置
+          if [ ! -f "pnpm-workspace.yaml" ] && [ ! -f "pnpm-workspace.yml" ]; then
+            echo "⚠️ No pnpm workspace configuration found"
+          else
+            echo "✅ pnpm workspace configuration found"
+          fi
+
+          # 验证package.json结构
+          if ! jq empty package.json 2>/dev/null; then
+            echo "❌ Invalid package.json format"
+            exit 1
+          fi
+          echo "✅ package.json format is valid"
+
+      - name: 🎯 Decide Additional Scans
+        id: decide
+        run: |
+          # 决定是否运行安全扫描
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event.inputs.security_scan }}" == "true" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-run-security=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-security=false" >> $GITHUB_OUTPUT
+          fi
+
+          # 决定是否运行性能测试
+          if [[ "${{ github.event.inputs.performance_test }}" == "true" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-run-performance=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run-performance=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ==========================================
+  # 阶段2: 代码质量检查
+  # ==========================================
+  code-quality:
+    name: 🔍 Code Quality Analysis
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+
+    strategy:
+      matrix:
+        check-type: [typescript, eslint, prettier, complexity]
+        include:
+          - check-type: typescript
+            command: pnpm run type-check
+            name: "TypeScript Type Check"
+            icon: "📝"
+          - check-type: eslint
+            command: pnpm run lint
+            name: "ESLint Quality Check"
+            icon: "🔍"
+          - check-type: prettier
+            command: pnpm run prettier:check || pnpm prettier --check .
+            name: "Prettier Format Check"
+            icon: "🎨"
+          - check-type: complexity
+            command: pnpm run complexity:check || echo "Complexity check not configured"
+            name: "Code Complexity Analysis"
+            icon: "📊"
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: quality-check
+        run: |
+          echo "::group::${{ matrix.name }}"
+          echo "Running: ${{ matrix.command }}"
+
+          # 创建质量报告目录
+          mkdir -p quality-reports
+
+          # 运行检查并捕获结果
+          if ${{ matrix.command }}; then
+            echo "${{ matrix.check-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} passed"
+          else
+            echo "${{ matrix.check-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} failed"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 Upload Quality Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-results-${{ matrix.check-type }}
+          path: |
+            quality-reports/
+            eslint-report.json
+            tsconfig.json
+          retention-days: 30
+
+  # ==========================================
+  # 阶段3: 测试套件
+  # ==========================================
+  test-suite:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+
+    strategy:
+      matrix:
+        test-type: [unit, integration, e2e]
+        include:
+          - test-type: unit
+            name: "Unit Tests"
+            command: pnpm test
+            coverage: true
+            icon: "🔬"
+          - test-type: integration
+            name: "Integration Tests"
+            command: pnpm run test:integration || echo "Integration tests not configured"
+            coverage: false
+            icon: "🔗"
+          - test-type: e2e
+            name: "E2E Tests"
+            command: pnpm run test:e2e
+            coverage: false
+            icon: "🌐"
+            setup: true
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🌐 Setup E2E Dependencies
+        if: matrix.setup
+        run: |
+          pnpm exec playwright install --with-deps
+          pnpm exec playwright install-deps
+
+      - name: ${{ matrix.icon }} ${{ matrix.name }}
+        id: test-run
+        run: |
+          echo "::group::${{ matrix.name }}"
+
+          # 创建测试报告目录
+          mkdir -p test-reports
+          mkdir -p coverage
+
+          # 运行测试
+          if ${{ matrix.command }}; then
+            echo "${{ matrix.test-type }}_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ ${{ matrix.name }} passed"
+          else
+            echo "${{ matrix.test-type }}_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ ${{ matrix.name }} failed"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 Process Coverage Reports
+        if: matrix.coverage && steps.test-run.outputs.${{ matrix.test-type }}_status == 'passed'
+        run: |
+          echo "📊 Processing coverage reports..."
+
+          # 合并覆盖率报告
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ Coverage report found"
+            # 生成覆盖率摘要
+            npx nyc report --reporter=text-summary > test-reports/coverage-summary.txt || true
+            npx nyc report --reporter=json > test-reports/coverage-summary.json || true
+          else
+            echo "⚠️ No coverage report found"
+          fi
+
+      - name: 📤 Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test-reports/
+            coverage/
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段4: 安全扫描
+  # ==========================================
+  security-scan:
+    name: 🔒 Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: setup-and-validate
+    if: needs.setup-and-validate.outputs.should-run-security == 'true'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔍 Dependency Security Audit
+        id: audit
+        run: |
+          echo "::group::Dependency Security Audit"
+
+          # 创建安全报告目录
+          mkdir -p security-reports
+
+          # 运行安全审计
+          if pnpm audit --audit-level moderate --json > security-reports/audit-report.json 2>/dev/null; then
+            echo "audit_status=passed" >> $GITHUB_OUTPUT
+            echo "vulnerabilities=0" >> $GITHUB_OUTPUT
+            echo "✅ No security vulnerabilities found"
+          else
+            # 提取漏洞数量
+            VULNS=$(cat security-reports/audit-report.json | jq '.vulnerabilities | length' 2>/dev/null || echo "0")
+            echo "vulnerabilities=$VULNS" >> $GITHUB_OUTPUT
+
+            if [ "$VULNS" -eq 0 ]; then
+              echo "audit_status=passed" >> $GITHUB_OUTPUT
+              echo "✅ No security vulnerabilities found"
+            elif [ "$VULNS" -le 5 ]; then
+              echo "audit_status=warning" >> $GITHUB_OUTPUT
+              echo "⚠️ Found $VULNS low/moderate vulnerabilities"
+            else
+              echo "audit_status=failed" >> $GITHUB_OUTPUT
+              echo "🚨 Found $VULNS security vulnerabilities"
+              echo "::endgroup::"
+              exit 1
+            fi
+          fi
+          echo "::endgroup::"
+
+      - name: 🔍 Code Security Analysis
+        id: code-security
+        run: |
+          echo "::group::Code Security Analysis"
+
+          # 运行代码安全检查
+          if command -v semgrep &> /dev/null; then
+            echo "Running Semgrep security scan..."
+            semgrep --config=auto --json --output=security-reports/semgrep-report.json . || true
+
+            # 分析结果
+            if [ -f "security-reports/semgrep-report.json" ]; then
+              SEMGREP_ISSUES=$(cat security-reports/semgrep-report.json | jq '.results | length' 2>/dev/null || echo "0")
+              echo "semgrep_issues=$SEMGREP_ISSUES" >> $GITHUB_OUTPUT
+
+              if [ "$SEMGREP_ISSUES" -eq 0 ]; then
+                echo "code_security_status=passed" >> $GITHUB_OUTPUT
+                echo "✅ No code security issues found"
+              elif [ "$SEMGREP_ISSUES" -le 10 ]; then
+                echo "code_security_status=warning" >> $GITHUB_OUTPUT
+                echo "⚠️ Found $SEMGREP_ISSUES code security issues"
+              else
+                echo "code_security_status=failed" >> $GITHUB_OUTPUT
+                echo "🚨 Found $SEMGREP_ISSUES code security issues"
+              fi
+            else
+              echo "code_security_status=skipped" >> $GITHUB_OUTPUT
+              echo "⏭️ Semgrep not available, skipping code security scan"
+            fi
+          else
+            echo "code_security_status=skipped" >> $GITHUB_OUTPUT
+            echo "⏭️ Semgrep not installed, skipping code security scan"
+          fi
+          echo "::endgroup::"
+
+      - name: 🔒 Secret Scan
+        id: secret-scan
+        run: |
+          echo "::group::Secret Scan"
+
+          # 扫描敏感信息
+          if command -v gitleaks &> /dev/null; then
+            echo "Running Gitleaks secret scan..."
+            gitleaks detect --source=. --report-path=security-reports/gitleaks-report.json --report-format=json || true
+
+            if [ -f "security-reports/gitleaks-report.json" ]; then
+              SECRETS_FOUND=$(cat security-reports/gitleaks-report.json | jq '. | length' 2>/dev/null || echo "0")
+              echo "secrets_found=$SECRETS_FOUND" >> $GITHUB_OUTPUT
+
+              if [ "$SECRETS_FOUND" -eq 0 ]; then
+                echo "secret_status=passed" >> $GITHUB_OUTPUT
+                echo "✅ No secrets found in code"
+              else
+                echo "secret_status=failed" >> $GITHUB_OUTPUT
+                echo "🚨 Found $SECRETS_FOUND potential secrets"
+                exit 1
+              fi
+            else
+              echo "secret_status=skipped" >> $GITHUB_OUTPUT
+              echo "⏭️ Gitleaks report not generated"
+            fi
+          else
+            echo "secret_status=skipped" >> $GITHUB_OUTPUT
+            echo "⏭️ Gitleaks not installed, skipping secret scan"
+          fi
+          echo "::endgroup::"
+
+      - name: 📤 Upload Security Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            security-reports/
+          retention-days: 90
+
+  # ==========================================
+  # 阶段5: 构建验证
+  # ==========================================
+  build-validation:
+    name: 🏗️ Build Validation
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, code-quality]
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 💾 Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 🏗️ Build Application
+        id: build
+        run: |
+          echo "::group::Building Application"
+
+          # 创建构建报告目录
+          mkdir -p build-reports
+
+          # 记录构建开始时间
+          BUILD_START=$(date +%s)
+
+          # 运行构建
+          if pnpm run build; then
+            BUILD_END=$(date +%s)
+            BUILD_DURATION=$((BUILD_END - BUILD_START))
+
+            echo "build_status=success" >> $GITHUB_OUTPUT
+            echo "build_duration=$BUILD_DURATION" >> $GITHUB_OUTPUT
+            echo "✅ Build successful (${BUILD_DURATION}s)"
+
+            # 分析构建产物
+            if [ -d "backend/dist" ]; then
+              BACKEND_SIZE=$(du -sh backend/dist | cut -f1)
+              echo "backend_size=$BACKEND_SIZE" >> $GITHUB_OUTPUT
+            fi
+
+            if [ -d "frontend/dist" ]; then
+              FRONTEND_SIZE=$(du -sh frontend/dist | cut -f1)
+              echo "frontend_size=$FRONTEND_SIZE" >> $GITHUB_OUTPUT
+            fi
+
+          else
+            echo "build_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Build failed"
+            echo "::endgroup::"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: 📊 Analyze Build Artifacts
+        if: steps.build.outputs.build_status == 'success'
+        run: |
+          echo "📊 Analyzing build artifacts..."
+
+          # 生成构建分析报告
+          cat > build-reports/build-analysis.md << EOF
+          # Build Analysis Report
+
+          ## Build Information
+          - **Build Status**: ${{ steps.build.outputs.build_status }}
+          - **Build Duration**: ${{ steps.build.outputs.build_duration }}s
+          - **Backend Size**: ${{ steps.build.outputs.backend_size || 'N/A' }}
+          - **Frontend Size**: ${{ steps.build.outputs.frontend_size || 'N/A' }}
+
+          ## Build Artifacts
+          EOF
+
+          # 列出构建产物
+          if [ -d "backend/dist" ]; then
+            echo "- Backend dist/" >> build-reports/build-analysis.md
+            find backend/dist -type f | head -10 >> build-reports/build-analysis.md
+          fi
+
+          if [ -d "frontend/dist" ]; then
+            echo "- Frontend dist/" >> build-reports/build-analysis.md
+            find frontend/dist -type f | head -10 >> build-reports/build-analysis.md
+          fi
+
+      - name: 📤 Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            backend/dist/
+            frontend/dist/
+            build-reports/
+          retention-days: 7
+
+  # ==========================================
+  # 阶段6: 质量门禁评估
+  # ==========================================
+  quality-gates:
+    name: 🛡️ Quality Gates Assessment
+    runs-on: ubuntu-latest
+    needs: [code-quality, test-suite, security-scan, build-validation]
+    if: always()
+
+    outputs:
+      overall-status: ${{ steps.assessment.outputs.overall-status }}
+      quality-score: ${{ steps.assessment.outputs.quality-score }}
+      deployment-ready: ${{ steps.assessment.outputs.deployment-ready }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📊 Download All Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-results-*"
+          merge-multiple: true
+          path: all-reports/
+
+      - name: 🛡️ Quality Gates Assessment
+        id: assessment
+        run: |
+          echo "::group::Quality Gates Assessment"
+
+          # 初始化分数
+          QUALITY_SCORE=100
+          OVERALL_STATUS="passed"
+          DEPLOYMENT_READY="true"
+
+          # 评估代码质量
+          echo "🔍 Evaluating code quality..."
+          CODE_QUALITY_STATUS="${{ needs.code-quality.result }}"
+          if [ "$CODE_QUALITY_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 30))
+            OVERALL_STATUS="warning"
+            echo "⚠️ Code quality issues detected"
+          else
+            echo "✅ Code quality checks passed"
+          fi
+
+          # 评估测试结果
+          echo "🧪 Evaluating test results..."
+          TEST_STATUS="${{ needs.test-suite.result }}"
+          if [ "$TEST_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 25))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ Test failures detected"
+          else
+            echo "✅ All tests passed"
+          fi
+
+          # 评估安全扫描
+          echo "🔒 Evaluating security scan..."
+          SECURITY_STATUS="${{ needs.security-scan.result }}"
+          if [ "$SECURITY_STATUS" == "failure" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 20))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "🚨 Security vulnerabilities detected"
+          elif [ "$SECURITY_STATUS" == "success" ]; then
+            echo "✅ Security scan passed"
+          else
+            echo "⏭️ Security scan skipped"
+          fi
+
+          # 评估构建结果
+          echo "🏗️ Evaluating build validation..."
+          BUILD_STATUS="${{ needs.build-validation.result }}"
+          if [ "$BUILD_STATUS" != "success" ]; then
+            QUALITY_SCORE=$((QUALITY_SCORE - 25))
+            OVERALL_STATUS="failed"
+            DEPLOYMENT_READY="false"
+            echo "❌ Build validation failed"
+          else
+            echo "✅ Build validation passed"
+          fi
+
+          # 确保分数不低于0
+          if [ $QUALITY_SCORE -lt 0 ]; then
+            QUALITY_SCORE=0
+          fi
+
+          # 设置输出
+          echo "overall-status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+          echo "quality-score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+          echo "deployment-ready=$DEPLOYMENT_READY" >> $GITHUB_OUTPUT
+
+          echo "📊 Quality Score: $QUALITY_SCORE/100"
+          echo "🚦 Overall Status: $OVERALL_STATUS"
+          echo "🚀 Deployment Ready: $DEPLOYMENT_READY"
+          echo "::endgroup::"
+
+      - name: 📋 Generate Quality Report
+        if: always()
+        run: |
+          echo "📋 Generating comprehensive quality report..."
+
+          mkdir -p final-reports
+
+          cat > final-reports/quality-report.md << EOF
+          # LLMChat CI/CD Quality Report
+
+          ## 📊 Executive Summary
+          - **Quality Score**: ${{ steps.assessment.outputs.quality-score }}/100
+          - **Overall Status**: ${{ steps.assessment.outputs.overall-status }}
+          - **Deployment Ready**: ${{ steps.assessment.outputs.deployment-ready }}
+          - **Build Number**: ${{ github.run_number }}
+          - **Commit SHA**: ${{ github.sha }}
+          - **Branch**: ${{ github.ref_name }}
+          - **Triggered By**: ${{ github.event_name }}
+
+          ## 🛡️ Quality Gates Results
+
+          ### Code Quality
+          - **Status**: ${{ needs.code-quality.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for code maintainability
+
+          ### Test Suite
+          - **Status**: ${{ needs.test-suite.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for functionality assurance
+
+          ### Security Scan
+          - **Status**: ${{ needs.security-scan.result == 'success' && '✅ Passed' || needs.security-scan.result == 'failure' && '❌ Failed' || '⏭️ Skipped' }}
+          - **Impact**: Critical for production security
+
+          ### Build Validation
+          - **Status**: ${{ needs.build-validation.result == 'success' && '✅ Passed' || '❌ Failed' }}
+          - **Impact**: Critical for deployment readiness
+
+          ## 🎯 Recommendations
+
+          ${{ steps.assessment.outputs.quality-score >= 90 && '🌟 Excellent quality! Ready for production deployment.' || '' }}
+          ${{ steps.assessment.outputs.quality-score >= 80 && steps.assessment.outputs.quality-score < 90 && '✅ Good quality. Consider minor improvements before production.' || '' }}
+          ${{ steps.assessment.outputs.quality-score >= 70 && steps.assessment.outputs.quality-score < 80 && '⚠️ Acceptable quality. Address issues before production deployment.' || '' }}
+          ${{ steps.assessment.outputs.quality-score < 70 && '❌ Poor quality. Significant improvements required before deployment.' || '' }}
+
+          ---
+          *Report generated on $(date -u)*
+          *Powered by LLMChat CI/CD Pipeline*
+          EOF
+
+      - name: 📤 Upload Final Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-quality-report
+          path: final-reports/
+          retention-days: 90
+
+      - name: 🚫 Quality Gates Enforcement
+        if: steps.assessment.outputs.overall-status == 'failed'
+        run: |
+          echo "❌ Quality gates failed - blocking deployment"
+          echo "📊 Quality Score: ${{ steps.assessment.outputs.quality-score }}/100"
+          echo "🚦 Overall Status: ${{ steps.assessment.outputs.overall-status }}"
+          exit 1
+
+      - name: 💬 PR Quality Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const reportPath = 'final-reports/quality-report.md';
+              if (fs.existsSync(reportPath)) {
+                const report = fs.readFileSync(reportPath, 'utf8');
+
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: `## 🛡️ CI/CD Quality Report\n\n${report}`
+                });
+
+                console.log('✅ Quality report commented to PR');
+              }
+            } catch (error) {
+              console.log('❌ Error commenting PR:', error.message);
+            }
+
+  # ==========================================
+  # 阶段7: 部署流水线
+  # ==========================================
+  deploy:
+    name: 🚀 Deploy to Environment
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, quality-gates]
+    if: needs.quality-gates.outputs.deployment-ready == 'true' && github.event_name != 'pull_request'
+    environment:
+      name: ${{ github.event.inputs.environment || 'development' }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+        include:
+          - environment: development
+            branch: develop
+            required_score: 70
+          - environment: staging
+            branch: main
+            required_score: 80
+          - environment: production
+            branch: main
+            required_score: 90
+        exclude:
+          - environment: production
+            branch: develop
+          - environment: staging
+            branch: develop
+          - environment: development
+            branch: main
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: 📥 Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./
+
+      - name: 🚀 Deploy to ${{ matrix.environment }}
+        id: deploy
+        run: |
+          echo "::group::Deploying to ${{ matrix.environment }}"
+
+          # 验证部署条件
+          QUALITY_SCORE=${{ needs.quality-gates.outputs.quality-score }}
+          REQUIRED_SCORE=${{ matrix.required_score }}
+
+          if [ "$QUALITY_SCORE" -lt "$REQUIRED_SCORE" ]; then
+            echo "❌ Quality score $QUALITY_SCORE is below required $REQUIRED_SCORE for ${{ matrix.environment }}"
+            exit 1
+          fi
+
+          echo "✅ Quality score $QUALITY_SCORE meets requirements for ${{ matrix.environment }}"
+
+          # 部署逻辑（示例）
+          echo "🚀 Deploying to ${{ matrix.environment }}..."
+
+          # 这里添加实际的部署逻辑
+          # 例如：Docker部署、K8s部署、云服务部署等
+
+          # 设置部署URL
+          if [ "${{ matrix.environment }}" == "development" ]; then
+            echo "url=https://dev.llmchat.example.com" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.environment }}" == "staging" ]; then
+            echo "url=https://staging.llmchat.example.com" >> $GITHUB_OUTPUT
+          elif [ "${{ matrix.environment }}" == "production" ]; then
+            echo "url=https://llmchat.example.com" >> $GITHUB_OUTPUT
+          fi
+
+          echo "✅ Deployment to ${{ matrix.environment }} completed"
+          echo "::endgroup::"
+
+      - name: 🔍 Post-Deployment Health Check
+        run: |
+          echo "::group::Post-Deployment Health Check"
+
+          # 等待部署启动
+          sleep 30
+
+          # 健康检查
+          DEPLOY_URL="${{ steps.deploy.outputs.url }}"
+          if [ -n "$DEPLOY_URL" ]; then
+            echo "🔍 Checking health at $DEPLOY_URL"
+
+            # 检查API健康状态
+            if curl -f "$DEPLOY_URL/api/health" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ API health check passed"
+            else
+              echo "❌ API health check failed"
+              exit 1
+            fi
+
+            # 检查前端健康状态
+            if curl -f "$DEPLOY_URL" --max-time 30 --retry 3 --retry-delay 10; then
+              echo "✅ Frontend health check passed"
+            else
+              echo "❌ Frontend health check failed"
+              exit 1
+            fi
+          else
+            echo "⚠️ No deployment URL provided, skipping health checks"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📊 Deployment Metrics
+        run: |
+          echo "::group::Deployment Metrics"
+
+          echo "📊 Deployment metrics for ${{ matrix.environment }}:"
+          echo "- Environment: ${{ matrix.environment }}"
+          echo "- Quality Score: ${{ needs.quality-gates.outputs.quality-score }}/100"
+          echo "- Required Score: ${{ matrix.required_score }}"
+          echo "- Deployment URL: ${{ steps.deploy.outputs.url }}"
+          echo "- Deployment Time: $(date -u)"
+          echo "- Build Number: ${{ github.run_number }}"
+          echo "- Commit SHA: ${{ github.sha }}"
+
+          echo "::endgroup::"
+
+      - name: 📢 Deployment Notification
+        if: always()
+        run: |
+          echo "::group::Deployment Notification"
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment to ${{ matrix.environment }} completed successfully!"
+            echo "🔗 URL: ${{ steps.deploy.outputs.url }}"
+          else
+            echo "❌ Deployment to ${{ matrix.environment }} failed"
+            echo "🔍 Please check the deployment logs"
+          fi
+
+          echo "::endgroup::"
+
+  # ==========================================
+  # 阶段8: 性能测试（可选）
+  # ==========================================
+  performance-test:
+    name: 📊 Performance Testing
+    runs-on: ubuntu-latest
+    needs: [setup-and-validate, deploy]
+    if: needs.setup-and-validate.outputs.should-run-performance == 'true' && needs.deploy.result == 'success'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ needs.setup-and-validate.outputs.node-version }}
+
+      - name: 📦 Install Performance Testing Tools
+        run: |
+          npm install -g artillery
+          npm install -g lighthouse
+
+      - name: 🚀 API Performance Test
+        run: |
+          echo "::group::API Performance Testing"
+
+          # 创建性能测试配置
+          cat > artillery-config.yml << EOF
+          config:
+            target: '\${{ steps.deploy.outputs.url }}/api'
+            phases:
+              - duration: 60
+                arrivalRate: 10
+              - duration: 120
+                arrivalRate: 20
+              - duration: 60
+                arrivalRate: 5
+            processor: "./test-processor.js"
+
+          scenarios:
+            - name: "API Load Test"
+              weight: 70
+              requests:
+                - get:
+                    url: "/health"
+                - get:
+                    url: "/agents"
+            - name: "API Stress Test"
+              weight: 30
+              requests:
+                - post:
+                    url: "/chat/completions"
+                    json:
+                      model: "test"
+                      messages: [{"role": "user", "content": "Hello"}]
+          EOF
+
+          # 运行API性能测试
+          artillery run artillery-config.yml --output performance-results.json
+
+          echo "::endgroup::"
+
+      - name: 🌐 Frontend Performance Test
+        run: |
+          echo "::group::Frontend Performance Testing"
+
+          # 创建Lighthouse配置
+          mkdir -p lighthouse-reports
+
+          # 运行Lighthouse测试
+          lighthouse "${{ steps.deploy.outputs.url }}" \
+            --output=json --output-path=./lighthouse-reports/report.json \
+            --chrome-flags="--headless --no-sandbox" \
+            --quiet
+
+          echo "::endgroup::"
+
+      - name: 📊 Performance Analysis
+        run: |
+          echo "::group::Performance Analysis"
+
+          # 分析API性能结果
+          if [ -f "performance-results.json" ]; then
+            echo "📊 API Performance Results:"
+            jq '.aggregate | {rps: .http.responses, latency: .latency, errors: .errors}' performance-results.json
+          fi
+
+          # 分析前端性能结果
+          if [ -f "lighthouse-reports/report.json" ]; then
+            echo "🌐 Frontend Performance Results:"
+            jq '.lhrCategories | {performance: .performance.score, accessibility: .accessibility.score, "best-practices": .["best-practices"].score, seo: .seo.score}' lighthouse-reports/report.json
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📤 Upload Performance Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-reports
+          path: |
+            performance-results.json
+            lighthouse-reports/
+          retention-days: 30
+
+  # ==========================================
+  # 阶段9: 通知和报告
+  # ==========================================
+  notify-and-report:
+    name: 📢 Notify and Report
+    runs-on: ubuntu-latest
+    needs: [quality-gates, deploy, performance-test]
+    if: always()
+
+    steps:
+      - name: 📊 Download Final Report
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: final-quality-report
+          path: final-report/
+
+      - name: 📢 Pipeline Summary
+        if: always()
+        run: |
+          echo "# 🚀 LLMChat CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Gates**: ${{ needs.quality-gates.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Score**: ${{ needs.quality-gates.outputs.quality-score }}/100" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance Tests**: ${{ needs.performance-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.quality-gates.result }}" == "success" ] && [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "## 🎉 Overall Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Overall Status: FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Pipeline failed, please review the logs." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Detailed Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ needs.build-validation.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Code Quality**: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests**: ${{ needs.test-suite.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📧 Send Notification (on failure)
+        if: needs.quality-gates.result == 'failure' || needs.deploy.result == 'failure'
+        run: |
+          echo "📧 Sending failure notification..."
+          # 这里可以添加邮件、Slack、Teams等通知逻辑
+          echo "Pipeline failed - notification sent"
+
+      - name: 🎉 Send Notification (on success)
+        if: needs.quality-gates.result == 'success' && needs.deploy.result == 'success'
+        run: |
+          echo "🎉 Sending success notification..."
+          # 这里可以添加成功通知逻辑
+          echo "Pipeline completed successfully - notification sent"

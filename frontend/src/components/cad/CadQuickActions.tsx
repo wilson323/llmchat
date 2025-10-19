@@ -2,23 +2,10 @@
  * CAD 快捷操作工具栏
  */
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
 import { Circle, Copy, Download, Minus, Move, Plus, RotateCw, Search, Trash2 } from 'lucide-react';
 import React from 'react';
-;
-;
-;
-;
-;
-;
+
 
 interface CadQuickActionsProps {
   onAddLine?: () => void;

@@ -1,99 +1,108 @@
-// 开发环境ESLint配置 - 宽松模式确保开发不受阻
+// 开发环境ESLint配置 - 宽松规则确保开发不受阻
 const baseConfig = require('./base.cjs');
 
 module.exports = {
   ...baseConfig,
+  root: true,
+  env: {
+    ...baseConfig.env,
+    node: true,
+    browser: true,
+    jest: true,
+  },
+  parserOptions: {
+    ...baseConfig.parserOptions,
+    ecmaFeatures: {
+      jsx: true
+    },
+    project: ['./tsconfig.json', './tsconfig.scripts.json'],
+    tsconfigRootDir: __dirname,
+  },
+  plugins: [...baseConfig.plugins, 'react', 'react-hooks'],
+  extends: [
+    ...baseConfig.extends,
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:react/jsx-runtime'
+  ],
+  settings: {
+    react: {
+      version: 'detect',
+    },
+  },
   rules: {
     ...baseConfig.rules,
 
-    // 开发阶段降级规则 - 从error降为warn或off
-    '@typescript-eslint/no-explicit-any': 'off', // 开发阶段允许any
+    // 开发环境宽松规则
+    
+    // React 规则
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+    'react/display-name': 'off', // 开发环境允许不设置
+    'react/jsx-uses-react': 'off',
+    'react/jsx-uses-vars': 'error',
+    'react/jsx-key': 'error',
+    'react/jsx-no-duplicate-props': 'error',
+    'react/jsx-no-undef': 'error',
+    'react/jsx-pascal-case': 'error',
+    'react/no-children-prop': 'error',
+    'react/no-danger-with-children': 'error',
+    'react/no-deprecated': 'error',
+    'react/no-direct-mutation-state': 'error',
+    'react/no-find-dom-node': 'error',
+    'react/no-is-mounted': 'error',
+    'react/no-render-return-value': 'error',
+    'react/no-string-refs': 'error',
+    'react/no-unescaped-entities': 'error',
+    'react/no-unknown-property': 'error',
+    'react/require-render-return': 'error',
+    'react/self-closing-comp': 'error',
+
+    // TypeScript 规则 - 开发阶段降级
+    '@typescript-eslint/no-explicit-any': 'warn', // 开发环境降级为警告
     '@typescript-eslint/no-unsafe-assignment': 'off',
     '@typescript-eslint/no-unsafe-member-access': 'off',
     '@typescript-eslint/no-unsafe-call': 'off',
     '@typescript-eslint/no-unsafe-return': 'off',
     '@typescript-eslint/no-unsafe-argument': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/prefer-nullish-coalescing': 'off',
+    '@typescript-eslint/prefer-optional-chain': 'off',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'off',
 
-    // 异步相关规则开发阶段宽松
+    // 异步规则宽松
     '@typescript-eslint/no-floating-promises': 'off',
     '@typescript-eslint/await-thenable': 'off',
     '@typescript-eslint/no-misused-promises': 'off',
     '@typescript-eslint/require-await': 'off',
     '@typescript-eslint/return-await': 'off',
 
-    // TypeScript 严格规则开发阶段宽松
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    '@typescript-eslint/ban-ts-comment': 'off',
-    '@typescript-eslint/no-non-null-assertion': 'off',
-    '@typescript-eslint/prefer-nullish-coalescing': 'off',
-    '@typescript-eslint/prefer-optional-chain': 'off',
-    '@typescript-eslint/no-unnecessary-type-assertion': 'off',
-
-    // 复杂度要求开发阶段更宽松
-    'complexity': ['warn', 25], // 大幅提高复杂度阈值
+    // 复杂度规则宽松
+    'complexity': ['warn', 25], // 开发环境提高阈值
     'max-depth': ['warn', 8],
     'max-nested-callbacks': ['warn', 6],
     'max-params': ['warn', 8],
-
-    // 代码质量规则保持但允许更多例外
-    'no-unused-expressions': ['error', {
-      allowShortCircuit: true,
-      allowTernary: true,
-      allowTaggedTemplates: true
+    'max-len': ['warn', {
+      code: 140, // 开发环境允许更长
+      ignoreUrls: true,
+      ignoreStrings: true,
+      ignoreTemplateLiterals: true,
+      ignoreComments: true,
+      ignoreRegExpLiterals: true
     }],
 
-    // 开发阶段允许console用于调试
+    // 开发环境允许console
     'no-console': 'off',
-
-    // 开发阶段暂时禁用Magic Numbers规则，避免配置冲突
-    'no-magic-numbers': 'off',
-
-    // 保持基础的代码风格规则（可自动修复）
-    'eqeqeq': ['error', 'always'],
-    'curly': ['error', 'all'],
-    'brace-style': ['error', '1tbs'],
-    'comma-dangle': ['error', 'always-multiline'],
-    'comma-spacing': ['error', { before: false, after: true }],
-    'comma-style': ['error', 'last'],
-    'computed-property-spacing': ['error', 'never'],
-    'func-call-spacing': ['error', 'never'],
-    'key-spacing': ['error', { beforeColon: false, afterColon: true }],
-    'keyword-spacing': ['error', { before: true, after: true }],
-    'linebreak-style': ['error', 'unix'],
-    'no-multiple-empty-lines': ['error', { max: 2, maxBOF: 1, maxEOF: 1 }], // 开发允许更多空行
-    'no-trailing-spaces': 'error',
-    'object-curly-spacing': ['error', 'always'],
-    'quotes': ['error', 'single', { avoidEscape: true }],
-    'semi': ['error', 'always'],
-    'semi-spacing': ['error', { before: false, after: true }],
-    'space-before-blocks': ['error', 'always'],
-    'space-in-parens': ['error', 'never'],
-    'space-infix-ops': 'error',
-    'space-unary-ops': ['error', { words: true, nonwords: false }],
-    'spaced-comment': ['error', 'always'],
-
-    // 保持关键的错误检测规则
-    'no-unreachable': 'error',
-    'no-constant-condition': ['error', { checkLoops: false }],
-    'no-debugger': 'error',
-    'no-alert': 'error',
-    'no-eval': 'error',
-    'no-implied-eval': 'error',
-    'no-new-func': 'error',
-    'no-script-url': 'error',
-    'no-useless-constructor': 'error',
-    'no-duplicate-imports': 'error',
-    'prefer-const': 'error',
-    'no-var': 'error'
   },
 
-  // 开发环境文件覆盖
   overrides: [
     ...baseConfig.overrides,
     {
       files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
       rules: {
-        // 测试文件几乎禁用所有规则
         'no-magic-numbers': 'off',
         'max-len': 'off',
         'complexity': 'off',
@@ -101,22 +110,55 @@ module.exports = {
         'no-console': 'off',
         '@typescript-eslint/no-non-null-assertion': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
-        '@typescript-eslint/ban-ts-comment': 'off',
-        'eqeqeq': 'off',
-        'curly': 'off',
-        'prefer-const': 'off',
-        'no-var': 'off',
-        'no-unused-expressions': 'off'
+        '@typescript-eslint/ban-ts-comment': 'off'
       }
     },
     {
-      files: ['*.stories.tsx', 'storybook/**/*'],
+      files: ['*.jsx', '*.tsx'],
       rules: {
-        // Storybook文件宽松规则
-        'no-magic-numbers': 'off',
-        'max-len': 'off',
-        '@typescript-eslint/no-explicit-any': 'off',
-        'no-console': 'off'
+        'indent': ['error', 2, {
+          SwitchCase: 1,
+          ignoredNodes: ['JSXElement *', 'JSXAttribute *', 'JSXExpressionContainer *']
+        }]
+      }
+    },
+    {
+      files: ['src/components/**/*.tsx'],
+      rules: {
+        'complexity': ['warn', 20],
+        'max-params': ['warn', 6],
+        '@typescript-eslint/no-explicit-any': 'off' // 开发阶段组件允许any
+      }
+    },
+    {
+      files: ['src/hooks/**/*.ts', 'src/hooks/**/*.tsx'],
+      rules: {
+        'complexity': ['warn', 15],
+        '@typescript-eslint/no-explicit-any': 'off'
+      }
+    },
+    {
+      files: ['src/utils/**/*.ts'],
+      rules: {
+        'complexity': ['warn', 15],
+        '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+        '@typescript-eslint/prefer-optional-chain': 'warn',
+        '@typescript-eslint/no-explicit-any': 'warn' // 工具函数允许any但警告
+      }
+    },
+    {
+      files: ['src/controllers/**/*.ts'],
+      rules: {
+        'complexity': ['warn', 20],
+        'max-params': ['warn', 6],
+        '@typescript-eslint/no-explicit-any': 'warn' // 控制器允许any但警告
+      }
+    },
+    {
+      files: ['src/services/**/*.ts'],
+      rules: {
+        'complexity': ['warn', 22],
+        '@typescript-eslint/no-explicit-any': 'warn' // 服务层允许any但警告
       }
     }
   ]

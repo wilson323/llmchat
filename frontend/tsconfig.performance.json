@@ -1,0 +1,87 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // 性能优先的编译配置
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // 内存优化配置
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo-performance",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+
+    // 减少内存占用的优化
+    "isolatedModules": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true,
+
+    // 平衡类型检查和性能 - 减少严格性以提升性能
+    "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // 编译器优化
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    // 减少类型检查范围
+    "types": ["vite/client", "node"],
+    "typeRoots": ["./node_modules/@types"],
+
+    // 路径映射优化 - 简化配置
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/*": ["components/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/store/*": ["store/*"],
+      "@/services/*": ["services/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
+      "@/styles/*": ["styles/*"]
+    }
+  },
+
+  // 减少包含范围以提升性能
+  "include": [
+    "src/**/*",
+    "!src/**/*.{test,spec}.{ts,tsx}",
+    "!src/**/stories/**",
+    "!src/**/*.d.ts"
+  ],
+
+  // 增加排除范围
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.stories.tsx",
+    "**/*.d.ts",
+    "src/**/*.benchmark.*",
+    "src/**/*.performance.*"
+  ],
+
+  // 移除项目引用以减少复杂度
+  "references": []
+}

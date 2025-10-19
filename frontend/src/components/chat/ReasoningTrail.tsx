@@ -1,10 +1,5 @@
-;
-;
-;
-;
-;
-;
-import {Check, CheckCircle, Copy, Lightbulb, Loader2} from 'lucide-react';
+
+import { Check, CheckCircle, Copy, Lightbulb, Loader2 } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ReasoningStep } from '@/types';
 
@@ -82,7 +77,7 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
     : Math.max(steps.length - virtualized.items.length, 0);
 
   const toggleViewMode = useCallback(() => {
-    setViewMode((prev: any) => (prev === CORE_VIEW ? FULL_VIEW : CORE_VIEW));
+    setViewMode((prev: string) => (prev === CORE_VIEW ? FULL_VIEW : CORE_VIEW));
   }, []);
 
   const handleCopy = useCallback(async () => {
@@ -173,7 +168,7 @@ export const ReasoningTrail: React.FC<ReasoningTrailProps> = ({
       )}
 
       <div className="mt-3 space-y-3">
-        {virtualized.items.map(({ step, originalIndex }: any, index: any) => {
+        {virtualized.items.map(({ step, originalIndex }, index: number) => {
           const order = formatStepOrder(step, originalIndex);
           const isLatest = originalIndex === latestIndex;
           const isActive = isLatest && isStreaming && !finished;

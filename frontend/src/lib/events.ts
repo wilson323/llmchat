@@ -1,4 +1,4 @@
-;
+
 import { FastGPTEvent } from '@/types';
 import { getNormalizedEventKey, isReasoningEvent, isChunkLikeEvent } from './fastgptEvents';
 import type {
@@ -430,7 +430,7 @@ const normalizeToolEvent = (_eventName: string, normalizedKey: string, payload: 
         ...basePayload,
         response: responseInfo.payload ?? null,
         ...(typeof toolResponse === 'string' && {
-          rawResponsePreview: truncateText(toolResponse.replace(/\s+/g, ' ').trim(), 400)
+          rawResponsePreview: truncateText(toolResponse.replace(/\s+/g, ' ').trim(), 400),
         }),
       } as JsonValue,
       timestamp: String(Date.now()),

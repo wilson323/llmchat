@@ -4,7 +4,7 @@
  * 集成文件上传、3D 查看器和操作界面
  */
 
-import {Download, FileText, Info, Layers} from 'lucide-react';
+import { Download, FileText, Info, Layers } from 'lucide-react';
 import React, { useState } from 'react';
 import { CadUpload } from './CadUpload';
 import { CadViewer } from './CadViewer';

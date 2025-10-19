@@ -122,14 +122,14 @@ export function SessionStatsChart({ stats, loading }: SessionStatsChartProps) {
               colorStops: [
                 {
                   offset: 0,
-                  color: 'rgba(59, 130, 246, 0.3)'
+                  color: 'rgba(59, 130, 246, 0.3)',
                 },
                 {
                   offset: 1,
-                  color: 'rgba(59, 130, 246, 0.05)'
-                }
-              ]
-            }
+                  color: 'rgba(59, 130, 246, 0.05)',
+                },
+              ],
+            },
           },
           data: counts,
         },

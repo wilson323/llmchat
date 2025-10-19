@@ -9,26 +9,15 @@
  * 5. Progressive loading
  */
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {AlertTriangle, Loader2, RefreshCw, Wifi, WifiOff} from 'lucide-react';
+
+import { AlertTriangle, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import Card, { CardContent } from '@/components/ui/Card';
+import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import Alert, { AlertDescription } from '@/components/ui/Alert';
-;
-;
-;
-;
-;
+import Alert from '@/components/ui/Alert';
+
+
 import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
 
 // Error boundary for lazy loaded components
@@ -59,7 +48,7 @@ class LazyLoadErrorBoundary extends React.Component<
     this.setState((prev: ErrorBoundaryState) => ({
       hasError: false,
       error: null,
-      retryCount: prev.retryCount + 1
+      retryCount: prev.retryCount + 1,
     }));
   };
 
@@ -71,7 +60,7 @@ class LazyLoadErrorBoundary extends React.Component<
 
       return (
         <Card className="border-dashed">
-          <CardContent className="p-6 text-center">
+          <Card.Content className="p-6 text-center">
             <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-yellow-500" />
             <h3 className="text-lg font-medium mb-2">Component Load Failed</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -91,7 +80,7 @@ class LazyLoadErrorBoundary extends React.Component<
                 <Badge variant="destructive">Max retries reached</Badge>
               )}
             </div>
-          </CardContent>
+          </Card.Content>
         </Card>
       );
     }
@@ -110,18 +99,18 @@ interface LoadingComponentProps {
 function LoadingComponent({
   type = 'spinner',
   message = 'Loading...',
-  size = 'md'
+  size = 'md',
 }: LoadingComponentProps) {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
-    lg: 'w-8 h-8'
+    lg: 'w-8 h-8',
   };
 
   const containerSizeClasses = {
     sm: 'p-2',
     md: 'p-4',
-    lg: 'p-8'
+    lg: 'p-8',
   };
 
   switch (type) {
@@ -167,14 +156,14 @@ function createLazyComponent<T extends React.ComponentType<any>>(
     retryCount?: number;
     fallback?: React.ReactNode;
     loadingType?: LoadingComponentProps['type'];
-  } = {}
+  } = {},
 ) {
   const LazyComponent = lazy(() => {
     return Promise.race([
       importFn(),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Component load timeout')), options.timeout || 10000)
-      )
+        setTimeout(() => reject(new Error('Component load timeout')), options.timeout || 10000),
+      ),
     ]);
   });
 
@@ -210,8 +199,8 @@ export const LazyAdminDashboard = createLazyComponent(
   {
     prefetch: false, // Don't prefetch admin dashboard
     timeout: 15000,
-    loadingType: 'skeleton'
-  }
+    loadingType: 'skeleton',
+  },
 );
 
 export const LazyUserManagement = createLazyComponent(
@@ -219,8 +208,8 @@ export const LazyUserManagement = createLazyComponent(
   {
     prefetch: false,
     timeout: 10000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 export const LazyAgentConfig = createLazyComponent(
@@ -228,8 +217,8 @@ export const LazyAgentConfig = createLazyComponent(
   {
     prefetch: false,
     timeout: 10000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 export const LazyAnalytics = createLazyComponent(
@@ -237,8 +226,8 @@ export const LazyAnalytics = createLazyComponent(
   {
     prefetch: false,
     timeout: 15000,
-    loadingType: 'progress'
-  }
+    loadingType: 'progress',
+  },
 );
 
 // Lazy loaded 3D/CAD components - using placeholder for now
@@ -250,8 +239,8 @@ export const LazyThreeDViewer = createLazyComponent(
   {
     prefetch: false,
     timeout: 20000, // 3D components may take longer
-    loadingType: 'progress'
-  }
+    loadingType: 'progress',
+  },
 );
 
 export const LazyCADRenderer = createLazyComponent(
@@ -259,8 +248,8 @@ export const LazyCADRenderer = createLazyComponent(
   {
     prefetch: false,
     timeout: 25000,
-    loadingType: 'progress'
-  }
+    loadingType: 'progress',
+  },
 );
 
 // Lazy loaded chart components - using existing components
@@ -269,8 +258,8 @@ export const LazyChartComponent = createLazyComponent(
   {
     prefetch: true, // Charts are commonly used
     timeout: 10000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 export const LazyEChartsComponent = createLazyComponent(
@@ -278,8 +267,8 @@ export const LazyEChartsComponent = createLazyComponent(
   {
     prefetch: true,
     timeout: 12000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 // Lazy loaded advanced chat components - using placeholder
@@ -290,8 +279,8 @@ export const LazyChatAttachments = createLazyComponent(
   {
     prefetch: false,
     timeout: 8000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 export const LazyVoiceChat = createLazyComponent(
@@ -299,8 +288,8 @@ export const LazyVoiceChat = createLazyComponent(
   {
     prefetch: false,
     timeout: 10000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 export const LazyInteractiveComponents = createLazyComponent(
@@ -308,8 +297,8 @@ export const LazyInteractiveComponents = createLazyComponent(
   {
     prefetch: false,
     timeout: 8000,
-    loadingType: 'spinner'
-  }
+    loadingType: 'spinner',
+  },
 );
 
 // Prefetching hook
@@ -360,7 +349,7 @@ export function usePrefetchComponents() {
     prefetchComponent,
     prefetchAdminComponents,
     prefetchChatComponents,
-    prefetch3DComponents
+    prefetch3DComponents,
   };
 }
 
@@ -396,7 +385,7 @@ export function useNetworkStatus() {
   return {
     isOnline,
     connectionType,
-    canLoadHeavyComponents: isOnline && ['4g', 'wifi'].includes(connectionType.toLowerCase())
+    canLoadHeavyComponents: isOnline && ['4g', 'wifi'].includes(connectionType.toLowerCase()),
   };
 }
 
@@ -410,7 +399,7 @@ interface SmartLoaderProps {
 export function SmartLoader({
   children,
   fallback,
-  requireHighBandwidth = false
+  requireHighBandwidth = false,
 }: SmartLoaderProps) {
   const { isOnline, canLoadHeavyComponents } = useNetworkStatus();
 
@@ -419,9 +408,9 @@ export function SmartLoader({
       fallback || (
         <Alert>
           <WifiOff className="h-4 w-4" />
-          <AlertDescription>
+          <Alert.Description>
             You are offline. Some features may not be available.
-          </AlertDescription>
+          </Alert.Description>
         </Alert>
       )
     );
@@ -432,9 +421,9 @@ export function SmartLoader({
       fallback || (
         <Alert>
           <Wifi className="h-4 w-4" />
-          <AlertDescription>
+          <Alert.Description>
             Slow connection detected. Using lighter version of this component.
-          </AlertDescription>
+          </Alert.Description>
         </Alert>
       )
     );
@@ -458,5 +447,5 @@ export default {
   usePrefetchComponents,
   useNetworkStatus,
   SmartLoader,
-  createLazyComponent
+  createLazyComponent,
 };

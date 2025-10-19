@@ -1,25 +1,11 @@
 'use client';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {AlertTriangle, ArrowLeft, BarChart3, CheckCircle, Clock, Pause, Play, RefreshCw, RotateCcw, XCircle} from 'lucide-react';
+
+
+import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle, Clock, Pause, Play, RefreshCw, RotateCcw, XCircle } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-;
-;
-;
-;
-;
-;
+
+
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 

@@ -16,7 +16,7 @@ import type { JsonValue } from '@/types/dynamic';
 
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];
-  const token = (auth ?? 689).replace(/^Bearer\s+/i, '').trim();
+  const token = (auth ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new AuthenticationError({
       message: '未提供认证令牌',

@@ -27,21 +27,12 @@ module.exports = {
       version: 'detect',
     },
   },
-  ignorePatterns: [
-    'dist',
-    'node_modules',
-    'build',
-    '**/*.test.ts',
-    '**/*.test.tsx',
-    '**/*.spec.ts',
-    '**/*.spec.tsx'
-  ],
   rules: {
     ...baseConfig.rules,
 
     // React 规则
-    'react/react-in-jsx-scope': 'off', // React 17+ 不需要导入React
-    'react/prop-types': 'off', // 使用TypeScript，不需要prop-types
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
     'react/display-name': 'warn',
@@ -65,55 +56,21 @@ module.exports = {
     'react/self-closing-comp': 'error',
 
     // 前端特定TypeScript规则
-    '@typescript-eslint/explicit-module-boundary-types': 'off', // React组件不需要显式返回类型
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-explicit-any': 'warn',
 
-    // 前端可以更宽松的规则
-    '@typescript-eslint/no-explicit-any': 'warn', // 前端any类型较多，先警告
-
-    // 复杂度控制（前端组件可能更复杂）
-    'complexity': ['warn', 20], // 前端允许更高复杂度
-
-    // 行长度限制（前端JSX可能更长）
+    // 复杂度控制
+    'complexity': ['warn', 20],
     'max-len': ['warn', {
-      code: 120, // 前端允许120字符
+      code: 120,
       ignoreUrls: true,
       ignoreStrings: true,
       ignoreTemplateLiterals: true,
       ignoreComments: true,
       ignoreRegExpLiterals: true
-    }],
-
-    // Magic numbers - 前端UI相关的数字
-    'no-magic-numbers': ['warn', {
-      ignore: [
-        -1, 0, 1, 2, 5, 7, 10, 100, 1000,
-        // 前端UI相关
-        3, 4, 5, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 256, 512, // 常用尺寸
-        80, 85, 90, 95, 99, // 百分比
-        100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, // 宽度断点
-        0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, // 透明度
-        150, 300, 500, 1000, 2000, 3000, 5000, // 动画时长毫秒
-        60, 120, 180, 240, 300, 360, // 动画帧/秒相关
-        16, 20, 24, 28, 32, 36, 40, // 字体大小
-        4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 64, // 间距
-        1, 2, 3, 4, 5, // z-index层级
-        0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, // 权重
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, // 月份
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, // 日期
-        0, 1, 2, 3, 4, 5, 6, // 星期
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, // 小时
-        0, 15, 30, 45 // 分钟
-      ],
-      ignoreArrayIndexes: true,
-      ignoreDefaultValues: true,
-      enforceConst: true
-    }],
-
-    // 前端特定控制台规则
-    'no-console': 'warn' // 前端可以保留console用于调试
+    }]
   },
 
-  // 前端特定文件覆盖
   overrides: [
     ...baseConfig.overrides,
     {
@@ -136,33 +93,26 @@ module.exports = {
     {
       files: ['src/components/**/*.tsx'],
       rules: {
-        'complexity': ['warn', 15], // 组件复杂度限制
-        'max-params': ['warn', 4], // 组件props限制
-        'react/display-name': 'off', // 组件可以不设置displayName
-        '@typescript-eslint/no-explicit-any': 'warn' // 组件props允许any但警告
+        'complexity': ['warn', 15],
+        'max-params': ['warn', 4],
+        'react/display-name': 'off',
+        '@typescript-eslint/no-explicit-any': 'warn'
       }
     },
     {
       files: ['src/hooks/**/*.ts', 'src/hooks/**/*.tsx'],
       rules: {
-        'complexity': ['warn', 10], // Hook复杂度限制严格
-        '@typescript-eslint/no-explicit-any': 'warn' // Hook允许any但警告
+        'complexity': ['warn', 10],
+        '@typescript-eslint/no-explicit-any': 'warn'
       }
     },
     {
       files: ['src/utils/**/*.ts'],
       rules: {
-        'complexity': ['warn', 12], // 工具函数复杂度限制
-        '@typescript-eslint/prefer-nullish-coalescing': 'error', // 工具函数要求使用空值合并
-        '@typescript-eslint/prefer-optional-chain': 'error', // 工具函数要求使用可选链
-        '@typescript-eslint/no-explicit-any': 'error' // 工具函数禁用any
-      }
-    },
-    {
-      files: ['src/pages/**/*.tsx', 'src/views/**/*.tsx'],
-      rules: {
-        'complexity': ['warn', 25], // 页面组件允许更高复杂度
-        'max-params': ['warn', 6] // 页面组件允许更多props
+        'complexity': ['warn', 12],
+        '@typescript-eslint/prefer-nullish-coalescing': 'error',
+        '@typescript-eslint/prefer-optional-chain': 'error',
+        '@typescript-eslint/no-explicit-any': 'error'
       }
     }
   ]

@@ -1,12 +1,5 @@
-;
-;
-;
-;
-;
-;
-;
-;
-import {Check, Copy, RotateCcw, ThumbsDown, ThumbsUp, User} from 'lucide-react';
+
+import { Check, Copy, RotateCcw, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import React, { useState, memo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -134,7 +127,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                 value={selectedValue}
                 onChange={(e) => setSelectedValue(e.target.value)}
               >
-                {isInteractiveSelect(data.params) && data.params.userSelectOptions?.map((opt: any, idx: number) => (
+                {isInteractiveSelect(data.params) && data.params.userSelectOptions?.map((opt, idx: number) => (
                   <option key={idx} value={String(opt.key ?? opt.value)}>
                     {String(opt.value ?? opt.key)}
                   </option>
@@ -148,13 +141,13 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                       const selectParams: { origin: 'init'; key: string; value: string } = {
                         origin: 'init',
                         key: varKey,
-                        value: selectedValue
+                        value: selectedValue,
                       };
                       onInteractiveSelect?.(selectParams);
                     } else {
                       const selectParams: { origin: 'init'; value: string } = {
                         origin: 'init',
-                        value: selectedValue
+                        value: selectedValue,
                       };
                       onInteractiveSelect?.(selectParams);
                     }
@@ -222,7 +215,7 @@ export const MessageItem: React.FC<MessageItemProps> = memo(({
                         className="flex-1 px-3 py-2 text-sm rounded-lg border border-input bg-background text-foreground"
                         onChange={(e) => setFormValues((s) => ({ ...s, [key]: e.target.value }))}
                       >
-                        {(item.list || []).map((opt: any, i: number) => (
+                        {(item.list || []).map((opt, i: number) => (
                           <option key={i} value={String(opt.value)}>
                             {String(opt.label ?? opt.value)}
                           </option>

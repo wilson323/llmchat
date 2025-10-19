@@ -4,311 +4,197 @@
  */
 
 'use client';
-;
+
 import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
-// import { performanceAnalyzer } from '@/utils/performanceAnalysis'; // 已删除，使用原生性能API
-
-export interface VirtualScrollItem<T = unknown> {
-  index: number;
-  data: T | undefined;
-  key?: string;
-  height?: number;
-}
-
-export interface VirtualScrollProps<T = unknown> {
-  // 数据相关
-  items: T[];
-  itemKey?: (item: T, index: number) => string;
-  itemHeight?: number | ((item: T, index: number) => number);
-
-  // 容器相关
-  height?: number;
-  className?: string;
-  style?: React.CSSProperties;
-
-  // 渲染相关
-  renderItem: (item: VirtualScrollItem<T>) => React.ReactNode;
-  onScroll?: (scrollTop: number) => void;
-  onEndReached?: () => void;
-  endReachedThreshold?: number;
-
-  // 性能相关
-  overscan?: number;
-  estimatedItemHeight?: number;
-
-  // 其他
-  emptyComponent?: React.ReactNode;
-  loadingComponent?: React.ReactNode;
-  loading?: boolean;
-  hasMore?: boolean;
-}
-
-// 定义虚拟滚动器的ref类型
-export interface VirtualScrollRef {
-  scrollToItem: (index: number) => void;
-  scrollToTop: () => void;
-  getScrollTop: () => number;
-  getContainer: () => HTMLDivElement | null;
-}
+import type { VirtualScrollItem, VirtualScrollProps, VirtualScrollRef } from './ui.types';
 
 export const VirtualScroll = React.forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = unknown>({
   items,
-  itemKey = (_item, index) => index.toString(),
+  itemKey,
   itemHeight,
   height = 400,
-  className = '',
-  style = {},
+  className,
+  style,
   renderItem,
   onScroll,
   onEndReached,
-  endReachedThreshold = 100,
+  endReachedThreshold = 50,
   overscan = 5,
-  estimatedItemHeight = 50,
+  estimatedItemHeight = 40,
   emptyComponent,
   loadingComponent,
   loading = false,
-  hasMore = true,
-}: VirtualScrollProps<T>, ref: React.ForwardedRef<HTMLDivElement>) {
-  const [_scrollTop, setScrollTop] = useState(0);
-  const containerRef = useRef(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  hasMore = false
+}, ref) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // 计算项目高度函数
-  const getItemHeight = useCallback((index: number) => {
-    if (typeof itemHeight === 'function') {
-      const item = items[index];
-      if (item === undefined) return estimatedItemHeight;
-      return itemHeight(item, index);
+  // 生成默认的key函数
+  const defaultKeyFn = useCallback((item: T, index: number): string => {
+    if (typeof item === 'object' && item !== null && 'id' in item) {
+      return String((item as any).id);
     }
-    if (typeof itemHeight === 'number') {
-      return itemHeight;
-    }
-    return estimatedItemHeight;
-  }, [items, itemHeight, estimatedItemHeight]);
+    return `item-${index}`;
+  }, []);
 
-  // 虚拟滚动计算
+  const keyFn = itemKey || defaultKeyFn;
+
+  // 使用虚拟滚动hook
   const {
     virtualItems,
     totalHeight,
     scrollToIndex,
-    scrollToTop,
+    scrollToOffset
   } = useVirtualScroll({
-    itemHeight: getItemHeight,
+    items,
+    itemHeight,
     containerHeight: height,
-    itemCount: items.length,
     overscan,
+    estimatedItemHeight
   });
 
-  // 虚拟项目数据
-  const virtualItemsData = useMemo(() => {
-    return virtualItems.map(({ index, key, start, size }) => {
-      const item = items[index];
-      return {
-        index,
-        key: key || (item !== undefined ? itemKey(item, index) : `virtual-${index}`),
-        data: item,
-        height: size,
-        start,
-      };
-    });
-  }, [virtualItems, items, itemKey]);
-
-  // 滚动处理
+  // 滚动事件处理
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const newScrollTop = e.currentTarget.scrollTop;
-    setScrollTop(newScrollTop);
-    onScroll?.(newScrollTop);
+    const scrollTop = e.currentTarget.scrollTop;
+    setIsScrolling(true);
 
-    // 检查是否滚动到底部
+    // 清除之前的timeout
+    if (scrollingTimeoutRef.current) {
+      clearTimeout(scrollingTimeoutRef.current);
+    }
+
+    // 设置新的timeout
+    scrollingTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+
+    onScroll?.(scrollTop);
+
+    // 检查是否到达底部
     if (onEndReached && hasMore && !loading) {
       const { scrollHeight, clientHeight } = e.currentTarget;
-      const distanceFromBottom = scrollHeight - clientHeight - newScrollTop;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - endReachedThreshold;
 
-      if (distanceFromBottom <= endReachedThreshold) {
-        // 防抖处理
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-        scrollTimeoutRef.current = setTimeout(() => {
-          onEndReached();
-        }, 100);
+      if (isNearBottom) {
+        onEndReached();
       }
     }
   }, [onScroll, onEndReached, hasMore, loading, endReachedThreshold]);
 
-  // 滚动到指定项目
-  const scrollToItem = useCallback((index: number) => {
-    scrollToIndex(index);
-  }, [scrollToIndex]);
+  // 暴露给父组件的方法
+  React.useImperativeHandle(ref, () => ({
+    element: containerRef.current,
+    scrollToIndex,
+    scrollToOffset,
+    getScrollTop: () => containerRef.current?.scrollTop || 0,
+    getScrollHeight: () => containerRef.current?.scrollHeight || 0,
+    getClientHeight: () => containerRef.current?.clientHeight || 0
+  }), [scrollToIndex, scrollToOffset]);
 
-  // 滚动到顶部
-  const scrollToTopAction = useCallback(() => {
-    scrollToTop();
-  }, [scrollToTop]);
-
-  // 暴露滚动控制方法
-  React.useImperativeHandle(ref, () => {
-    const container = containerRef.current;
-    if (container) {
-      // Add custom methods to the container element
-      const extendedContainer: any = container;
-      extendedContainer.scrollToItem = scrollToItem;
-      extendedContainer.scrollToTop = scrollToTopAction;
-      extendedContainer.getScrollTop = () => extendedContainer.scrollTop || 0;
-      extendedContainer.getContainer = () => extendedContainer;
-      return extendedContainer;
-    }
-    return document.createElement('div'); // Return empty div as fallback
-  }, [scrollToItem, scrollToTopAction]);
-
-  // 性能监控
-  let startMeasure: () => void;
-  let endMeasure: () => number | undefined;
-
-  if (true) { // 总是启用性能监控
-    startMeasure = () => performance.mark('virtual-scroll-start');
-    endMeasure = () => {
-      try {
-        performance.mark('virtual-scroll-end');
-        performance.measure('VirtualScroll', 'virtual-scroll-start', 'virtual-scroll-end');
-        const measures = performance.getEntriesByName('VirtualScroll');
-        return measures[measures.length - 1]?.duration;
-      } catch (error) {
-        console.warn('性能测量失败:', error);
-        return undefined;
+  // 清理timeout
+  useEffect(() => {
+    return () => {
+      if (scrollingTimeoutRef.current) {
+        clearTimeout(scrollingTimeoutRef.current);
       }
     };
-  }
+  }, []);
 
-  useEffect(() => {
-    if (true) { // 总是启用性能监控
-      startMeasure();
+  // 渲染虚拟项
+  const renderVirtualItems = useMemo(() => {
+    return virtualItems.map((virtualItem) => {
+      const item = items[virtualItem.index];
+      if (!item) return null;
 
-      return () => {
-        const duration = endMeasure();
-        if (duration !== undefined) {
-          console.log(`VirtualScroll 渲染耗时: ${duration.toFixed(2)}ms, 项目数: ${items.length}`);
-        }
-      };
-    }
-  }, [items.length, startMeasure, endMeasure]);
+      const key = keyFn(item, virtualItem.index);
 
-  // 渲染内容
-  if (items.length === 0 && !loading) {
-    return (
-      <div
-        className={`flex items-center justify-center h-full ${className}`}
-        style={{ height, ...style }}
+      return (
+        <div
+          key={key}
+          style={{
+            position: 'absolute',
+            top: virtualItem.top,
+            left: 0,
+            right: 0,
+            height: virtualItem.height,
+            willChange: isScrolling ? 'transform' : 'auto'
+          }}
         >
-        {emptyComponent || (
-          <div className="text-center text-muted-foreground">
-            <div className="text-lg font-medium">暂无数据</div>
-            <div className="text-sm mt-2">请稍后再试</div>
-          </div>
-        )}
-      </div>
-    );
-  }
+          {renderItem({
+            item,
+            index: virtualItem.index,
+            style: {
+              height: '100%',
+              overflow: 'hidden'
+            }
+          })}
+        </div>
+      );
+    });
+  }, [virtualItems, items, keyFn, renderItem, isScrolling]);
 
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-auto ${className}`}
-      style={{ height, ...style }}
+      className={className}
+      style={{
+        height,
+        overflow: 'auto',
+        position: 'relative',
+        ...style
+      }}
       onScroll={handleScroll}
+    >
+      {/* 占位容器 */}
+      <div
+        style={{
+          height: totalHeight,
+          position: 'relative'
+        }}
       >
-      <div style={{ height: totalHeight, position: 'relative' }}>
-        {virtualItemsData.map((item) => (
-          <div
-            key={item.key}
-            style={{
-              position: 'absolute',
-              top: item.start,
-              left: 0,
-              right: 0,
-              height: item.height,
-            }}
-          >
-            {renderItem(item)}
-          </div>
-        ))}
+        {/* 虚拟项 */}
+        {renderVirtualItems}
       </div>
 
+      {/* 空状态 */}
+      {items.length === 0 && !loading && emptyComponent && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          {emptyComponent}
+        </div>
+      )}
+
       {/* 加载状态 */}
-      {loading && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t border-border/50">
-          {loadingComponent || (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3" />
-              <span className="text-sm text-muted-foreground">加载中...</span>
-            </div>
-          )}
+      {loading && loadingComponent && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          {loadingComponent}
         </div>
       )}
     </div>
   );
 });
 
-// 高阶组件版本
-export function withVirtualScroll<T = unknown>(
-  Component: React.ComponentType<{ item: VirtualScrollItem<T> }>,
-) {
-  const WrappedComponent = React.memo(function WithVirtualScroll({ items, ...props }: any) {
-    return (
-      <VirtualScroll
-        items={items}
-        renderItem={(item: any) => <Component item={item} {...props} />}
-        {...props}
-      />
-    );
-  });
-
-  WrappedComponent.displayName = `withVirtualScroll(${Component.displayName || Component.name})`;
-  return WrappedComponent;
-}
-
-// Hook版本，用于获取虚拟滚动控制
-export function useVirtualScrollControl() {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const scrollToItem = useCallback((index: number) => {
-    const container = containerRef.current;
-    if (container) {
-      const _items = container.querySelectorAll('[data-virtual-item]');
-      const targetItem = _items[index];
-      if (targetItem) {
-        targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  }, []);
-
-  const scrollToTop = useCallback(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, []);
-
-  const scrollToBottom = useCallback(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }, []);
-
-  return {
-    containerRef,
-    scrollToItem,
-    scrollToTop,
-    scrollToBottom,
-  };
-}
-
-// 添加显示的类型声明
 VirtualScroll.displayName = 'VirtualScroll';
-
-export default VirtualScroll;

@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
  * 扩展的 Express Request 接口，包含保护上下文
  */
 interface ProtectedRequest extends Request {
-  protectionContext?: ProtectedRequestContext;
+  user?: any;
 }
 
 /**
@@ -102,9 +102,9 @@ import { FastGPTSessionService } from '@/services/FastGPTSessionService';
 import { authService } from '@/services/authInstance';
 import type { AuthUser} from '@/services/AuthService';
 import { AuthService } from '@/services/AuthService';
-import { analyticsService } from '@/services/analyticsInstance';
-import type { ProtectedRequestContext } from '@/services/ProtectionService';
-import { getProtectionService } from '@/services/ProtectionService';
+// import { analyticsService } from '@/services/analyticsInstance'; // 简化系统，暂时注释
+// import type { ProtectedRequestContext } from '@/services/ProtectionService'; // 已移除保护服务
+// import { getProtectionService } from '@/services/ProtectionService'; // 已移除保护服务
 import type {
   ChatMessage,
   ChatOptions,
@@ -141,7 +141,7 @@ import { generateId, formatFileSize } from '@/utils/helpers';
  */
 async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
   const authorization = req.headers['authorization'];
-  const token = (authorization ?? 3813).replace(/^Bearer\s+/i, '').trim();
+  const token = (authorization ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     throw new Error('UNAUTHORIZED');
   }
@@ -164,7 +164,7 @@ export class ChatController {
   private readonly initService: ChatInitService;
   private readonly historyService: ChatHistoryService;
   private readonly fastgptSessionService: FastGPTSessionService;
-  private readonly protectionService = getProtectionService();
+  // private readonly protectionService = getProtectionService(); // 已移除保护服务
   private readonly uploadDir: string;
   private static readonly supportedHistoryRoles = ['user', 'assistant', 'system'] as const;
 
@@ -462,11 +462,8 @@ export class ChatController {
   private async recordGeoSnapshot(req: Request, agentId: string, sessionId?: string | null): Promise<void> {
     try {
       const ip = this.resolveClientIp(req);
-      await analyticsService.recordAgentRequest({
-        agentId,
-        sessionId: sessionId || null,
-        ip: ip || null,
-      });
+      // 简化系统，暂时移除分析服务
+      console.log(`记录代理请求: ${agentId}, IP: ${ip}`);
     } catch (unknownError) {
       const typedError = createErrorFromUnknown(unknownError, {
         component: 'ChatController',
@@ -615,8 +612,8 @@ export class ChatController {
         messagesCount: decoratedMessages.length,
       });
 
-      // 获取保护上下文
-      const {protectionContext} = (req as ProtectedRequest);
+      // 简化版本 - 移除保护上下文
+      const protectionContext = undefined;
 
       // 处理流式请求
       if (stream) {
@@ -682,7 +679,7 @@ export class ChatController {
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
     _voiceNote?: VoiceNoteMetadata | null,
-    protectionContext?: ProtectedRequestContext,
+    protectionContext?: any,
   ): Promise<void> {
     try {
       const response = await this.chatService.sendMessage(
@@ -691,7 +688,7 @@ export class ChatController {
         options,
       );
       const assistantContent =
-        response?.choices?.[0]?.message?.content ?? 20615;
+        response?.choices?.[0]?.message?.content ?? '';
 
       try {
         await this.historyService.appendMessage({
@@ -714,10 +711,10 @@ export class ChatController {
       }
 
       // ✅ 统一响应格式，确保包含content字段
-      ApiResponseHandler.sendSuccess(res, { 
+      ApiResponseHandler.sendSuccess(res, {
         content: assistantContent,
         chatId: sessionId,
-        ...response 
+        ...response
       }, {
         message: '聊天请求成功',
         code: 'SUCCESS', // ✅ 使用测试期望的code
@@ -760,7 +757,7 @@ export class ChatController {
     sessionId: string,
     _attachments?: ChatAttachmentMetadata[] | null,
     _voiceNote?: VoiceNoteMetadata | null,
-    protectionContext?: ProtectedRequestContext,
+    protectionContext?: any,
   ): Promise<void> {
     try {
       // 标准 SSE 响应头

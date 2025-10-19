@@ -4,15 +4,12 @@
  * 提供更强大的懒加载功能，包括预加载、错误处理、加载状态等
  */
 
-;
-;
-;
-;
-import {AlertCircle, Loader2, RefreshCw} from 'lucide-react';
+
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import React, { Suspense, useEffect, useCallback } from 'react';
 import type { ComponentType, ReactNode } from 'react';
-;
-;
+
+
 import { EnhancedCodeSplitting } from '@/utils/enhancedCodeSplitting';
 
 // 增强懒加载组件配置

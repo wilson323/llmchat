@@ -1,5 +1,4 @@
-;
-;
+
 import { AdminStats, LogEntry, SystemMetrics, SecurityAlert, UserActivity } from '@/types/admin';
 
 export const getAdminStats = async (): Promise<AdminStats> => {
@@ -42,11 +41,11 @@ export const getLogs = async (page: number = 1, limit: number = 50): Promise<{
         metadata: {
           userId: `user-${Math.floor(Math.random() * 1000)}`,
           ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-        }
+        },
       } : {
         metadata: {
           ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-        }
+        },
       }),
     };
   });

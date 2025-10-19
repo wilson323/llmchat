@@ -1,4 +1,4 @@
-/// <reference types="vite/client" />
+// / <reference types="vite/client" />
 
 // 声明图片资源模块
 declare module '*.jpg' {

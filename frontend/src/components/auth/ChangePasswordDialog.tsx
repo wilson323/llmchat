@@ -3,15 +3,13 @@
  */
 
 'use client';
-;
-;
-;
+
+
 import { Eye, EyeOff, X } from 'lucide-react';
 import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-;
-;
-;
+
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useI18n } from '@/i18n';
@@ -117,7 +115,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.current ? 'text' : 'password'}
                   value={formData.currentPassword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                  onChange={(value: string) => setFormData((prev) => ({ ...prev, currentPassword: value }))}
                   placeholder={t('请输入当前密码')}
                   required
                 />
@@ -141,7 +139,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.new ? 'text' : 'password'}
                   value={formData.newPassword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  onChange={(value: string) => setFormData((prev) => ({ ...prev, newPassword: value }))}
                   placeholder={t('请输入新密码（至少6位）')}
                   required
                 />
@@ -165,7 +163,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.confirm ? 'text' : 'password'}
                   value={formData.confirmPassword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={(value: string) => setFormData((prev) => ({ ...prev, confirmPassword: value }))}
                   placeholder={t('请再次输入新密码')}
                   required
                 />

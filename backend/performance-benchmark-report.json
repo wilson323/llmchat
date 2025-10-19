@@ -2,29 +2,29 @@
   "auth.login": {
     "stats": {
       "count": 2,
-      "min": 66.67979999999989,
-      "max": 74.35499999999956,
-      "avg": 70.51739999999972,
-      "p95": 74.35499999999956,
-      "p99": 74.35499999999956,
+      "min": 141.60307899999316,
+      "max": 144.14902899999288,
+      "avg": 142.87605399999302,
+      "p95": 144.14902899999288,
+      "p99": 144.14902899999288,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "auth.login",
-        "responseTime": 66.67979999999989,
-        "timestamp": 1760687846982,
-        "statusCode": 404,
+        "responseTime": 141.60307899999316,
+        "timestamp": 1760767595662,
+        "statusCode": 400,
         "success": false,
         "metadata": {
-          "statusCode": 404,
+          "statusCode": 400,
           "success": false
         }
       },
       {
         "name": "auth.login",
-        "responseTime": 74.35499999999956,
-        "timestamp": 1760687846989,
+        "responseTime": 144.14902899999288,
+        "timestamp": 1760767595664,
         "statusCode": 500,
         "success": false,
         "metadata": {
@@ -37,18 +37,18 @@
   "auth.register": {
     "stats": {
       "count": 1,
-      "min": 11.767700000000332,
-      "max": 11.767700000000332,
-      "avg": 11.767700000000332,
-      "p95": 11.767700000000332,
-      "p99": 11.767700000000332,
+      "min": 13.10604099999182,
+      "max": 13.10604099999182,
+      "avg": 13.10604099999182,
+      "p95": 13.10604099999182,
+      "p99": 13.10604099999182,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "auth.register",
-        "responseTime": 11.767700000000332,
-        "timestamp": 1760687847003,
+        "responseTime": 13.10604099999182,
+        "timestamp": 1760767595678,
         "statusCode": 404,
         "success": false,
         "metadata": {
@@ -61,22 +61,22 @@
   "auth.refresh": {
     "stats": {
       "count": 1,
-      "min": 6.824199999999109,
-      "max": 6.824199999999109,
-      "avg": 6.824199999999109,
-      "p95": 6.824199999999109,
-      "p99": 6.824199999999109,
+      "min": 5.457649999996647,
+      "max": 5.457649999996647,
+      "avg": 5.457649999996647,
+      "p95": 5.457649999996647,
+      "p99": 5.457649999996647,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "auth.refresh",
-        "responseTime": 6.824199999999109,
-        "timestamp": 1760687847021,
-        "statusCode": 404,
+        "responseTime": 5.457649999996647,
+        "timestamp": 1760767595686,
+        "statusCode": 401,
         "success": false,
         "metadata": {
-          "statusCode": 404,
+          "statusCode": 401,
           "success": false
         }
       }
@@ -85,23 +85,23 @@
   "agents.list": {
     "stats": {
       "count": 1,
-      "min": 8.990599999999176,
-      "max": 8.990599999999176,
-      "avg": 8.990599999999176,
-      "p95": 8.990599999999176,
-      "p99": 8.990599999999176,
-      "successRate": 0
+      "min": 17.943014999997104,
+      "max": 17.943014999997104,
+      "avg": 17.943014999997104,
+      "p95": 17.943014999997104,
+      "p99": 17.943014999997104,
+      "successRate": 100
     },
     "metrics": [
       {
         "name": "agents.list",
-        "responseTime": 8.990599999999176,
-        "timestamp": 1760687847032,
-        "statusCode": 404,
-        "success": false,
+        "responseTime": 17.943014999997104,
+        "timestamp": 1760767595705,
+        "statusCode": 200,
+        "success": true,
         "metadata": {
-          "statusCode": 404,
-          "success": false,
+          "statusCode": 200,
+          "success": true,
           "agentCount": 0
         }
       }
@@ -110,23 +110,23 @@
   "agents.status": {
     "stats": {
       "count": 1,
-      "min": 7.183499999999185,
-      "max": 7.183499999999185,
-      "avg": 7.183499999999185,
-      "p95": 7.183499999999185,
-      "p99": 7.183499999999185,
-      "successRate": 0
+      "min": 5.03616599997622,
+      "max": 5.03616599997622,
+      "avg": 5.03616599997622,
+      "p95": 5.03616599997622,
+      "p99": 5.03616599997622,
+      "successRate": 100
     },
     "metrics": [
       {
         "name": "agents.status",
-        "responseTime": 7.183499999999185,
-        "timestamp": 1760687847043,
-        "statusCode": 404,
-        "success": false,
+        "responseTime": 5.03616599997622,
+        "timestamp": 1760767595713,
+        "statusCode": 200,
+        "success": true,
         "metadata": {
-          "statusCode": 404,
-          "success": false
+          "statusCode": 200,
+          "success": true
         }
       }
     ]
@@ -134,22 +134,22 @@
   "chat.completion": {
     "stats": {
       "count": 1,
-      "min": 5.721700000000055,
-      "max": 5.721700000000055,
-      "avg": 5.721700000000055,
-      "p95": 5.721700000000055,
-      "p99": 5.721700000000055,
+      "min": 6.2600990000064485,
+      "max": 6.2600990000064485,
+      "avg": 6.2600990000064485,
+      "p95": 6.2600990000064485,
+      "p99": 6.2600990000064485,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "chat.completion",
-        "responseTime": 5.721700000000055,
-        "timestamp": 1760687847050,
-        "statusCode": 404,
+        "responseTime": 6.2600990000064485,
+        "timestamp": 1760767595720,
+        "statusCode": 400,
         "success": false,
         "metadata": {
-          "statusCode": 404,
+          "statusCode": 400,
           "success": false,
           "agentId": "fastgpt",
           "messageLength": 29
@@ -160,72 +160,24 @@
   "chat.history": {
     "stats": {
       "count": 1,
-      "min": 8.063000000000102,
-      "max": 8.063000000000102,
-      "avg": 8.063000000000102,
-      "p95": 8.063000000000102,
-      "p99": 8.063000000000102,
+      "min": 4.233623999985866,
+      "max": 4.233623999985866,
+      "avg": 4.233623999985866,
+      "p95": 4.233623999985866,
+      "p99": 4.233623999985866,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "chat.history",
-        "responseTime": 8.063000000000102,
-        "timestamp": 1760687847060,
-        "statusCode": 404,
+        "responseTime": 4.233623999985866,
+        "timestamp": 1760767595725,
+        "statusCode": 401,
         "success": false,
         "metadata": {
-          "statusCode": 404,
+          "statusCode": 401,
           "success": false,
-          "sessionId": "test-session-1760687847052"
-        }
-      }
-    ]
-  },
-  "admin.stats": {
-    "stats": {
-      "count": 1,
-      "min": 5.016100000000733,
-      "max": 5.016100000000733,
-      "avg": 5.016100000000733,
-      "p95": 5.016100000000733,
-      "p99": 5.016100000000733,
-      "successRate": 0
-    },
-    "metrics": [
-      {
-        "name": "admin.stats",
-        "responseTime": 5.016100000000733,
-        "timestamp": 1760687847066,
-        "statusCode": 404,
-        "success": false,
-        "metadata": {
-          "statusCode": 404,
-          "success": false
-        }
-      }
-    ]
-  },
-  "admin.audit": {
-    "stats": {
-      "count": 1,
-      "min": 9.951499999999214,
-      "max": 9.951499999999214,
-      "avg": 9.951499999999214,
-      "p95": 9.951499999999214,
-      "p99": 9.951499999999214,
-      "successRate": 0
-    },
-    "metrics": [
-      {
-        "name": "admin.audit",
-        "responseTime": 9.951499999999214,
-        "timestamp": 1760687847077,
-        "statusCode": 404,
-        "success": false,
-        "metadata": {
-          "statusCode": 404,
-          "success": false
+          "sessionId": "test-session-1760767595721"
         }
       }
     ]
@@ -233,18 +185,18 @@
   "queue.stats": {
     "stats": {
       "count": 1,
-      "min": 9.788099999999758,
-      "max": 9.788099999999758,
-      "avg": 9.788099999999758,
-      "p95": 9.788099999999758,
-      "p99": 9.788099999999758,
+      "min": 40.99672100000316,
+      "max": 40.99672100000316,
+      "avg": 40.99672100000316,
+      "p95": 40.99672100000316,
+      "p99": 40.99672100000316,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "queue.stats",
-        "responseTime": 9.788099999999758,
-        "timestamp": 1760687847089,
+        "responseTime": 40.99672100000316,
+        "timestamp": 1760767658765,
         "statusCode": 404,
         "success": false,
         "metadata": {
@@ -257,18 +209,18 @@
   "queue.pause": {
     "stats": {
       "count": 1,
-      "min": 6.299600000000282,
-      "max": 6.299600000000282,
-      "avg": 6.299600000000282,
-      "p95": 6.299600000000282,
-      "p99": 6.299600000000282,
+      "min": 3.3999170000315644,
+      "max": 3.3999170000315644,
+      "avg": 3.3999170000315644,
+      "p95": 3.3999170000315644,
+      "p99": 3.3999170000315644,
       "successRate": 0
     },
     "metrics": [
       {
         "name": "queue.pause",
-        "responseTime": 6.299600000000282,
-        "timestamp": 1760687847097,
+        "responseTime": 3.3999170000315644,
+        "timestamp": 1760767658770,
         "statusCode": 404,
         "success": false,
         "metadata": {

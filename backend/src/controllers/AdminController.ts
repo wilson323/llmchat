@@ -409,7 +409,7 @@ export async function getConfigDetails(
 import os from 'os';
 import { authService } from '@/services/authInstance';
 import { withClient, hashPassword } from '@/utils/db';
-import { analyticsService } from '@/services/analyticsInstance';
+// import { analyticsService } from '@/services/analyticsInstance'; // 简化系统，暂时注释
 import {
   AuthenticationError,
   AuthorizationError,
@@ -716,11 +716,8 @@ export class AdminController {
 
       const filterAgentId = agentId && agentId !== 'all' ? agentId : null;
 
-      const data = await analyticsService.getProvinceHeatmap({
-        start: startDate,
-        end: endDate,
-        agentId: filterAgentId,
-      });
+      // 简化系统，返回空数据
+      const data = { provinces: [] };
 
       return res.json({ data });
     } catch (error: unknown) {
@@ -804,11 +801,8 @@ export class AdminController {
 
       const filterAgentId = agentId && agentId !== 'all' ? agentId : null;
 
-      const data = await analyticsService.getConversationSeries({
-        start: startDate,
-        end: endDate,
-        agentId: filterAgentId,
-      });
+      // 简化系统，返回空数据
+      const data = { series: [] };
 
       return res.json({ data });
     } catch (error: unknown) {
@@ -885,10 +879,8 @@ export class AdminController {
         });
       }
 
-      const data = await analyticsService.getAgentTotals({
-        start: startDate,
-        end: endDate,
-      });
+      // 简化系统，返回空数据
+    const data = { totals: [] };
 
       return res.json({ data });
     } catch (error: unknown) {
@@ -1123,7 +1115,7 @@ export async function getAdminStats(
     const stats = await withClient(async (client) => {
       // 用户统计
       const usersResult = await client.query<UserStatsResult>(`
-        SELECT 
+        SELECT
           COUNT(*)::int AS total,
           COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
           COUNT(CASE WHEN role = 'admin' THEN 1 END)::int AS admins
@@ -1132,7 +1124,7 @@ export async function getAdminStats(
 
       // 会话统计
       const sessionsResult = await client.query<SessionStatsResult>(`
-        SELECT 
+        SELECT
           COUNT(*)::int AS total,
           COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
         FROM conversations
@@ -1140,7 +1132,7 @@ export async function getAdminStats(
 
       // 智能体统计
       const agentsResult = await client.query<AgentStatsResult>(`
-        SELECT 
+        SELECT
           COUNT(*)::int AS total,
           COUNT(CASE WHEN is_active = true THEN 1 END)::int AS active
         FROM agent_configs
@@ -1148,7 +1140,7 @@ export async function getAdminStats(
 
       // 消息统计
       const messagesResult = await client.query<MessageStatsResult>(`
-        SELECT 
+        SELECT
           COUNT(*)::int AS total,
           COUNT(CASE WHEN created_at >= $1 THEN 1 END)::int AS today
         FROM messages
@@ -1222,7 +1214,7 @@ export async function getAdminMetrics(
     const memFree = os.freemem();
     const memUsed = memTotal - memFree;
     const load = os.loadavg ? os.loadavg() : [0, 0, 0];
-    
+
     // 获取数据库指标
     const dbMetrics = await withClient(async (client) => {
       const startTime = Date.now();

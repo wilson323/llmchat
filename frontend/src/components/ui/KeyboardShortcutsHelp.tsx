@@ -1,4 +1,4 @@
-;
+
 import React, { useState, useEffect } from 'react';
 import { useKeyboardManager, useKeyboardHelp, appShortcuts } from '@/hooks/useKeyboardManager';
 import { Dialog } from './Dialog';

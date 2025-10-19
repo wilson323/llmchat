@@ -12,13 +12,13 @@
 
 import { Bot, Copy, Loader2, RefreshCw, ThumbsDown, ThumbsUp, User } from 'lucide-react';
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { ChatMessage } from '@/types';
+import type { ChatMessage, Agent, StreamStatus } from '@/types';
 import { useI18n } from '@/i18n';
 import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-
+import { sanitizeHTML, sanitizeMarkdown, detectXSS, secureContentSanitizer } from '@/utils/secureContentSanitizer';
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -30,8 +30,8 @@ interface OptimizedMessageItemProps {
   message: ChatMessage;
   isStreaming?: boolean;
   isLastMessage?: boolean;
-  currentAgent?: any;
-  streamingStatus?: any;
+  currentAgent?: Agent | null;
+  streamingStatus?: StreamStatus | null;
   onRetry?: (messageId: string) => void;
   onCopy?: (content: string) => void;
   onFeedback?: (messageId: string, feedback: 'good' | 'bad') => void;
@@ -42,7 +42,7 @@ const MessageItemPerfMonitor = () => {
   const [renderCount, setRenderCount] = useState(0);
 
   useEffect(() => {
-    setRenderCount((prev: any) => prev + 1);
+    setRenderCount((prev: number) => prev + 1);
   });
 
   return { renderCount };
@@ -70,9 +70,38 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
   const [isVisible, setIsVisible] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Memoize expensive calculations
+  // 安全地处理和清理消息内容
   const messageContent = useMemo(() => {
-    return message.AI || message.HUMAN || '';
+    const rawContent = message.AI || message.HUMAN || '';
+
+    // XSS安全检测
+    const xssCheck = detectXSS(rawContent);
+    if (xssCheck.isXSS) {
+      console.warn('检测到潜在XSS攻击威胁:', xssCheck.threats, rawContent);
+      // 记录安全事件到监控系统
+      secureContentSanitizer.logSecurityEvent({
+        type: 'XSS_DETECTED',
+        threats: xssCheck.threats,
+        content: rawContent.substring(0, 200), // 只记录前200字符
+        timestamp: new Date().toISOString(),
+        messageId: message.id
+      });
+    }
+
+    // 清理HTML内容
+    const sanitizedContent = sanitizeHTML(rawContent);
+
+    // 如果内容看起来像Markdown，则进行Markdown处理
+    const isMarkdown = /^#+\s|^\*|^\-|`[^`]+`|\[.*?\]\(.*?\)/.test(rawContent);
+    const finalContent = isMarkdown ? sanitizeMarkdown(rawContent) : sanitizedContent;
+
+    return finalContent;
+  }, [message.AI, message.HUMAN, message.id]);
+
+  // 检测是否有安全威胁
+  const hasSecurityThreats = useMemo(() => {
+    const rawContent = message.AI || message.HUMAN || '';
+    return detectXSS(rawContent).isXSS;
   }, [message.AI, message.HUMAN]);
 
   const messageTimestamp = useMemo(() => {
@@ -266,7 +295,19 @@ export const OptimizedMessageItem = React.memo<OptimizedMessageItemProps>(({
               )}
             </div>
 
-            {/* Message Content */}
+            {/* Security Warning */}
+            {hasSecurityThreats && (
+              <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>{t('检测到潜在安全威胁，内容已自动清理')}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Safe Message Content */}
             <div
               ref={contentRef}
               className="prose prose-sm max-w-none dark:prose-invert"

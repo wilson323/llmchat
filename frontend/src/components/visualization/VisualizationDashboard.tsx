@@ -3,15 +3,13 @@
  * 支持参数化配置和生产环境控制
  */
 
-;
-;
-;
+
 import { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Alert, AlertDescription } from '@/components/ui/Alert';
+import Alert from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import Tabs from '@/components/ui/Tabs';
 import { Switch } from '@/components/ui/Switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
@@ -20,6 +18,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area,
 } from 'recharts';
+import { SafeAccess } from '@/utils/SafeAccess';
 
 interface VisualizationConfig {
   enabled: boolean;
@@ -104,7 +103,7 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 检查功能是否启用
   const isFeatureEnabled = useCallback((feature: keyof VisualizationConfig['features']) => {
-    return config?.enabled && config?.features[feature];
+    return SafeAccess.getBoolean(config, 'enabled') && SafeAccess.getBoolean(config, ['features', feature]);
   }, [config]);
 
   // 获取可视化配置
@@ -256,20 +255,20 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 定期刷新数据
   useEffect(() => {
-    if (!config?.enabled) {
+    if (!SafeAccess.getBoolean(config, 'enabled')) {
       return;
     }
 
     const interval = setInterval(() => {
       fetchDashboardData();
-    }, config.refreshInterval);
+    }, SafeAccess.getNumber(config, 'refreshInterval', 5000));
 
     return () => clearInterval(interval);
   }, [config, fetchDashboardData]);
 
   // 获取图表数据
   useEffect(() => {
-    if (config?.enabled) {
+    if (SafeAccess.getBoolean(config, 'enabled')) {
       fetchChartData('queue', 'waitingJobs');
       fetchChartData('queue', 'activeJobs');
       fetchChartData('system', 'cpu');
@@ -300,7 +299,7 @@ export const VisualizationDashboard: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Switch
               id="enabled"
-              checked={config?.enabled || false}
+              checked={SafeAccess.getBoolean(config, 'enabled', false)}
               onCheckedChange={(enabled: boolean) => updateConfig({ enabled })}
             />
             <Label htmlFor="enabled">启用可视化</Label>
@@ -312,7 +311,7 @@ export const VisualizationDashboard: React.FC = () => {
               <Input
                 id="refreshInterval"
                 type="number"
-                value={config?.refreshInterval || 5000}
+                value={SafeAccess.getNumber(config, 'refreshInterval', 5000)}
                 onChange={(e) => updateConfig({ refreshInterval: parseInt(e.target.value) })}
                 min="1000"
                 max="300000"
@@ -323,7 +322,7 @@ export const VisualizationDashboard: React.FC = () => {
               <Input
                 id="maxDataPoints"
                 type="number"
-                value={config?.maxDataPoints || 1000}
+                value={SafeAccess.getNumber(config, 'maxDataPoints', 1000)}
                 onChange={(e) => updateConfig({ maxDataPoints: parseInt(e.target.value) })}
                 min="10"
                 max="10000"
@@ -339,7 +338,7 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Title>功能开关</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-4">
-          {Object.entries(config?.features || {}).map(([key, value]: [string, boolean]) => (
+          {Object.entries(SafeAccess.getObject(config, 'features', {})).map(([key, value]: [string, boolean]) => (
             <div key={key} className="flex items-center space-x-2">
               <Switch
                 id={key}
@@ -347,13 +346,13 @@ export const VisualizationDashboard: React.FC = () => {
                 onCheckedChange={(checked: boolean) =>
                   updateConfig({
                     features: {
-                      dashboard: config?.features?.dashboard ?? true,
-                      realTimeMonitoring: config?.features?.realTimeMonitoring ?? true,
-                      queueManagement: config?.features?.queueManagement ?? true,
-                      performanceAnalytics: config?.features?.performanceAnalytics ?? true,
-                      alertManagement: config?.features?.alertManagement ?? true,
-                      systemHealth: config?.features?.systemHealth ?? true,
-                      ...config?.features,
+                      dashboard: SafeAccess.getBoolean(config, ['features', 'dashboard'], true),
+                      realTimeMonitoring: SafeAccess.getBoolean(config, ['features', 'realTimeMonitoring'], true),
+                      queueManagement: SafeAccess.getBoolean(config, ['features', 'queueManagement'], true),
+                      performanceAnalytics: SafeAccess.getBoolean(config, ['features', 'performanceAnalytics'], true),
+                      alertManagement: SafeAccess.getBoolean(config, ['features', 'alertManagement'], true),
+                      systemHealth: SafeAccess.getBoolean(config, ['features', 'systemHealth'], true),
+                      ...SafeAccess.getObject(config, 'features', {}),
                       [key]: checked,
                     },
                   })
@@ -530,9 +529,9 @@ export const VisualizationDashboard: React.FC = () => {
     if (!isFeatureEnabled('performanceAnalytics')) {
       return (
         <Alert>
-          <AlertDescription>
+          <Alert.Description>
             性能分析功能已禁用。请在配置中启用以查看图表。
-          </AlertDescription>
+          </Alert.Description>
         </Alert>
       );
     }
@@ -547,11 +546,11 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData.queue_waitingJobs?.labels.map((label, index) => ({
+                <LineChart data={SafeAccess.getArray(chartData, ['queue_waitingJobs', 'labels'], []).map((label, index) => ({
                   time: label,
-                  waiting: chartData.queue_waitingJobs?.datasets[0]?.data[index] || 0,
-                  active: chartData.queue_activeJobs?.datasets[0]?.data[index] || 0,
-                })) ?? []}>
+                  waiting: SafeAccess.getNumber(chartData, ['queue_waitingJobs', 'datasets', 0, 'data', index], 0),
+                  active: SafeAccess.getNumber(chartData, ['queue_activeJobs', 'datasets', 0, 'data', index], 0),
+                }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
                   <YAxis />
@@ -573,11 +572,11 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData.system_cpu?.labels.map((label, index) => ({
+                <AreaChart data={SafeAccess.getArray(chartData, ['system_cpu', 'labels'], []).map((label, index) => ({
                   time: label,
-                  cpu: chartData.system_cpu?.datasets[0]?.data[index] || 0,
-                  memory: chartData.system_memoryUsage?.datasets[0]?.data[index] || 0,
-                })) ?? []}>
+                  cpu: SafeAccess.getNumber(chartData, ['system_cpu', 'datasets', 0, 'data', index], 0),
+                  memory: SafeAccess.getNumber(chartData, ['system_memoryUsage', 'datasets', 0, 'data', index], 0),
+                }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
                   <YAxis />
@@ -603,13 +602,13 @@ export const VisualizationDashboard: React.FC = () => {
     );
   }
 
-  if (!config?.enabled) {
+  if (!SafeAccess.getBoolean(config, 'enabled')) {
     return (
       <div className="space-y-4">
         <Alert>
-          <AlertDescription>
+          <Alert.Description>
             可视化功能已禁用。请联系管理员启用此功能。
-          </AlertDescription>
+          </Alert.Description>
         </Alert>
         {renderConfigPanel()}
       </div>
@@ -619,7 +618,7 @@ export const VisualizationDashboard: React.FC = () => {
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
+        <Alert.Description>{error}</Alert.Description>
       </Alert>
     );
   }
@@ -658,26 +657,26 @@ export const VisualizationDashboard: React.FC = () => {
         renderConfigPanel()
       ) : (
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="dashboard">仪表板</TabsTrigger>
+          <Tabs.List>
+            <Tabs.Trigger value="dashboard">仪表板</Tabs.Trigger>
             {isFeatureEnabled('queueManagement') && (
-              <TabsTrigger value="queues">队列管理</TabsTrigger>
+              <Tabs.Trigger value="queues">队列管理</Tabs.Trigger>
             )}
             {isFeatureEnabled('performanceAnalytics') && (
-              <TabsTrigger value="performance">性能分析</TabsTrigger>
+              <Tabs.Trigger value="performance">性能分析</Tabs.Trigger>
             )}
             {isFeatureEnabled('systemHealth') && (
-              <TabsTrigger value="system">系统健康</TabsTrigger>
+              <Tabs.Trigger value="system">系统健康</Tabs.Trigger>
             )}
-          </TabsList>
+          </Tabs.List>
 
-          <TabsContent value="dashboard" className="space-y-4">
+          <Tabs.Content value="dashboard" className="space-y-4">
             {renderStatusCards()}
             {renderCharts()}
-          </TabsContent>
+          </Tabs.Content>
 
           {/* 其他标签页内容可以根据需要添加 */}
-          <TabsContent value="queues">
+          <Tabs.Content value="queues">
             <Card>
               <Card.Header>
                 <Card.Title>队列管理</Card.Title>
@@ -686,9 +685,9 @@ export const VisualizationDashboard: React.FC = () => {
                 <p>队列管理功能正在开发中...</p>
               </Card.Content>
             </Card>
-          </TabsContent>
+          </Tabs.Content>
 
-          <TabsContent value="performance">
+          <Tabs.Content value="performance">
             <Card>
               <Card.Header>
                 <Card.Title>性能分析</Card.Title>
@@ -697,9 +696,9 @@ export const VisualizationDashboard: React.FC = () => {
                 <p>性能分析功能正在开发中...</p>
               </Card.Content>
             </Card>
-          </TabsContent>
+          </Tabs.Content>
 
-          <TabsContent value="system">
+          <Tabs.Content value="system">
             <Card>
               <Card.Header>
                 <Card.Title>系统健康</Card.Title>
@@ -708,7 +707,7 @@ export const VisualizationDashboard: React.FC = () => {
                 <p>系统健康功能正在开发中...</p>
               </Card.Content>
             </Card>
-          </TabsContent>
+          </Tabs.Content>
         </Tabs>
       )}
     </div>

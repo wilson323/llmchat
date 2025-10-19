@@ -116,7 +116,7 @@ export class AuthServiceV2 {
     try {
       this.redis = new Redis({
         host: envManager.get('REDIS_HOST'),
-        port: envManager.getInt('REDIS_PORT', 6379),
+        port: envManager.getInt('REDIS_PORT', 7788),
         password: envManager.get('REDIS_PASSWORD', ''),
         db: envManager.getInt('REDIS_DB', 0),
         retryStrategy: (times: number) => {
@@ -384,8 +384,8 @@ export class AuthServiceV2 {
     // 5. 更新数据库
     await withClient(async (client) => {
       await client.query(
-        `UPDATE users 
-         SET password_hash = $1, password_updated_at = CURRENT_TIMESTAMP 
+        `UPDATE users
+         SET password_hash = $1, password_updated_at = CURRENT_TIMESTAMP
          WHERE id = $2`,
         [newPasswordHash, userId],
       );
@@ -490,8 +490,8 @@ export class AuthServiceV2 {
     const result = await withClient(async (client) => {
       const { rows } = await client.query<DbUser>(
         `SELECT id, username, password_hash, role, status
-         FROM users 
-         WHERE username = $1 
+         FROM users
+         WHERE username = $1
          LIMIT 1`,
         [username],
       );
@@ -513,8 +513,8 @@ export class AuthServiceV2 {
     const result = await withClient(async (client) => {
       const { rows } = await client.query<DbUser>(
         `SELECT id, username, password_hash, role, status
-         FROM users 
-         WHERE id = $1 
+         FROM users
+         WHERE id = $1
          LIMIT 1`,
         [userId],
       );
@@ -537,8 +537,8 @@ export class AuthServiceV2 {
       await withClient(async (client) => {
         // ✅ 尝试增加失败次数（如果字段存在）
         await client.query(
-          `UPDATE users 
-           SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1 
+          `UPDATE users
+           SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1
            WHERE id = $1`,
           [userId],
         ).catch(() => {}); // 字段不存在时静默失败
@@ -549,7 +549,7 @@ export class AuthServiceV2 {
           [userId],
         ).catch(() => ({ rows: [] }));
 
-        const attempts = rows[0]?.failed_login_attempts ?? '';
+        const attempts = rows[0]?.failed_login_attempts ?? 0;
         if (attempts >= MAX_FAILED_ATTEMPTS) {
           const lockUntil = new Date(Date.now() + ACCOUNT_LOCK_DURATION * 1000);
           await client.query(

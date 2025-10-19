@@ -1,4 +1,4 @@
-;
+
 import { Globe } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '@/i18n';

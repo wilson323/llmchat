@@ -1,124 +1,492 @@
-name: Quality Monitoring
+name: 📊 Enterprise Quality Monitoring Dashboard
 
 on:
+  push:
+    branches: [main, develop, release/*]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
   schedule:
-    # 每周一上午9点运行质量监控
-    - cron: '0 9 * * 1'
-  workflow_dispatch:  # 允许手动触发
+    # 每天早上8点运行质量监控
+    - cron: '0 8 * * *'
+    # 每周日晚上8点运行深度质量检查
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Scan type'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - comprehensive
+          - security-focused
+          - performance-focused
+          - code-quality
+      generate_report:
+        description: 'Generate detailed report'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.0'
+  CI: true
+  TZ: 'Asia/Shanghai'
 
 jobs:
-  quality-monitoring:
-    name: Quality Monitoring & Trend Analysis
+  # ==========================================
+  # 阶段1: 环境准备和质量数据收集
+  # ==========================================
+  quality-data-collection:
+    name: 📊 Quality Data Collection
     runs-on: ubuntu-latest
+    outputs:
+      quality-score: ${{ steps.analysis.outputs.quality-score }}
+      security-score: ${{ steps.analysis.outputs.security-score }}
+      performance-score: ${{ steps.analysis.outputs.performance-score }}
+      trend-status: ${{ steps.analysis.outputs.trend-status }}
+      alert-level: ${{ steps.analysis.outputs.alert-level }}
 
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Install pnpm
+      - name: 📦 Setup pnpm ${{ env.PNPM_VERSION }}
         uses: pnpm/action-setup@v2
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: 📊 Generate quality report
-        run: |
-          mkdir -p reports/quality
-          pnpm run quality-monitor
-
-      - name: 📈 Analyze quality trends
-        run: pnpm run quality-trend
-
-      - name: 📋 Upload quality reports
-        uses: actions/upload-artifact@v3
         with:
-          name: quality-monitoring-reports
-          path: reports/quality/
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: |
+          echo "📦 Installing dependencies with frozen lockfile..."
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: 🔍 Environment Validation
+        run: |
+          echo "🔍 Validating build environment..."
+
+          # 验证Node.js版本
+          NODE_VERSION_CHECK=$(node -v | cut -d'v' -f2)
+          echo "✅ Node.js version: $NODE_VERSION_CHECK"
+
+          # 验证pnpm版本
+          PNPM_VERSION_CHECK=$(pnpm -v)
+          echo "✅ pnpm version: $PNPM_VERSION_CHECK"
+
+          # 验证工作区配置
+          if [ -f "pnpm-workspace.yaml" ] || [ -f "pnpm-workspace.yml" ]; then
+            echo "✅ pnpm workspace configuration found"
+          else
+            echo "⚠️ No pnpm workspace configuration found"
+          fi
+
+      - name: 📊 Comprehensive Quality Analysis
+        id: analysis
+        run: |
+          echo "::group::Running Comprehensive Quality Analysis"
+
+          # 创建质量报告目录
+          mkdir -p quality-reports/{trends,metrics,alerts}
+
+          # 运行统一质量门禁
+          echo "🔍 Running unified quality gates..."
+          node scripts/unified-quality-gates.js \
+            --mode comprehensive \
+            --format json \
+            --output quality-reports/metrics/current-quality.json \
+            --trend-data quality-reports/trends/ \
+            --thresholds-file .quality-thresholds.json || true
+
+          # 生成质量趋势分析
+          echo "📈 Analyzing quality trends..."
+          node scripts/quality-trend-tracker.js \
+            --input quality-reports/metrics/current-quality.json \
+            --trend-dir quality-reports/trends/ \
+            --output quality-reports/trends/trend-analysis.json || true
+
+          # 生成质量仪表板
+          echo "📊 Generating quality dashboard..."
+          node scripts/quality-dashboard.js \
+            --data-dir quality-reports/ \
+            --output quality-dashboard.html \
+            --format html || true
+
+          # 提取关键指标
+          if [ -f "quality-reports/metrics/current-quality.json" ]; then
+            QUALITY_SCORE=$(cat quality-reports/metrics/current-quality.json | jq -r '.overall_score // 0')
+            SECURITY_SCORE=$(cat quality-reports/metrics/current-quality.json | jq -r '.security_score // 0')
+            PERFORMANCE_SCORE=$(cat quality-reports/metrics/current-quality.json | jq -r '.performance_score // 0')
+            TREND_STATUS=$(cat quality-reports/trends/trend-analysis.json | jq -r '.trend_status // "unknown"')
+            ALERT_LEVEL=$(cat quality-reports/metrics/current-quality.json | jq -r '.alert_level // "info"')
+
+            echo "quality-score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
+            echo "security-score=$SECURITY_SCORE" >> $GITHUB_OUTPUT
+            echo "performance-score=$PERFORMANCE_SCORE" >> $GITHUB_OUTPUT
+            echo "trend-status=$TREND_STATUS" >> $GITHUB_OUTPUT
+            echo "alert-level=$ALERT_LEVEL" >> $GITHUB_OUTPUT
+
+            echo "✅ Quality analysis completed"
+            echo "📊 Quality Score: $QUALITY_SCORE/100"
+            echo "🔒 Security Score: $SECURITY_SCORE/100"
+            echo "⚡ Performance Score: $PERFORMANCE_SCORE/100"
+            echo "📈 Trend Status: $TREND_STATUS"
+            echo "🚨 Alert Level: $ALERT_LEVEL"
+          else
+            echo "quality-score=0" >> $GITHUB_OUTPUT
+            echo "security-score=0" >> $GITHUB_OUTPUT
+            echo "performance-score=0" >> $GITHUB_OUTPUT
+            echo "trend-status=error" >> $GITHUB_OUTPUT
+            echo "alert-level=critical" >> $GITHUB_OUTPUT
+            echo "❌ Quality analysis failed"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 🚨 Quality Alert Assessment
+        id: alerts
+        run: |
+          echo "::group::Quality Alert Assessment"
+
+          QUALITY_SCORE="${{ steps.analysis.outputs.quality-score }}"
+          SECURITY_SCORE="${{ steps.analysis.outputs.security-score }}"
+          ALERT_LEVEL="${{ steps.analysis.outputs.alert-level }}"
+
+          # 评估是否需要创建告警
+          CREATE_ALERT="false"
+          ALERT_PRIORITY="low"
+
+          if [ "$ALERT_LEVEL" = "critical" ] || [ "$QUALITY_SCORE" -lt 60 ] || [ "$SECURITY_SCORE" -lt 70 ]; then
+            CREATE_ALERT="true"
+            ALERT_PRIORITY="critical"
+          elif [ "$ALERT_LEVEL" = "warning" ] || [ "$QUALITY_SCORE" -lt 75 ] || [ "$SECURITY_SCORE" -lt 85 ]; then
+            CREATE_ALERT="true"
+            ALERT_PRIORITY="high"
+          elif [ "$QUALITY_SCORE" -lt 85 ]; then
+            CREATE_ALERT="true"
+            ALERT_PRIORITY="medium"
+          fi
+
+          echo "create-alert=$CREATE_ALERT" >> $GITHUB_OUTPUT
+          echo "alert-priority=$ALERT_PRIORITY" >> $GITHUB_OUTPUT
+
+          echo "🚨 Alert Assessment:"
+          echo "- Create Alert: $CREATE_ALERT"
+          echo "- Alert Priority: $ALERT_PRIORITY"
+
+          echo "::endgroup::"
+
+      - name: 📤 Upload Quality Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: enterprise-quality-report
+          path: |
+            quality-reports/
+            quality-dashboard.html
+            .quality-thresholds.json
           retention-days: 90
 
-      - name: 📧 Create issue for quality problems
-        if: failure()
-        uses: actions/github-script@v6
+  # ==========================================
+  # 阶段2: 质量趋势分析和预警
+  # ==========================================
+  quality-trend-analysis:
+    name: 📈 Quality Trend Analysis
+    runs-on: ubuntu-latest
+    needs: quality-data-collection
+    if: always()
+
+    steps:
+      - name: 📥 Download Quality Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: enterprise-quality-report
+          path: reports/
+          merge-multiple: false
+
+      - name: 📈 Advanced Trend Analysis
+        run: |
+          echo "::group::Advanced Quality Trend Analysis"
+
+          # 创建趋势分析报告
+          mkdir -p trend-analysis
+
+          if [ -f "reports/quality-reports/trends/trend-analysis.json" ]; then
+            echo "📈 Generating comprehensive trend report..."
+
+            # 生成趋势可视化数据
+            node -e "
+              const fs = require('fs');
+              const data = JSON.parse(fs.readFileSync('reports/quality-reports/trends/trend-analysis.json', 'utf8'));
+
+              const report = {
+                analysis_date: new Date().toISOString(),
+                current_metrics: {
+                  quality_score: ${{ needs.quality-data-collection.outputs.quality-score }},
+                  security_score: ${{ needs.quality-data-collection.outputs.security-score }},
+                  performance_score: ${{ needs.quality-data-collection.outputs.performance-score }},
+                  trend_status: '${{ needs.quality-data-collection.outputs.trend-status }}'
+                },
+                trend_analysis: data,
+                recommendations: []
+              };
+
+              // 生成改进建议
+              if (report.current_metrics.quality_score < 80) {
+                report.recommendations.push({
+                  category: 'code_quality',
+                  priority: 'high',
+                  action: 'Increase test coverage and reduce code complexity',
+                  impact: 'significantly improve overall code quality'
+                });
+              }
+
+              if (report.current_metrics.security_score < 85) {
+                report.recommendations.push({
+                  category: 'security',
+                  priority: 'critical',
+                  action: 'Address security vulnerabilities and implement security best practices',
+                  impact: 'improve application security posture'
+                });
+              }
+
+              if (report.current_metrics.performance_score < 75) {
+                report.recommendations.push({
+                  category: 'performance',
+                  priority: 'medium',
+                  action: 'Optimize application performance and implement caching strategies',
+                  impact: 'enhance user experience and reduce resource consumption'
+                });
+              }
+
+              fs.writeFileSync('trend-analysis/quality-trend-report.json', JSON.stringify(report, null, 2));
+              console.log('✅ Trend analysis report generated');
+            "
+
+            echo "📊 Trend analysis completed successfully"
+          else
+            echo "⚠️ No trend data available for analysis"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📤 Upload Trend Analysis
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-trend-analysis
+          path: trend-analysis/
+          retention-days: 90
+
+  # ==========================================
+  # 阶段3: 自动化问题创建和通知
+  # ==========================================
+  quality-alerts:
+    name: 🚨 Quality Alerts & Notifications
+    runs-on: ubuntu-latest
+    needs: [quality-data-collection, quality-trend-analysis]
+    if: needs.quality-data-collection.outputs.create-alert == 'true'
+
+    steps:
+      - name: 📥 Download Trend Analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: quality-trend-analysis
+          path: analysis/
+          merge-multiple: false
+
+      - name: 🚨 Create Quality Alert Issue
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
 
             try {
-              const improvementPlan = JSON.parse(fs.readFileSync('reports/quality/improvement-plan.json', 'utf8'));
+              const trendData = fs.readFileSync('analysis/quality-trend-report.json', 'utf8');
+              const analysis = JSON.parse(trendData);
 
-              if (improvementPlan.priority === 'critical' || improvementPlan.priority === 'high') {
-                const title = `🚨 Quality Alert: ${improvementPlan.priority.toUpperCase()} Priority Issues`;
-                const body = `
-            ## Quality Monitoring Alert
+              const priority = '${{ needs.quality-data-collection.outputs.alert-priority }}';
+              const qualityScore = '${{ needs.quality-data-collection.outputs.quality-score }}';
+              const securityScore = '${{ needs.quality-data-collection.outputs.security-score }}';
+              const performanceScore = '${{ needs.quality-data-collection.outputs.performance-score }}';
 
-                **Priority**: ${improvementPlan.priority.toUpperCase()}
-                **Date**: ${new Date().toISOString().split('T')[0]}
+              const title = `🚨 Quality Alert: ${priority.toUpperCase()} Priority Issues Detected`;
 
-                ### Required Actions:
-                ${improvementPlan.actions.map(action =>
-                  `- **${action.action}** (${action.impact} impact)\n  - ${action.description}\n  - Owner: ${action.owner}\n  - Due: ${action.dueDate}`
-                ).join('\n\n')}
+              const body = `
+              ## 🚨 Quality Monitoring Alert
 
-                ### Next Steps:
-                1. Review and assign actions to responsible team members
-                2. Update action status as work progresses
-                3. Monitor quality trends in subsequent reports
+              **Alert Date**: ${new Date().toISOString().split('T')[0]}
+              **Priority**: ${priority.toUpperCase()}
+              **Build Number**: ${{ github.run_number }}
+              **Commit**: ${{ github.sha }}
+              **Branch**: ${{ github.ref_name }}
 
-                ---
-                *This issue was automatically created by the quality monitoring workflow*
-                `;
+              ### 📊 Current Quality Metrics
 
-                github.rest.issues.create({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  title: title,
-                  body: body,
-                  labels: ['quality', 'automated', improvementPlan.priority]
-                });
+              | Metric | Score | Status |
+              |--------|-------|--------|
+              | Overall Quality | ${qualityScore}/100 | ${qualityScore >= 80 ? '✅ Good' : qualityScore >= 60 ? '⚠️ Warning' : '❌ Critical'} |
+              | Security | ${securityScore}/100 | ${securityScore >= 85 ? '✅ Secure' : securityScore >= 70 ? '⚠️ Moderate' : '❌ Critical'} |
+              | Performance | ${performanceScore}/100 | ${performanceScore >= 75 ? '✅ Optimal' : performanceScore >= 50 ? '⚠️ Needs Improvement' : '❌ Poor'} |
+
+              ### 📈 Trend Analysis
+
+              **Trend Status**: ${{ needs.quality-data-collection.outputs.trend-status }}
+
+              ### 🎯 Required Actions
+
+              ${analysis.recommendations.map(rec =>
+                `- **${rec.category.toUpperCase()}** (${rec.priority} priority)\n  - **Action**: ${rec.action}\n  - **Impact**: ${rec.impact}`
+              ).join('\n\n')}
+
+              ### 📋 Next Steps
+
+              1. **Immediate Actions** (${priority === 'critical' ? 'Required' : 'Recommended'}):
+                 - Review and address ${priority} priority issues
+                 - Assign tasks to responsible team members
+                 - Set deadlines for resolution
+
+              2. **Short-term Actions** (1-2 weeks):
+                 - Monitor quality trends in subsequent builds
+                 - Implement preventive measures
+                 - Update quality standards if needed
+
+              3. **Long-term Actions** (1-3 months):
+                 - Establish quality improvement processes
+                 - Implement automated quality gates
+                 - Regular quality reviews and assessments
+
+              ### 📊 Quality Trends
+
+              This alert was generated by the automated quality monitoring system.
+              Continuous monitoring helps maintain high code quality standards.
+
+              ---
+              *Alert generated on $(date -u) by LLMChat Quality Monitoring System*
+              *View detailed reports: [Quality Dashboard](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+              `;
+
+              // 创建Issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['quality', 'automated-alert', priority, 'quality-monitoring']
+              });
+
+              console.log(`✅ Quality alert issue created: #${issue.data.number}`);
+
+              // 如果是关键问题，同时创建Project Card
+              if (priority === 'critical') {
+                try {
+                  // 这里可以添加添加到Project板的逻辑
+                  console.log('📋 Critical issue flagged for immediate attention');
+                } catch (projectError) {
+                  console.log('⚠️ Could not add to project board:', projectError.message);
+                }
               }
+
             } catch (error) {
-              console.log('Could not read improvement plan:', error.message);
+              console.error('❌ Error creating quality alert:', error.message);
+
+              // 创建简化的告警
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Quality Monitoring Alert',
+                body: `
+                Automated quality monitoring detected issues that require attention.
+
+                **Quality Score**: ${{ needs.quality-data-collection.outputs.quality-score }}/100
+                **Security Score**: ${{ needs.quality-data-collection.outputs.security-score }}/100
+                **Alert Priority**: ${{ needs.quality-data-collection.outputs.alert-priority }}
+
+                Please review the quality monitoring workflow run for detailed information.
+
+                Build: ${{ github.run_number }}
+                Commit: ${{ github.sha }}
+                `,
+                labels: ['quality', 'automated-alert']
+              });
             }
 
+  # ==========================================
+  # 阶段4: 质量摘要和报告生成
+  # ==========================================
   quality-summary:
-    name: Quality Summary
+    name: 📋 Quality Summary Report
     runs-on: ubuntu-latest
-    needs: quality-monitoring
+    needs: [quality-data-collection, quality-trend-analysis, quality-alerts]
     if: always()
 
     steps:
-      - name: Download reports
-        uses: actions/download-artifact@v3
+      - name: 📥 Download All Reports
+        uses: actions/download-artifact@v4
         with:
-          name: quality-monitoring-reports
-          path: reports/
+          pattern: "*-report*"
+          merge-multiple: true
+          path: all-reports/
 
-      - name: 📊 Display quality summary
+      - name: 📊 Generate Comprehensive Summary
         run: |
-          echo "# 📊 Quality Monitoring Summary" >> $GITHUB_STEP_SUMMARY
+          echo "# 📊 Enterprise Quality Monitoring Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Generated on: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated on**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Number**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ -f "reports/quality-trend.json" ]; then
-            echo "## 📈 Quality Trend Data" >> $GITHUB_STEP_SUMMARY
-            echo "Data points available: $(cat reports/quality-trend.json | jq length)" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📈 Quality Metrics Overview" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Score | Status | Trend |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Overall Quality | ${{ needs.quality-data-collection.outputs.quality-score }}/100 | ${{ needs.quality-data-collection.outputs.quality-score >= 80 && '✅ Good' || needs.quality-data-collection.outputs.quality-score >= 60 && '⚠️ Warning' || '❌ Critical' }} | ${{ needs.quality-data-collection.outputs.trend-status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.quality-data-collection.outputs.security-score }}/100 | ${{ needs.quality-data-collection.outputs.security-score >= 85 && '✅ Secure' || needs.quality-data-collection.outputs.security-score >= 70 && '⚠️ Moderate' || '❌ Critical' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${{ needs.quality-data-collection.outputs.performance-score }}/100 | ${{ needs.quality-data-collection.outputs.performance-score >= 75 && '✅ Optimal' || needs.quality-data-collection.outputs.performance-score >= 50 && '⚠️ Needs Improvement' || '❌ Poor' }} | - |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 🚨 Alert Status" >> $GITHUB_STEP_SUMMARY
+          echo "**Alert Level**: ${{ needs.quality-data-collection.outputs.alert-level }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Alert Created**: ${{ needs.quality-data-collection.outputs.create-alert == 'true' && '✅ Yes' || '❌ No' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Priority**: ${{ needs.quality-data-collection.outputs.alert-priority || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## 📊 Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Data Collection**: ${{ needs.quality-data-collection.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trend Analysis**: ${{ needs.quality-trend-analysis.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Quality Alerts**: ${{ needs.quality-alerts.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.quality-data-collection.result }}" == "success" ]; then
+            echo "## 🎉 Overall Assessment" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ needs.quality-data-collection.outputs.quality-score }}" -ge 90 ]; then
+              echo "🌟 **Excellent Quality** - System is performing at optimal levels!" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.quality-data-collection.outputs.quality-score }}" -ge 80 ]; then
+              echo "✅ **Good Quality** - System is performing well with minor improvements possible." >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ needs.quality-data-collection.outputs.quality-score }}" -ge 70 ]; then
+              echo "⚠️ **Acceptable Quality** - System requires attention and improvements." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Poor Quality** - System requires immediate attention and significant improvements." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## ❌ Quality Assessment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Quality monitoring system encountered issues and could not complete the assessment." >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -f "reports/improvement-plan.json" ]; then
-            echo "## 🎯 Current Improvement Plan" >> $GITHUB_STEP_SUMMARY
-            priority=$(cat reports/improvement-plan.json | jq -r .priority)
-            actions=$(cat reports/improvement-plan.json | jq '.actions | length')
-            echo "- Priority: $priority" >> $GITHUB_STEP_SUMMARY
-            echo "- Actions: $actions" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: 📤 Upload Final Summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-monitoring-summary
+          path: all-reports/
+          retention-days: 90

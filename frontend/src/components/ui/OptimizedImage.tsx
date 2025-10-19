@@ -11,7 +11,7 @@
 
 'use client';
 
-;
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -195,7 +195,9 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     }
 
     const baseSrc = currentSrc.split('?')[0];
-    if (!baseSrc) return '';
+    if (!baseSrc) {
+      return '';
+    }
 
     const query = currentSrc.includes('?') ? currentSrc.split('?')[1] : '';
     const baseUrl = baseSrc.includes('/') ? baseSrc.substring(0, baseSrc.lastIndexOf('/') + 1) : '';

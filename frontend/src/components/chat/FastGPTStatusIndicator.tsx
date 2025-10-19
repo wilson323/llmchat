@@ -1,15 +1,8 @@
-;
-;
-;
-;
-;
-;
-;
-import {AlertCircle, Bot, CheckCircle, Circle, Database, Workflow} from 'lucide-react';
+
+import { AlertCircle, Bot, CheckCircle, Circle, Database, Workflow } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-;
-;
-;
+
+
 import { Agent, StreamStatus } from '@/types';
 import { debugLog } from '@/lib/debug';
 import { useI18n } from '@/i18n';

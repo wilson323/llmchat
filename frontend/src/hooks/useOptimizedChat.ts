@@ -44,7 +44,9 @@ class MessageCache {
 
   get(key: string): ChatMessage | null {
     const item = this.cache.get(key);
-    if (!item) return null;
+    if (!item) {
+return null;
+}
 
     if (Date.now() - item.timestamp > this.ttl) {
       this.cache.delete(key);
@@ -57,7 +59,7 @@ class MessageCache {
   set(key: string, message: ChatMessage): void {
     this.cache.set(key, {
       message: { ...message }, // Deep copy to prevent mutations
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -107,7 +109,9 @@ class MessageBatchProcessor {
   }
 
   private scheduleBatchFlush(): void {
-    if (this.batchTimeout) return;
+    if (this.batchTimeout) {
+return;
+}
 
     this.batchTimeout = setTimeout(() => {
       this.flushBatch();
@@ -115,7 +119,9 @@ class MessageBatchProcessor {
   }
 
   private flushBatch(): void {
-    if (this.batch.length === 0) return;
+    if (this.batch.length === 0) {
+return;
+}
 
     if (this.batchTimeout) {
       clearTimeout(this.batchTimeout);
@@ -140,7 +146,7 @@ export function useOptimizedChat({
   cacheTimeout = 300000,
   batchSize = 10,
   enableScrollOptimization = true,
-  enablePerformanceMonitoring = true
+  enablePerformanceMonitoring = true,
 }: OptimizedChatOptions = {}) {
   // Performance monitoring
   if (enablePerformanceMonitoring) {
@@ -151,7 +157,7 @@ export function useOptimizedChat({
     messages,
     currentAgent,
     streamingStatus,
-    addMessage
+    addMessage,
   } = useChatStore.getState();
 
   // Local state for optimization
@@ -162,7 +168,7 @@ export function useOptimizedChat({
     scrollEventsCount: 0,
     renderCount: 0,
     cacheHitRate: 0,
-    memoryUsage: 0
+    memoryUsage: 0,
   });
 
   // Refs for optimization
@@ -170,7 +176,7 @@ export function useOptimizedChat({
   const batchProcessor = useRef(
     new MessageBatchProcessor((batch) => {
       batch.forEach(msg => addMessage(msg));
-    }, batchSize)
+    }, batchSize),
   );
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -224,7 +230,9 @@ export function useOptimizedChat({
 
   // Scroll optimization
   const handleScroll = useCallback(() => {
-    if (!enableScrollOptimization) return;
+    if (!enableScrollOptimization) {
+return;
+}
 
     setIsScrolling(true);
     setMetrics((prev: ChatMetrics) => ({ ...prev, scrollEventsCount: prev.scrollEventsCount + 1 }));
@@ -242,13 +250,15 @@ export function useOptimizedChat({
 
   // Scroll to bottom with optimization
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!scrollContainerRef.current) return;
+    if (!scrollContainerRef.current) {
+return;
+}
 
     requestAnimationFrame(() => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({
           top: scrollContainerRef.current.scrollHeight,
-          behavior: smooth ? 'smooth' : 'auto'
+          behavior: smooth ? 'smooth' : 'auto',
         });
       }
     });
@@ -273,13 +283,15 @@ export function useOptimizedChat({
       averageMessageSize,
       cacheHitRate,
       memoryUsage,
-      renderCount: prev.renderCount + 1
+      renderCount: prev.renderCount + 1,
     }));
   }, [optimizedMessages]);
 
   // Set up metrics interval
   useEffect(() => {
-    if (!enablePerformanceMonitoring) return;
+    if (!enablePerformanceMonitoring) {
+return;
+}
 
     metricsIntervalRef.current = setInterval(updateMetrics, 2000);
     updateMetrics(); // Initial update
@@ -353,8 +365,8 @@ export function useOptimizedChat({
       misses: cacheMisses.current,
       hitRate: cacheHits.current + cacheMisses.current > 0
         ? (cacheHits.current / (cacheHits.current + cacheMisses.current)) * 100
-        : 0
-    })
+        : 0,
+    }),
   }), [
     optimizedMessages,
     currentAgent,
@@ -366,7 +378,7 @@ export function useOptimizedChat({
     selectAgent,
     clearHistory,
     scrollToBottom,
-    handleScroll
+    handleScroll,
   ]);
 
   return result;
@@ -409,7 +421,7 @@ export function useMessageRenderOptimization(messages: ChatMessage[]) {
       userMessages,
       aiMessages,
       totalChars,
-      avgCharsPerMessage
+      avgCharsPerMessage,
     };
   }, [messages]);
 
@@ -417,7 +429,7 @@ export function useMessageRenderOptimization(messages: ChatMessage[]) {
     messageGroups,
     messageStats,
     visibleRange,
-    setVisibleRange
+    setVisibleRange,
   };
 }
 

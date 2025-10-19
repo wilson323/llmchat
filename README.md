@@ -1,7 +1,14 @@
-# LLMChat - 多智能体切换聊天应用
-技术债务积分：+1（阶段3：伦理防火墙接入）
+# LLMChat - 企业级多智能体聊天平台
 
-一个仿照 ChatGPT 官网交互体验的聊天应用，支持在多个 AI 提供商（如 FastGPT、OpenAI、Anthropic 等）之间进行动态切换，提供统一的服务端配置与代理能力，前端具备主题切换、流式响应、管理后台等功能。
+[![Spec-Kit Compliant](https://img.shields.io/badge/Spec--Kit-Compliant-brightgreen.svg)](https://docs.llmchat.com/spec-kit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+
+> **企业级智能体聊天平台** - 支持多AI提供商动态切换的现代化聊天应用
+
+LLMChat 是一个企业级多智能体聊天平台，支持在多个AI提供商（FastGPT、OpenAI、Anthropic、Dify等）之间进行动态切换，提供统一的服务端配置与代理能力。前端具备主题切换、流式响应、管理后台等功能，后端采用微服务架构设计。
 
 ## 技术栈
 
@@ -134,6 +141,20 @@ llmchat/
    ```
    npm start
    ```
+
+## 📚 项目文档
+
+### 文档组织
+- **核心文档**: 位于 `docs/` 目录
+- **归档文档**: 历史报告归档在 `docs/archive/`
+- **故障排除**: 专题文档在 `docs/troubleshooting/`
+- **详细索引**: 查看 [docs/README.md](docs/README.md)
+
+### 必读文档
+1. **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - 开发规范和最佳实践
+2. **[docs/CODE_REVIEW_GUIDE.md](docs/CODE_REVIEW_GUIDE.md)** - 代码审查指南
+3. **[docs/CONFIG_QUICK_START.md](docs/CONFIG_QUICK_START.md)** - 快速配置指南
+4. **[docs/QUICK_START_GUIDE.md](docs/QUICK_START_GUIDE.md)** - 项目快速启动
 
 ## 根级脚本说明
 

@@ -1,7 +1,7 @@
 /**
  * 聊天会话服务
  * 提供会话CRUD、消息管理、搜索功能
- * 
+ *
  * 功能：
  * - 创建/获取/更新/删除会话
  * - 添加消息到会话
@@ -59,7 +59,7 @@ export interface CreateSessionParams {
 export class ChatSessionService {
   /**
    * 创建新会话
-   * 
+   *
    * @param params - 会话创建参数
    * @returns 新创建的会话
    */
@@ -68,15 +68,15 @@ export class ChatSessionService {
 
     try {
       const result = await getPool().query(
-        `INSERT INTO chat_sessions 
-         (user_id, agent_id, title) 
-         VALUES ($1, $2, $3) 
+        `INSERT INTO chat_sessions
+         (user_id, agent_id, title)
+         VALUES ($1, $2, $3)
          RETURNING *`,
         [userId, agentId, title]
       );
 
       const session = this.mapRowToSession(result.rows[0]);
-      
+
       logger.info('ChatSession created', {
         sessionId: session.id,
         userId,
@@ -97,7 +97,7 @@ export class ChatSessionService {
 
   /**
    * 获取用户的所有会话
-   * 
+   *
    * @param userId - 用户ID
    * @param agentId - 可选：智能体ID（过滤）
    * @returns 会话列表
@@ -105,10 +105,10 @@ export class ChatSessionService {
   async getUserSessions(userId: number, agentId?: string): Promise<ChatSession[]> {
     try {
       const query = agentId
-        ? `SELECT * FROM chat_sessions 
+        ? `SELECT * FROM chat_sessions
            WHERE user_id = $1 AND agent_id = $2 AND status = 'active'
            ORDER BY updated_at DESC`
-        : `SELECT * FROM chat_sessions 
+        : `SELECT * FROM chat_sessions
            WHERE user_id = $1 AND status = 'active'
            ORDER BY updated_at DESC`;
 
@@ -128,7 +128,7 @@ export class ChatSessionService {
 
   /**
    * 获取单个会话
-   * 
+   *
    * @param sessionId - 会话ID
    * @param userId - 用户ID（权限验证）
    * @returns 会话详情
@@ -136,7 +136,7 @@ export class ChatSessionService {
   async getSession(sessionId: string, userId: number): Promise<ChatSession | null> {
     try {
       const result = await getPool().query(
-        `SELECT * FROM chat_sessions 
+        `SELECT * FROM chat_sessions
          WHERE id = $1 AND user_id = $2`,
         [sessionId, userId]
       );
@@ -158,14 +158,14 @@ export class ChatSessionService {
 
   /**
    * 添加消息到会话
-   * 
+   *
    * @param sessionId - 会话ID
    * @param message - 消息内容
    */
   async addMessage(sessionId: string, message: ChatMessage): Promise<void> {
     try {
       await getPool().query(
-        `UPDATE chat_sessions 
+        `UPDATE chat_sessions
          SET messages = messages || $1::jsonb,
              message_count = message_count + 1,
              last_message_at = CURRENT_TIMESTAMP
@@ -189,7 +189,7 @@ export class ChatSessionService {
 
   /**
    * 批量添加消息（性能优化）
-   * 
+   *
    * @param sessionId - 会话ID
    * @param messages - 消息数组
    */
@@ -201,7 +201,7 @@ export class ChatSessionService {
     try {
       const messagesJson = JSON.stringify(messages);
       await getPool().query(
-        `UPDATE chat_sessions 
+        `UPDATE chat_sessions
          SET messages = messages || $1::jsonb,
              message_count = message_count + $2,
              last_message_at = CURRENT_TIMESTAMP
@@ -225,7 +225,7 @@ export class ChatSessionService {
 
   /**
    * 更新会话标题
-   * 
+   *
    * @param sessionId - 会话ID
    * @param userId - 用户ID（权限验证）
    * @param title - 新标题
@@ -233,8 +233,8 @@ export class ChatSessionService {
   async updateSessionTitle(sessionId: string, userId: number, title: string): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions 
-         SET title = $1 
+        `UPDATE chat_sessions
+         SET title = $1
          WHERE id = $2 AND user_id = $3
          RETURNING id`,
         [title, sessionId, userId]
@@ -261,15 +261,15 @@ export class ChatSessionService {
 
   /**
    * 删除会话（软删除）
-   * 
+   *
    * @param sessionId - 会话ID
    * @param userId - 用户ID（权限验证）
    */
   async deleteSession(sessionId: string, userId: number): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions 
-         SET status = 'deleted' 
+        `UPDATE chat_sessions
+         SET status = 'deleted'
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
         [sessionId, userId]
@@ -295,15 +295,15 @@ export class ChatSessionService {
 
   /**
    * 归档会话
-   * 
+   *
    * @param sessionId - 会话ID
    * @param userId - 用户ID（权限验证）
    */
   async archiveSession(sessionId: string, userId: number): Promise<void> {
     try {
       const result = await getPool().query(
-        `UPDATE chat_sessions 
-         SET status = 'archived' 
+        `UPDATE chat_sessions
+         SET status = 'archived'
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
         [sessionId, userId]
@@ -329,7 +329,7 @@ export class ChatSessionService {
 
   /**
    * 全文搜索会话
-   * 
+   *
    * @param userId - 用户ID
    * @param query - 搜索关键词
    * @param limit - 返回结果数量限制
@@ -342,7 +342,7 @@ export class ChatSessionService {
 
     try {
       const result = await getPool().query(
-        `SELECT *, 
+        `SELECT *,
          ts_rank(search_vector, plainto_tsquery('english', $2)) as rank
          FROM chat_sessions
          WHERE user_id = $1
@@ -372,7 +372,7 @@ export class ChatSessionService {
 
   /**
    * 更新会话统计信息
-   * 
+   *
    * @param sessionId - 会话ID
    * @param stats - 统计信息
    */
@@ -405,7 +405,7 @@ export class ChatSessionService {
 
     try {
       await getPool().query(
-        `UPDATE chat_sessions 
+        `UPDATE chat_sessions
          SET ${updates.join(', ')}
          WHERE id = $${paramIndex}`,
         values
@@ -421,7 +421,7 @@ export class ChatSessionService {
 
   /**
    * 获取会话统计信息
-   * 
+   *
    * @param userId - 用户ID
    * @returns 统计摘要
    */
@@ -434,7 +434,7 @@ export class ChatSessionService {
   }> {
     try {
       const result = await getPool().query(
-        `SELECT 
+        `SELECT
            COUNT(*) as total_sessions,
            COUNT(*) FILTER (WHERE status = 'active') as active_sessions,
            COUNT(*) FILTER (WHERE status = 'archived') as archived_sessions,
@@ -464,7 +464,7 @@ export class ChatSessionService {
 
   /**
    * 映射数据库行到ChatSession对象
-   * 
+   *
    * @param row - 数据库查询结果行
    * @returns ChatSession对象
    */

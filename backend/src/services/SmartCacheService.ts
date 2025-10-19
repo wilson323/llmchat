@@ -1,6 +1,6 @@
 /**
  * 智能缓存服务
- * 
+ *
  * 提供高级缓存策略：
  * - 多层缓存（内存+Redis）
  * - 智能失效策略
@@ -227,7 +227,7 @@ export class SmartCacheService {
 
     // 注意：CacheService目前不支持keys()方法
     // 需要依赖标签系统或者扩展CacheService
-    
+
     logger.info('SmartCache: 按模式失效缓存（仅内存）', {
       pattern,
       invalidated,
@@ -330,7 +330,7 @@ export class SmartCacheService {
    */
   public async getCacheSize(): Promise<{ memory: number; redis: number }> {
     let redisSize = 0;
-    
+
     try {
       const cacheService = getCacheService();
       if (cacheService.isConnected()) {

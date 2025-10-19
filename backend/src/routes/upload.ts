@@ -1,7 +1,7 @@
 /**
  * 文件上传API路由
  * 提供安全的文件上传功能
- * 
+ *
  * 端点：
  * - POST /api/upload/single - 单文件上传
  * - POST /api/upload/multiple - 多文件上传
@@ -22,7 +22,7 @@ const router: express.Router = express.Router();
 /**
  * 单文件上传
  * POST /api/upload/single
- * 
+ *
  * 请求：multipart/form-data，字段名：file
  * 响应：{ code, data: { filename, originalName, size, mimetype, path } }
  */
@@ -73,7 +73,7 @@ router.post('/single', authenticateJWT(), uploadSingle, async (req: Request, res
 /**
  * 多文件上传
  * POST /api/upload/multiple
- * 
+ *
  * 请求：multipart/form-data，字段名：files
  * 响应：{ code, data: [{ filename, originalName, size, mimetype, path }] }
  */

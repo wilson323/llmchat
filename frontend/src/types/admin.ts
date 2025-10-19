@@ -13,7 +13,7 @@ export interface LogEntry {
   level: 'info' | 'warn' | 'error' | 'debug';
   message: string;
   source: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SystemMetrics {
@@ -75,7 +75,7 @@ export interface AgentItem {
   status?: 'active' | 'inactive';
   provider?: string;
   capabilities?: string[];
-  features?: Record<string, any>;
+  features?: Record<string, unknown>;
   rateLimit?: { requestsPerMinute?: number; tokensPerMinute?: number };
   endpoint?: string;
   systemPrompt?: string;

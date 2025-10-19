@@ -1,10 +1,11 @@
-;
+
 import React, { useEffect, useRef, useMemo } from 'react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
 // 使用拆分的store架构
 import messageStore from '@/store/messageStore';
 import agentStore from '@/store/agentStore';
+import type { MessageState, AgentState } from '@/store/types';
 import { useI18n } from '@/i18n';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
 import {
@@ -83,8 +84,8 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
   // 🚀 性能监控
   usePerformanceMonitor('VirtualizedMessageList');
 
-  const currentAgent = agentStore((state: any) => state.currentAgent);
-  const streamingStatus = messageStore((state: any) => state.streamingStatus);
+  const currentAgent = agentStore((state: AgentState) => state.currentAgent);
+  const streamingStatus = messageStore((state: MessageState) => state.streamingStatus);
   const { t } = useI18n();
   const containerRef = useRef(null);
   const lastMessageRef = useRef(null);
@@ -145,7 +146,9 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
         <div style={{ height: totalHeight, position: 'relative' }}>
           {virtualItems.map((virtualItem) => {
             const message = messages[virtualItem.index];
-            if (!message) return null;
+            if (!message) {
+return null;
+}
 
             const isLastMessage = virtualItem.index === messages.length - 1;
             const isAssistantMessage = message.AI !== undefined;
@@ -173,7 +176,7 @@ export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
                   {...(onInteractiveSelect && { onInteractiveSelect })}
                   {...(onInteractiveFormSubmit && { onInteractiveFormSubmit })}
                   {...(message.id && onRetryMessage && {
-                    onRetry: () => onRetryMessage(message.id!)
+                    onRetry: () => onRetryMessage(message.id!),
                   })}
                 />
 

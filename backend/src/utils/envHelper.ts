@@ -100,7 +100,7 @@ export function validateRequiredEnvVars(requiredVars: string[]): void {
   if (missing.length > 0) {
     const error = new Error(
       `缺少必需的环境变量: ${missing.join(', ')}\n` +
-      '请在 backend/.env 文件中设置这些变量，参考 backend/ENV_TEMPLATE.txt',
+      '请在根目录 .env 文件中设置这些变量，参考 .env.example',
     );
     logger.error('环境变量验证失败', { missing });
     throw error;

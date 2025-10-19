@@ -1,18 +1,8 @@
-;
-;
-;
-;
-;
-;
-;
-;
-;
-import {Loader2, Mic, Paperclip, Send, Square, X} from 'lucide-react';
+
+import { Loader2, Mic, Paperclip, Send, Square, X } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-;
-;
-;
-;
+
+
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 
@@ -20,6 +10,8 @@ import { uploadAttachment } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
 import type { ChatInputProps, ChatAttachmentMetadata, VoiceNoteMetadata } from '@/types';
+import { createChangeHandler, createFormHandler, createKeyboardHandler } from '../../utils/eventAdapter';
+import type { ChangeEventHandler, FormSubmitHandler, KeyboardEventHandler } from '../../types/event-handlers';
 
 export const MessageInput: React.FC<ChatInputProps> = ({
   onSendMessage,
@@ -71,8 +63,8 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     if (isStreaming) {
       toast({ type: 'info', title: t('正在生成中，请稍候') });
       return;
@@ -102,10 +94,10 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(event as React.FormEvent);
     }
   };
 
@@ -117,7 +109,9 @@ export const MessageInput: React.FC<ChatInputProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
     const files = event.target.files;
     if (!files || files.length === 0) {
       return;

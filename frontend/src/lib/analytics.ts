@@ -8,7 +8,7 @@
  * - 用户属性管理
  */
 
-;
+
 import { addBreadcrumb } from './sentry';
 import type { SafeEventParams, SafeUserProperties, SafeAnalyticsConfig } from '@/types/global';
 

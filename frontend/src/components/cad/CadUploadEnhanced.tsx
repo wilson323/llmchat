@@ -9,15 +9,6 @@
  */
 
 
-;
-;
-;
-;
-;
-;
-;
-;
-
 import { AlertCircle, CheckCircle, File, FileText, FileWarning, Loader2, Upload, XCircle } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { useDropzone, type FileRejection } from 'react-dropzone';

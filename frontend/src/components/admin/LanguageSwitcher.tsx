@@ -2,7 +2,7 @@
  * 语言切换器组件
  */
 
-;
+
 import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,8 +14,8 @@ export function LanguageSwitcher() {
     { code: 'en-US', label: 'English' },
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(e.target.value);
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    i18n.changeLanguage(event.target.value);
   };
 
   return (

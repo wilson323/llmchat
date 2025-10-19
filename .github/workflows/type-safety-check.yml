@@ -1,0 +1,349 @@
+name: Type Safety Quality Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # 每日凌晨2点运行全面检查
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Type of check to run'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - type-check-only
+          - performance-only
+          - security-only
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8.15.0'
+
+jobs:
+  type-safety:
+    name: Type Safety Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        check-mode:
+          - normal
+          - strict
+
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史记录用于分析
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache TypeScript compilation
+        uses: actions/cache@v3
+        with:
+          path: |
+            .npm
+            ~/.npm
+            node_modules/.cache
+          key: ${{ runner.os }}-node-${{ env.NODE_VERSION }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.NODE_VERSION }}-
+
+      - name: Run type check
+        run: |
+          echo "🔍 Running TypeScript type check..."
+          pnpm run type-check
+        continue-on-error: false
+
+      - name: Run linting
+        run: |
+          echo "🔍 Running ESLint..."
+          pnpm run lint
+        continue-on-error: false
+
+      - name: Run type safety check (Normal Mode)
+        if: matrix.check-mode == 'normal'
+        run: |
+          echo "🔍 Running type safety check (Normal Mode)..."
+          npx ts-node scripts/type-safety-check.ts --json --verbose
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+
+      - name: Run type safety check (Strict Mode)
+        if: matrix.check-mode == 'strict'
+        run: |
+          echo "🔍 Running type safety check (Strict Mode)..."
+          npx ts-node scripts/type-safety-check.ts --strict --json --verbose
+        continue-on-error: false
+
+      - name: Run optional access fix check
+        run: |
+          echo "🔍 Checking for unsafe optional access..."
+          npx ts-node scripts/fix-optional-access.ts --dry-run
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+
+      - name: Upload type safety report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: type-safety-report-${{ matrix.check-mode }}
+          path: |
+            type-safety-report.json
+            type-safety-report.md
+          retention-days: 30
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && matrix.check-mode == 'strict'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const report = JSON.parse(fs.readFileSync('type-safety-report.json', 'utf8'));
+
+              const comment = `
+              ## 🔍 Type Safety Check Results
+
+              ### 📊 Summary
+              - **Total Issues**: ${report.totalIssues}
+              - **Errors**: ${report.errors} ❌
+              - **Warnings**: ${report.warnings} ⚠️
+              - **Files Checked**: ${report.files}
+
+              ### 📈 Issues by Category
+              ${Object.entries(report.issuesByCategory).map(([category, count]) =>
+                `- **${category}**: ${count}`
+              ).join('\n')}
+
+              ### 💡 Recommendations
+              ${report.recommendations.map(rec =>
+                `- **${rec.priority}**: ${rec.description}`
+              ).join('\n')}
+
+              ### 🚀 Performance Metrics
+              - **Type Check Time**: ${report.performanceImpact.totalTypeCheckTime}ms
+              - **Memory Usage**: ${Math.round(report.performanceImpact.memoryUsage / 1024 / 1024)}MB
+
+              ---
+              *This report was generated automatically by the Type Safety Check workflow.*
+              `;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read type safety report:', error.message);
+            }
+
+  performance-benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+    needs: type-safety
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run performance benchmarks
+        run: |
+          echo "⚡ Running TypeScript type safety performance benchmarks..."
+          npx ts-node tests/performance/type-safety.bench.ts --json
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-benchmark-report
+          path: |
+            type-safety-performance-report.json
+            performance-trend-data.json
+          retention-days: 90
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: type-safety
+    if: github.event_name == 'schedule' || github.event_name == 'push' || github.event_name == 'pull_request'
+
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: |
+          echo "🔒 Running security audit..."
+          pnpm audit --audit-level moderate
+        continue-on-error: false
+
+      - name: Run type security check
+        run: |
+          echo "🔒 Running type security validation..."
+          npx ts-node scripts/type-safety-check.ts --security-only --json
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+
+  quality-gate:
+    name: Quality Gate Check
+    runs-on: ubuntu-latest
+    needs: [type-safety, security-scan]
+    if: always() && (needs.type-safety.result == 'success' || needs.type-safety.result == 'failure')
+
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download type safety reports
+        uses: actions/download-artifact@v3
+        with:
+          name: type-safety-report-strict
+          path: ./reports/
+        continue-on-error: true
+
+      - name: Evaluate quality gates
+        run: |
+          echo "🚪 Evaluating quality gates..."
+
+          # 检查是否有类型错误
+          if [ -f "./reports/type-safety-report.json" ]; then
+            ERRORS=$(cat ./reports/type-safety-report.json | jq '.errors')
+            WARNINGS=$(cat ./reports/type-safety-report.json | jq '.warnings')
+
+            echo "Type Errors: $ERRORS"
+            echo "Type Warnings: $WARNINGS"
+
+            # 质量门禁检查
+            if [ "$ERRORORS" -gt 0 ]; then
+              echo "❌ Quality gate failed: Type errors detected"
+              echo "Errors: $ERRORS"
+              exit 1
+            fi
+
+            if [ "$WARNINGS" -gt 50 ]; then
+              echo "⚠️ Quality gate warning: Too many type warnings"
+              echo "Warnings: $WARNINGS"
+            fi
+
+            echo "✅ Quality gate passed"
+          else
+            echo "⚠️ No type safety report found, skipping quality gate evaluation"
+          fi
+
+      - name: Generate quality metrics
+        run: |
+          echo "📊 Generating quality metrics..."
+
+          # 创建质量指标文件
+          cat > quality-metrics.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)",
+            "workflow_run_id": "${{ github.run_id }}",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.ref_name }}",
+            "commit": "${{ github.sha }}",
+            "type_safety_status": "${{ needs.type-safety.result }}",
+            "security_status": "${{ needs.security-scan.result }}",
+            "quality_gate_status": "passed"
+          }
+          EOF
+
+          echo "Quality metrics generated"
+
+      - name: Upload quality metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-metrics
+          path: quality-metrics.json
+          retention-days: 365
+
+  notification:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [type-safety, security-scan, quality-gate]
+    if: always() && (needs.type-safety.result == 'failure' || needs.security-scan.result == 'failure')
+
+    timeout-minutes: 5
+
+    steps:
+      - name: Notify on failure
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const workflowName = 'Type Safety Quality Check';
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const runUrl = `https://github.com/${repo.owner}/${repo.repo}/actions/runs/${runId}`;
+
+            let message = `❌ ${workflowName} workflow failed!\n\n`;
+
+            if ('${{ needs.type-safety.result }}' === 'failure') {
+              message += `- Type safety check failed\n`;
+            }
+
+            if ('${{ needs.security-scan.result }}' === 'failure') {
+              message += `- Security scan failed\n`;
+            }
+
+            if ('${{ needs.quality-gate.result }}' === 'failure') {
+              message += `- Quality gate failed\n`;
+            }
+
+            message += `\n🔗 [View details](${runUrl})`;
+
+            // 这里可以集成Slack、Teams或其他通知系统
+            console.log('Notification message:', message);

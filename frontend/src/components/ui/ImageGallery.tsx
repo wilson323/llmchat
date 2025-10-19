@@ -6,18 +6,13 @@
 
 'use client';
 
-;
-;
-;
-;
+
 import { ChevronLeft, ChevronRight, Download, Grid3x3, Maximize2 } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { OptimizedImage } from './OptimizedImage';
 import { useVirtualScroll } from '@/hooks/useVirtualScroll';
-;
-;
-;
-;
+
+
 import { cn } from '@/lib/utils';
 
 interface ImageItem {

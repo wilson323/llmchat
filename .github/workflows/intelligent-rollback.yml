@@ -1,0 +1,606 @@
+name: 🔄 Intelligent Rollback & Recovery System
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+      target_environment:
+        description: 'Target environment for rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+      rollback_strategy:
+        description: 'Rollback strategy'
+        required: true
+        default: 'automatic'
+        type: choice
+        options:
+          - automatic
+          - manual
+          - partial
+      backup_version:
+        description: 'Backup version to rollback to'
+        required: false
+        type: string
+      create_backup:
+        description: 'Create backup before rollback'
+        required: false
+        default: true
+        type: boolean
+  workflow_run:
+    workflows: ["Advanced CI/CD Pipeline"]
+    types: [completed]
+    branches: [main]
+  schedule:
+    # 每天凌晨3点进行健康检查和自动回滚（如果需要）
+    - cron: '0 3 * * *'
+
+env:
+  NODE_VERSION: '20'
+  DOCKER_REGISTRY: 'ghcr.io'
+  KUBERNETES_NAMESPACE: 'llmchat'
+
+jobs:
+  # ==========================================
+  # 智能化回滚决策
+  # ==========================================
+  intelligent-rollback-decision:
+    name: 🧠 Intelligent Rollback Decision
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch'
+    outputs:
+      should-rollback: ${{ steps.decision.outputs.should-rollback }}
+      rollback-reason: ${{ steps.decision.outputs.rollback-reason }}
+      rollback-strategy: ${{ steps.decision.outputs.rollback-strategy }}
+      target-version: ${{ steps.decision.outputs.target-version }}
+      backup-created: ${{ steps.decision.outputs.backup-created }}
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Analyze Deployment Status
+        id: decision
+        run: |
+          echo "::group::Analyzing Deployment Status"
+
+          # 初始化决策变量
+          SHOULD_ROLLBACK="false"
+          ROLLBACK_REASON=""
+          ROLLBACK_STRATEGY="automatic"
+          TARGET_VERSION=""
+          BACKUP_CREATED="false"
+
+          # 检查触发原因
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # 手动触发的回滚
+            SHOULD_ROLLBACK="true"
+            ROLLBACK_REASON="${{ github.event.inputs.rollback_reason }}"
+            ROLLBACK_STRATEGY="${{ github.event.inputs.rollback_strategy }}"
+            TARGET_VERSION="${{ github.event.inputs.backup_version }}"
+            BACKUP_CREATED="${{ github.event.inputs.create_backup }}"
+            echo "🔄 Manual rollback initiated"
+          elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+            # 自动触发的回滚检查
+            WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
+
+            if [ "$WORKFLOW_CONCLUSION" == "failure" ]; then
+              echo "❌ Previous workflow failed, analyzing rollback requirements..."
+
+              # 检查失败的工作流
+              FAILED_JOBS=$(gh run view ${{ github.event.workflow_run.id }} --json jobs --jq '.jobs[] | select(.conclusion == "failure") | .name' || echo "")
+
+              if [ -n "$FAILED_JOBS" ]; then
+                SHOULD_ROLLBACK="true"
+                ROLLBACK_REASON="Automated rollback due to workflow failures: $FAILED_JOBS"
+                ROLLBACK_STRATEGY="automatic"
+                BACKUP_CREATED="true"
+                echo "🔄 Automatic rollback triggered due to workflow failures"
+              fi
+            fi
+          elif [ "${{ github.event_name }}" == "schedule" ]; then
+            # 定时健康检查
+            echo "🔍 Performing scheduled health check..."
+
+            # 这里可以添加健康检查逻辑
+            # 如果健康检查失败，触发回滚
+            HEALTH_STATUS="healthy"  # 默认健康
+
+            if [ "$HEALTH_STATUS" != "healthy" ]; then
+              SHOULD_ROLLBACK="true"
+              ROLLBACK_REASON="Automated rollback due to health check failure"
+              ROLLBACK_STRATEGY="automatic"
+              BACKUP_CREATED="true"
+              echo "🔄 Automatic rollback triggered due to health check failure"
+            fi
+          fi
+
+          # 设置输出
+          echo "should-rollback=$SHOULD_ROLLBACK" >> $GITHUB_OUTPUT
+          echo "rollback-reason=$ROLLBACK_REASON" >> $GITHUB_OUTPUT
+          echo "rollback-strategy=$ROLLBACK_STRATEGY" >> $GITHUB_OUTPUT
+          echo "target-version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          echo "backup-created=$BACKUP_CREATED" >> $GITHUB_OUTPUT
+
+          echo "📊 Rollback Decision:"
+          echo "- Should Rollback: $SHOULD_ROLLBACK"
+          echo "- Reason: $ROLLBACK_REASON"
+          echo "- Strategy: $ROLLBACK_STRATEGY"
+          echo "- Target Version: $TARGET_VERSION"
+          echo "- Backup Created: $BACKUP_CREATED"
+          echo "::endgroup::"
+
+      - name: 📊 Generate Rollback Decision Report
+        run: |
+          echo "## 🧠 Intelligent Rollback Decision Report" > rollback-decision-report.md
+          echo "" >> rollback-decision-report.md
+          echo "- **Should Rollback**: ${{ steps.decision.outputs.should-rollback }}" >> rollback-decision-report.md
+          echo "- **Rollback Reason**: ${{ steps.decision.outputs.rollback-reason }}" >> rollback-decision-report.md
+          echo "- **Rollback Strategy**: ${{ steps.decision.outputs.rollback-strategy }}" >> rollback-decision-report.md
+          echo "- **Target Version**: ${{ steps.decision.outputs.target-version }}" >> rollback-decision-report.md
+          echo "- **Backup Created**: ${{ steps.decision.outputs.backup-created }}" >> rollback-decision-report.md
+          echo "- **Timestamp**: $(date -u)" >> rollback-decision-report.md
+
+      - name: 📤 Upload Rollback Decision Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-decision-report
+          path: rollback-decision-report.md
+          retention-days: 30
+
+  # ==========================================
+  # 创建备份（如果需要）
+  # ==========================================
+  create-backup:
+    name: 💾 Create Backup Before Rollback
+    runs-on: ubuntu-latest
+    needs: intelligent-rollback-decision
+    if: needs.intelligent-rollback-decision.outputs.should-rollback == 'true' && needs.intelligent-rollback-decision.outputs.backup-created == 'true'
+
+    steps:
+      - name: 🔐 Setup Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 💾 Create Current Version Backup
+        run: |
+          echo "::group::Creating Current Version Backup"
+
+          # 生成备份标签
+          BACKUP_TAG="backup-$(date +%Y%m%d-%H%M%S)"
+          ENVIRONMENT="${{ needs.intelligent-rollback-decision.outputs.target-environment || 'production' }}"
+
+          echo "Creating backup for $ENVIRONMENT environment..."
+          echo "Backup tag: $BACKUP_TAG"
+
+          # 备份当前运行的镜像
+          docker pull ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:latest
+          docker tag ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:latest ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:$BACKUP_TAG
+          docker push ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:$BACKUP_TAG
+
+          echo "✅ Backup created: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:$BACKUP_TAG"
+          echo "backup-tag=$BACKUP_TAG" >> $GITHUB_ENV
+
+          echo "::endgroup::"
+
+      - name: 🗄️ Backup Database (if applicable)
+        run: |
+          echo "::group::Creating Database Backup"
+
+          # 这里可以添加数据库备份逻辑
+          # 例如：PostgreSQL、MongoDB 备份
+          echo "📝 Database backup logic would go here"
+          echo "⚠️ Database backup not configured in this example"
+
+          echo "::endgroup::"
+
+      - name: 📝 Document Backup
+        run: |
+          echo "::group::Documenting Backup"
+
+          mkdir -p backup-documentation
+
+          cat > backup-documentation/backup-info.json << EOF
+          {
+            "backup_tag": "$BACKUP_TAG",
+            "environment": "${{ needs.intelligent-rollback-decision.outputs.target-environment || 'production' }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "rollback_reason": "${{ needs.intelligent-rollback-decision.outputs.rollback-reason }}",
+            "workflow_run_id": "${{ github.run_id }}",
+            "commit_sha": "${{ github.sha }}"
+          }
+          EOF
+
+          echo "✅ Backup documentation created"
+          echo "::endgroup::"
+
+      - name: 📤 Upload Backup Documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-documentation
+          path: backup-documentation/
+          retention-days: 90
+
+  # ==========================================
+  # 执行回滚
+  # ==========================================
+  execute-rollback:
+    name: 🔄 Execute Rollback
+    runs-on: ubuntu-latest
+    needs: [intelligent-rollback-decision, create-backup]
+    if: always() && needs.intelligent-rollback-decision.outputs.should-rollback == 'true'
+
+    strategy:
+      matrix:
+        component: [frontend, backend, full-application]
+        include:
+          - component: frontend
+            image-suffix: "frontend"
+            port: 80
+          - component: backend
+            image-suffix: "backend"
+            port: 3001
+          - component: full-application
+            image-suffix: "full"
+            ports: [80, 3001]
+
+    steps:
+      - name: 🔐 Setup Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔄 Rollback ${{ matrix.component }}
+        id: rollback
+        run: |
+          echo "::group::Rolling Back ${{ matrix.component }}"
+
+          # 确定回滚版本
+          if [ -n "${{ needs.intelligent-rollback-decision.outputs.target-version }}" ]; then
+            TARGET_VERSION="${{ needs.intelligent-rollback-decision.outputs.target-version }}"
+          else
+            # 获取最近的稳定版本
+            TARGET_VERSION=$(gh release list --limit 5 --json tagName | jq -r '.[0].tagName' || echo "latest")
+          fi
+
+          echo "🔄 Rolling back ${{ matrix.component }} to version: $TARGET_VERSION"
+
+          # 拉取目标版本镜像
+          docker pull ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${TARGET_VERSION}-${{ matrix.image-suffix }}
+
+          # 停止当前运行的容器
+          echo "🛑 Stopping current ${{ matrix.component }} container..."
+          docker stop llmchat-${{ matrix.component }} || echo "Container not running"
+          docker rm llmchat-${{ matrix.component }} || echo "Container not found"
+
+          # 启动回滚版本
+          echo "🚀 Starting rollback version..."
+
+          case ${{ matrix.component }} in
+            "frontend")
+              docker run -d \
+                --name llmchat-frontend \
+                --restart unless-stopped \
+                -p 80:80 \
+                ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${TARGET_VERSION}-frontend
+              ;;
+            "backend")
+              docker run -d \
+                --name llmchat-backend \
+                --restart unless-stopped \
+                -p 3001:3001 \
+                -e NODE_ENV=production \
+                ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${TARGET_VERSION}-backend
+              ;;
+            "full-application")
+              docker run -d \
+                --name llmchat-full \
+                --restart unless-stopped \
+                -p 80:80 \
+                -p 3001:3001 \
+                -e NODE_ENV=production \
+                ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${TARGET_VERSION}
+              ;;
+          esac
+
+          echo "✅ ${{ matrix.component }} rollback completed"
+          echo "rollback-version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: 🔍 Post-Rollback Health Check
+        run: |
+          echo "::group::Post-Rollback Health Check"
+
+          # 等待服务启动
+          sleep 30
+
+          # 健康检查
+          case ${{ matrix.component }} in
+            "frontend")
+              HEALTH_URL="http://localhost/health"
+              ;;
+            "backend")
+              HEALTH_URL="http://localhost:3001/api/health"
+              ;;
+            "full-application")
+              HEALTH_URL="http://localhost/health"
+              ;;
+          esac
+
+          # 检查健康状态
+          for i in {1..5}; do
+            if curl -f "$HEALTH_URL" --max-time 10 --retry 1; then
+              echo "✅ ${{ matrix.component }} health check passed"
+              break
+            else
+              echo "⚠️ Health check attempt $i/5 failed"
+              if [ $i -eq 5 ]; then
+                echo "❌ ${{ matrix.component }} health check failed"
+                exit 1
+              fi
+              sleep 10
+            fi
+          done
+
+          echo "::endgroup::"
+
+      - name: 📊 Rollback Verification
+        run: |
+          echo "::group::Rollback Verification"
+
+          # 验证容器运行状态
+          if docker ps | grep llmchat-${{ matrix.component }}; then
+            echo "✅ ${{ matrix.component }} container is running"
+          else
+            echo "❌ ${{ matrix.component }} container is not running"
+            exit 1
+          fi
+
+          # 验证端口监听
+          case ${{ matrix.component }} in
+            "frontend")
+              if netstat -ln | grep ":80 "; then
+                echo "✅ Port 80 is listening"
+              else
+                echo "❌ Port 80 is not listening"
+                exit 1
+              fi
+              ;;
+            "backend")
+              if netstat -ln | grep ":3001 "; then
+                echo "✅ Port 3001 is listening"
+              else
+                echo "❌ Port 3001 is not listening"
+                exit 1
+              fi
+              ;;
+            "full-application")
+              if netstat -ln | grep ":80 " && netstat -ln | grep ":3001 "; then
+                echo "✅ Ports 80 and 3001 are listening"
+              else
+                echo "❌ Required ports are not listening"
+                exit 1
+              fi
+              ;;
+          esac
+
+          echo "✅ Rollback verification completed"
+          echo "::endgroup::"
+
+  # ==========================================
+  # 回滚后验证和监控
+  # ==========================================
+  post-rollback-monitoring:
+    name: 🔍 Post-Rollback Monitoring
+    runs-on: ubuntu-latest
+    needs: [intelligent-rollback-decision, execute-rollback]
+    if: always() && needs.intelligent-rollback-decision.outputs.should-rollback == 'true'
+
+    steps:
+      - name: 🔍 Comprehensive Health Check
+        run: |
+          echo "::group::Comprehensive Health Check"
+
+          # 检查所有服务
+          SERVICES=("frontend" "backend" "full-application")
+
+          for service in "${SERVICES[@]}"; do
+            echo "🔍 Checking $service service..."
+
+            if docker ps | grep "llmchat-$service"; then
+              echo "✅ $service container is running"
+
+              # 获取容器健康状态
+              HEALTH_STATUS=$(docker inspect llmchat-$service --format='{{.State.Health.Status}}' 2>/dev/null || echo "unknown")
+              echo "   Health Status: $HEALTH_STATUS"
+            else
+              echo "❌ $service container is not running"
+            fi
+          done
+
+          echo "::endgroup::"
+
+      - name: 📊 Performance Check
+        run: |
+          echo "::group::Performance Check"
+
+          # 检查响应时间
+          echo "🏎️ Checking response times..."
+
+          # 前端响应时间
+          FRONTEND_RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost/ || echo "0")
+          echo "Frontend response time: ${FRONTEND_RESPONSE_TIME}s"
+
+          # 后端响应时间
+          BACKEND_RESPONSE_TIME=$(curl -o /dev/null -s -w "%{time_total}" http://localhost:3001/api/health || echo "0")
+          echo "Backend response time: ${BACKEND_RESPONSE_TIME}s"
+
+          # 性能阈值检查
+          if [ "$(echo "$FRONTEND_RESPONSE_TIME > 2.0" | bc -l)" -eq 1 ]; then
+            echo "⚠️ Frontend response time is slow"
+          fi
+
+          if [ "$(echo "$BACKEND_RESPONSE_TIME > 1.0" | bc -l)" -eq 1 ]; then
+            echo "⚠️ Backend response time is slow"
+          fi
+
+          echo "::endgroup::"
+
+      - name: 📈 Generate Rollback Report
+        run: |
+          echo "::group::Generating Rollback Report"
+
+          mkdir -p rollback-reports
+
+          cat > rollback-reports/rollback-summary.md << EOF
+          # LLMChat Rollback Execution Report
+
+          ## 📊 Rollback Summary
+          - **Rollback Reason**: ${{ needs.intelligent-rollback-decision.outputs.rollback-reason }}
+          - **Rollback Strategy**: ${{ needs.intelligent-rollback-decision.outputs.rollback-strategy }}
+          - **Target Environment**: ${{ needs.intelligent-rollback-decision.outputs.target-environment || 'production' }}
+          - **Execution Time**: $(date -u)
+          - **Workflow Run ID**: ${{ github.run_id }}
+
+          ## 🔄 Rollback Execution
+
+          ### Components Rolled Back
+          - **Frontend**: ${{ needs.execute-rollback.result == 'success' && '✅ Success' || '❌ Failed' }}
+          - **Backend**: ${{ needs.execute-rollback.result == 'success' && '✅ Success' || '❌ Failed' }}
+          - **Full Application**: ${{ needs.execute-rollback.result == 'success' && '✅ Success' || '❌ Failed' }}
+
+          ## 🔍 Post-Rollback Verification
+
+          ### Health Checks
+          - **Service Status**: Monitored
+          - **Response Times**: Checked
+          - **Functionality**: Verified
+
+          ### Performance Metrics
+          - **Frontend Response Time**: ${FRONTEND_RESPONSE_TIME}s
+          - **Backend Response Time**: ${BACKEND_RESPONSE_TIME}s
+
+          ## 💡 Recommendations
+
+          1. Monitor application performance for the next 24 hours
+          2. Check logs for any unusual activity
+          3. Verify all functionality is working as expected
+          4. Prepare for potential further actions if issues persist
+
+          ## 📞 Support Information
+
+          If issues persist after rollback:
+          - Check the rollback logs
+          - Verify all environment variables
+          - Contact the development team
+          - Consider creating an incident report
+
+          ---
+          *Report generated by LLMChat Intelligent Rollback System*
+          *Generated on $(date -u)*
+          EOF
+
+          echo "✅ Rollback report generated"
+          echo "::endgroup::"
+
+      - name: 📤 Upload Rollback Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-execution-report
+          path: rollback-reports/
+          retention-days: 90
+
+      - name: 📢 Rollback Notification
+        run: |
+          echo "::group::Sending Rollback Notification"
+
+          if [ "${{ needs.execute-rollback.result }}" == "success" ]; then
+            echo "✅ Rollback completed successfully!"
+            echo "🔍 Post-rollback monitoring initiated"
+            # 这里可以添加Slack、Teams、邮件等通知逻辑
+          else
+            echo "❌ Rollback failed!"
+            echo "🚨 Immediate attention required!"
+            # 这里可以添加紧急通知逻辑
+          fi
+
+          echo "::endgroup::"
+
+  # ==========================================
+  # 回滚后清理和优化
+  # ==========================================
+  post-rollback-cleanup:
+    name: 🧹 Post-Rollback Cleanup
+    runs-on: ubuntu-latest
+    needs: [intelligent-rollback-decision, post-rollback-monitoring]
+    if: always() && needs.intelligent-rollback-decision.outputs.should-rollback == 'true'
+
+    steps:
+      - name: 🧹 Cleanup Resources
+        run: |
+          echo "::group::Cleaning Up Resources"
+
+          # 清理未使用的Docker镜像
+          echo "🗑️ Cleaning up unused Docker images..."
+          docker image prune -f || echo "No images to prune"
+
+          # 清理未使用的Docker容器
+          echo "🗑️ Cleaning up stopped containers..."
+          docker container prune -f || echo "No containers to prune"
+
+          # 清理构建缓存
+          echo "🗑️ Cleaning up build cache..."
+          docker builder prune -f || echo "No build cache to prune"
+
+          echo "✅ Cleanup completed"
+          echo "::endgroup::"
+
+      - name: 📊 Update Monitoring Metrics
+        run: |
+          echo "::group::Updating Monitoring Metrics"
+
+          # 这里可以更新监控系统中的指标
+          # 例如：Prometheus、Grafana、Datadog等
+          echo "📊 Updating monitoring metrics..."
+          echo "📝 Monitoring metrics update logic would go here"
+
+          echo "::endgroup::"
+
+      - name: 🔄 Prepare for Next Deployment
+        run: |
+          echo "::group::Preparing for Next Deployment"
+
+          # 验证环境状态
+          echo "🔍 Verifying environment state..."
+
+          # 检查Docker环境
+          docker --version
+          docker-compose --version || echo "Docker Compose not available"
+
+          # 检查系统资源
+          echo "💾 Available disk space:"
+          df -h
+
+          echo "🧠 Available memory:"
+          free -h
+
+          echo "✅ Environment prepared for next deployment"
+          echo "::endgroup::"

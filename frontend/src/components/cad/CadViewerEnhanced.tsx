@@ -9,7 +9,7 @@
  * - 截图功能
  */
 
-import {Eye, Maximize2, Home, Move, ZoomIn, ZoomOut, Grid3x3, Ruler, Camera, MousePointer} from 'lucide-react';
+import { Eye, Maximize2, Home, Move, ZoomIn, ZoomOut, Grid3x3, Ruler, Camera, MousePointer } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { DxfEntity, Point3D } from '@llmchat/shared-types';

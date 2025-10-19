@@ -39,7 +39,9 @@ export function useCodeSplitting<T>(
 ): LoadResult<T> {
   const [loadResult, setLoadResult] = useState<LoadResult<T>>({
     state: LoadingState.IDLE,
-    retry: async (): Promise<void> => { await Promise.resolve(); },
+    retry: async (): Promise<void> => {
+ await Promise.resolve();
+},
   });
 
   const loadComponent = useCallback(async () => {

@@ -1,7 +1,4 @@
-;
-;
-;
-;
+
 import { Bot, Camera, ChevronDown, PhoneCall } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';

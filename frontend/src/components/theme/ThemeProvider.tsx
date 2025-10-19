@@ -1,14 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { ThemeMode } from '@/types';
+import type { ThemeMode, ThemeContextType, ThemeProviderProps } from '@/components/ui/ui.types';
 import { useChatStore } from '@/store/chatStore';
-
-interface ThemeContextType {
-  theme: 'light' | 'dark';
-  userPreference: ThemeMode;
-  toggleTheme: () => void;
-  setTheme: (theme: ThemeMode) => void;
-  isAutoMode: boolean;
-}
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -19,11 +11,6 @@ export function useTheme() {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-}
-
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: ThemeMode;
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
@@ -142,9 +129,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
         userPreference,
         toggleTheme,
         setTheme,
-        isAutoMode
+        isAutoMode,
       }}
-    >
+      >
       {children}
     </ThemeContext.Provider>
   );

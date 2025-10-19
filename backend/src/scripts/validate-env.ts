@@ -17,8 +17,8 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// 加载.env文件
-const envPath = path.resolve(__dirname, '../../.env');
+// 加载根目录的.env文件
+const envPath = path.resolve(__dirname, '../../../../.env');
 dotenv.config({ path: envPath });
 
 import { EnvManager } from '../config/EnvManager';
@@ -268,21 +268,21 @@ class EnvValidator {
     if (this.result.errors.length > 0) {
       logger.debug('❌ 错误 (' + this.result.errors.length + '):\n');
       this.result.errors.forEach(error => logger.debug(error));
-      logger.debug();
+      logger.debug('');
     }
 
     // 警告
     if (this.result.warnings.length > 0) {
       logger.debug('⚠️  警告 (' + this.result.warnings.length + '):\n');
       this.result.warnings.forEach(warning => logger.debug(warning));
-      logger.debug();
+      logger.debug('');
     }
 
     // 信息
     if (this.result.info.length > 0 && process.env.VERBOSE === 'true') {
       logger.debug('ℹ️  详细信息:\n');
       this.result.info.forEach(info => logger.debug(info));
-      logger.debug();
+      logger.debug('');
     }
 
     // 总结
@@ -295,9 +295,9 @@ class EnvValidator {
     } else {
       logger.debug('❌ 验证失败！请修复上述错误后重试。');
       logger.debug('\n💡 提示:');
-      logger.debug('   1. 检查 backend/.env 文件是否存在');
-      logger.debug('   2. 参考 backend/ENV_TEMPLATE.txt 补充缺失配置');
-      logger.debug('   3. 确保所有敏感信息已从配置文件移至.env');
+      logger.debug('   1. 检查项目根目录的 .env 文件是否存在');
+      logger.debug('   2. 参考 .env.example 补充缺失配置');
+      logger.debug('   3. 使用命令: cp .env.example .env');
     }
     logger.debug('='.repeat(60) + '\n');
   }

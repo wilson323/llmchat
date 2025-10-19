@@ -1,10 +1,5 @@
-;
-;
-;
-;
-;
-;
-import axios from 'axios';
+
+import axios, { type AxiosError } from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/components/ui/Toast';
 import { translate } from '@/i18n';
@@ -89,24 +84,26 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-api.interceptors.request.use((config: any) => {
+api.interceptors.request.use((config) => {
   // 🚀 性能监控：记录请求开始时间
   const requestId = `${config.method?.toUpperCase()}-${config.url}-${Date.now()}`;
   requestMonitor.startRequest(requestId, config.url || '');
 
   // 添加请求ID到header
-  config.headers = config.headers || {};
-  (config.headers as Record<string, string>)['X-Request-ID'] = requestId;
+  if (!config.headers) {
+    config.headers = {} as typeof config.headers;
+  }
+  config.headers['X-Request-ID'] = requestId;
 
   const token = useAuthStore.getState().token;
   if (token) {
-    (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
 
 api.interceptors.response.use(
-  (response: any) => {
+  (response) => {
     // 🚀 性能监控：记录请求完成
     const requestId = response.config.headers?.['X-Request-ID'] as string;
     if (requestId) {
@@ -114,32 +111,45 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error: Error | any) => {
-    // 🚀 性能监控：记录请求失败
-    const requestId = error.config?.headers?.['X-Request-ID'] as string;
-    if (requestId) {
-      requestMonitor.endRequest(requestId, error.config?.method?.toUpperCase() || 'GET', error.response?.status || 0);
-    }
+  (error: unknown) => {
+    // 类型守卫：检查是否为AxiosError
+    const isAxiosError = (err: unknown): err is AxiosError => {
+      return err != null && 
+             typeof err === 'object' && 
+             'config' in err && 
+             'isAxiosError' in err;
+    };
 
-    logger.error(translate('API请求错误'), error, {
-      url: error?.config?.url,
-      method: error?.config?.method,
-      status: error?.response?.status,
-    });
-    const status = error?.response?.status;
-    if (status === 401) {
-      const { logout } = useAuthStore.getState();
-      logout();
-      toast({ type: 'warning', title: translate('登录状态已过期，请重新登录') });
-      const target = window.location.pathname + (window.location.search || '');
-      window.location.assign(`/login?redirect=${encodeURIComponent(target)}`);
-      return Promise.reject(error);
+    if (isAxiosError(error)) {
+      // 🚀 性能监控：记录请求失败
+      const requestId = error.config?.headers?.['X-Request-ID'] as string;
+      if (requestId) {
+        requestMonitor.endRequest(requestId, error.config?.method?.toUpperCase() || 'GET', error.response?.status || 0);
+      }
+
+      logger.error(translate('API请求错误'), error, {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+      });
+      
+      const status = error.response?.status;
+      if (status === 401) {
+        const { logout } = useAuthStore.getState();
+        logout();
+        toast({ type: 'warning', title: translate('登录状态已过期，请重新登录') });
+        const target = window.location.pathname + (window.location.search || '');
+        window.location.assign(`/login?redirect=${encodeURIComponent(target)}`);
+        return Promise.reject(error);
+      }
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        error.message = translate('请求超时，请检查网络连接');
+      } else if (error.code === 'ERR_NETWORK') {
+        error.message = translate('网络连接失败，请检查后端服务是否启动');
+      }
     }
-    if (error.code === 'ECONNABORTED' || (typeof error.message === 'string' && error.message.includes('timeout'))) {
-      error.message = translate('请求超时，请检查网络连接');
-    } else if (error.code === 'ERR_NETWORK') {
-      error.message = translate('网络连接失败，请检查后端服务是否启动');
-    }
+    
     return Promise.reject(error);
   },
 );
@@ -691,10 +701,20 @@ export const chatService = {
       onChunk,
       onEvent: (eventName, payload) => {
         if (eventName === 'complete') {
-          onComplete?.((payload as any)?.data ?? payload);
+          if (payload && typeof payload === 'object' && 'data' in payload) {
+            const data = (payload as { data: unknown }).data;
+            if (data && typeof data === 'object') {
+              onComplete?.(data as Record<string, unknown>);
+            }
+          } else if (payload && typeof payload === 'object') {
+            onComplete?.(payload as Record<string, unknown>);
+          }
         }
         if (eventName === 'end' && payload && typeof payload === 'object' && 'data' in payload) {
-          onComplete?.((payload as any).data);
+          const data = (payload as { data: unknown }).data;
+          if (data && typeof data === 'object') {
+            onComplete?.(data as Record<string, unknown>);
+          }
         }
       },
       onChatId: (value) => {
@@ -711,7 +731,7 @@ export const chatService = {
     cancel: boolean = false,
   ): Promise<void> {
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, string | boolean> = {
         agentId,
         chatId,
         dataId,
@@ -752,7 +772,7 @@ export const chatService = {
     dataId: string,
     options?: { detail?: boolean },
   ): Promise<ChatResponse> {
-    const payload: Record<string, any> = {
+    const payload: Record<string, string | boolean> = {
       agentId,
       dataId,
       stream: false,

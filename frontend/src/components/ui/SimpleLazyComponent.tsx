@@ -4,14 +4,10 @@
  * 提供基础的懒加载功能，避免复杂的类型问题
  */
 
-;
-;
-;
-;
-import {AlertCircle, Loader2, RefreshCw} from 'lucide-react';
+
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import React, { Suspense, ComponentType, ReactNode, PropsWithRef } from 'react';
-;
-;
+
 
 // 简化的懒加载配置
 export interface SimpleLazyConfig {
@@ -42,7 +38,7 @@ const DefaultLoadingFallback: ComponentType<{ delay?: number; showProgress?: boo
   }, [delay]);
 
   if (!showLoading) {
-    return <div></div>;
+    return <div />;
   }
 
   return (

@@ -1,27 +1,27 @@
 {
-  "timestamp": "2025-10-17T07:57:27.899Z",
-  "duration": 132,
+  "timestamp": "2025-10-17T11:42:00.206Z",
+  "duration": 1364,
   "results": {
     "root.get": {
       "stats": {
         "count": 1,
-        "min": 8.440999999998894,
-        "max": 8.440999999998894,
-        "avg": 8.440999999998894,
-        "p95": 8.440999999998894,
-        "p99": 8.440999999998894,
-        "successRate": 100
+        "min": 565.9691999999923,
+        "max": 565.9691999999923,
+        "avg": 565.9691999999923,
+        "p95": 565.9691999999923,
+        "p99": 565.9691999999923,
+        "successRate": 0
       },
       "metrics": [
         {
           "name": "root.get",
-          "responseTime": 8.440999999998894,
-          "timestamp": 1760687847831,
-          "statusCode": 404,
-          "success": true,
+          "responseTime": 565.9691999999923,
+          "timestamp": 1760701319414,
+          "statusCode": 500,
+          "success": false,
           "metadata": {
-            "statusCode": 404,
-            "success": true
+            "statusCode": 500,
+            "success": false
           }
         }
       ]
@@ -29,102 +29,27 @@
     "root.post": {
       "stats": {
         "count": 1,
-        "min": 8.29570000000058,
-        "max": 8.29570000000058,
-        "avg": 8.29570000000058,
-        "p95": 8.29570000000058,
-        "p99": 8.29570000000058,
-        "successRate": 100
+        "min": 215.73580000000948,
+        "max": 215.73580000000948,
+        "avg": 215.73580000000948,
+        "p95": 215.73580000000948,
+        "p99": 215.73580000000948,
+        "successRate": 0
       },
       "metrics": [
         {
           "name": "root.post",
-          "responseTime": 8.29570000000058,
-          "timestamp": 1760687847841,
-          "statusCode": 404,
-          "success": true,
+          "responseTime": 215.73580000000948,
+          "timestamp": 1760701319695,
+          "statusCode": 500,
+          "success": false,
           "metadata": {
-            "statusCode": 404,
-            "success": true
-          }
-        }
-      ]
-    },
-    "health.check": {
-      "stats": {
-        "count": 1,
-        "min": 8.996800000000803,
-        "max": 8.996800000000803,
-        "avg": 8.996800000000803,
-        "p95": 8.996800000000803,
-        "p99": 8.996800000000803,
-        "successRate": 100
-      },
-      "metrics": [
-        {
-          "name": "health.check",
-          "responseTime": 8.996800000000803,
-          "timestamp": 1760687847851,
-          "statusCode": 200,
-          "success": true,
-          "metadata": {
-            "statusCode": 200,
-            "success": true
-          }
-        }
-      ]
-    },
-    "agents.list": {
-      "stats": {
-        "count": 1,
-        "min": 4.8814000000002125,
-        "max": 4.8814000000002125,
-        "avg": 4.8814000000002125,
-        "p95": 4.8814000000002125,
-        "p99": 4.8814000000002125,
-        "successRate": 100
-      },
-      "metrics": [
-        {
-          "name": "agents.list",
-          "responseTime": 4.8814000000002125,
-          "timestamp": 1760687847857,
-          "statusCode": 200,
-          "success": true,
-          "metadata": {
-            "statusCode": 200,
-            "success": true,
-            "agentCount": 2
-          }
-        }
-      ]
-    },
-    "concurrent.test": {
-      "stats": {
-        "count": 1,
-        "min": 7.4822800000001735,
-        "max": 7.4822800000001735,
-        "avg": 7.4822800000001735,
-        "p95": 7.4822800000001735,
-        "p99": 7.4822800000001735,
-        "successRate": 100
-      },
-      "metrics": [
-        {
-          "name": "concurrent.test",
-          "responseTime": 7.4822800000001735,
-          "timestamp": 1760687847898,
-          "statusCode": 200,
-          "success": true,
-          "metadata": {
-            "statusCode": 200,
-            "success": true,
-            "concurrentRequests": 5,
-            "totalTime": 37.41140000000087
+            "statusCode": 500,
+            "success": false
           }
         }
       ]
     }
   },
-  "report": "📊 Performance Benchmark Summary\n===============================\nTest Duration: 0.13s\nTotal Requests: 5\nOverall Success Rate: 100.0%\nAverage Response Time: 7.62ms\nSlowest Endpoint: health.check (9.00ms)\nFastest Endpoint: agents.list (4.88ms)\n\n🔍 Endpoint Performance Details\n===============================\n\nhealth.check:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 9.00ms\n    Min: 9.00ms\n    Max: 9.00ms\n    P95: 9.00ms\n    P99: 9.00ms\n\nroot.get:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 8.44ms\n    Min: 8.44ms\n    Max: 8.44ms\n    P95: 8.44ms\n    P99: 8.44ms\n\nroot.post:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 8.30ms\n    Min: 8.30ms\n    Max: 8.30ms\n    P95: 8.30ms\n    P99: 8.30ms\n\nconcurrent.test:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 7.48ms\n    Min: 7.48ms\n    Max: 7.48ms\n    P95: 7.48ms\n    P99: 7.48ms\n\nagents.list:\n  Requests: 1\n  Success Rate: 100.0%\n  Response Times:\n    Average: 4.88ms\n    Min: 4.88ms\n    Max: 4.88ms\n    P95: 4.88ms\n    P99: 4.88ms\n"
+  "report": "📊 Performance Benchmark Summary\n===============================\nTest Duration: 1.36s\nTotal Requests: 2\nOverall Success Rate: 0.0%\nAverage Response Time: 390.85ms\nSlowest Endpoint: root.get (565.97ms)\nFastest Endpoint: root.post (215.74ms)\n\n🔍 Endpoint Performance Details\n===============================\n\nroot.get:\n  Requests: 1\n  Success Rate: 0.0%\n  Response Times:\n    Average: 565.97ms\n    Min: 565.97ms\n    Max: 565.97ms\n    P95: 565.97ms\n    P99: 565.97ms\n\nroot.post:\n  Requests: 1\n  Success Rate: 0.0%\n  Response Times:\n    Average: 215.74ms\n    Min: 215.74ms\n    Max: 215.74ms\n    P95: 215.74ms\n    P99: 215.74ms\n\n💡 Performance Recommendations\n===============================\n1. root.get has low success rate (0.0%). Check error handling and reliability.\n2. root.post has low success rate (0.0%). Check error handling and reliability.\n"
 }

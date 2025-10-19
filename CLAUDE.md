@@ -1,18 +1,35 @@
-# CLAUDE.md
+# CLAUDE.md - 项目配置与开发指南
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **企业级项目配置文档 - 统一管理体系**
+> **文档版本**: v1.0.0
+> **最后更新**: 2025-10-18
+> **适用对象**: Claude Code AI助手、开发团队、DevOps工程师
 
-## 🏗️ 项目架构
+本文件为 Claude Code (claude.ai/code) 提供项目配置和开发指导，确保 AI 助手能够准确理解和操作项目代码。
 
-这是一个**智能体切换聊天应用**，采用前端+后端分离架构，支持多个 AI 提供商（FastGPT、OpenAI、Anthropic、Dify）之间的动态切换。
+## 🎯 统一项目管理体系
+
+**单一真实来源 (Single Source of Truth)**:
+- 📋 **项目配置**: 本文件 `CLAUDE.md`
+- 🚀 **项目管理**: `.specify/` (唯一项目管理系统)
+- 📚 **用户文档**: `docs/` (结构化文档)
+- 🔧 **自动化工具**: `scripts/` (统一工具链)
+- 📊 **质量保证**: `QUALITY_SYSTEM_GUIDE.md`
+
+**重要**: 所有项目规范、质量标准、开发流程均以本文档为权威来源。
+
+## 🏗️ 项目概述
+
+LLMChat 是一个**企业级智能体切换聊天应用**，采用现代化前端+后端分离架构，支持多个 AI 提供商（FastGPT、OpenAI、Anthropic、Dify）之间的动态切换。
 
 ### 技术栈
 
-**前端**: React 18 + TypeScript + Vite + Tailwind CSS + Zustand + React Router
+**前端**: React 18 + TypeScript 5.0+ + Vite + Tailwind CSS + Zustand + React Router
 **后端**: Node.js + Express + TypeScript + PostgreSQL/MongoDB + Redis
 **状态管理**: Zustand (前端) + 本地存储持久化
 **测试**: Jest (后端) + Vitest (前端) + Playwright (E2E)
 **包管理器**: pnpm with workspaces
+**类型安全**: 完整的TypeScript类型定义系统和组件类型安全最佳实践
 
 ### 项目结构
 
@@ -47,8 +64,16 @@ llmchat/
 │   └── agents.json          # 智能体配置文件
 ├── tests/                   # E2E测试
 │   └── e2e/                 # Playwright测试文件
+├── .env                     # 🔐 唯一环境变量配置源（项目根目录）
 └── docs/                    # 项目文档
 ```
+
+### ⚠️ 统一配置源原则（重要）
+
+**绝对禁止**: 在 `backend/` 或任何子目录创建 `.env` 文件
+**唯一配置源**: 只使用项目根目录的 `.env` 文件作为环境变量配置
+**自动加载**: 后端通过 `dotenv-loader.ts` 自动从根目录加载配置
+**统一管理**: 所有环境变量（数据库、JWT、API密钥等）都在根目录 `.env` 中配置
 
 ## 🚀 开发命令
 
@@ -57,9 +82,13 @@ llmchat/
 # 安装所有依赖（使用工作区自动安装前后端）
 pnpm install
 
-# 配置后端环境变量
-cp backend/.env.example backend/.env
-# 编辑 backend/.env 设置必要配置（数据库连接、JWT密钥、API密钥等）
+# ⚠️ 重要：统一配置源原则
+# 项目只使用根目录下的 .env 文件作为唯一配置源
+# 禁止在 backend/ 或其他子目录创建 .env 文件
+
+# 配置环境变量（从根目录配置）
+cp .env.example .env
+# 编辑根目录的 .env 设置必要配置（数据库连接、JWT密钥、API密钥等）
 
 # 配置智能体（如需自定义）
 cp config/agents.example.json config/agents.json
@@ -213,6 +242,190 @@ pnpm run frontend:lint      # 仅前端代码检查
 pnpm run frontend:lint:fix  # 仅前端代码修复
 pnpm run type-check         # 前端 TypeScript 类型检查
 ```
+
+## 🔴 TypeScript组件类型安全开发规范
+
+### ⚠️ 零容忍类型错误政策
+
+项目采用**零容忍TypeScript错误政策**，所有提交必须确保0个编译错误，类型覆盖率必须达到100%。
+
+#### 🎯 类型安全核心原则
+
+**1. 类型优先原则**
+- 所有组件必须有明确的类型定义
+- 优先使用TypeScript内置类型和工具类型
+- 禁止使用`any`，必要时使用`unknown`
+
+**2. 分层架构原则**
+- **基础层**: `BaseComponentProps` 提供通用属性
+- **功能层**: `AccessibilityProps`、`EventHandlersProps` 提供特定功能
+- **组件层**: 通过组合构建完整Props类型
+
+**3. 组合优于继承**
+- 使用接口组合构建复杂Props类型
+- 避免深层继承链
+- 通过`Omit`、`Pick`、`Partial`等工具类型进行精确控制
+
+#### 🏗️ 组件类型定义架构
+
+```typescript
+// 分层类型架构示例
+interface BaseComponentProps {
+  className?: string;
+  children?: React.ReactNode;
+  id?: string;
+  'data-testid'?: string;
+}
+
+interface AccessibilityProps {
+  'aria-label'?: string;
+  'aria-describedby'?: string;
+  role?: string;
+  tabIndex?: number;
+}
+
+interface EventHandlersProps<T = HTMLElement> {
+  onClick?: (event: React.MouseEvent<T>) => void;
+  onFocus?: (event: React.FocusEvent<T>) => void;
+  onBlur?: (event: React.FocusEvent<T>) => void;
+}
+
+// 组件层：通过组合构建完整类型
+interface ButtonProps extends
+  BaseComponentProps,
+  AccessibilityProps,
+  EventHandlersProps<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  loading?: boolean;
+}
+```
+
+#### 🧩 子组件类型安全策略
+
+```typescript
+// 子组件工厂模式
+export interface SubComponentFactory<P = {}> {
+  displayName: string;
+  Component: React.FC<P>;
+}
+
+export function createSubComponent<P extends object>(
+  displayName: string,
+  component: React.FC<P>
+): React.FC<P> & { displayName: string } {
+  const Component = component as React.FC<P> & { displayName: string };
+  Component.displayName = displayName;
+  return Component;
+}
+
+// 使用示例：Card组件
+const Card = attachSubComponents(CardImpl, {
+  Header: createSubComponent('Card.Header', CardHeaderImpl),
+  Title: createSubComponent('Card.Title', CardTitleImpl),
+  Content: createSubComponent('Card.Content', CardContentImpl),
+  Footer: createSubComponent('Card.Footer', CardFooterImpl),
+});
+```
+
+#### 🔗 forwardRef类型安全处理
+
+```typescript
+// 类型安全的forwardRef组件
+export type ForwardRefComponent<T, P> = React.ForwardRefExoticComponent<
+  P & React.RefAttributes<T>
+>;
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ children, className, variant, size, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
+```
+
+#### ⚡ 事件处理器类型统一
+
+```typescript
+// 支持多种签名的事件处理器类型
+export type FlexibleEventHandler<T = void, E = SyntheticEvent> =
+  | UnifiedEventHandler<T, E>     // (data: T, event: E) => void
+  | SimplifiedEventHandler<T>    // (data?: T) => void
+  | LegacyEventHandler<E>;       // (event: E) => void
+
+// 自动适配器
+export function createEventHandler<T = void, E = SyntheticEvent>(
+  handler?: FlexibleEventHandler<T, E>
+): UnifiedEventHandler<T, E> | undefined {
+  // 自动检测处理器类型并适配
+}
+```
+
+#### 🚨 严格禁止的危险操作
+
+**禁止以下类型不安全操作**：
+- ❌ 使用`any`类型掩盖类型问题
+- ❌ 使用类型断言绕过类型检查
+- ❌ 忽略TypeScript编译错误
+- ❌ 使用未定义的Props属性
+- ❌ 创建循环依赖的类型定义
+
+**强制要求**：
+- ✅ 所有组件必须有明确的类型定义
+- ✅ 事件处理器必须使用统一的类型签名
+- ✅ 子组件必须通过工厂模式创建
+- ✅ forwardRef组件必须有正确的类型定义
+- ✅ 提交前必须通过完整的类型检查
+
+#### 📚 类型安全资源文件
+
+- `frontend/docs/REACT_COMPONENT_TYPE_SAFETY_BEST_PRACTICES.md` - 完整的类型安全最佳实践指南
+- `frontend/src/utils/componentTypeUtils.ts` - 组件类型安全工具集
+- `frontend/src/examples/TypeSafeComponentExample.tsx` - 类型安全组件示例
+- `frontend/src/types/ui-props.ts` - UI组件统一接口定义
+- `frontend/src/types/event-handlers.ts` - 统一事件处理器类型
+
+#### 🧪 类型安全检查工具
+
+```bash
+# 完整类型检查（必须通过）
+pnpm run type-check
+
+# ESLint类型相关检查
+pnpm run frontend:lint
+
+# 构建验证（包含类型检查）
+pnpm run frontend:build
+
+# 类型覆盖率检查（如果配置）
+pnpm run type-coverage
+```
+
+#### 🎯 类型安全开发工作流
+
+1. **组件开发前**: 先定义完整的Props接口
+2. **实现过程中**: 严格遵循类型定义，避免类型断言
+3. **测试阶段**: 使用类型测试验证类型定义正确性
+4. **提交前**: 运行完整的类型检查，确保0错误
+5. **代码审查**: 重点关注类型安全性和可访问性
+
+#### 📈 类型安全质量指标
+
+- **TypeScript编译错误**: 0个（零容忍）
+- **类型覆盖率**: 100%
+- **ESLint类型相关错误**: 0个
+- **构建成功率**: 100%
+- **组件Props完整性**: 100%
 
 ### 数据库操作
 ```bash
@@ -422,8 +635,8 @@ pnpm run lint                # 代码质量检查
 ls -la backend/dist/         # 后端构建输出
 ls -la frontend/dist/        # 前端构建输出
 
-# 检查配置
-cat backend/.env             # 后端环境变量
+# 检查配置（统一从根目录）
+cat .env                     # 环境变量配置
 cat config/agents.json       # 智能体配置
 
 # 测试 API 端点
@@ -449,7 +662,7 @@ pnpm run validate:env        # 验证环境变量
 
 **数据库调试**:
 - 迁移文件位置: `backend/src/migrations/`
-- 数据库连接配置在 `backend/.env`
+- 数据库连接配置在根目录 `.env`（统一配置源）
 - 使用 `pnpm run migrate:status` 检查迁移状态
 
 **状态管理调试**:
@@ -695,8 +908,8 @@ pnpm run backend:dev  # 确保使用项目脚本
 
 **问题**: 数据库连接失败
 ```bash
-# 1. 检查环境变量配置
-cat backend/.env | grep DATABASE
+# 1. 检查环境变量配置（从根目录）
+cat .env | grep DATABASE
 
 # 2. 验证数据库连接
 pnpm run validate:env
@@ -714,7 +927,7 @@ curl http://localhost:3001/health
 # vite.config.ts 中确认 proxy 设置为 http://localhost:3001
 
 # 3. 生产环境检查 CORS 配置
-# backend/.env 中设置正确的 FRONTEND_URL
+# 根目录 .env 中设置正确的 FRONTEND_URL
 ```
 
 **问题**: SSE 流式响应卡住或中断
@@ -753,8 +966,8 @@ pnpm run backend:dev  # 查看控制台输出
 
 **问题**: 环境变量未生效
 ```bash
-# 1. 确认 .env 文件位置
-ls backend/.env
+# 1. 确认 .env 文件位置（根目录统一配置）
+ls .env
 
 # 2. 检查 NODE_ENV 设置
 echo $NODE_ENV  # 或 Windows: echo %NODE_ENV%
@@ -802,7 +1015,7 @@ location.reload();
 **问题**: 后端响应慢
 ```bash
 # 1. 检查速率限制配置
-# backend/.env 中的 RATE_LIMIT_* 参数
+# 根目录 .env 中的 RATE_LIMIT_* 参数
 
 # 2. 检查外部 API 调用延迟
 # 查看后端日志中的请求时间

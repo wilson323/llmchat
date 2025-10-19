@@ -1,0 +1,449 @@
+openapi: 3.0.3
+info:
+  title: LLMChat 前端类型安全改进 API
+  description: 前端类型安全检查和修复的内部API契约
+  version: 1.0.0
+  contact:
+    name: LLMChat Frontend Team
+    email: frontend@llmchat.com
+
+servers:
+  - url: /api/frontend
+    description: 前端类型安全服务
+
+paths:
+  /type-safety/status:
+    get:
+      summary: 获取类型安全状态
+      description: 获取当前项目的类型安全检查状态和统计信息
+      tags:
+        - TypeSafety
+      responses:
+        '200':
+          description: 成功返回类型安全状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeSafetyStatus'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /type-safety/errors:
+    get:
+      summary: 获取类型错误列表
+      description: 获取当前项目的所有TypeScript类型错误详细信息
+      tags:
+        - TypeSafety
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [error, warning, info]
+          description: 按严重程度过滤错误
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, fixed, skipped]
+          description: 按修复状态过滤错误
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: 页码
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: 每页数量
+      responses:
+        '200':
+          description: 成功返回错误列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TypeErrorResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /type-safety/components:
+    get:
+      summary: 获取组件类型检查结果
+      description: 获取UI组件类型检查的详细结果
+      tags:
+        - Components
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [valid, invalid, warning]
+          description: 按验证状态过滤
+      responses:
+        '200':
+          description: 成功返回组件检查结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentCheckResponse'
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /type-safety/fix:
+    post:
+      summary: 执行类型安全修复
+      description: 根据配置执行自动类型安全修复
+      tags:
+        - Fix
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FixRequest'
+      responses:
+        '200':
+          description: 成功执行修复
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FixResponse'
+        '400':
+          description: 修复请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 修复执行失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    TypeSafetyStatus:
+      type: object
+      required:
+        - totalErrors
+        - fixedErrors
+        - pendingErrors
+        - typeCoverage
+        - status
+      properties:
+        totalErrors:
+          type: integer
+          description: 总错误数
+        fixedErrors:
+          type: integer
+          description: 已修复错误数
+        pendingErrors:
+          type: integer
+          description: 待修复错误数
+        typeCoverage:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: 类型覆盖率百分比
+        lastChecked:
+          type: string
+          format: date-time
+          description: 最后检查时间
+        status:
+          type: string
+          enum: [passing, failing, warning]
+          description: 整体状态
+        metrics:
+          $ref: '#/components/schemas/TypeSafetyMetrics'
+
+    TypeSafetyMetrics:
+      type: object
+      properties:
+        componentErrors:
+          type: integer
+          description: 组件相关错误数
+        handlerErrors:
+          type: integer
+          description: 事件处理器错误数
+        importErrors:
+          type: integer
+          description: 导入导出错误数
+        optionalErrors:
+          type: integer
+          description: 可选属性错误数
+
+    TypeErrorRecord:
+      type: object
+      required:
+        - id
+        - filePath
+        - line
+        - column
+        - code
+        - message
+        - severity
+        - status
+      properties:
+        id:
+          type: string
+          description: 错误唯一标识
+        filePath:
+          type: string
+          description: 文件路径
+        line:
+          type: integer
+          description: 错误行号
+        column:
+          type: integer
+          description: 错误列号
+        code:
+          type: string
+          description: 错误代码
+        message:
+          type: string
+          description: 错误消息
+        severity:
+          type: string
+          enum: [error, warning, info]
+          description: 错误严重程度
+        status:
+          type: string
+          enum: [pending, fixed, skipped]
+          description: 修复状态
+        suggestion:
+          type: string
+          description: 修复建议
+        category:
+          type: string
+          enum: [component, handler, import, optional]
+          description: 错误类别
+
+    TypeErrorResponse:
+      type: object
+      required:
+        - errors
+        - total
+        - page
+        - limit
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypeErrorRecord'
+        total:
+          type: integer
+          description: 总错误数
+        page:
+          type: integer
+          description: 当前页码
+        limit:
+          type: integer
+          description: 每页数量
+
+    ComponentCheckResponse:
+      type: object
+      required:
+        - totalComponents
+        - validComponents
+        - invalidComponents
+        - components
+      properties:
+        totalComponents:
+          type: integer
+          description: 总组件数
+        validComponents:
+          type: integer
+          description: 验证通过的组件数
+        invalidComponents:
+          type: integer
+          description: 验证失败的组件数
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentCheckResult'
+
+    ComponentCheckResult:
+      type: object
+      required:
+        - name
+        - status
+        - issues
+      properties:
+        name:
+          type: string
+          description: 组件名称
+        filePath:
+          type: string
+          description: 组件文件路径
+        status:
+          type: string
+          enum: [valid, invalid, warning]
+          description: 验证状态
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentIssue'
+        props:
+          type: object
+          description: 组件属性定义
+        exportType:
+          type: string
+          enum: [default, named]
+          description: 导出方式
+
+    ComponentIssue:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          enum: [missing-prop, invalid-prop, inconsistent-signature, wrong-export]
+          description: 问题类型
+        message:
+          type: string
+          description: 问题描述
+        severity:
+          type: string
+          enum: [error, warning, info]
+          description: 问题严重程度
+        suggestion:
+          type: string
+          description: 修复建议
+
+    FixRequest:
+      type: object
+      required:
+        - targets
+        - dryRun
+      properties:
+        targets:
+          type: array
+          items:
+            type: string
+          description: 修复目标（错误ID或文件路径）
+        dryRun:
+          type: boolean
+          description: 是否为试运行
+        strategy:
+          type: string
+          enum: [conservative, aggressive]
+          default: conservative
+          description: 修复策略
+        options:
+          $ref: '#/components/schemas/FixOptions'
+
+    FixOptions:
+      type: object
+      properties:
+        backup:
+          type: boolean
+          default: true
+          description: 是否创建备份
+        maxFixes:
+          type: integer
+          default: 50
+          description: 单次最大修复数量
+        skipWarnings:
+          type: boolean
+          default: false
+          description: 是否跳过警告
+
+    FixResponse:
+      type: object
+      required:
+        - success
+        - fixed
+        - skipped
+        - failed
+      properties:
+        success:
+          type: boolean
+          description: 修复是否成功
+        fixed:
+          type: array
+          items:
+            type: string
+          description: 成功修复的错误ID列表
+        skipped:
+          type: array
+          items:
+            type: string
+          description: 跳过的错误ID列表
+        failed:
+          type: array
+          items:
+            type: string
+          description: 修复失败的错误ID列表
+        duration:
+          type: number
+          description: 修复耗时（毫秒）
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileChange'
+
+    FileChange:
+      type: object
+      required:
+        - filePath
+        - changeType
+      properties:
+        filePath:
+          type: string
+          description: 文件路径
+        changeType:
+          type: string
+          enum: [modified, created, deleted]
+          description: 变更类型
+        linesChanged:
+          type: integer
+          description: 变更行数
+        backupPath:
+          type: string
+          description: 备份文件路径
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 错误类型
+        message:
+          type: string
+          description: 错误消息
+        details:
+          type: object
+          description: 错误详情
+        timestamp:
+          type: string
+          format: date-time
+          description: 错误时间
+
+tags:
+  - name: TypeSafety
+    description: 类型安全检查相关接口
+  - name: Components
+    description: 组件类型检查相关接口
+  - name: Fix
+    description: 自动修复相关接口

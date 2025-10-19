@@ -190,6 +190,21 @@ module.exports = {
       max_memory_restart: '1G',
       restart_delay: 3000,
     },
+    {
+      name: 'llmchat-frontend',
+      script: 'npx',
+      args: ['serve', '-s', 'dist', '-p', '3000'],
+      cwd: './frontend',
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      error_file: './frontend/log/pm2-error.log',
+      out_file: './frontend/log/pm2-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      restart_delay: 3000,
+    }
   ],
 };
 ```
@@ -205,6 +220,9 @@ pm2 save
 
 # 设置开机自启
 pm2 startup
+
+# 监控
+pm2 monit
 ```
 
 ### 方式3: Docker部署
@@ -212,84 +230,691 @@ pm2 startup
 #### Dockerfile（后端）
 
 ```dockerfile
-FROM node:18-alpine AS builder
+FROM node:18-alpine AS base
+
+# 安装必要的系统依赖
+RUN apk add --no-cache curl
+
+# 设置工作目录
 WORKDIR /app
+
+# 复制package文件
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# 安装pnpm
+RUN npm install -g pnpm
+
+# 安装依赖
+RUN pnpm install --frozen-lockfile
+
+# 复制源代码
 COPY . .
+
+# 构建应用
 RUN pnpm run build
 
-FROM node:18-alpine
+# 生产阶段
+FROM node:18-alpine AS runner
+
+# 创建非root用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --gid 1001 nodejs
+
+# 设置工作目录
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+
+# 复制构建产物
+COPY --from=base --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=base --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=base --chown=nodejs:nodejs /app/package.json ./
+
+# 创建日志目录
+RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app/logs
+
+# 切换到非root用户
+USER nodejs
+
+# 暴露端口
 EXPOSE 3001
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+# 启动应用
 CMD ["node", "dist/index.js"]
 ```
 
 #### Dockerfile（前端）
 
 ```dockerfile
-FROM node:18-alpine AS builder
+FROM node:18-alpine AS base
+
+# 安装pnpm
+RUN npm install -g pnpm
+
+# 设置工作目录
 WORKDIR /app
+
+# 复制package文件
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# 安装依赖
+RUN pnpm install --frozen-lockfile
+
+# 复制源代码
 COPY . .
+
+# 构建应用
 RUN pnpm run build
 
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Nginx配置
+FROM nginx:alpine AS runner
+
+# 复制nginx配置
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# 复制构建产物
+COPY --from=base /app/dist /usr/share/nginx/html
+
+# 创建非root用户
+RUN addgroup --system --gid 1001 nginx && \
+    adduser --system --uid 1001 --gid 1001 nginx
+
+# 设置权限
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d
+
+# 创建nginx运行时需要的目录
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx
+
+# 切换到非root用户
+USER nginx
+
+# 暴露端口
 EXPOSE 80
+
+# 启动nginx
 CMD ["nginx", "-g", "daemon off;"]
 ```
 
-#### docker-compose.yml
+#### docker-compose.yml（开发环境）
 
 ```yaml
 version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:password@db:5432/llmchat
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/llmchat
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - db
+      - postgres
+      - redis
     restart: unless-stopped
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - llmchat-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - llmchat-network
 
-  db:
+  postgres:
     image: postgres:15-alpine
-    ports:
-      - "5432:5432"
     environment:
+      - POSTGRES_DB=llmchat
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=llmchat
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
     restart: unless-stopped
+    networks:
+      - llmchat-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - llmchat-network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - llmchat-network
 
 volumes:
-  pgdata:
+  postgres_data:
+  redis_data:
+
+networks:
+  llmchat-network:
+    driver: bridge
+```
+
+#### docker-compose.prod.yml（生产环境）
+
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    image: llmchat/backend:${VERSION:-latest}
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - llmchat-network
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  frontend:
+    image: llmchat/frontend:${VERSION:-latest}
+    restart: always
+    networks:
+      - llmchat-network
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.125'
+
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - llmchat-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 256mb
+    volumes:
+      - redis_data:/data
+    networks:
+      - llmchat-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.125'
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - llmchat-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.125'
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backups:
+    driver: local
+
+networks:
+  llmchat-network:
+    driver: bridge
+```
+
+#### Docker多阶段构建优化
+
+```dockerfile
+# backend/Dockerfile.optimized
+FROM node:18-alpine AS base
+
+# 安装依赖阶段
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# 构建阶段
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# 类型检查
+RUN pnpm run type-check
+
+# 构建
+RUN pnpm run build
+
+# 生产阶段
+FROM node:18-alpine AS runner
+
+# 安全配置
+RUN apk add --no-cache dumb-init curl
+
+# 创建应用用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --gid 1001 nodejs
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制构建产物
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
+
+# 创建必要的目录
+RUN mkdir -p /app/logs /app/uploads && \
+    chown -R nodejs:nodejs /app/logs /app/uploads
+
+# 设置权限
+USER nodejs
+
+# 暴露端口
+EXPOSE 3001
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+# 使用dumb-init作为PID 1
+ENTRYPOINT ["dumb-init", "--"]
+
+# 启动应用
+CMD ["node", "dist/index.js"]
 ```
 
 #### 启动Docker
 
 ```bash
+# 开发环境
 docker-compose up -d
+
+# 生产环境
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# 构建镜像
+docker-compose build
+
+# 查看日志
+docker-compose logs -f backend
+
+# 停止服务
+docker-compose down
+
+# 更新服务
+docker-compose pull
+docker-compose up -d --force-recreate
+```
+
+### 方式4: Kubernetes部署
+
+#### Kubernetes清单
+
+```yaml
+# k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llmchat
+  labels:
+    name: llmchat
+---
+# k8s/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llmchat-config
+  namespace: llmchat
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+---
+# k8s/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llmchat-secrets
+  namespace: llmchat
+type: Opaque
+data:
+  DATABASE_URL: <base64-encoded-database-url>
+  JWT_SECRET: <base64-encoded-jwt-secret>
+  OPENAI_API_KEY: <base64-encoded-openai-key>
+---
+# k8s/backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmchat-backend
+  namespace: llmchat
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: llmchat-backend
+  template:
+    metadata:
+      labels:
+        app: llmchat-backend
+    spec:
+      containers:
+      - name: backend
+        image: llmchat/backend:latest
+        ports:
+        - containerPort: 3001
+        envFrom:
+        - configMapRef:
+            name: llmchat-config
+        - secretRef:
+            name: llmchat-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+---
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: llmchat-backend-service
+  namespace: llmchat
+spec:
+  selector:
+    app: llmchat-backend
+  ports:
+  - protocol: TCP
+    port: 3001
+    targetPort: 3001
+  type: ClusterIP
+---
+# k8s/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llmchat-ingress
+  namespace: llmchat
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  tls:
+  - hosts:
+    - llmchat.yourdomain.com
+    secretName: llmchat-tls
+  rules:
+  - host: llmchat.yourdomain.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: llmchat-backend-service
+            port:
+              number: 3001
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: llmchat-frontend-service
+            port:
+              number: 80
+```
+
+#### Kubernetes部署脚本
+
+```bash
+#!/bin/bash
+# k8s/deploy.sh
+
+set -e
+
+echo "开始部署LLMChat到Kubernetes..."
+
+# 应用配置
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+
+# 部署数据库
+kubectl apply -f k8s/postgres.yaml
+kubectl apply - f k8s/redis.yaml
+
+# 等待数据库就绪
+echo "等待数据库启动..."
+kubectl wait --for=condition=ready pod -l app=postgres -n llmchat --timeout=300s
+
+# 运行数据库迁移
+kubectl run migration --image=llmchat/backend:latest --rm -i --restart=Never \
+  --env="DATABASE_URL=$(kubectl get secret llmchat-secrets -n llmchat -o jsonpath='{.data.DATABASE_URL}' | base64 -d)" \
+  --env="NODE_ENV=production" \
+  --command="pnpm run migrate:up"
+
+# 部署应用
+kubectl apply -f k8s/backend-deployment.yaml
+kubectl apply -f k8s/frontend-deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# 等待应用就绪
+echo "等待应用启动..."
+kubectl wait --for=condition=available deployment/llmchat-backend -n llmchat --timeout=300s
+kubectl wait --for=condition=available deployment/llmchat-frontend -n llmchat --timeout=300s
+
+echo "部署完成！"
+echo "访问地址: https://llmchat.yourdomain.com"
+```
+
+### 方式5: 云平台部署
+
+#### AWS ECS部署
+
+```json
+{
+  "family": "llmchat",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::account:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::account:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "llmchat/backend:latest",
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:region:account:secret:llmchat/database-url"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/llmchat",
+          "awslogs-region": "us-west-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:region:account:secret:llmchat/database-url"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 阿里云ACK部署
+
+```yaml
+# 阿里云ACK服务配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: llmchat-backend-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: llmchat-backend
+  ports:
+  - port: 80
+    targetPort: 3001
+    protocol: TCP
+  sessionAffinity: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmchat-backend
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+      - name: backend
+        image: registry.cn-hangzhou.aliyuncs.com/llmchat/backend:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: llmchat-secrets
+              key: database-url
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
 ```
 
 ---

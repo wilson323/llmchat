@@ -1,240 +1,207 @@
 /**
- * Store 类型定义文件
+ * Store 类型定义 - 统一导出所有 Store State 类型
  *
- * 提供统一的Store基础类型和工具函数
- * 确保所有Store的类型安全性和一致性
+ * 用于消除 Store Selector 中的 any 类型
+ * 提供类型安全的 Selector 工具类型
  */
 
-// ============================================================================
-// 基础类型定义
-// ============================================================================
+import type { ChatMessage, StreamStatus, ReasoningStepUpdate, FastGPTEvent } from '@/types';
+import type { ChatSession, AgentSessionsMap, Agent } from '@/types';
+
+// ==================== Message Store Types ====================
 
 /**
- * Store基础状态类型
+ * 消息 Store 状态类型
  */
-export interface BaseStoreState {
-  id: string;
-  version: string;
-  lastUpdated: number;
+export interface MessageState {
+  // 消息数据
+  messages: ChatMessage[];
+
+  // 流式状态
+  isStreaming: boolean;
+  streamingStatus: StreamStatus | null;
+  streamAbortController: AbortController | null;
+
+  // 性能优化：消息缓冲区
+  streamBuffer: string;
+  flushScheduled: boolean;
+
+  // Actions - 消息操作
+  addMessage: (message: ChatMessage) => void;
+  clearMessages: () => void;
+  updateMessageById: (messageId: string, updater: (message: ChatMessage) => ChatMessage) => void;
+  setMessageFeedback: (messageId: string, feedback: 'good' | 'bad' | null) => void;
+  removeLastInteractiveMessage: () => void;
+
+  // Actions - 流式响应
+  appendToBuffer: (content: string) => void;
+  flushBuffer: () => void;
+  updateLastMessage: (content: string) => void;
+
+  // Actions - 推理和事件
+  appendReasoningStep: (step: ReasoningStepUpdate) => void;
+  finalizeReasoning: (totalSteps?: number) => void;
+  appendAssistantEvent: (event: FastGPTEvent) => void;
+
+  // Actions - 流式控制
+  setIsStreaming: (streaming: boolean) => void;
+  setStreamingStatus: (status: StreamStatus | null) => void;
+  setStreamAbortController: (controller: AbortController | null) => void;
+  stopStreaming: () => void;
+
+  // 内部方法
+  _scheduleFlush: () => void;
+
+  // Zustand store methods
+  getState: () => MessageState;
 }
 
+// ==================== Agent Store Types ====================
+
 /**
- * Store基础Action类型
+ * 智能体 Store 状态类型
  */
-export interface BaseStoreActions {
-  reset: () => void;
-  getState: () => any;
-  setState: (state: any) => void;
+export interface AgentState {
+  // 智能体数据
+  agents: Agent[];
+  currentAgent: Agent | null;
+
+  // 加载状态
+  agentsLoading: boolean;
+  agentsError: string | null;
+
+  // Actions
+  setAgents: (agents: Agent[]) => void;
+  setCurrentAgent: (agent: Agent | null) => void;
+  setAgentsLoading: (loading: boolean) => void;
+  setAgentsError: (error: string | null) => void;
+
+  // 辅助方法
+  getAgentById: (id: string) => Agent | undefined;
+  getActiveAgents: () => Agent[];
+  getAgentsByProvider: (provider: string) => Agent[];
+  hasAgent: (id: string) => boolean;
+
+  // Zustand store methods
+  getState: () => AgentState;
 }
 
-/**
- * 完整的Store类型
- */
-export type BaseStore<TState = any, TActions = any> = TState & TActions;
-
-// ============================================================================
-// Zustand类型辅助
-// ============================================================================
+// ==================== Session Store Types ====================
 
 /**
- * 类型安全的SetState函数
+ * 会话 Store 状态类型
  */
-export type SetState<T> = (
-  partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-  replace?: boolean
-) => void;
+export interface SessionState {
+  // 会话数据
+  agentSessions: AgentSessionsMap;
+  currentSession: ChatSession | null;
 
-/**
- * 类型安全的GetState函数
- */
-export type GetState<T> = () => T;
+  // Actions - 会话管理
+  createNewSession: (agentId: string) => ChatSession;
+  deleteSession: (agentId: string, sessionId: string) => void;
+  switchToSession: (agentId: string, sessionId: string) => void;
+  renameSession: (agentId: string, sessionId: string, title: string) => void;
+  clearCurrentAgentSessions: (agentId: string) => void;
 
-/**
- * Store创建函数类型
- */
-export type StoreCreator<TState, TActions> = (
-  set: SetState<TState & TActions>,
-  get: GetState<TState & TActions>
-) => TState & TActions;
+  // Actions - 会话数据同步
+  setAgentSessionsForAgent: (agentId: string, sessions: ChatSession[]) => void;
+  bindSessionId: (agentId: string, oldId: string, newId: string) => void;
+  setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => void;
+  updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => void;
+  updateSessionMessage: (agentId: string, sessionId: string, messageId: string, updater: (message: ChatMessage) => ChatMessage) => void;
 
-// ============================================================================
-// 持久化类型
-// ============================================================================
+  // Actions - 初始化
+  initializeAgentSessions: () => void;
 
-/**
- * 持久化配置接口
- */
-export interface PersistConfig<T> {
-  name: string;
-  version?: number;
-  partialize?: (state: T) => Partial<T>;
-  onRehydrateStorage?: () => (state: T | undefined) => void;
-  migrate?: (persistedState: any, version: number) => T | Promise<T>;
+  // Actions - 智能标题
+  updateSessionTitleIntelligently: (agentId: string, sessionId: string) => void;
+
+  // 辅助方法
+  getSessionById: (agentId: string, sessionId: string) => ChatSession | undefined;
+  getAgentSessions: (agentId: string) => ChatSession[];
+  getCurrentSession: () => ChatSession | null;
+  getSessionCount: (agentId?: string) => number;
+  getRecentSessions: (agentId: string, limit?: number) => ChatSession[];
+  hasSession: (agentId: string, sessionId: string) => boolean;
+
+  // Zustand store methods
+  getState: () => SessionState;
 }
 
+// ==================== UI Store Types ====================
+
 /**
- * 持久化Store类型
+ * UI Store 状态类型
  */
-export type PersistedStore<T> = T & {
-  persist: {
-    rehydrate: () => Promise<void>;
-    hasHydrated: () => boolean;
-    onHydrate: (fn: (state: T) => void) => void;
-    onFinishHydration: (fn: (state: T) => void) => void;
+export interface UIState {
+  // UI 状态
+  sidebarOpen: boolean;
+  agentSelectorOpen: boolean;
+  theme: 'light' | 'dark' | 'auto';
+
+  // Actions
+  setSidebarOpen: (open: boolean) => void;
+  setAgentSelectorOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+  toggleAgentSelector: () => void;
+  setTheme: (theme: 'light' | 'dark' | 'auto') => void;
+
+  // Zustand store methods
+  getState: () => UIState;
+}
+
+// ==================== Preference Store Types ====================
+
+/**
+ * 偏好设置 Store 状态类型
+ */
+export interface PreferenceState {
+  preferences: {
+    streamingEnabled: boolean;
+    autoSaveEnabled: boolean;
+    notificationsEnabled: boolean;
+    language: string;
   };
+
+  // Actions
+  setPreference: <K extends keyof PreferenceState['preferences']>(
+    key: K,
+    value: PreferenceState['preferences'][K]
+  ) => void;
+  resetPreferences: () => void;
+
+  // Zustand store methods
+  getState: () => PreferenceState;
 }
 
-// ============================================================================
-// 错误处理类型
-// ============================================================================
+// ==================== Store Selector 工具类型 ====================
 
 /**
- * Store错误类型
+ * 通用 Store Selector 类型
  */
-export interface StoreError {
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: number;
-}
+export type StoreSelector<TState, TResult> = (state: TState) => TResult;
 
 /**
- * Store状态类型
+ * Message Store Selector 类型
  */
-export type StoreStatus = 'idle' | 'loading' | 'success' | 'error';
-
-// ============================================================================
-// 通用工具类型
-// ============================================================================
+export type MessageSelector<TResult> = StoreSelector<MessageState, TResult>;
 
 /**
- * 提取Store状态类型
+ * Agent Store Selector 类型
  */
-export type ExtractState<T> = T extends BaseStore<infer S, any> ? S : never;
+export type AgentSelector<TResult> = StoreSelector<AgentState, TResult>;
 
 /**
- * 提取Store Actions类型
+ * Session Store Selector 类型
  */
-export type ExtractActions<T> = T extends BaseStore<any, infer A> ? A : never;
+export type SessionSelector<TResult> = StoreSelector<SessionState, TResult>;
 
 /**
- * 创建Store类型
+ * UI Store Selector 类型
  */
-export type CreateStoreType<TState, TActions> = BaseStore<TState, TActions>;
+export type UISelector<TResult> = StoreSelector<UIState, TResult>;
 
 /**
- * 持久化Store类型
+ * Preference Store Selector 类型
  */
-export type CreatePersistedStoreType<TState, TActions> = PersistedStore<BaseStore<TState, TActions>>;
-
-// ============================================================================
-// Store工厂函数类型
-// ============================================================================
-
-/**
- * Store工厂配置
- */
-export interface StoreFactoryConfig<TState, TActions> {
-  name: string;
-  initialState: TState;
-  actions: (set: SetState<TState & TActions>, get: GetState<TState & TActions>) => TActions;
-  persist?: PersistConfig<TState & TActions>;
-}
-
-/**
- * Store工厂函数类型
- */
-export type StoreFactory = <TState, TActions>(
-  config: StoreFactoryConfig<TState, TActions>
-) => BaseStore<TState, TActions>;
-
-// ============================================================================
-// 常用Store状态
-// ============================================================================
-
-/**
- * 异步操作状态
- */
-export interface AsyncState<T = any> {
-  data: T | null;
-  loading: boolean;
-  error: StoreError | null;
-  status: StoreStatus;
-}
-
-/**
- * 异步操作Actions
- */
-export interface AsyncActions<T = any> {
-  setLoading: (loading: boolean) => void;
-  setError: (error: StoreError | null) => void;
-  setData: (data: T) => void;
-  reset: () => void;
-}
-
-/**
- * 异步Store类型
- */
-export type AsyncStore<T = any> = BaseStore<AsyncState<T>, AsyncActions<T>>;
-
-// ============================================================================
-// 中间件类型
-// ============================================================================
-
-/**
- * Store中间件类型
- */
-export type StoreMiddleware<T> = (
-  config: any,
-  options?: any
-) => (stateCreator: StoreCreator<any, any>) => T;
-
-/**
- * 开发工具中间件配置
- */
-export interface DevtoolsOptions {
-  name?: string;
-  enabled?: boolean;
-  serialize?: boolean;
-  trace?: boolean;
-}
-
-// ============================================================================
-// 类型守卫
-// ============================================================================
-
-/**
- * 检查是否为Store
- */
-export function isStore<T>(obj: any): obj is BaseStore<T> {
-  return obj && typeof obj === 'object' && typeof obj.getState === 'function';
-}
-
-/**
- * 检查是否为持久化Store
- */
-export function isPersistedStore<T>(obj: any): obj is PersistedStore<T> {
-  return isStore(obj) && obj.persist && typeof obj.persist.rehydrate === 'function';
-}
-
-// ============================================================================
-// 默认配置
-// ============================================================================
-
-/**
- * 默认持久化配置
- */
-export const DEFAULT_PERSIST_CONFIG: Partial<PersistConfig<any>> = {
-  version: 1,
-  partialize: (state) => state,
-};
-
-/**
- * 默认开发工具配置
- */
-export const DEFAULT_DEVTOOLS_CONFIG: DevtoolsOptions = {
-  name: 'Store',
-  enabled: process.env.NODE_ENV === 'development',
-  serialize: true,
-  trace: false,
-};
+export type PreferenceSelector<TResult> = StoreSelector<PreferenceState, TResult>;

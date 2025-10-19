@@ -2,13 +2,10 @@
  * 错误边界组件
  */
 
-;
-;
-;
-import {AlertTriangle, RefreshCw} from 'lucide-react';
+
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Component, ErrorInfo, ReactNode } from 'react';
-;
-;
+
 
 interface Props {
   children: ReactNode;

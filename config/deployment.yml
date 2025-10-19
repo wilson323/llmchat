@@ -1,0 +1,608 @@
+# LLMChat 部署配置文件
+# 用途: 定义不同环境的部署参数和策略
+
+# ========================================
+# 🏗️ 通用配置
+# ========================================
+project:
+  name: "llmchat"
+  description: "LLMChat 智能体切换聊天应用"
+  version: "1.0.0"
+  maintainer: "DevOps Team"
+
+# ========================================
+# 🌍 环境配置
+# ========================================
+environments:
+  # 开发环境
+  development:
+    enabled: true
+    description: "开发环境 - 用于日常开发和测试"
+
+    # 构建配置
+    build:
+      node_env: "development"
+      source_maps: true
+      minify: false
+      optimize: false
+
+    # 部署配置
+    deployment:
+      host: "localhost"
+      port: 3001
+      url: "http://localhost:3001"
+      ssl: false
+      replicas: 1
+
+    # 资源限制
+    resources:
+      cpu_limit: "1"
+      memory_limit: "1Gi"
+      cpu_request: "0.5"
+      memory_request: "512Mi"
+
+    # 健康检查
+    health_check:
+      enabled: true
+      path: "/api/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+    # 数据库配置
+    database:
+      host: "localhost"
+      port: 5432
+      name: "llmchat_dev"
+      ssl_mode: "disable"
+
+    # Redis配置
+    redis:
+      host: "localhost"
+      port: 6379
+      db: 0
+      password: ""
+
+    # 日志配置
+    logging:
+      level: "debug"
+      format: "dev"
+      console: true
+
+    # 质量门禁
+    quality_gates:
+      required_score: 70
+      skip_tests: false
+      skip_security: false
+
+  # 测试环境
+  staging:
+    enabled: true
+    description: "测试环境 - 用于QA测试和预生产验证"
+
+    # 构建配置
+    build:
+      node_env: "production"
+      source_maps: false
+      minify: true
+      optimize: true
+
+    # 部署配置
+    deployment:
+      host: "staging.llmchat.example.com"
+      port: 443
+      url: "https://staging.llmchat.example.com"
+      ssl: true
+      replicas: 2
+
+    # 资源限制
+    resources:
+      cpu_limit: "2"
+      memory_limit: "2Gi"
+      cpu_request: "1"
+      memory_request: "1Gi"
+
+    # 健康检查
+    health_check:
+      enabled: true
+      path: "/api/health"
+      interval: 30
+      timeout: 15
+      retries: 5
+
+    # 数据库配置
+    database:
+      host: "staging-db.example.com"
+      port: 5432
+      name: "llmchat_staging"
+      ssl_mode: "require"
+
+    # Redis配置
+    redis:
+      host: "staging-redis.example.com"
+      port: 6379
+      db: 0
+      password: "${REDIS_PASSWORD}"
+
+    # 日志配置
+    logging:
+      level: "info"
+      format: "json"
+      console: false
+
+    # 监控配置
+    monitoring:
+      enabled: true
+      metrics_path: "/metrics"
+      tracing: true
+
+    # 质量门禁
+    quality_gates:
+      required_score: 80
+      skip_tests: false
+      skip_security: false
+
+  # 生产环境
+  production:
+    enabled: true
+    description: "生产环境 - 面向最终用户"
+
+    # 构建配置
+    build:
+      node_env: "production"
+      source_maps: false
+      minify: true
+      optimize: true
+
+    # 部署配置
+    deployment:
+      host: "llmchat.example.com"
+      port: 443
+      url: "https://llmchat.example.com"
+      ssl: true
+      replicas: 3
+
+    # 资源限制
+    resources:
+      cpu_limit: "4"
+      memory_limit: "4Gi"
+      cpu_request: "2"
+      memory_request: "2Gi"
+
+    # 健康检查
+    health_check:
+      enabled: true
+      path: "/api/health"
+      interval: 15
+      timeout: 20
+      retries: 10
+      liveness_probe:
+        path: "/api/health/live"
+        initial_delay: 60
+      readiness_probe:
+        path: "/api/health/ready"
+        initial_delay: 30
+
+    # 数据库配置
+    database:
+      host: "prod-db-cluster.example.com"
+      port: 5432
+      name: "llmchat_production"
+      ssl_mode: "require"
+      pool_size: 20
+      max_overflow: 30
+
+    # Redis配置
+    redis:
+      host: "prod-redis-cluster.example.com"
+      port: 6379
+      db: 0
+      password: "${REDIS_PASSWORD}"
+      cluster_mode: true
+
+    # 日志配置
+    logging:
+      level: "warn"
+      format: "json"
+      console: false
+      file: true
+      rotation: true
+
+    # 监控配置
+    monitoring:
+      enabled: true
+      metrics_path: "/metrics"
+      tracing: true
+      profiling: true
+      alerts: true
+
+    # 安全配置
+    security:
+      rate_limiting: true
+      cors_strict: true
+      helmet: true
+      csrf_protection: true
+
+    # 备份配置
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"  # 每天凌晨2点
+      retention_days: 30
+
+    # 质量门禁
+    quality_gates:
+      required_score: 90
+      skip_tests: false
+      skip_security: false
+
+# ========================================
+# 🐳 Docker 配置
+# ========================================
+docker:
+  registry: "registry.example.com"
+  namespace: "llmchat"
+
+  # 镜像配置
+  image:
+    base_image: "node:20-alpine"
+    working_dir: "/app"
+    user: "nextjs"
+    user_id: 1001
+    group_id: 1001
+
+  # 构建参数
+  build_args:
+    NODE_ENV: "production"
+    VERSION: "${VERSION}"
+    COMMIT_SHA: "${COMMIT_SHA}"
+    BUILD_DATE: "${BUILD_DATE}"
+
+  # 安全配置
+  security:
+    run_as_non_root: true
+    read_only_filesystem: false
+    no_new_privileges: true
+
+  # 健康检查
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+    interval: 30
+    timeout: 10
+    retries: 3
+    start_period: 40
+
+# ========================================
+# ☸️ Kubernetes 配置 (可选)
+# ========================================
+kubernetes:
+  enabled: false
+
+  # 命名空间
+  namespace: "llmchat"
+
+  # 服务配置
+  service:
+    type: "ClusterIP"
+    port: 80
+    target_port: 3001
+
+  # Ingress配置
+  ingress:
+    enabled: true
+    class: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  # HPA配置
+  hpa:
+    enabled: true
+    min_replicas: 2
+    max_replicas: 10
+    target_cpu_utilization: 70
+    target_memory_utilization: 80
+
+  # PDB配置
+  pdb:
+    enabled: true
+    min_available: "50%"
+
+# ========================================
+# 🔧 工具配置
+# ========================================
+tools:
+  # 构建工具
+  build:
+    tool: "docker"
+    parallel: true
+    cache_enabled: true
+
+  # 部署工具
+  deploy:
+    tool: "docker"
+    strategy: "rolling"
+    rollback_enabled: true
+    backup_enabled: true
+
+  # 测试工具
+  test:
+    unit_test_tool: "jest"
+    e2e_test_tool: "playwright"
+    coverage_tool: "c8"
+
+  # 监控工具
+  monitoring:
+    metrics_tool: "prometheus"
+    logging_tool: "elasticsearch"
+    tracing_tool: "jaeger"
+    alerting_tool: "alertmanager"
+
+# ========================================
+# 📊 通知配置
+# ========================================
+notifications:
+  enabled: true
+
+  # Slack通知
+  slack:
+    enabled: false
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#deployments"
+
+  # 邮件通知
+  email:
+    enabled: false
+    smtp_host: "${SMTP_HOST}"
+    smtp_port: 587
+    username: "${SMTP_USERNAME}"
+    password: "${SMTP_PASSWORD}"
+    from: "deploy@llmchat.example.com"
+    to: ["devops@example.com"]
+
+  # Teams通知
+  teams:
+    enabled: false
+    webhook_url: "${TEAMS_WEBHOOK_URL}"
+
+# ========================================
+# 🔒 安全配置
+# ========================================
+security:
+  # 网络策略
+  network_policy:
+    enabled: true
+    ingress_rules:
+      - port: 80
+        protocol: TCP
+        from:
+          - namespace: "ingress"
+      - port: 443
+        protocol: TCP
+        from:
+          - namespace: "ingress"
+
+  # Pod安全策略
+  pod_security_policy:
+    enabled: true
+    privileged: false
+    allow_privilege_escalation: false
+    read_only_root_filesystem: true
+    run_as_non_root: true
+    run_as_user: 1001
+
+  # 密钥管理
+  secrets:
+    enabled: true
+    provider: "kubernetes"  # 或 "vault", "aws"
+
+  # 扫描配置
+  scanning:
+    container_scanning: true
+    image_scanning: true
+    dependency_scanning: true
+
+# ========================================
+# 📈 性能配置
+# ========================================
+performance:
+  # 缓存配置
+  cache:
+    enabled: true
+    ttl: 300
+    max_size: 1000
+
+  # 连接池配置
+  connection_pool:
+    database:
+      min: 5
+      max: 20
+      acquire_timeout: 30000
+      idle_timeout: 30000
+    redis:
+      min: 10
+      max: 100
+      acquire_timeout: 10000
+      idle_timeout: 300000
+
+  # 限流配置
+  rate_limiting:
+    enabled: true
+    window_size: 60
+    max_requests: 1000
+    block_duration: 60
+
+# ========================================
+# 🔧 开发配置
+# ========================================
+development:
+  # 热重载
+  hot_reload: true
+
+  # 调试配置
+  debug:
+    enabled: true
+    port: 9229
+
+  # 文件监听
+  watch:
+    enabled: true
+    patterns:
+      - "src/**/*.ts"
+      - "src/**/*.js"
+      - "config/**/*.yml"
+
+  # 开发工具
+  tools:
+    enabled: true
+    profiler: true
+    memory_leak_detection: true
+
+# ========================================
+# 🧪 测试配置
+# ========================================
+testing:
+  # 单元测试
+  unit_test:
+    enabled: true
+    coverage_threshold: 80
+    timeout: 30000
+
+  # 集成测试
+  integration_test:
+    enabled: true
+    coverage_threshold: 70
+    timeout: 60000
+
+  # E2E测试
+  e2e_test:
+    enabled: true
+    timeout: 120000
+    browsers:
+      - "chromium"
+      - "firefox"
+
+  # 性能测试
+  performance_test:
+    enabled: false
+    tools:
+      - "artillery"
+      - "lighthouse"
+    thresholds:
+      response_time_p95: 200
+      response_time_p99: 500
+      error_rate: 0.1
+
+# ========================================
+# 📋 合规配置
+# ========================================
+compliance:
+  # GDPR合规
+  gdpr:
+    enabled: true
+    data_retention_days: 365
+    anonymization_enabled: true
+
+  # SOC 2合规
+  soc2:
+    enabled: false
+    audit_logging: true
+    access_control: true
+
+  # ISO 27001合规
+  iso27001:
+    enabled: false
+    risk_assessment: true
+    incident_response: true
+
+# ========================================
+# 🎯 特性开关
+# ========================================
+feature_flags:
+  # 新功能开关
+  new_features:
+    enhanced_ui: false
+    advanced_analytics: false
+    multi_tenant: false
+
+  # 实验性功能
+  experimental:
+    ai_suggestions: false
+    real_time_collaboration: false
+
+  # 调试功能
+  debug:
+    verbose_logging: false
+    performance_profiling: false
+    request_tracing: false
+
+# ========================================
+# 📊 监控指标配置
+# ========================================
+metrics:
+  # 应用指标
+  application:
+    enabled: true
+    path: "/metrics"
+    interval: 15
+
+  # 系统指标
+  system:
+    enabled: true
+    cpu: true
+    memory: true
+    disk: true
+    network: true
+
+  # 业务指标
+  business:
+    enabled: true
+    user_sessions: true
+    api_requests: true
+    error_rates: true
+    response_times: true
+
+# ========================================
+# 🚨 告警规则配置
+# ========================================
+alerts:
+  # 系统告警
+  system:
+    high_cpu_usage:
+      enabled: true
+      threshold: 80
+      duration: "5m"
+
+    high_memory_usage:
+      enabled: true
+      threshold: 85
+      duration: "5m"
+
+    disk_space_low:
+      enabled: true
+      threshold: 90
+      duration: "2m"
+
+  # 应用告警
+  application:
+    high_error_rate:
+      enabled: true
+      threshold: 5
+      duration: "2m"
+
+    high_response_time:
+      enabled: true
+      threshold: 500
+      duration: "5m"
+
+    service_down:
+      enabled: true
+      threshold: 0
+      duration: "1m"
+
+  # 业务告警
+  business:
+    low_user_activity:
+      enabled: false
+      threshold: 10
+      duration: "10m"

@@ -5,6 +5,7 @@
 
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
+import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
 
 export interface CacheOptions {
   ttl?: number;        // 过期时间（秒）
@@ -54,9 +55,10 @@ export class CacheService {
       return;
     }
 
-    const redisHost = process.env.REDIS_HOST;
-    const redisPort = parseInt(process.env.REDIS_PORT ?? '6379', 10);
-    const redisPassword = process.env.REDIS_PASSWORD;
+    const redisConfig = AppConfig.getRedisConfig(); // ✅ 使用统一配置
+    const redisHost = redisConfig.host;
+    const redisPort = redisConfig.port;
+    const redisPassword = redisConfig.password;
 
     if (!redisHost) {
       logger.warn('Redis 未配置，缓存功能将被禁用');

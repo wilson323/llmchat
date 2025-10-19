@@ -1,32 +1,11 @@
 'use client';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Bot, Calendar, Clock, Copy, Download, FileText, MessageCircle, MessageSquare, RefreshCw, Tag, User, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+
+
 import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';

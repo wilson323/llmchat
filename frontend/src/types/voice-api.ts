@@ -131,7 +131,7 @@ export function isSpeechRecognitionEvent(event: Event): event is SpeechRecogniti
 }
 
 export function isSpeechRecognitionErrorEvent(
-  event: Event
+  event: Event,
 ): event is SpeechRecognitionErrorEvent {
   return 'error' in event && 'message' in event;
 }

@@ -2,10 +2,6 @@
  * CAD 文件上传组件
  */
 
-;
-;
-;
-
 
 import { AlertCircle, FileText, Upload } from 'lucide-react';
 import React, { useCallback, useState } from 'react';

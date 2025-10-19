@@ -3,8 +3,7 @@
  * 提供高速的内存缓存功能，支持LRU/LFU策略
  */
 
-;
-;
+
 import { IStorageProvider, StorageTier, StorageOptions, StorageStats, SearchQuery, CacheEntry, DataTemperature, SyncStatus } from '@/types/hybrid-storage';
 
 export class MemoryStorageProvider implements IStorageProvider {
@@ -230,7 +229,7 @@ export class MemoryStorageProvider implements IStorageProvider {
       if (query.tags && query.tags.length > 0 && value && typeof value === 'object' && 'tags' in value &&
           Array.isArray(value.tags)) {
         const matchingTags = query.tags.filter(tag =>
-          Array.isArray(value.tags) && value.tags.includes(tag)
+          Array.isArray(value.tags) && value.tags.includes(tag),
         );
         score += matchingTags.length * 5;
       }

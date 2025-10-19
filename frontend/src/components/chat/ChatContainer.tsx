@@ -9,10 +9,8 @@
  * @version 2.0 - 优化版（2025-10-03）
  */
 
-;
-;
-;
-import {Bot, Sparkles} from 'lucide-react';
+
+import { Bot, Sparkles } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
@@ -21,6 +19,7 @@ import { chatService } from '@/services/api';
 import messageStore from '@/store/messageStore';
 import agentStore from '@/store/agentStore';
 import sessionStore from '@/store/sessionStore';
+import type { MessageState, AgentState, SessionState } from '@/store/types';
 import type { InteractiveData, InteractiveFormItem, ChatOptions } from '@/types';
 import { useChat } from '@/hooks/useChat';
 import { useI18n } from '@/i18n';
@@ -34,15 +33,15 @@ export const ChatContainer: React.FC = () => {
   // 🚀 性能监控和资源管理
   usePerformanceMonitor('ChatContainer');
   // 🚀 性能优化：使用拆分的store，精确订阅需要的状态
-  const messages = messageStore((state: any) => state.messages);
-  const isStreaming = messageStore((state: any) => state.isStreaming);
-  const stopStreaming = messageStore((state: any) => state.stopStreaming);
-  const addMessage = messageStore((state: any) => state.addMessage);
-  const removeLastInteractiveMessage = messageStore((state: any) => state.removeLastInteractiveMessage);
+  const messages = messageStore((state: MessageState) => state.messages);
+  const isStreaming = messageStore((state: MessageState) => state.isStreaming);
+  const stopStreaming = messageStore((state: MessageState) => state.stopStreaming);
+  const addMessage = messageStore((state: MessageState) => state.addMessage);
+  const removeLastInteractiveMessage = messageStore((state: MessageState) => state.removeLastInteractiveMessage);
 
-  const currentAgent = agentStore((state: any) => state.currentAgent);
-  const currentSession = sessionStore((state: any) => state.currentSession);
-  const bindSessionId = sessionStore((state: any) => state.bindSessionId);
+  const currentAgent = agentStore((state: AgentState) => state.currentAgent);
+  const currentSession = sessionStore((state: SessionState) => state.currentSession);
+  const bindSessionId = sessionStore((state: SessionState) => state.bindSessionId);
   const {
     sendMessage,
     continueInteractiveSelect,
@@ -181,7 +180,7 @@ export const ChatContainer: React.FC = () => {
               if (!currentAgent?.id) {
                 return;
               }
-              bindSessionId(currentSession.id, chatId);
+              bindSessionId(currentAgent.id, currentSession.id, chatId);
             }
 
             const hasVariables = response.app?.chatConfig?.variables?.length > 0;

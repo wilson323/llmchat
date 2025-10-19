@@ -1,6 +1,6 @@
 /**
  * 数据库迁移管理器
- * 
+ *
  * 功能：
  * - 自动检测并创建数据库
  * - 版本化迁移管理
@@ -95,7 +95,7 @@ export class MigrationManager {
       const version = parseInt(versionStr, 10);
       const filepath = path.join(this.migrationsDir, file);
       const sql = fs.readFileSync(filepath, 'utf-8');
-      
+
       // 计算校验和
       const crypto = await import('crypto');
       const checksum = crypto.createHash('sha256').update(sql).digest('hex');
@@ -123,7 +123,7 @@ export class MigrationManager {
 
     try {
       logger.info(`[Migration] 执行迁移 ${migration.version}: ${migration.name}`);
-      
+
       // 执行迁移SQL
       await client.query(migration.sql);
 
@@ -213,7 +213,7 @@ export class MigrationManager {
     pending: MigrationFile[];
   }> {
     const client = await this.pool.connect();
-    
+
     try {
       // 确保表存在
       await this.ensureMigrationsTable(client);
@@ -242,7 +242,7 @@ export class MigrationManager {
    */
   public async validateMigrations(): Promise<boolean> {
     const client = await this.pool.connect();
-    
+
     try {
       await this.ensureMigrationsTable(client);
 

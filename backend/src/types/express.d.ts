@@ -1,7 +1,7 @@
 /**
- * Express类型扩展
+ * Express类型扩展 - 简化版本
  */
-import type { ProtectedRequestContext } from '@/services/ProtectionService';
+// import type { ProtectedRequestContext } from '@/services/ProtectionService'; // 已移除保护服务
 import type { AuditAction, ResourceType } from './audit';
 
 /**
@@ -19,8 +19,8 @@ declare global {
   namespace Express {
     interface Request {
       requestId: string;
-      protectionContext?: ProtectedRequestContext;
-      protectionService?: any;
+      // protectionContext?: ProtectedRequestContext; // 已移除保护服务
+      // protectionService?: any; // 已移除保护服务
       audit?: AuditContext;
       user?: {
         id: string;

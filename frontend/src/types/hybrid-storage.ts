@@ -136,7 +136,7 @@ export interface IStorageProvider {
 export interface StorageOptions {
   expiresAt?: number;
   priority?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   compress?: boolean;
   encrypt?: boolean;
 }

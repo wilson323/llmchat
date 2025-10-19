@@ -13,7 +13,7 @@ import type {
   RenderMetrics,
   SafeOptional,
   NonNullable,
-  MemoCompareFn
+  MemoCompareFn,
 } from '@/types/performance';
 
 // 消息复杂度枚举
@@ -83,7 +83,7 @@ export function createLRUCache(maxSize: number): HeightCache {
 
     get size(): number {
       return cache.size;
-    }
+    },
   };
 }
 
@@ -115,7 +115,9 @@ export function createTTLCache<V>(maxSize: number, ttlMs: number = 5 * 60 * 1000
   return {
     get(key: string): V | undefined {
       const entry = cache.get(key);
-      if (!entry) return undefined;
+      if (!entry) {
+return undefined;
+}
 
       if (Date.now() - entry.timestamp > ttlMs) {
         cache.delete(key);
@@ -140,7 +142,9 @@ export function createTTLCache<V>(maxSize: number, ttlMs: number = 5 * 60 * 1000
 
     has(key: string): boolean {
       const entry = cache.get(key);
-      if (!entry) return false;
+      if (!entry) {
+return false;
+}
 
       if (Date.now() - entry.timestamp > ttlMs) {
         cache.delete(key);
@@ -160,7 +164,7 @@ export function createTTLCache<V>(maxSize: number, ttlMs: number = 5 * 60 * 1000
     get size(): number {
       cleanup(); // 清理过期项
       return cache.size;
-    }
+    },
   };
 }
 
@@ -172,7 +176,7 @@ export function createTTLCache<V>(maxSize: number, ttlMs: number = 5 * 60 * 1000
  * 创建安全的 memo 比较函数
  */
 export function createSafeMemoCompare<T extends Record<string, unknown>>(
-  keys: (keyof T)[]
+  keys: (keyof T)[],
 ): MemoCompareFn<T> {
   return (prevProps: T, nextProps: T): boolean => {
     for (const key of keys) {
@@ -188,7 +192,9 @@ export function createSafeMemoCompare<T extends Record<string, unknown>>(
  * 深度比较函数（用于复杂对象）
  */
 export function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
+  if (a === b) {
+return true;
+}
 
   if (a instanceof Date && b instanceof Date) {
     return a.getTime() === b.getTime();
@@ -209,7 +215,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   const aObj = a as Record<string, unknown>;
   const bObj = b as Record<string, unknown>;
 
-  let keys = Object.keys(aObj);
+  const keys = Object.keys(aObj);
   if (keys.length !== Object.keys(bObj).length) {
     return false;
   }
@@ -231,7 +237,7 @@ export function createDeepMemoCompare<T>(): MemoCompareFn<T> {
  */
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | undefined;
 
@@ -246,7 +252,7 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  limit: number
+  limit: number,
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
 
@@ -275,9 +281,13 @@ export function calculateMessageComplexity(message: string): MessageComplexity {
   let complexity = MessageComplexity.LOW;
 
   // 基于字数的复杂度
-  if (wordCount > 500) complexity = MessageComplexity.HIGH;
-  else if (wordCount > 100) complexity = MessageComplexity.MEDIUM;
-  else if (wordCount > 50) complexity = MessageComplexity.LOW;
+  if (wordCount > 500) {
+complexity = MessageComplexity.HIGH;
+} else if (wordCount > 100) {
+complexity = MessageComplexity.MEDIUM;
+} else if (wordCount > 50) {
+complexity = MessageComplexity.LOW;
+}
 
   // 基于特殊内容的调整
   if (hasCode || hasLinks || lineCount > 20) {
@@ -314,7 +324,7 @@ export function generateMessageMetadata(content: string): MessageMetadata {
     hasEmojis,
     complexity,
     estimatedRenderTime,
-    memoryFootprint
+    memoryFootprint,
   };
 }
 
@@ -356,7 +366,7 @@ export function getCurrentMemoryUsage(): MemoryUsage {
       heapTotal: memory.totalJSHeapSize,
       external: 0, // Node.js 特有
       rss: 0, // Node.js 特有
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -366,7 +376,7 @@ export function getCurrentMemoryUsage(): MemoryUsage {
     heapTotal: 0,
     external: 0,
     rss: 0,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 }
 
@@ -392,7 +402,7 @@ export function formatMemorySize(bytes: number): string {
 export function createObjectPool<T>(
   factory: () => T,
   reset: (obj: T) => void,
-  maxSize: number = 100
+  maxSize: number = 100,
 ): ObjectPool<T> {
   const pool: T[] = [];
 
@@ -417,7 +427,7 @@ export function createObjectPool<T>(
 
     clear(): void {
       pool.length = 0;
-    }
+    },
   };
 }
 
@@ -452,7 +462,7 @@ export class PerformanceEventCollector {
 
   getMetrics(): RenderMetrics {
     const renderEvents = this.events.filter(
-      event => event.type === PerformanceEventType.RENDER_END
+      event => event.type === PerformanceEventType.RENDER_END,
     );
 
     if (renderEvents.length === 0) {
@@ -462,7 +472,7 @@ export class PerformanceEventCollector {
         maxRenderTime: 0,
         minRenderTime: 0,
         lastRenderTime: 0,
-        memoryUsage: 0
+        memoryUsage: 0,
       };
     }
 
@@ -475,7 +485,7 @@ export class PerformanceEventCollector {
       maxRenderTime: Math.max(...renderTimes),
       minRenderTime: Math.min(...renderTimes),
       lastRenderTime: renderTimes[renderTimes.length - 1] || 0,
-      memoryUsage
+      memoryUsage,
     };
   }
 
@@ -499,7 +509,7 @@ export class BatchProcessor<T> {
   constructor(
     private processor: (items: T[]) => Promise<void>,
     private batchSize: number = 10,
-    private delay: number = 100
+    private delay: number = 100,
   ) {}
 
   add(item: T): void {
@@ -567,7 +577,7 @@ export class BatchProcessor<T> {
  */
 export function createSafeOptional<T, K extends keyof T>(
   obj: T,
-  optionalKeys: K[]
+  optionalKeys: K[],
 ): SafeOptional<T, K> {
   const result = { ...obj };
 
@@ -586,7 +596,7 @@ export function createSafeOptional<T, K extends keyof T>(
 export function safeGet<T, K extends keyof T>(
   obj: T | null | undefined,
   key: K,
-  defaultValue: NonNullable<T[K]>
+  defaultValue: NonNullable<T[K]>,
 ): NonNullable<T[K]> {
   if (obj == null || obj[key] == null) {
     return defaultValue;
@@ -601,7 +611,7 @@ export function safeGet<T, K extends keyof T>(
 export function safeArrayGet<T>(
   array: T[] | null | undefined,
   index: number,
-  defaultValue: T
+  defaultValue: T,
 ): T {
   if (!Array.isArray(array) || index < 0 || index >= array.length) {
     return defaultValue;
@@ -624,5 +634,5 @@ export {
   type RenderMetrics,
   type SafeOptional,
   type NonNullable,
-  type MemoCompareFn
+  type MemoCompareFn,
 };

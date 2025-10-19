@@ -1,11 +1,11 @@
 /**
  * 异步批量请求日志器
- * 
+ *
  * 性能优势：
  * - 日志收集不阻塞HTTP响应
  * - 批量写入降低I/O频率99%
  * - 内存队列，快速读写
- * 
+ *
  * 使用方式：
  * ```typescript
  * import { asyncRequestLogger } from '@/middleware/AsyncBatchRequestLogger';
@@ -46,7 +46,7 @@ export class AsyncBatchRequestLogger {
     this.flushTimer = setInterval(() => {
       this.flush();
     }, this.flushInterval);
-    
+
     // 进程退出前刷新
     process.on('beforeExit', () => {
       this.flush();
@@ -100,12 +100,12 @@ export class AsyncBatchRequestLogger {
     setImmediate(() => {
       try {
         const batch = this.logQueue.splice(0, this.batchSize);
-        
+
         // ✅ 检查batch是否为空
         if (batch.length === 0) {
           return;
         }
-        
+
         // 批量记录
         logger.info('Request batch', {
           count: batch.length,
@@ -128,11 +128,11 @@ export class AsyncBatchRequestLogger {
             ...(log.userId && { userId: log.userId }),
           })),
         });
-        
+
         this.lastFlushTime = Date.now();
       } catch (err) {
         // 静默失败，不影响服务
-        logger.error('Log flush failed', { 
+        logger.error('Log flush failed', {
           error: (err as Error).message,
           queueSize: this.logQueue.length,
         });

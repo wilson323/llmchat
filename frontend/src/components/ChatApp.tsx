@@ -146,7 +146,9 @@ const ChatApp: React.FC = () => {
 
           if (targetMessageIndex !== -1) {
             const targetMessage = messages[targetMessageIndex];
-            if (!targetMessage) return;
+            if (!targetMessage) {
+              return;
+            }
 
             const chatInput = document.querySelector(
               '#message-input-textarea',

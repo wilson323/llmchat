@@ -292,10 +292,10 @@ export class AuthController { // [L10]
    */
   async register(req: Request, res: Response): Promise<void> {
     try {
-      const { username, email, password } = req.body as { 
-        username?: string; 
-        email?: string; 
-        password?: string; 
+      const { username, email, password } = req.body as {
+        username?: string;
+        email?: string;
+        password?: string;
       };
 
       if (!username || !email || !password) {

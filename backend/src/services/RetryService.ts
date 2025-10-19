@@ -156,9 +156,9 @@ export class RequestDeduplicator {
     // 默认key生成策略
     const keyParts = [
       request.method || 'GET',
-      request.url || request.endpoint ?? 4109,
-      JSON.stringify(request.data || request.body ?? {}),
-      JSON.stringify(request.params || request.query ?? {}),
+      (request.url || request.endpoint) ?? '',
+      JSON.stringify((request.data || request.body) ?? {}),
+      JSON.stringify((request.params || request.query) ?? {}),
     ];
 
     return Buffer.from(keyParts.join('|')).toString('base64');

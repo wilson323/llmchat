@@ -1,0 +1,241 @@
+{
+  "version": "1.0.0",
+  "project": "llmchat",
+  "description": "TypeScript安全监控配置",
+  "strict": true,
+  "paths": ["frontend/src", "backend/src", "shared-types/src"],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/coverage/**",
+    "**/reports/**",
+    "**/.next/**",
+    "**/.nuxt/**"
+  ],
+  "thresholds": {
+    "errors": {
+      "critical": 0,
+      "high": 0,
+      "medium": 5,
+      "low": 10
+    },
+    "warnings": {
+      "critical": 0,
+      "high": 10,
+      "medium": 25,
+      "low": 50
+    },
+    "complexity": {
+      "maxCognitiveComplexity": 15,
+      "maxCyclomaticComplexity": 10,
+      "maxNestingDepth": 5,
+      "maxFunctionLength": 50
+    },
+    "typeCoverage": {
+      "minimum": 95,
+      "target": 98,
+      "anyTypes": {
+        "maxAllowed": 5,
+        "maxPercentage": 2
+      },
+      "implicitAny": {
+        "maxAllowed": 0
+      }
+    },
+    "performance": {
+      "maxCompilationTime": 30000,
+      "maxFileSize": 1000
+    }
+  },
+  "monitoring": {
+    "enableTrendAnalysis": true,
+    "enableSnapshotComparison": true,
+    "enableDetailedReporting": true,
+    "enableErrorCategorization": true,
+    "enableComplexityAnalysis": true,
+    "retentionDays": 90,
+    "snapshotInterval": "daily",
+    "analysisDepth": "comprehensive"
+  },
+  "alerts": {
+    "enableSlack": false,
+    "enableEmail": false,
+    "enableGithubIssues": true,
+    "enableTeams": false,
+    "thresholds": {
+      "critical": 0,
+      "high": 2,
+      "medium": 10
+    },
+    "escalation": {
+      "critical": {
+        "immediate": true,
+        "blockDeployment": true,
+        "createIssue": true,
+        "notifyTeam": true
+      },
+      "high": {
+        "immediate": false,
+        "blockDeployment": false,
+        "createIssue": true,
+        "notifyTeam": true
+      },
+      "medium": {
+        "immediate": false,
+        "blockDeployment": false,
+        "createIssue": false,
+        "notifyTeam": false
+      }
+    }
+  },
+  "categories": {
+    "TYPE_MISMATCH": {
+      "severity": "critical",
+      "weight": 50,
+      "description": "类型不匹配错误"
+    },
+    "MISSING_DEFINITION": {
+      "severity": "critical",
+      "weight": 40,
+      "description": "缺少类型定义"
+    },
+    "ANY_TYPE": {
+      "severity": "medium",
+      "weight": 20,
+      "description": "使用any类型"
+    },
+    "ASYNC_ISSUES": {
+      "severity": "high",
+      "weight": 30,
+      "description": "异步操作类型问题"
+    },
+    "IMPORT_EXPORT": {
+      "severity": "medium",
+      "weight": 15,
+      "description": "导入导出类型问题"
+    },
+    "OPTIONAL_PROPERTIES": {
+      "severity": "medium",
+      "weight": 20,
+      "description": "可选属性类型问题"
+    },
+    "GENERIC_ISSUES": {
+      "severity": "high",
+      "weight": 25,
+      "description": "泛型类型问题"
+    },
+    "GENERAL": {
+      "severity": "low",
+      "weight": 10,
+      "description": "一般类型问题"
+    }
+  },
+  "environments": {
+    "development": {
+      "thresholds": {
+        "errors": {
+          "critical": 0,
+          "high": 5,
+          "medium": 15,
+          "low": 25
+        },
+        "typeCoverage": {
+          "minimum": 85,
+          "target": 90
+        }
+      },
+      "strict": false
+    },
+    "staging": {
+      "thresholds": {
+        "errors": {
+          "critical": 0,
+          "high": 0,
+          "medium": 10,
+          "low": 20
+        },
+        "typeCoverage": {
+          "minimum": 92,
+          "target": 95
+        }
+      },
+      "strict": true
+    },
+    "production": {
+      "thresholds": {
+        "errors": {
+          "critical": 0,
+          "high": 0,
+          "medium": 5,
+          "low": 10
+        },
+        "typeCoverage": {
+          "minimum": 98,
+          "target": 100
+        }
+      },
+      "strict": true
+    }
+  },
+  "integrations": {
+    "github": {
+      "enableIssueCreation": true,
+      "issueLabels": ["typescript", "type-safety", "automated"],
+      "issueTemplate": "typescript-safety-alert",
+      "maxOpenIssues": 10
+    },
+    "slack": {
+      "enabled": false,
+      "webhookUrl": "",
+      "channel": "#development",
+      "mentionOnCritical": true
+    },
+    "email": {
+      "enabled": false,
+      "recipients": [],
+      "smtpConfig": {}
+    }
+  },
+  "reporting": {
+    "formats": ["json", "html", "markdown"],
+    "includeRecommendations": true,
+    "includeTrendAnalysis": true,
+    "includeDetailedErrors": true,
+    "includeComplexityMetrics": true,
+    "generateBadge": true,
+    "generateSummary": true
+  },
+  "automation": {
+    "autoFix": {
+      "enabled": false,
+      "categories": ["ANY_TYPE", "IMPORT_EXPORT"],
+      "maxAutoFixes": 5,
+      "requireApproval": true
+    },
+    "prChecks": {
+      "enabled": true,
+      "requireTypeCheck": true,
+      "requireCoverage": true,
+      "blockOnCritical": true
+    }
+  },
+  "exemptions": {
+    "legacyFiles": [
+      "**/legacy/**",
+      "**/deprecated/**"
+    ],
+    "experimentalFeatures": [
+      "**/experimental/**"
+    ],
+    "thirdParty": [
+      "**/vendor/**",
+      "**/third-party/**"
+    ]
+  },
+  "last_updated": "2025-01-18T00:00:00.000Z"
+}

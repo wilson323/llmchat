@@ -13,6 +13,7 @@
 import Redis from 'ioredis';
 import { createHash } from 'crypto';
 import { gzipSync, gunzipSync } from 'zlib';
+import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
 import logger from '@/utils/logger';
 
 // 使用Node.js内置zlib替代lz4，避免原生模块编译问题
@@ -169,9 +170,10 @@ export class RedisCacheManager {
    */
   async initialize(): Promise<void> {
     try {
-      const redisHost = process.env.REDIS_HOST;
-      const redisPort = parseInt(process.env.REDIS_PORT ?? '6379', 10);
-      const redisPassword = process.env.REDIS_PASSWORD;
+      const redisConfig = AppConfig.getRedisConfig(); // ✅ 使用统一配置
+      const redisHost = redisConfig.host;
+      const redisPort = redisConfig.port;
+      const redisPassword = redisConfig.password;
 
       if (redisHost) {
         this.redis = new Redis({

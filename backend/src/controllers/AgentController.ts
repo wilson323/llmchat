@@ -12,11 +12,11 @@ import { HTTP_STATUS } from '@/constants/httpStatus';
 import type { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
 import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
-import type { 
-  JoiValidationResult, 
-  AgentConfigValidation, 
+import type {
+  JoiValidationResult,
+  AgentConfigValidation,
   AgentImportValidation,
-  DifyConnectionValidation 
+  DifyConnectionValidation
 } from '@/types/validation';
 async function ensureAdminAuth(req: Request) {
   const auth = req.headers['authorization'];

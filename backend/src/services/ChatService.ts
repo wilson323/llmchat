@@ -1,6 +1,6 @@
 /**
  * ChatService - 聊天服务适配器
- * 
+ *
  * 为测试和旧代码提供向后兼容的ChatService接口
  * 实际功能委托给ChatProxyService和ChatSessionService
  */

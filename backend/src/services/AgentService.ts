@@ -1,6 +1,6 @@
 /**
  * AgentService - 智能体服务适配器
- * 
+ *
  * 为测试和旧代码提供向后兼容的AgentService接口
  * 实际功能委托给AgentConfigService
  */
@@ -101,7 +101,7 @@ export class AgentService {
       logger.info('[AgentService] 检查智能体状态', { agentId });
 
       const agent = await this.configService.getAgent(agentId);
-      
+
       if (!agent) {
         return {
           id: agentId,

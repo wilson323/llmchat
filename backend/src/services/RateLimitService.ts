@@ -92,7 +92,7 @@ export class SlidingWindowRateLimiter {
     metrics.lastRequestTime = new Date();
 
     // 计算当前速率
-    const timeDiff = (now - (metrics.windowRecords[0]?.timestamp || now)) / 1000 ?? 1;
+    const timeDiff = Math.max((now - (metrics.windowRecords[0]?.timestamp || now)) / 1000, 0.001);
     metrics.currentRate = currentCount / timeDiff;
     metrics.peakRate = Math.max(metrics.peakRate, metrics.currentRate);
 

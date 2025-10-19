@@ -1,11 +1,5 @@
-;
-;
-;
-;
-;
-;
-;
-import {Camera, Loader2, RefreshCcw, Sparkles, Upload} from 'lucide-react';
+
+import { Camera, Loader2, RefreshCcw, Sparkles, Upload } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Agent, ChatMessage, ChatSession } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -286,13 +280,25 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
       return;
     }
 
-    const metadata = currentSession.metadata;
+    const metadata = currentSession?.metadata;
     if (!metadata || metadata.type !== PRODUCT_PREVIEW_SESSION_TYPE) {
       return;
     }
 
-    const request = metadata.request || {};
-    const response = metadata.response || {};
+    const request = metadata?.request as {
+      productQuery?: string;
+      personalization?: string;
+      sceneImage?: string;
+      productImage?: string;
+      boundingBox?: BoundingBox;
+      generatedImage?: {
+        imageUrl?: string;
+      };
+    } ?? {};
+    const response = metadata?.response as {
+      generatedImage?: string;
+      imageUrl?: string;
+    } ?? {};
 
     if (typeof request.productQuery === 'string') {
       setProductQuery(request.productQuery);
@@ -453,7 +459,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={handleSceneImageChange}
+                    onChange={(_, e) => handleSceneImageChange(e)}
                     className="mt-2 cursor-pointer"
                   />
                 </label>
@@ -529,7 +535,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={handleProductImageChange}
+                  onChange={(_, e) => handleProductImageChange(e)}
                   className="mt-2 cursor-pointer"
                 />
               </label>

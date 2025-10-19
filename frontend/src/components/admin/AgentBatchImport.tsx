@@ -8,10 +8,7 @@
  * - 错误处理
  */
 
-;
-;
-;
-;
+
 import { AlertCircle, CheckCircle, Upload, XCircle } from 'lucide-react';
 import React, { useState } from 'react';
 import type { AgentConfig } from '@/types';

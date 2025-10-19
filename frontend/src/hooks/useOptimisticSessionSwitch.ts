@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { ChatMessage } from '@/types';
+import type { ChatMessage, ChatSession } from '@/types';
 // 使用拆分的store架构
 import agentStore from '@/store/agentStore';
 import sessionStore from '@/store/sessionStore';
@@ -112,7 +112,7 @@ export const useOptimisticSessionSwitch = ({
       // 这里应该是实际的数据加载逻辑
       // 比如从本地存储、IndexedDB或API获取
       const sessions = agentSessions[currentAgent?.id || ''] || [];
-      const session = sessions.find((s: any) => s.id === sessionId);
+      const session = sessions.find((s: ChatSession) => s.id === sessionId);
       const messages: ChatMessage[] = session?.messages || [];
 
       // 缓存数据
@@ -164,7 +164,7 @@ export const useOptimisticSessionSwitch = ({
     }
 
     // 立即更新UI状态（乐观更新）
-    const targetSession = agentSessions[currentAgent.id]?.find((s: any) => s.id === sessionId);
+    const targetSession = agentSessions[currentAgent.id]?.find((s: ChatSession) => s.id === sessionId);
     if (!targetSession) {
       console.warn('找不到目标会话');
       return false;
@@ -215,11 +215,11 @@ export const useOptimisticSessionSwitch = ({
 
     // 获取最近访问的会话（排除当前会话）
     const recentSessions = agentSessionsList
-      .filter((s: any) => s.id !== currentSessionId)
+      .filter((s: ChatSession) => s.id !== currentSessionId)
       .slice(0, maxPreloadedSessions);
 
     // 预加载最近访问的会话
-    recentSessions.forEach((session: any) => {
+    recentSessions.forEach((session: ChatSession) => {
       if (!getCachedSession(session.id)) {
         preloadSession(session.id);
       }
@@ -233,7 +233,7 @@ export const useOptimisticSessionSwitch = ({
     }
 
     const agentSessionsList = agentSessions[currentAgent.id] || [];
-    const currentIndex = agentSessionsList.findIndex((s: any) => s.id === currentSession.id);
+    const currentIndex = agentSessionsList.findIndex((s: ChatSession) => s.id === currentSession.id);
 
     if (currentIndex === -1) {
       return;

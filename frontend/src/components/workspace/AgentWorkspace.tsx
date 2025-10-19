@@ -10,9 +10,8 @@
  * @version 1.0 - 2025-10-04
  */
 
-;
-;
-import {AlertCircle} from 'lucide-react';
+
+import { AlertCircle } from 'lucide-react';
 import React, { useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useChatStore } from '@/store/chatStore';

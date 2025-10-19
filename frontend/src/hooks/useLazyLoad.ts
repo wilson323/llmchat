@@ -33,7 +33,7 @@ interface LazyLoadResult<T> {
  */
 export function useLazyLoad<T = unknown>(
   importFn: () => Promise<{ default: React.ComponentType<T> }>,
-  options: LazyLoadOptions = {}
+  options: LazyLoadOptions = {},
 ): LazyLoadResult<T> {
   // Performance monitoring
   usePerformanceMonitor('useLazyLoad');
@@ -95,7 +95,7 @@ export function useLazyLoad<T = unknown>(
         root: null,
         rootMargin,
         threshold,
-      }
+      },
     );
 
     const currentRef = containerRef.current;
@@ -204,7 +204,7 @@ export function useLazyLoad<T = unknown>(
  */
 export function useLazyLoadImage(
   src: string,
-  options: LazyLoadOptions = {}
+  options: LazyLoadOptions = {},
 ): {
   ref: React.RefCallback<HTMLElement>;
   loaded: boolean;
@@ -234,7 +234,7 @@ export function useLazyLoadImage(
         {
           rootMargin: options.rootMargin || '50px',
           threshold: options.threshold || 0.1,
-        }
+        },
       );
       observerRef.current.observe(node);
     }
@@ -291,7 +291,7 @@ export function useLazyLoadData<T>(
     cacheTime?: number;
     retryLimit?: number;
     retryDelay?: number;
-  } = {}
+  } = {},
 ): {
   data: T | null;
   loading: boolean;
@@ -416,7 +416,7 @@ export function usePreloadResources(): {
           // Preload component
           return resource().then(() => true).catch(() => false);
         }
-      })
+      }),
     );
 
     const newlyPreloaded = resources.filter((_, index) => {

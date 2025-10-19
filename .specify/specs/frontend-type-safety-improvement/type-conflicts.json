@@ -1,0 +1,142 @@
+{
+  "version": "1.0",
+  "auditDate": "2025-10-17",
+  "conflicts": [],
+  "potentialConflicts": [
+    {
+      "id": "PC-001",
+      "severity": "low",
+      "type": "naming-inconsistency",
+      "description": "JsonValue vs UnknownValue 命名相似但用途不同",
+      "locations": [
+        "shared-types/src/index.ts:32-43 (JsonValue)",
+        "shared-types/src/index.ts:55-65 (UnknownValue)"
+      ],
+      "impact": "可能导致混淆",
+      "recommendation": "添加明确的JSDoc注释说明区别",
+      "status": "documented"
+    },
+    {
+      "id": "PC-002",
+      "severity": "low",
+      "type": "alias-duplication",
+      "description": "ApiResponsePayload 是 ApiSuccessResponse 的别名",
+      "locations": [
+        "shared-types/src/index.ts:113-115"
+      ],
+      "impact": "向后兼容别名,无实际冲突",
+      "recommendation": "逐步迁移到 ApiSuccessResponse",
+      "status": "acknowledged"
+    }
+  ],
+  "duplicateDefinitions": [
+    {
+      "id": "DD-001",
+      "severity": "none",
+      "type": "re-export",
+      "description": "ReasoningStep 从 shared-types 重新导出",
+      "locations": [
+        "shared-types/src/index.ts:228-237 (definition)",
+        "frontend/src/types/index.ts:113-114 (re-export)"
+      ],
+      "impact": "无冲突,正确的重新导出模式",
+      "recommendation": "保持当前模式",
+      "status": "resolved"
+    }
+  ],
+  "anyTypeUsage": [
+    {
+      "id": "ANY-001",
+      "severity": "medium",
+      "location": "frontend/src/types/index.ts",
+      "instances": [
+        {
+          "line": 131,
+          "context": "raw?: any",
+          "recommendation": "替换为 JsonValue"
+        },
+        {
+          "line": 140,
+          "context": "raw?: any",
+          "recommendation": "替换为 JsonValue"
+        },
+        {
+          "line": 148,
+          "context": "metadata?: Record<string, any>",
+          "recommendation": "替换为 Record<string, JsonValue>"
+        },
+        {
+          "line": 172,
+          "context": "raw?: any",
+          "recommendation": "替换为 JsonValue"
+        },
+        {
+          "line": 235,
+          "context": "variables?: Record<string, any>",
+          "recommendation": "替换为 Record<string, JsonValue>"
+        },
+        {
+          "line": 329,
+          "context": "metadata?: Record<string, any>",
+          "recommendation": "替换为 Record<string, JsonValue>"
+        }
+      ],
+      "totalCount": 6,
+      "priority": "P1"
+    }
+  ],
+  "optimizationOpportunities": [
+    {
+      "id": "OPT-001",
+      "category": "type-inheritance",
+      "title": "Agent 和 AgentConfig 类型结构优化",
+      "description": "Agent 和 AgentConfig 有重复字段,可以使用继承或组合模式",
+      "currentState": "两个独立接口,存在字段重复",
+      "proposedSolution": "创建 AgentBase 基类,Agent 和 AgentConfig 继承",
+      "impact": "提高可维护性,减少重复",
+      "priority": "P2"
+    },
+    {
+      "id": "OPT-002",
+      "category": "type-guards",
+      "title": "增加类型守卫函数",
+      "description": "为核心类型(Agent, ChatMessage等)创建类型守卫函数",
+      "currentState": "shared-types中有部分类型守卫",
+      "proposedSolution": "在frontend/utils/type-guards.ts中添加更多守卫",
+      "impact": "增强运行时类型安全",
+      "priority": "P1",
+      "status": "in-progress"
+    },
+    {
+      "id": "OPT-003",
+      "category": "documentation",
+      "title": "完善JSDoc注释",
+      "description": "部分类型缺少详细的JSDoc注释",
+      "currentState": "约80%的类型有基本注释",
+      "proposedSolution": "为所有导出类型添加完整JSDoc(含示例)",
+      "impact": "改善开发体验和IDE智能提示",
+      "priority": "P2"
+    }
+  ],
+  "statistics": {
+    "totalFiles": 24,
+    "frontendFiles": 20,
+    "sharedTypesFiles": 4,
+    "totalInterfaces": "50+",
+    "totalTypeAliases": "20+",
+    "totalEnums": "10+",
+    "anyUsageCount": 6,
+    "conflictsCount": 0,
+    "potentialConflictsCount": 2,
+    "optimizationOpportunitiesCount": 3
+  },
+  "summary": {
+    "overallHealth": "excellent",
+    "typeScriptErrors": 0,
+    "criticalIssues": 0,
+    "warningIssues": 2,
+    "infoIssues": 3,
+    "recommendations": "继续保持当前良好的类型安全实践,逐步应用类型守卫工具库,减少any类型使用"
+  }
+}
+

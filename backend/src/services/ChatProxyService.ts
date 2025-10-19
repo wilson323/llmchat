@@ -24,8 +24,8 @@ import type {
 import type { AgentConfigService } from './AgentConfigService';
 import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
-import type { ProtectedRequestContext } from './ProtectionService';
-import { getProtectionService } from './ProtectionService';
+// import type { ProtectedRequestContext } from './ProtectionService'; // 已移除保护服务
+// import { getProtectionService } from './ProtectionService'; // 已移除保护服务
 import logger from '@/utils/logger';
 import {
   getNormalizedEventKey,
@@ -140,9 +140,9 @@ export class FastGPTProvider implements AIProvider {
 
     if (response.usage) {
       result.usage = {
-        prompt_tokens: response.usage.prompt_tokens ?? '',
-        completion_tokens: response.usage.completion_tokens ?? '',
-        total_tokens: response.usage.total_tokens ?? '',
+        prompt_tokens: response.usage.prompt_tokens ?? 0,
+        completion_tokens: response.usage.completion_tokens ?? 0,
+        total_tokens: response.usage.total_tokens ?? 0,
       };
     }
 
@@ -273,9 +273,9 @@ export class AnthropicProvider implements AIProvider {
         finish_reason: response.stop_reason || 'stop',
       }],
       usage: {
-        prompt_tokens: response.usage?.input_tokens ?? '',
-        completion_tokens: response.usage?.output_tokens ?? '',
-        total_tokens: (response.usage?.input_tokens ?? '') + (response.usage?.output_tokens ?? ''),
+        prompt_tokens: response.usage?.input_tokens ?? 0,
+        completion_tokens: response.usage?.output_tokens ?? 0,
+        total_tokens: (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0),
       },
     };
   }
@@ -500,7 +500,7 @@ export class ChatProxyService {
   private readonly httpClient: ReturnType<typeof axios.create>;
   private readonly providers: Map<string, AIProvider> = new Map();
   private readonly chatLog: ChatLogService = new ChatLogService();
-  private readonly protectionService = getProtectionService();
+  // private readonly protectionService = getProtectionService(); // 已移除保护服务
 
   constructor(agentService: AgentConfigService) {
     this.agentService = agentService;
@@ -529,7 +529,7 @@ export class ChatProxyService {
     agentId: string,
     messages: ChatMessage[],
     options?: ChatOptions,
-    protectionContext?: ProtectedRequestContext,
+    // protectionContext?: ProtectedRequestContext, // 已移除保护服务
   ): Promise<ChatResponse> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -592,16 +592,8 @@ export class ChatProxyService {
     };
 
     try {
-      if (protectionContext) {
-        // 使用保护机制执行请求
-        return await this.protectionService.executeProtectedRequest(
-          protectionContext,
-          protectedOperation,
-        );
-      } else {
-        // 直接执行请求（向后兼容）
-        return await protectedOperation();
-      }
+      // 简化版本：直接执行请求，移除保护机制
+      return await protectedOperation();
     } catch (error: any) {
       logger.error('智能体请求失败', { agentId, error });
       throw new ExternalServiceError({
@@ -623,7 +615,7 @@ export class ChatProxyService {
     onStatus: (status: StreamStatus) => void,
     options?: ChatOptions,
     onEvent?: (eventName: string, data: SSEEventData) => void,
-    protectionContext?: ProtectedRequestContext,
+    // protectionContext?: ProtectedRequestContext, // 已移除保护服务
   ): Promise<void> {
     const config = await this.agentService.getAgent(agentId);
     if (!config) {
@@ -714,16 +706,8 @@ export class ChatProxyService {
     };
 
     try {
-      if (protectionContext) {
-        // 使用保护机制执行流式请求
-        await this.protectionService.executeProtectedRequest(
-          protectionContext,
-          protectedOperation,
-        );
-      } else {
-        // 直接执行流式请求（向后兼容）
-        await protectedOperation();
-      }
+      // 直接执行流式请求（简化版本）
+      await protectedOperation();
     } catch (error: any) {
       logger.error('智能体流式请求失败', { agentId, error });
       onStatus?.({

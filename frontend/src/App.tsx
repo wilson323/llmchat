@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { Toaster } from '@/components/ui/Toast';
+import { ToastProvider as Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { createEnhancedLazyComponent } from '@/components/ui/EnhancedLazyComponent';
 import { initializeComponentRegistry, preloadCriticalComponents } from '@/utils/componentRegistry';

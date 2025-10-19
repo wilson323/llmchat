@@ -1,8 +1,6 @@
 'use client';
-;
-;
-;
-;
+
+
 import { Loader2, Plus, Tag, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -161,7 +159,7 @@ export function BatchTagModal({
                 <Input
                   placeholder={t('输入标签名称')}
                   value={inputValue}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+                  onChange={(value: string) => setInputValue(value)}
                   onKeyDown={handleInputKeyDown}
                   disabled={loading}
                 />

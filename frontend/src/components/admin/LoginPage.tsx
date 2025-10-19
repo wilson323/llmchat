@@ -1,7 +1,6 @@
 'use client';
-;
-;
-;
+
+
 import { Eye, EyeOff, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -75,7 +74,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                   name="username"
                   data-testid="username-input"
                   value={username}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
+                  onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => setUsername(value)}
                   placeholder={t('输入用户名')}
                   className="pl-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
                   required
@@ -92,7 +91,7 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                   data-testid="password-input"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => setPassword(value)}
                   placeholder={t('输入密码')}
                   className="pl-11 pr-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
                   required
