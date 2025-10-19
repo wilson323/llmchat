@@ -105,7 +105,7 @@ export const useSessionStore = create<SessionStore>()(
       // 删除会话
       deleteSession: (agentId: string, sessionId: string) => {
         set((state) => {
-            const existingSessions = state.agentSessions[agentId] || [];
+          const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.filter((s: ChatSession) => s.id !== sessionId);
 
             const updatedAgentSessions = {
@@ -113,13 +113,13 @@ export const useSessionStore = create<SessionStore>()(
               [agentId]: updatedSessions,
             };
 
-            // 如果删除的是当前会话，切换到第一个会话
+          // 如果删除的是当前会话，切换到第一个会话
             const newCurrentSession =
               state.currentSession?.id === sessionId
                 ? (updatedSessions[0] || null)
                 : state.currentSession;
 
-            debugLog('🗑️ 删除会话:', sessionId);
+          debugLog('🗑️ 删除会话:', sessionId);
 
             return {
               agentSessions: updatedAgentSessions,
@@ -142,7 +142,7 @@ export const useSessionStore = create<SessionStore>()(
       // 重命名会话
       renameSession: (agentId: string, sessionId: string, title: string) => {
         set((state) => {
-            const existingSessions = state.agentSessions[agentId] || [];
+          const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId
                 ? { ...session, title, updatedAt: new Date() }
@@ -154,19 +154,19 @@ export const useSessionStore = create<SessionStore>()(
               [agentId]: updatedSessions,
             };
 
-            // 同步更新当前会话
+          // 同步更新当前会话
             const updatedCurrentSession =
               state.currentSession?.id === sessionId
                 ? { ...state.currentSession, title, updatedAt: new Date() }
                 : state.currentSession;
 
-            debugLog('✏️ 重命名会话:', { sessionId, title });
+          debugLog('✏️ 重命名会话:', { sessionId, title });
 
             return {
               agentSessions: updatedAgentSessions,
               currentSession: updatedCurrentSession,
-            };
-          });
+          };
+        });
       },
 
       // 清除指定智能体的所有会话
@@ -203,7 +203,7 @@ export const useSessionStore = create<SessionStore>()(
       // 绑定会话ID（将临时ID替换为服务器返回的ID）
       bindSessionId: (agentId: string, oldId: string, newId: string) => {
         set((state) => {
-            const existingSessions = state.agentSessions[agentId] || [];
+          const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === oldId
                 ? { ...session, id: newId, updatedAt: new Date() }
@@ -215,13 +215,13 @@ export const useSessionStore = create<SessionStore>()(
               [agentId]: updatedSessions,
             };
 
-            // 同步更新当前会话
+          // 同步更新当前会话
             const updatedCurrentSession =
               state.currentSession?.id === oldId
                 ? { ...state.currentSession, id: newId, updatedAt: new Date() }
                 : state.currentSession;
 
-            debugLog('🔗 绑定会话ID:', { oldId, newId });
+          debugLog('🔗 绑定会话ID:', { oldId, newId });
 
             return {
               agentSessions: updatedAgentSessions,
@@ -233,7 +233,7 @@ export const useSessionStore = create<SessionStore>()(
       // 设置会话的消息列表
       setSessionMessages: (agentId: string, sessionId: string, messages: ChatMessage[]) => {
         set((state) => {
-            const existingSessions = state.agentSessions[agentId] || [];
+          const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId
                 ? { ...session, messages, updatedAt: new Date() }
@@ -245,7 +245,7 @@ export const useSessionStore = create<SessionStore>()(
               [agentId]: updatedSessions,
             };
 
-            // 同步更新当前会话
+          // 同步更新当前会话
             const updatedCurrentSession =
               state.currentSession?.id === sessionId
                 ? { ...state.currentSession, messages, updatedAt: new Date() }
@@ -262,7 +262,7 @@ export const useSessionStore = create<SessionStore>()(
       // 更新指定会话
       updateSession: (agentId: string, sessionId: string, updater: (session: ChatSession) => ChatSession) => {
         set((state) => {
-            const existingSessions = state.agentSessions[agentId] || [];
+          const existingSessions = state.agentSessions[agentId] || [];
             const updatedSessions = existingSessions.map((session: ChatSession) =>
               session.id === sessionId ? updater(session) : session,
             );
@@ -272,7 +272,7 @@ export const useSessionStore = create<SessionStore>()(
               [agentId]: updatedSessions,
             };
 
-            // 同步更新当前会话
+          // 同步更新当前会话
             const updatedCurrentSession =
               state.currentSession?.id === sessionId
                 ? updater(state.currentSession)
@@ -334,8 +334,8 @@ return session;
               ...session,
               messages: updatedMessages,
               updatedAt: new Date(),
-            };
-          });
+          };
+        });
 
           const updatedAgentSessions = {
             ...state.agentSessions,

@@ -305,6 +305,8 @@ export interface BaseCardProps extends UIComponentProps {
   size?: SizeVariant;
   /** 是否可点击 */
   clickable?: boolean;
+  /** 悬停效果 */
+  hoverable?: boolean;
   /** 卡片标题 */
   title?: string;
   /** 卡片副标题 */
@@ -427,6 +429,10 @@ export interface BaseModalProps extends UIComponentProps {
   closable?: boolean;
   /** 是否显示遮罩 */
   showOverlay?: boolean;
+  /** 确认回调 */
+  onConfirm?: () => void;
+  /** 关闭回调 */
+  onClose?: () => void;
   /** 点击遮罩是否关闭 */
   closeOnOverlayClick?: boolean;
   /** 按ESC键是否关闭 */
@@ -472,7 +478,12 @@ export interface BaseSelectProps extends UIComponentProps {
 export type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'variant'> & BaseSelectProps;
 
 /** Select Trigger组件Props */
-export interface SelectTriggerProps extends BaseComponentProps {}
+export interface SelectTriggerProps extends BaseComponentProps {
+  /** 只读 */
+  readonly?: boolean;
+  /** 点击事件 */
+  onClick?: ClickEventHandler;
+}
 
 /** Select Value组件Props */
 export interface SelectValueProps extends BaseComponentProps {
