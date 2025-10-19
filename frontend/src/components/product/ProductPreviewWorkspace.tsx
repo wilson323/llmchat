@@ -459,7 +459,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={(_, e) => handleSceneImageChange(e)}
+                    onChange={handleSceneImageChange}
                     className="mt-2 cursor-pointer"
                   />
                 </label>
@@ -535,7 +535,7 @@ export const ProductPreviewWorkspace: React.FC<ProductPreviewWorkspaceProps> = (
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={(_, e) => handleProductImageChange(e)}
+                  onChange={handleProductImageChange}
                   className="mt-2 cursor-pointer"
                 />
               </label>

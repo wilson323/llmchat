@@ -1,4 +1,4 @@
-import type { ConversationAnalyticsFilters } from './types';
+import type { ConversationAnalyticsFilters } from '@/types';
 import { formatDateInputValue } from './formatDateInputValue';
 
 export function getDefaultConversationFilters(): ConversationAnalyticsFilters {

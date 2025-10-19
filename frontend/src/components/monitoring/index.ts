@@ -1,31 +1,8 @@
-// SLA监控组件导出文件
+/**
+ * Monitoring组件模块导出
+ *
+ * 简化的监控模块，避免过度工程化
+ */
 
-// 核心组件
-export { SLADashboard } from './SLADashboard';
-export { AgentDetails } from './AgentDetails';
-
-// 指标卡片组件
-export {
-  MetricsCard,
-  UptimeCard,
-  ResponseTimeCard,
-  ErrorRateCard,
-  RequestCountCard,
-  ActiveAgentsCard,
-} from './MetricsCard';
-
-// 图表组件
-export {
-  PerformanceChart,
-  ResponseTimeChart,
-  ErrorRateChart,
-  RequestVolumeChart,
-  CPUUsageChart,
-  MemoryUsageChart,
-} from './PerformanceChart';
-
-// 告警组件
-export { AlertList } from './AlertList';
-
-// 智能体状态组件
-export { AgentStatusGrid } from './AgentStatusGrid';
+// 导出存在的监控组件
+export { default as PerformanceDashboard } from './PerformanceDashboard';

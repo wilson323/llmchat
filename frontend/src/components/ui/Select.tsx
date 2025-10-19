@@ -526,5 +526,11 @@ export type SelectComponentType = ForwardRefComponent<HTMLDivElement, SelectProp
   Item: typeof SelectItemComponent;
 };
 
-// 导出（所有类型已在定义处使用 export 关键字导出）
+// 导出主组件（默认导出）
 export default Select as SelectComponentType;
+
+// 导出子组件（命名导出，用于独立使用）
+export { SelectTriggerComponent as SelectTrigger };
+export { SelectValueComponent as SelectValue };
+export { SelectContentComponent as SelectContent };
+export { SelectItemComponent as SelectItem };

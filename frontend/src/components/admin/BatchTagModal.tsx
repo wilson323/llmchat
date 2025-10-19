@@ -159,7 +159,7 @@ export function BatchTagModal({
                 <Input
                   placeholder={t('输入标签名称')}
                   value={inputValue}
-                  onChange={(value: string) => setInputValue(value)}
+                  onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleInputKeyDown}
                   disabled={loading}
                 />

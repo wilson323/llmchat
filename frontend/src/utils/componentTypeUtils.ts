@@ -18,6 +18,14 @@ import type {
   HTMLAttributes,
 } from 'react';
 
+// 导入事件处理器类型（权威来源）
+import type {
+  UnifiedEventHandler,
+  SimplifiedEventHandler,
+  LegacyEventHandler,
+  FlexibleEventHandler
+} from '@/types/event-handlers';
+
 // ==================== 基础类型工具 ====================
 
 /**
@@ -48,35 +56,6 @@ export type ConditionalRequired<T, K extends keyof T, C extends boolean> =
   C extends true ? Required<Pick<T, K>> & Omit<T, K> : T;
 
 // ==================== 事件处理器工具 ====================
-
-/**
- * 统一事件处理器类型
- */
-export interface UnifiedEventHandler<T = void, E = SyntheticEvent> {
-  (data: T, event: E): void;
-}
-
-/**
- * 简化事件处理器类型
- */
-export interface SimplifiedEventHandler<T = void> {
-  (data?: T): void;
-}
-
-/**
- * 传统事件处理器类型
- */
-export interface LegacyEventHandler<E = SyntheticEvent> {
-  (event: E): void;
-}
-
-/**
- * 灵活事件处理器类型（支持多种签名）
- */
-export type FlexibleEventHandler<T = void, E = SyntheticEvent> =
-  | UnifiedEventHandler<T, E>
-  | SimplifiedEventHandler<T>
-  | LegacyEventHandler<E>;
 
 /**
  * 自动适配事件处理器

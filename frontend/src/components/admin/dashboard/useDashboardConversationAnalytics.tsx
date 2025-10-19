@@ -3,7 +3,7 @@ import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';
 import { getConversationSeries, getAgentComparison } from '@/services/analyticsApi';
 import { listAgents } from '@/services/agentsApi';
-import type { ConversationSeriesDataset, AgentComparisonDataset, AgentItem } from './types';
+import type { ConversationSeriesDataset, AgentComparisonDataset, AgentItem } from '@/types';
 import { getDefaultConversationFilters } from './getDefaultConversationFilters';
 
 // 类型定义

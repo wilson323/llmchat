@@ -42,25 +42,9 @@ const pageComponents = {
   },
 };
 
-// 功能组件 - 中等优先级
+// 功能组件 - 中等优先级（已清理未使用组件）
 const featureComponents = {
-  // 产品预览工作区
-  'ProductPreviewWorkspace': {
-    importFn: () => import('@/components/product/ProductPreviewWorkspace'),
-    priority: 6,
-    preloadStrategy: 'visible' as const,
-    cacheTime: 8 * 60 * 1000,
-  },
-
-  // 语音通话工作区
-  'VoiceCallWorkspace': {
-    importFn: () => import('@/components/voice/VoiceCallWorkspace'),
-    priority: 6,
-    preloadStrategy: 'visible' as const,
-    cacheTime: 8 * 60 * 1000,
-  },
-
-  // CAD查看器
+  // CAD查看器（如果项目需要CAD功能）
   'CadViewerEnhanced': {
     importFn: () => import('@/components/cad/CadViewerEnhanced'),
     priority: 4,
@@ -68,7 +52,7 @@ const featureComponents = {
     cacheTime: 15 * 60 * 1000,
   },
 
-  // CAD上传器
+  // CAD上传器（如果项目需要CAD功能）
   'CadUploadEnhanced': {
     importFn: () => import('@/components/cad/CadUploadEnhanced'),
     priority: 4,
@@ -79,20 +63,12 @@ const featureComponents = {
 
 // 图表和数据可视化组件 - 低优先级，按需加载
 const chartComponents = {
-  // ECharts组件
+  // ECharts组件（管理后台使用）
   'EChartsComponents': {
     importFn: () => import('@/components/charts/EChartsComponents').then(m => ({ default: m.EChartsComponents || m.default || m })),
     priority: 2,
     preloadStrategy: 'idle' as const,
     cacheTime: 20 * 60 * 1000,
-  },
-
-  // 性能监控仪表板
-  'PerformanceDashboard': {
-    importFn: () => import('@/components/monitoring/PerformanceDashboard'),
-    priority: 3,
-    preloadStrategy: 'idle' as const,
-    cacheTime: 10 * 60 * 1000,
   },
 };
 
@@ -211,8 +187,8 @@ export async function preloadCriticalComponents(): Promise<void> {
  */
 export async function preloadComponentsByRole(role: 'admin' | 'user' | 'guest'): Promise<void> {
   const roleComponents = {
-    admin: ['AdminHome', 'PerformanceDashboard', 'EChartsComponents'],
-    user: ['AgentWorkspace', 'ProductPreviewWorkspace', 'VoiceCallWorkspace'],
+    admin: ['AdminHome', 'EChartsComponents'],
+    user: ['AgentWorkspace'],
     guest: ['ChatApp', 'LoginPage'],
   };
 

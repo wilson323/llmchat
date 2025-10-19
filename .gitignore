@@ -161,3 +161,21 @@ verify-keyboard-shortcuts.js
 !pnpm-workspace.yaml
 !quick-start.sh
 !start-dev.sh
+
+# ===================================
+# 项目临时文件（2025-10-19添加）
+# ===================================
+# 临时脚本
+temp_*
+
+# TypeScript错误记录
+ts-*.txt
+typescript-*.txt
+type-*.txt
+*-errors*.txt
+*-current*.txt
+type-check-output.txt
+
+# 临时文档
+docs/temp/
+*_TEMP_*.md

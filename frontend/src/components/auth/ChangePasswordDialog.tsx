@@ -115,7 +115,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.current ? 'text' : 'password'}
                   value={formData.currentPassword}
-                  onChange={(value: string) => setFormData((prev) => ({ ...prev, currentPassword: value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, currentPassword: e.target.value }))}
                   placeholder={t('请输入当前密码')}
                   required
                 />
@@ -139,7 +139,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.new ? 'text' : 'password'}
                   value={formData.newPassword}
-                  onChange={(value: string) => setFormData((prev) => ({ ...prev, newPassword: value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, newPassword: e.target.value }))}
                   placeholder={t('请输入新密码（至少6位）')}
                   required
                 />
@@ -163,7 +163,7 @@ export const ChangePasswordDialog = memo(function ChangePasswordDialog({ onClose
                 <Input
                   type={showPassword.confirm ? 'text' : 'password'}
                   value={formData.confirmPassword}
-                  onChange={(value: string) => setFormData((prev) => ({ ...prev, confirmPassword: value }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder={t('请再次输入新密码')}
                   required
                 />

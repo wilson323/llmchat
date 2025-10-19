@@ -7,7 +7,21 @@
 
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import React, { Suspense, ComponentType, ReactNode } from 'react';
-import type { LazyComponentConfig, LazyComponentProps } from './ui.types';
+import type { LazyComponentConfig } from '@/utils/enhancedCodeSplitting';
+
+// LazyComponentProps 定义
+export interface LazyComponentProps<P extends object = {}> {
+  /** 组件加载函数 */
+  component: ComponentType<P> | (() => Promise<{ default: ComponentType<P> }>);
+  /** 组件属性 */
+  props?: P;
+  /** 加载配置 */
+  config?: LazyComponentConfig;
+  /** 自定义加载组件 */
+  fallback?: ComponentType | ReactNode;
+  /** 自定义错误组件 */
+  errorFallback?: ComponentType<{ error?: Error; onRetry: () => void; retryCount?: number }>;
+}
 
 // 默认加载中组件
 const DefaultLoadingFallback: ComponentType<{ delay?: number }> = ({ delay = 200 }) => {

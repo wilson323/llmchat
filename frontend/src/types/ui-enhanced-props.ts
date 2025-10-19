@@ -108,7 +108,7 @@ export interface EnhancedSelectProps {
 export type ReactToEnhancedEventAdapter<T extends React.HTMLAttributes<any>> = {
   [K in keyof T]: T[K] extends (event: infer E) => void
     ? K extends `on${string}`
-      ? (event: E) => void | ((data?: any, event: E) => void)
+      ? (event: E) => void | ((data: any, event: E) => void)
       : T[K]
     : T[K];
 };

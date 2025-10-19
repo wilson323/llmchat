@@ -1,0 +1,319 @@
+---
+description: TypeScript导入导出模式统一规范 - 消除类型错误根本原因
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+# TypeScript导入导出模式统一规范
+
+## 🎯 核心原则
+
+### 原则1: 类型/值严格分离
+- **Interface/Type Alias** → 使用 `export type {}`
+- **Class/Const/Function** → 使用 `export {}`
+- **禁止混用**：避免TS1361、TS2484错误
+
+### 原则2: Default Export用于主组件
+- **React组件** → 使用 `export default`
+- **工具函数/常量** → 使用 `export {}`
+- **类型定义** → 使用 `export type {}`
+
+### 原则3: 单一真实来源
+- **UI组件类型** → `ui.types.ts` 唯一权威定义
+- **业务类型** → `types/index.ts` 或特定模块
+- **禁止重复定义**同一类型
+
+## 📦 组件导出模式
+
+### 模式1: 简单组件（Button, Input等）
+
+```typescript
+// ✅ Button.tsx - 正确模式
+import type { ButtonProps } from './ui.types';
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (props, ref) => {
+    return <button ref={ref} {...props} />;
+  }
+);
+Button.displayName = 'Button';
+
+// 只导出主组件
+export default Button;
+```
+
+**使用方式**:
+```typescript
+import Button from '@/components/ui/Button';
+// 或
+import { Button } from '@/components/ui'; // 通过index.ts转发
+```
+
+### 模式2: 复合组件（Card, Select, Tabs等）
+
+```typescript
+// ✅ Card.tsx - 正确模式
+import type { CardProps, CardHeaderProps, CardContentProps } from './ui.types';
+import { createSubComponent, attachSubComponents } from './ui.types';
+
+// 子组件实现
+const CardHeaderImpl = React.forwardRef<HTMLDivElement, CardHeaderProps>(...);
+CardHeaderImpl.displayName = 'Card.Header';
+
+const CardContentImpl = React.forwardRef<HTMLDivElement, CardContentProps>(...);
+CardContentImpl.displayName = 'Card.Content';
+
+// 主组件实现
+const CardImpl = React.forwardRef<HTMLDivElement, CardProps>(...);
+CardImpl.displayName = 'Card';
+
+// 创建子组件（使用工厂函数）
+const CardHeader = createSubComponent('Card.Header', CardHeaderImpl);
+const CardContent = createSubComponent('Card.Content', CardContentImpl);
+
+// 附加子组件到主组件
+const Card = attachSubComponents(CardImpl, {
+  Header: CardHeader,
+  Content: CardContent,
+});
+
+// 导出主组件（default）和子组件（named）
+export default Card;
+export { CardHeader, CardContent };
+```
+
+**使用方式**:
+```typescript
+// 方式1: 默认导入（推荐）
+import Card from '@/components/ui/Card';
+<Card>
+  <Card.Header>...</Card.Header>
+  <Card.Content>...</Card.Content>
+</Card>
+
+// 方式2: 独立导入子组件（特殊场景）
+import Card, { CardHeader, CardContent } from '@/components/ui/Card';
+```
+
+**❌ 错误模式 - 导致TS2614错误**:
+```typescript
+// ❌ 错误：子组件使用named export
+export { SelectTrigger, SelectContent };
+// 导致使用时报错：Module has no exported member 'SelectTrigger'
+
+// ✅ 正确：子组件通过default导出的主组件访问
+import Select from '@/components/ui/Select';
+<Select.Trigger>...</Select.Trigger>
+```
+
+### 模式3: 泛型组件（VirtualScroll等）
+
+```typescript
+// ✅ VirtualScroll.tsx - 正确模式
+import type { VirtualScrollProps } from './ui.types';
+
+// 内部实现函数（非泛型）
+function VirtualScrollImpl(
+  props: VirtualScrollProps,
+  ref: React.Ref<HTMLDivElement>
+) {
+  // 实现...
+}
+
+// forwardRef包装（非泛型）
+const VirtualScroll = React.forwardRef(VirtualScrollImpl);
+VirtualScroll.displayName = 'VirtualScroll';
+
+// 导出（命名导出，因为index.ts使用named export）
+export { VirtualScroll };
+
+// ❌ 避免：泛型forwardRef会导致类型推导问题
+export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(
+  function VirtualScroll<T>({ ... }) { } // 错误！forwardRef不支持泛型函数
+);
+```
+
+## 📍 类型定义位置规范
+
+### 规则1: UI组件类型 → ui.types.ts
+
+```typescript
+// ✅ frontend/src/components/ui/ui.types.ts
+export interface ButtonProps { ... }
+export interface CardProps { ... }
+export interface SelectProps { ... }
+
+// ❌ 禁止：在组件文件中定义接口
+// Button.tsx 中定义 interface ButtonProps - 错误！
+```
+
+### 规则2: 业务类型 → services或types
+
+```typescript
+// ✅ 业务数据类型定义在services中
+// frontend/src/services/analyticsApi.ts
+export interface ConversationSeriesDataset { ... }
+
+// ✅ types/index.ts 转发导出
+export type { ConversationSeriesDataset } from '@/services/analyticsApi';
+
+// ❌ 禁止：在types/index.ts中重复定义
+interface ConversationSeriesDataset { ... } // 错误！
+```
+
+### 规则3: 共享类型 → types/index.ts
+
+```typescript
+// ✅ frontend/src/types/index.ts - 作为转发层
+export type { ButtonProps, CardProps } from '@/components/ui';
+export type { ConversationSeriesDataset } from '@/services/analyticsApi';
+export type { AgentItem } from './admin';
+
+// ❌ 禁止：重复定义已存在的类型
+interface AgentItem { ... } // 错误！admin.ts已定义
+```
+
+## 🔧 index.ts转发规范
+
+### UI组件 index.ts 模式
+
+```typescript
+// ✅ frontend/src/components/ui/index.ts
+
+// 类型导出（使用export type）
+export type {
+  ButtonProps,
+  CardProps,
+  SelectProps,
+} from './ui.types';
+
+// 组件导出（default export转为named）
+export { default as Button } from './Button';
+export { default as Card } from './Card';
+export { default as Select } from './Select';
+
+// 特殊：VirtualScroll使用named export
+export { VirtualScroll } from './VirtualScroll';
+```
+
+### types/index.ts 模式
+
+```typescript
+// ✅ frontend/src/types/index.ts - 作为类型聚合和转发层
+
+// 从其他模块转发类型（使用export type）
+export type { ConversationSeriesDataset, AgentComparisonDataset } from '@/services/analyticsApi';
+export type { AgentItem } from './admin';
+export type { ButtonProps, CardProps } from '@/components/ui';
+
+// 定义新的类型（仅在没有更好归属时）
+export interface ConversationAnalyticsFilters {
+  startDate: string;
+  endDate: string;
+  agentId: string;
+}
+```
+
+## 🚫 常见错误模式与修复
+
+### 错误1: TS2614 - Module has no exported member
+
+**原因**: 尝试使用named import导入只有default export的模块
+
+```typescript
+// ❌ 错误
+import { Select, SelectTrigger } from '@/components/ui/Select';
+// Error: Module has no exported member 'Select'
+
+// ✅ 修复方式1: 使用default import
+import Select from '@/components/ui/Select';
+<Select.Trigger>...</Select.Trigger>
+
+// ✅ 修复方式2: 通过index.ts转发
+import { Select } from '@/components/ui';
+<Select.Trigger>...</Select.Trigger>
+```
+
+### 错误2: TS1361 - Cannot be used as a value
+
+**原因**: Interface/Type被当作值导出
+
+```typescript
+// ❌ 错误
+export { ButtonProps } from './ui.types';
+// Error: 'ButtonProps' cannot be used as a value
+
+// ✅ 修复
+export type { ButtonProps } from './ui.types';
+```
+
+### 错误3: TS2484 - Re-exporting conflicts
+
+**原因**: 同一个名称在多处导出
+
+```typescript
+// ❌ 错误
+// ui.types.ts
+export function createSubComponent() { ... }
+
+// types.unified.ts
+export function createSubComponent() { ... } // 重复定义！
+
+// ✅ 修复：删除重复定义，或使用re-export
+export { createSubComponent } from './ui.types';
+```
+
+### 错误4: 泛型forwardRef类型问题
+
+```typescript
+// ❌ 错误：forwardRef不支持泛型函数组件
+export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(
+  function VirtualScroll<T>({ items }: { items: T[] }) { ... }
+  // Error: 类型推导失败
+);
+
+// ✅ 修复：将泛型移到Props类型中
+interface VirtualScrollProps<T = unknown> {
+  items: T[];
+  renderItem: (item: T) => React.ReactNode;
+}
+
+function VirtualScrollImpl(
+  props: VirtualScrollProps,
+  ref: React.Ref<HTMLDivElement>
+) { ... }
+
+export const VirtualScroll = React.forwardRef(VirtualScrollImpl);
+```
+
+## 📋 检查清单
+
+### 开发前检查
+- [ ] 类型是否已在ui.types.ts中定义？（避免重复）
+- [ ] 是否需要复合组件结构？（需要则使用attachSubComponents）
+- [ ] 组件是否需要ref？（需要则使用forwardRef）
+- [ ] 是否是泛型组件？（避免泛型forwardRef）
+
+### 导出前检查
+- [ ] Interface/Type使用`export type {}`？
+- [ ] Class/Function使用`export {}`？
+- [ ] 复合组件子组件是否已附加？
+- [ ] displayName是否已设置？
+
+### 使用时检查
+- [ ] 组件使用default import？
+- [ ] 子组件通过主组件访问（Card.Header）？
+- [ ] 类型使用type import？
+
+## 🎯 最佳实践总结
+
+1. **类型定义集中化** - ui.types.ts唯一权威
+2. **导出模式统一化** - default用于组件，named用于工具
+3. **类型/值严格分离** - export type vs export
+4. **复合组件标准化** - 使用attachSubComponents
+5. **泛型谨慎使用** - 避免泛型forwardRef
+
+## 参考文件
+- 类型定义: [ui.types.ts](mdc:frontend/src/components/ui/ui.types.ts)
+- 成功案例: [Card.tsx](mdc:frontend/src/components/ui/Card.tsx)
+- 架构标准: [TYPESCRIPT_ARCHITECTURE_STANDARDS.md](mdc:frontend/TYPESCRIPT_ARCHITECTURE_STANDARDS.md)

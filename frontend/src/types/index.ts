@@ -564,13 +564,9 @@ export const convertFromHuihuaFormat = (huihuaMessages: ChatMessage[]): Original
 // Dashboard 相关类型定义
 // =============================================================================
 
-// 暂时注释掉不存在的导入
-// import type { ConversationSeriesDataset, AgentComparisonDataset } from '@/services/analyticsApi';
-// import type { AgentItem } from '@/services/agentsApi';
-
-// Re-export types for convenience
-// 暂时注释掉不存在的类型导出
-// export type { ConversationSeriesDataset, AgentComparisonDataset, AgentItem };
+// 导出分析相关类型
+export type { ConversationSeriesDataset, AgentComparisonDataset } from '@/services/analyticsApi';
+export type { AgentItem } from './admin';
 
 export type ConversationAnalyticsFilters = {
   startDate: string;

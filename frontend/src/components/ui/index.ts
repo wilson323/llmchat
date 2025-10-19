@@ -143,22 +143,20 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { VirtualScroll } from './VirtualScroll';
 
 // LazyComponent
-export { LazyComponent, SimpleLazyComponent, EnhancedLazyComponent } from './LazyComponent';
+export { LazyComponent, createLazyComponent, createConditionalLazyComponent, preloadComponent, preloadComponents, createLazyWorkspace } from './LazyComponent';
 
 // 其他工具组件
 export { A11yAnnouncer } from './A11yAnnouncer';
 export { ImageGallery } from './ImageGallery';
 export { OptimizedImage } from './OptimizedImage';
 export { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
-export { EventEnhancer } from './EventEnhancer';
-export { InputAdapter } from './InputAdapter';
 
 // =============================================================================
 // 工具函数导出
 // =============================================================================
 
 // 类型守卫工具
-export * from '../utils/type-guards';
+export * from '@/utils/type-guards';
 
 // 样式系统
 export { cn } from '@/lib/utils';

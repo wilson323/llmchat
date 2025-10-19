@@ -182,7 +182,7 @@ const TableHeader = memo(function TableHeader({
           <Input
             placeholder={t('搜索用户名或邮箱...')}
             value={searchQuery}
-            onChange={(value: string, event: React.ChangeEvent<HTMLInputElement>) => onSearch?.(value)}
+            onChange={(e) => onSearch?.(e.target.value)}
             className="pl-10"
           />
         </div>

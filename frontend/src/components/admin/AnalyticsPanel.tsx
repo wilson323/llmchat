@@ -198,7 +198,7 @@ export default function AnalyticsPanel() {
                     type="date"
                     value={filters.startDate}
                     max={filters.endDate || undefined}
-                    onChange={(value: string) => onStartChange(value)}
+                    onChange={(value) => onStartChange(value)}
                   />
                 </div>
                 <div className="flex flex-col gap-2">
@@ -207,7 +207,7 @@ export default function AnalyticsPanel() {
                     type="date"
                     value={filters.endDate}
                     min={filters.startDate || undefined}
-                    onChange={(value: string) => onEndChange(value)}
+                    onChange={(value) => onEndChange(value)}
                   />
                 </div>
                 <div className="flex flex-col gap-2">

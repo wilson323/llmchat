@@ -6,7 +6,6 @@ import type {
   TabsListProps as ITabsListProps,
   TabsTriggerProps as ITabsTriggerProps,
   TabsContentProps as ITabsContentProps,
-  TabsComponent,
   ForwardRefComponent,
 } from './ui.types';
 import { createSubComponent, attachSubComponents } from './ui.types';

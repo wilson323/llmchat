@@ -1,0 +1,145 @@
+# LLMChat 项目开发规则 (v2.1 - TypeScript架构重构版)
+
+## 🔴 核心开发原则
+
+### 1. TypeScript架构规范 (2025-10-19重构)
+
+**单一真理源原则**：
+- ✅ `ui.types.ts` - UI组件类型的唯一权威源 (698行)
+- ✅ `types.unified.ts` - 仅作转发层，不定义新类型
+- ❌ 禁止创建冗余types.ts、*.backup文件
+- ❌ 禁止组件内部重复定义接口
+
+**类型/值严格分离**：
+```typescript
+// ✅ 正确
+export type { ButtonProps, CardProps } from './ui.types';
+export { Button, Card } from './components';
+
+// ❌ 错误
+export { ButtonProps } from './ui.types';  // Interface用export type
+export type { Button } from './components'; // Class用export
+```
+
+### 2. P0错误零容忍政策
+
+**立即修复的错误类型**：
+- TS2484 - 重复导出冲突
+- TS2323 - 重复声明
+- TS1361 - 类型/值混用
+- TS1205 - isolatedModules错误
+
+**修复流程**：
+1. 识别P0错误 → 立即停止其他工作
+2. 根本原因分析 → 查看TYPESCRIPT_ARCHITECTURE_STANDARDS.md
+3. 架构层面修复 → 不是表面修复
+4. 验证编译通过 → 确保零错误
+
+### 3. UI组件开发规范
+
+**复合组件模式**：
+```typescript
+// ✅ 正确：子组件附加模式
+const Card = attachSubComponents(CardImpl, {
+  Header: createSubComponent('Card.Header', CardHeader),
+  Title: createSubComponent('Card.Title', CardTitle),
+  Content: createSubComponent('Card.Content', CardContent),
+});
+
+export default Card;
+
+// ✅ 正确：使用方式
+import Card from '@/components/ui/Card';
+<Card>
+  <Card.Header>
+    <Card.Title>标题</Card.Title>
+  </Card.Header>
+  <Card.Content>内容</Card.Content>
+</Card>
+
+// ❌ 错误：Named import
+import { CardHeader, CardTitle } from '@/components/ui/Card';
+```
+
+### 4. 事件处理器统一规范
+
+**权威类型定义**：
+```typescript
+// 从权威文件导入
+import {
+  ChangeEventHandler,
+  ClickEventHandler,
+  adaptEventHandler
+} from '@/types/event-handlers';
+
+interface MyComponentProps {
+  onChange?: ChangeEventHandler<string>;
+  onClick?: ClickEventHandler<void>;
+}
+```
+
+### 5. 生产环境优化原则 (YAGNI)
+
+**You Aren't Gonna Need It**：
+- ❌ 删除开发专用功能：复杂图表、性能基准测试、演示代码
+- ❌ 移除过度工程化：复杂验证器工厂、类型系统抽象
+- ✅ 保留核心功能：基础监控、核心UI组件、业务逻辑
+
+**已清理的模块**：
+- `/src/components/demo/` - 演示组件
+- `/src/examples/` - 示例代码
+- 复杂性能监控：Recharts图表系统
+- 10个重复的类型验证文件
+
+## 🚀 开发工作流
+
+### 代码提交前检查清单
+
+#### 类型安全检查
+- [ ] TypeScript编译无错误 (`pnpm run type-check`)
+- [ ] ESLint检查通过 (`pnpm run lint`)
+- [ ] 无P0架构错误
+
+#### 架构合规检查
+- [ ] 无冗余类型文件
+- [ ] 类型/值正确分离
+- [ ] 复合组件使用default export
+- [ ] 事件处理器从权威定义导入
+
+#### 功能完整性检查
+- [ ] 核心业务功能正常
+- [ ] UI组件渲染正确
+- [ ] 无开发专用代码泄露
+
+### 自动化检查命令
+
+```bash
+# 每日开发必运行
+pnpm run type-check     # TypeScript编译检查
+pnpm run lint          # 代码质量检查
+pnpm run build         # 构建验证
+
+# 架构合规检查
+find frontend/src -name "*.backup" -o -name "types.ts" | grep -v "ui.types.ts\|types.unified.ts"
+
+# P0错误检查
+npx tsc --noEmit --skipLibCheck 2>&1 | grep -E "(TS2484|TS2323|TS1361|TS1205)"
+```
+
+## 📚 参考文档
+
+- **架构标准**: `frontend/TYPESCRIPT_ARCHITECTURE_STANDARDS.md`
+- **项目配置**: `CLAUDE.md`
+- **动态端口**: `scripts/find-backend-port.js`
+
+## ⚠️ 重要提醒
+
+1. **禁止治标不治本** - 必须从架构层面解决问题
+2. **严格遵循规范** - 不允许偏离TYPESCRIPT_ARCHITECTURE_STANDARDS.md
+3. **零错误政策** - P0错误必须立即修复
+4. **YAGNI原则** - 避免过度工程化，专注核心功能
+
+---
+
+**最后更新**: 2025-10-19
+**版本**: v2.1 (TypeScript架构重构版)

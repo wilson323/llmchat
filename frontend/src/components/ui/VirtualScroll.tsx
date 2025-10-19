@@ -131,29 +131,34 @@ function useVirtualScroll<T>({
   };
 }
 
-export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(function VirtualScroll<T = unknown>({
-  items,
-  itemKey,
-  itemHeight,
-  height = 400,
-  className,
-  style,
-  renderItem,
-  onScroll,
-  onEndReached,
-  endReachedThreshold = 50,
-  overscan = 5,
-  estimatedItemHeight = 40,
-  emptyComponent,
-  loadingComponent,
-  loading = false,
-  hasMore = false
-}, ref) {
+// 定义内部实现函数
+function VirtualScrollImpl(
+  {
+    items,
+    itemKey,
+    itemHeight,
+    height = 400,
+    className,
+    style,
+    renderItem,
+    onScroll,
+    onEndReached,
+    endReachedThreshold = 50,
+    overscan = 5,
+    estimatedItemHeight = 40,
+    emptyComponent,
+    loadingComponent,
+    loading = false,
+    hasMore = false
+  }: VirtualScrollProps,
+  ref: React.Ref<HTMLDivElement>
+) {
   const [isScrolling, setIsScrolling] = useState(false);
   const scrollingTimeoutRef = useRef<NodeJS.Timeout>();
+  const localContainerRef = useRef<HTMLDivElement>(null);
 
   // 生成默认的key函数
-  const defaultKeyFn = useCallback((item: T, index: number): string => {
+  const defaultKeyFn = useCallback((item: any, index: number): string => {
     if (typeof item === 'object' && item !== null && 'id' in item) {
       return String((item as any).id);
     }
@@ -180,14 +185,14 @@ export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(func
 
   // 合并refs
   const mergedRef = useCallback((element: HTMLDivElement | null) => {
-    containerRef.current = element;
+    localContainerRef.current = element;
     virtualContainerRef.current = element;
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
-      ref.current = element;
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
     }
-  }, [ref, virtualContainerRef]);
+  }, [ref]);
 
   // 滚动事件处理
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -222,12 +227,12 @@ export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(func
 
   // 暴露给父组件的方法
   React.useImperativeHandle(ref, () => ({
-    element: containerRef.current,
+    element: localContainerRef.current,
     scrollToIndex: scrollToIndexInternal,
     scrollToOffset: scrollToOffsetInternal,
-    getScrollTop: () => containerRef.current?.scrollTop || 0,
-    getScrollHeight: () => containerRef.current?.scrollHeight || 0,
-    getClientHeight: () => containerRef.current?.clientHeight || 0
+    getScrollTop: () => localContainerRef.current?.scrollTop || 0,
+    getScrollHeight: () => localContainerRef.current?.scrollHeight || 0,
+    getClientHeight: () => localContainerRef.current?.clientHeight || 0
   }), [scrollToIndexInternal, scrollToOffsetInternal]);
 
   // 清理timeout
@@ -332,6 +337,10 @@ export const VirtualScroll = forwardRef<HTMLDivElement, VirtualScrollProps>(func
       )}
     </div>
   );
-});
+}
 
+// 使用forwardRef包装组件
+const VirtualScroll = React.forwardRef(VirtualScrollImpl);
 VirtualScroll.displayName = 'VirtualScroll';
+
+export { VirtualScroll };
