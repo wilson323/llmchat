@@ -85,7 +85,11 @@ class EnvValidator {
         );
         this.result.passed = false;
       }
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'EnvValidator',
+        operation: 'validateEnvManager',
+      });
       this.result.errors.push(`❌ EnvManager初始化失败: ${error.message}`);
       this.result.passed = false;
     }
@@ -189,7 +193,11 @@ class EnvValidator {
             `⚠️  ${file} 中未找到环境变量占位符 (可能已硬编码敏感信息)`,
           );
         }
-      } catch (error: any) {
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'EnvValidator',
+          operation: 'validateConfigPlaceholders',
+        });
         this.result.errors.push(`❌ 读取配置文件失败 ${file}: ${error.message}`);
         this.result.passed = false;
       }
@@ -313,7 +321,11 @@ async function main() {
 
     // 退出码: 0=成功, 1=失败
     process.exit(result.passed ? 0 : 1);
-  } catch (error: any) {
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'validate-env',
+      operation: 'main',
+    });
     logger.error('\n❌ 验证过程发生严重错误:');
     logger.error(error.message);
     if (error.stack) {

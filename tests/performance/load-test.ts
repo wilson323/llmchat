@@ -195,7 +195,8 @@ export class PerformanceTestSuite {
       await this.generateReport();
 
       logger.info('性能测试套件执行完成');
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = unknownError as any;
       logger.error('性能测试执行失败', { error });
       throw error;
     }
@@ -347,7 +348,8 @@ export class PerformanceTestSuite {
 
         // 添加延迟以控制速率
         await this.sleep(10);
-      } catch (error: any) {
+      } catch (unknownError: unknown) {
+        const error = unknownError as any;
         metrics.failCount++;
         const errorKey = `ERROR ${endpoint.method} ${endpoint.path}`;
         const existing = metrics.errors.get(errorKey);
@@ -464,7 +466,8 @@ export class PerformanceTestSuite {
                 expected: query.expectedTime,
               });
             }
-          } catch (error: any) {
+          } catch (unknownError: unknown) {
+            const error = unknownError as any;
             const errorKey = `${query.name}: ${error.message}`;
             metrics.errors.set(errorKey, (metrics.errors.get(errorKey) || 0) + 1);
           }
@@ -585,7 +588,8 @@ export class PerformanceTestSuite {
           const duration = performance.now() - start;
           metrics.responseTimes.push(duration);
           metrics.operations.set(operation.type, (metrics.operations.get(operation.type) || 0) + 1);
-        } catch (error: any) {
+        } catch (unknownError: unknown) {
+          const error = unknownError as any;
           const errorKey = `${operation.type}: ${error.message}`;
           metrics.errors.set(errorKey, (metrics.errors.get(errorKey) || 0) + 1);
         }

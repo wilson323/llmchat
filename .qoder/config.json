@@ -1,0 +1,118 @@
+{
+  "projectName": "LLMChat",
+  "version": "1.0.0",
+  "developmentRules": {
+    "typeScript": {
+      "strictMode": true,
+      "zeroTolerance": true,
+      "singleSourceOfTruth": {
+        "uiTypes": "frontend/src/components/ui/ui.types.ts",
+        "unifiedTypes": "frontend/src/components/ui/types.unified.ts"
+      },
+      "forbiddenPatterns": ["*.backup", "types.ts"],
+      "p0Errors": {
+        "TS2484": "重复导出冲突",
+        "TS2323": "重复声明",
+        "TS1361": "类型/值混用",
+        "TS1205": "isolatedModules错误"
+      }
+    },
+    "speckit": {
+      "enabled": true,
+      "documentStructure": {
+        "requirements": ".claude/specs/llmchat-platform/requirements.md",
+        "design": ".specify/specs/frontend-type-safety-improvement.md",
+        "tasks": ".claude/specs/llmchat-platform/tasks.md",
+        "technicalDetails": ".claude/specs/llmchat-platform/technical-details.md",
+        "terminology": ".claude/specs/llmchat-platform/terminology.md",
+        "errorCodes": ".claude/specs/llmchat-platform/api-error-codes.md"
+      },
+      "singleSourceOfTruth": {
+        "technicalDetails": ".claude/specs/llmchat-platform/technical-details.md",
+        "terminology": ".claude/specs/llmchat-platform/terminology.md",
+        "errorCodes": ".claude/specs/llmchat-platform/api-error-codes.md"
+      },
+      "validation": {
+        "scripts": "scripts/spec-validation/",
+        "commands": {
+          "consistency": "npm run validate:docs:consistency",
+          "coverage": "npm run validate:docs:coverage",
+          "references": "npm run validate:docs:references",
+          "ambiguity": "npm run validate:docs:ambiguity"
+        }
+      }
+    },
+    "enterpriseSecurity": {
+      "enabled": true,
+      "forbiddenOperations": [
+        "regexCodeReplacement",
+        "dynamicRegexConstruction",
+        "sedAwkCodeModification",
+        "stringReplacementForStructuredData",
+        "enterpriseAutoFix",
+        "scriptBatchCodeModification"
+      ],
+      "safeAlternatives": [
+        "astFirstFix",
+        "typeSafeFix",
+        "configFileParsing",
+        "enterpriseAstParsing",
+        "textProcessingForLogs",
+        "manualCodeModification"
+      ],
+      "validation": {
+        "scripts": "scripts/security/",
+        "commands": {
+          "audit": "pnpm run security:audit",
+          "check": "pnpm run security:check",
+          "fix": "pnpm run enterprise:fix"
+        }
+      }
+    }
+  },
+  "qualityGates": {
+    "typeScript": {
+      "zeroTolerance": true,
+      "p0Errors": {
+        "TS2484": "重复导出冲突",
+        "TS2323": "重复声明",
+        "TS1361": "类型/值混用",
+        "TS1205": "isolatedModules错误"
+      }
+    },
+    "testing": {
+      "unitTestCoverage": 80,
+      "integrationTestCoverage": 70,
+      "criticalPathCoverage": 100
+    }
+  },
+  "codeStandards": {
+    "namingConventions": {
+      "variablesFunctions": "camelCase",
+      "classesComponents": "PascalCase",
+      "constants": "UPPER_SNAKE_CASE",
+      "files": "kebab-case"
+    },
+    "componentPatterns": {
+      "compositeComponents": true,
+      "defaultExports": true
+    }
+  },
+  "automation": {
+    "preCommit": {
+      "typeCheck": true,
+      "lint": true,
+      "build": true,
+      "speckitValidation": true,
+      "securityCheck": true
+    },
+    "ci": {
+      "typeCheck": true,
+      "lint": true,
+      "test": true,
+      "build": true,
+      "speckitValidation": true,
+      "securityAudit": true
+    }
+  }
+}

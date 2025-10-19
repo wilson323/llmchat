@@ -3,6 +3,7 @@
  */
 
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export class RedisHealthService {
   private static instance: RedisHealthService | null = null;
@@ -49,7 +50,11 @@ export class RedisHealthService {
           message: "简化模式：Redis健康检查"
         }
       };
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'RedisHealthService',
+        operation: 'checkHealth',
+      });
       this.isHealthy = false;
       this.lastCheck = new Date();
 

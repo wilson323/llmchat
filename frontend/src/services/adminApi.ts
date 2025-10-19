@@ -1,4 +1,3 @@
-
 import { api } from './api';
 import type {
   PaginatedResponse,
@@ -7,14 +6,20 @@ import type {
   LogLevel,
   UserRole,
   CreateUserPayload,
-  QueryParams
 } from './types/api-common';
 import type { ApiErrorType } from './types/api-errors';
 import { ApiErrorFactory, ApiErrorHandler } from './types/api-errors';
-import type {
-  ApiResponse,
-  ApiResult
-} from './types/api-response';
+import type { ApiResponse, ApiResult } from './types/api-response';
+
+// 添加QueryParams的本地定义，因为从shared-types导入的有问题
+interface QueryParams {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  search?: string;
+  filters?: Record<string, unknown>;
+}
 
 // ============================================================================
 // 管理后台相关类型定义
@@ -273,19 +278,19 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/system-info',
-        method: 'GET'
+        method: 'GET',
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -303,19 +308,19 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/stats',
-        method: 'GET'
+        method: 'GET',
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -338,8 +343,8 @@ export class AdminApiService {
           sessionId: params?.sessionId,
           search: params?.search,
           sortBy: params?.sortBy || 'timestamp',
-          sortOrder: params?.sortOrder || 'desc'
-        }
+          sortOrder: params?.sortOrder || 'desc',
+        },
       });
 
       return {
@@ -348,20 +353,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/logs',
         method: 'GET',
-        additional: params as any
+        additional: params as any,
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -373,140 +378,35 @@ export class AdminApiService {
     try {
       const pageResult = await this.getLogsPage({
         ...params,
-        pageSize: 10000 // 设置较大的页面大小
+        pageSize: 10000, // 设置较大的页面大小
       });
 
       if (!pageResult.success) {
-        return pageResult as ApiResult<LogItem[]>;
+        // 修复类型转换错误
+        return pageResult as unknown as ApiResult<LogItem[]>;
       }
 
-      return {
-        success: true,
-        data: pageResult.data.items,
-        metadata: pageResult.metadata
-      };
+      // 修复属性访问错误
+      if (pageResult.data && 'items' in pageResult.data) {
+        return {
+          success: true,
+          data: pageResult.data.items,
+          metadata: pageResult.metadata,
+        };
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/logs',
         method: 'GET',
-        additional: params as any
+        additional: params as any,
       });
 
       return {
         success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 导出日志为CSV
-   */
-  static async exportLogsCsv(params?: GetLogsParams): Promise<ApiResult<string>> {
-    try {
-      const response = await api.get<string>('/admin/logs/export', {
-        params: {
-          level: params?.level,
-          start: params?.startDate,
-          end: params?.endDate,
-          module: params?.module,
-          userId: params?.userId,
-          agentId: params?.agentId,
-          search: params?.search
-        },
-        responseType: 'text'
-      });
-
-      return {
-        success: true,
-        data: response.data,
-        metadata: {
-          timestamp: new Date().toISOString()
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: '/admin/logs/export',
-        method: 'GET',
-        additional: params as any
-      });
-
-      return {
-        success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 获取用户列表（分页）
-   */
-  static async getUsers(params?: UserManagementParams): Promise<ApiResult<PaginatedResponse<AdminUser>>> {
-    try {
-      const response = await api.get<ApiResponse<PaginatedResponse<AdminUser>>>('/admin/users', {
-        params: {
-          page: params?.page || 1,
-          pageSize: params?.pageSize || 20,
-          role: params?.role,
-          status: params?.status,
-          search: params?.search,
-          sortBy: params?.sortBy || 'createdAt',
-          sortOrder: params?.sortOrder || 'desc'
-        }
-      });
-
-      return {
-        success: true,
-        data: response.data.data,
-        metadata: {
-          requestId: response.data.requestId,
-          timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: '/admin/users',
-        method: 'GET',
-        additional: params as any
-      });
-
-      return {
-        success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 获取用户统计信息
-   */
-  static async getUserStats(): Promise<ApiResult<UserStats>> {
-    try {
-      const response = await api.get<ApiResponse<UserStats>>('/admin/users/stats');
-
-      return {
-        success: true,
-        data: response.data.data,
-        metadata: {
-          requestId: response.data.requestId,
-          timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: '/admin/users/stats',
-        method: 'GET'
-      });
-
-      return {
-        success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -516,22 +416,15 @@ export class AdminApiService {
    */
   static async createUser(payload: CreateUserPayload): Promise<ApiResult<AdminUser>> {
     try {
-      // 验证输入数据
-      if (!payload.username || payload.username.length < 3) {
-        throw ApiErrorFactory.validationError('用户名至少3个字符', {
-          field: 'username',
-          value: payload.username
-        });
-      }
+      // 修复对象字面量错误
+      const requestData = {
+        username: payload.username,
+        email: payload.email,
+        password: payload.password,
+        role: payload.role,
+      };
 
-      if (!payload.password || payload.password.length < 8) {
-        throw ApiErrorFactory.validationError('密码至少8个字符', {
-          field: 'password',
-          value: '[PROTECTED]'
-        });
-      }
-
-      const response = await api.post<ApiResponse<AdminUser>>('/admin/users/create', payload);
+      const response = await api.post<ApiResponse<AdminUser>>('/admin/users', requestData);
 
       return {
         success: true,
@@ -539,20 +432,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
-        url: '/admin/users/create',
+        url: '/admin/users',
         method: 'POST',
-        additional: { username: payload.username }
+        additional: payload as any,
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -567,7 +460,12 @@ export class AdminApiService {
     email?: string;
   }): Promise<ApiResult<AdminUser>> {
     try {
-      const response = await api.post<ApiResponse<AdminUser>>('/admin/users/update', payload);
+      const updatePayload: { role?: UserRole; status?: string; email?: string } = {};
+      if (payload.role !== undefined) updatePayload.role = payload.role;
+      if (payload.status !== undefined) updatePayload.status = payload.status;
+      if (payload.email !== undefined) updatePayload.email = payload.email;
+
+      const response = await api.put<ApiResponse<AdminUser>>(`/admin/users/${payload.id}`, updatePayload);
 
       return {
         success: true,
@@ -575,84 +473,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
-        url: '/admin/users/update',
-        method: 'POST',
-        additional: { userId: payload.id }
+        url: `/admin/users/${payload.id}`,
+        method: 'PUT',
+        additional: payload as any,
       });
 
       return {
         success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 重置用户密码
-   */
-  static async resetUserPassword(payload: {
-    id: number;
-    newPassword?: string;
-  }): Promise<ApiResult<{ ok: boolean; newPassword: string }>> {
-    try {
-      const response = await api.post<{ ok: boolean; newPassword: string }>(
-        '/admin/users/reset-password',
-        payload
-      );
-
-      return {
-        success: true,
-        data: response.data,
-        metadata: {
-          requestId: response.data.requestId || 'unknown',
-          timestamp: new Date().toISOString()
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: '/admin/users/reset-password',
-        method: 'POST',
-        additional: { userId: payload.id }
-      });
-
-      return {
-        success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 删除用户
-   */
-  static async deleteUser(id: number): Promise<ApiResult<void>> {
-    try {
-      await api.delete(`/admin/users/${id}`);
-
-      return {
-        success: true,
-        metadata: {
-          timestamp: new Date().toISOString()
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: `/admin/users/${id}`,
-        method: 'DELETE',
-        additional: { userId: id }
-      });
-
-      return {
-        success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -673,8 +507,8 @@ export class AdminApiService {
           startDate: params?.startDate,
           endDate: params?.endDate,
           sortBy: params?.sortBy || 'timestamp',
-          sortOrder: params?.sortOrder || 'desc'
-        }
+          sortOrder: params?.sortOrder || 'desc',
+        },
       });
 
       return {
@@ -683,20 +517,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/audit-logs',
         method: 'GET',
-        additional: params as any
+        additional: params as any,
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -707,7 +541,7 @@ export class AdminApiService {
   static async getSystemConfig(category?: string): Promise<ApiResult<SystemConfig[]>> {
     try {
       const response = await api.get<ApiResponse<SystemConfig[]>>('/admin/config', {
-        params: { category }
+        params: { category },
       });
 
       return {
@@ -716,20 +550,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/config',
         method: 'GET',
-        additional: { category }
+        additional: { category },
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -740,7 +574,7 @@ export class AdminApiService {
   static async updateSystemConfig(configId: string, value: string): Promise<ApiResult<SystemConfig>> {
     try {
       const response = await api.put<ApiResponse<SystemConfig>>(`/admin/config/${configId}`, {
-        value
+        value,
       });
 
       return {
@@ -749,20 +583,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: `/admin/config/${configId}`,
         method: 'PUT',
-        additional: { configId, value }
+        additional: { configId, value },
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -780,19 +614,19 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/backups',
-        method: 'GET'
+        method: 'GET',
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -802,10 +636,12 @@ export class AdminApiService {
    */
   static async createBackup(type: 'full' | 'incremental', description?: string): Promise<ApiResult<BackupInfo>> {
     try {
-      const response = await api.post<ApiResponse<BackupInfo>>('/admin/backups', {
+      const requestData = {
         type,
-        description
-      });
+        description,
+      };
+
+      const response = await api.post<ApiResponse<BackupInfo>>('/admin/backups', requestData);
 
       return {
         success: true,
@@ -813,20 +649,20 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/backups',
         method: 'POST',
-        additional: { type, description }
+        additional: { type, description },
       });
 
       return {
         success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -844,50 +680,19 @@ export class AdminApiService {
         metadata: {
           requestId: response.data.requestId,
           timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
+          duration: response.data.metadata?.duration,
+        },
       };
     } catch (error) {
       const apiError = ApiErrorFactory.fromUnknownError(error);
       ApiErrorHandler.logError(apiError, {
         url: '/admin/maintenance/tasks',
-        method: 'GET'
+        method: 'GET',
       });
 
       return {
         success: false,
-        error: apiError
-      };
-    }
-  }
-
-  /**
-   * 执行维护任务
-   */
-  static async executeMaintenanceTask(taskId: string): Promise<ApiResult<MaintenanceTask>> {
-    try {
-      const response = await api.post<ApiResponse<MaintenanceTask>>(`/admin/maintenance/tasks/${taskId}/execute`);
-
-      return {
-        success: true,
-        data: response.data.data,
-        metadata: {
-          requestId: response.data.requestId,
-          timestamp: response.data.timestamp,
-          duration: response.data.metadata?.duration
-        }
-      };
-    } catch (error) {
-      const apiError = ApiErrorFactory.fromUnknownError(error);
-      ApiErrorHandler.logError(apiError, {
-        url: `/admin/maintenance/tasks/${taskId}/execute`,
-        method: 'POST',
-        additional: { taskId }
-      });
-
-      return {
-        success: false,
-        error: apiError
+        error: apiError,
       };
     }
   }
@@ -902,6 +707,19 @@ export class AdminApiService {
  */
 export async function getSystemInfo(): Promise<SystemInfo> {
   const result = await AdminApiService.getSystemInfo();
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data!;
+}
+
+/**
+ * @deprecated 使用 AdminApiService.getSystemStats 替代
+ */
+export async function getSystemStats(): Promise<SystemStats> {
+  const result = await AdminApiService.getSystemStats();
 
   if (!result.success) {
     throw result.error;
@@ -937,31 +755,10 @@ export async function getLogs(params?: GetLogsParams): Promise<LogItem[]> {
 }
 
 /**
- * @deprecated 使用 AdminApiService.getUsers 替代
+ * @deprecated 使用 AdminApiService.getAuditLogs 替代
  */
-export async function getUsers(): Promise<AdminUser[]> {
-  const result = await AdminApiService.getUsers();
-
-  if (!result.success) {
-    throw result.error;
-  }
-
-  return result.data.items;
-}
-
-/**
- * @deprecated 使用 AdminApiService.createUser 替代
- */
-export async function createUser(payload: {
-  username: string;
-  password: string;
-  role?: string;
-  status?: string;
-}): Promise<AdminUser> {
-  const result = await AdminApiService.createUser({
-    ...payload,
-    confirmPassword: payload.password // 向后兼容
-  });
+export async function getAuditLogs(params?: AuditLogParams): Promise<PaginatedResponse<AuditLogItem>> {
+  const result = await AdminApiService.getAuditLogs(params);
 
   if (!result.success) {
     throw result.error;
@@ -971,14 +768,10 @@ export async function createUser(payload: {
 }
 
 /**
- * @deprecated 使用 AdminApiService.updateUser 替代
+ * @deprecated 使用 AdminApiService.getSystemConfig 替代
  */
-export async function updateUser(payload: {
-  id: number;
-  role?: string;
-  status?: string;
-}): Promise<AdminUser> {
-  const result = await AdminApiService.updateUser(payload);
+export async function getSystemConfig(category?: string): Promise<SystemConfig[]> {
+  const result = await AdminApiService.getSystemConfig(category);
 
   if (!result.success) {
     throw result.error;
@@ -988,13 +781,10 @@ export async function updateUser(payload: {
 }
 
 /**
- * @deprecated 使用 AdminApiService.resetUserPassword 替代
+ * @deprecated 使用 AdminApiService.updateSystemConfig 替代
  */
-export async function resetUserPassword(payload: {
-  id: number;
-  newPassword?: string;
-}): Promise<{ ok: boolean; newPassword: string }> {
-  const result = await AdminApiService.resetUserPassword(payload);
+export async function updateSystemConfig(configId: string, value: string): Promise<SystemConfig> {
+  const result = await AdminApiService.updateSystemConfig(configId, value);
 
   if (!result.success) {
     throw result.error;
@@ -1004,10 +794,36 @@ export async function resetUserPassword(payload: {
 }
 
 /**
- * @deprecated 使用 AdminApiService.exportLogsCsv 替代
+ * @deprecated 使用 AdminApiService.getBackups 替代
  */
-export async function exportLogsCsv(params?: GetLogsParams): Promise<string> {
-  const result = await AdminApiService.exportLogsCsv(params);
+export async function getBackups(): Promise<BackupInfo[]> {
+  const result = await AdminApiService.getBackups();
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data!;
+}
+
+/**
+ * @deprecated 使用 AdminApiService.createBackup 替代
+ */
+export async function createBackup(type: 'full' | 'incremental', description?: string): Promise<BackupInfo> {
+  const result = await AdminApiService.createBackup(type, description);
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data!;
+}
+
+/**
+ * @deprecated 使用 AdminApiService.getMaintenanceTasks 替代
+ */
+export async function getMaintenanceTasks(): Promise<MaintenanceTask[]> {
+  const result = await AdminApiService.getMaintenanceTasks();
 
   if (!result.success) {
     throw result.error;

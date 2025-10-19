@@ -244,8 +244,12 @@ async function startServer() {
 
     // 启动定时任务
     startScheduledTasks();
-  } catch (error: any) {
-    logger.error("服务器启动失败", { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'index-complex-backup',
+      operation: 'startServer',
+    });
+    logger.error("服务器启动失败", error.toLogObject());
     process.exit(1);
   }
 }
@@ -303,8 +307,12 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
     const pool = getPool();
     await pool.end();
     logger.info("✓ 数据库连接池已关闭");
-  } catch (error: any) {
-    logger.error("关闭数据库连接池失败", { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'index-complex-backup',
+      operation: 'gracefulShutdown',
+    });
+    logger.error("关闭数据库连接池失败", error.toLogObject());
   }
 
   try {
@@ -315,8 +323,12 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
       await cacheService.disconnect();
       logger.info("✓ Redis 连接已关闭");
     }
-  } catch (error: any) {
-    logger.error("关闭 Redis 连接失败", { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'index-complex-backup',
+      operation: 'gracefulShutdown',
+    });
+    logger.error("关闭 Redis 连接失败", error.toLogObject());
   }
 
 

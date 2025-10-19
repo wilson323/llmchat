@@ -162,8 +162,9 @@ class TypeScriptSecurityFixer {
               console.log(`⚠️ 跳过大文件: ${file} (${Math.round(stats.size / 1024)}KB)`);
               return false;
             }
-          } catch (error) {
-            console.log(`⚠️ 无法检查文件大小: ${file}`);
+          } catch (unknownError: unknown) {
+            const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+            console.log(`⚠️ 无法检查文件大小: ${file}`, error.message);
             return false;
           }
 
@@ -171,8 +172,9 @@ class TypeScriptSecurityFixer {
         });
 
         files.push(...foundFiles);
-      } catch (error) {
-        console.log(`⚠️ 无法处理模式: ${pattern}`);
+      } catch (unknownError: unknown) {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        console.log(`⚠️ 无法处理模式: ${pattern}`, error.message);
       }
     }
 
@@ -276,8 +278,9 @@ class TypeScriptSecurityFixer {
         issue.fixed = true;
         issue.fixedCode = `// 修复: ${issue.rule} - ${issue.description}`;
         fixedCount++;
-      } catch (error) {
-        console.error(`修复失败: ${sourceFile.fileName}:${issue.line} - ${error}`);
+      } catch (unknownError: unknown) {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        console.error(`修复失败: ${sourceFile.fileName}:${issue.line} - ${error.message}`);
       }
     }
 
@@ -376,8 +379,9 @@ class TypeScriptSecurityFixer {
       try {
         const report = this.analyzeFile(filePath);
         this.report.push(report);
-      } catch (error) {
-        console.error(`❌ 分析失败: ${filePath} - ${error}`);
+      } catch (unknownError: unknown) {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        console.error(`❌ 分析失败: ${filePath} - ${error.message}`);
       }
     }
 
@@ -460,8 +464,9 @@ async function main() {
     const config = parseArguments();
     const fixer = new TypeScriptSecurityFixer(config);
     await fixer.run();
-  } catch (error) {
-    console.error('❌ 执行失败:', error);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.error('❌ 执行失败:', error.message);
     process.exit(1);
   }
 }

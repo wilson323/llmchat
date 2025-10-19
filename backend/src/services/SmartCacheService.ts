@@ -10,6 +10,7 @@
 
 import { getCacheService } from '@/services/CacheService';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 /**
  * 缓存配置
@@ -100,10 +101,14 @@ export class SmartCacheService {
           return cached as T;
         }
       }
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SmartCacheService',
+        operation: 'getOrSet.redisGet',
+      });
       logger.warn('SmartCache: Redis获取失败，回源数据', {
         key: fullKey,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.toLogObject(),
       });
     }
 
@@ -133,10 +138,14 @@ export class SmartCacheService {
       if (cacheService.isConnected()) {
         await cacheService.set(fullKey, value, { ttl: config.ttl });
       }
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SmartCacheService',
+        operation: 'set.redisSet',
+      });
       logger.error('SmartCache: Redis存储失败', {
         key: fullKey,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.toLogObject(),
       });
     }
 
@@ -173,10 +182,14 @@ export class SmartCacheService {
       if (cacheService.isConnected()) {
         await cacheService.del(fullKey);
       }
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SmartCacheService',
+        operation: 'delete.redisDelete',
+      });
       logger.error('SmartCache: Redis删除失败', {
         key: fullKey,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.toLogObject(),
       });
     }
 
@@ -338,8 +351,12 @@ export class SmartCacheService {
         const dbsize = await cacheService.dbsize();
         redisSize = dbsize ?? 0;
       }
-    } catch (error: any) {
-      logger.warn('获取Redis缓存大小失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SmartCacheService',
+        operation: 'getCacheSize',
+      });
+      logger.warn('获取Redis缓存大小失败', { error: error.toLogObject() });
     }
 
     return {

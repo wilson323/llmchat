@@ -53,11 +53,15 @@ export class CadOperationService {
         message: `成功添加直线，从 (${params.start.x}, ${params.start.y}) 到 (${params.end.x}, ${params.end.y})`,
         entityId: newEntity.handle,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 添加直线失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'addLine',
+      });
+      logger.error('[CadOperationService] 添加直线失败', error.toLogObject());
       return {
         success: false,
-        message: `添加直线失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `添加直线失败: ${error.message}`,
       };
     }
   }
@@ -89,11 +93,15 @@ export class CadOperationService {
         message: `成功添加圆形，圆心 (${params.center.x}, ${params.center.y})，半径 ${params.radius}`,
         entityId: newEntity.handle,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 添加圆形失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'addCircle',
+      });
+      logger.error('[CadOperationService] 添加圆形失败', error.toLogObject());
       return {
         success: false,
-        message: `添加圆形失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `添加圆形失败: ${error.message}`,
       };
     }
   }
@@ -129,11 +137,15 @@ export class CadOperationService {
         message: `成功添加圆弧，圆心 (${params.center.x}, ${params.center.y})，半径 ${params.radius}`,
         entityId: newEntity.handle,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 添加圆弧失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'addArc',
+      });
+      logger.error('[CadOperationService] 添加圆弧失败', error.toLogObject());
       return {
         success: false,
-        message: `添加圆弧失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `添加圆弧失败: ${error.message}`,
       };
     }
   }
@@ -197,11 +209,15 @@ export class CadOperationService {
         message: `成功移动实体 ${params.entityId}`,
         entityId: params.entityId,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 移动实体失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'moveEntity',
+      });
+      logger.error('[CadOperationService] 移动实体失败', error.toLogObject());
       return {
         success: false,
-        message: `移动实体失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `移动实体失败: ${error.message}`,
       };
     }
   }
@@ -230,11 +246,15 @@ export class CadOperationService {
         success: true,
         message: `成功删除实体 ${params.entityId}`,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 删除实体失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'deleteEntity',
+      });
+      logger.error('[CadOperationService] 删除实体失败', error.toLogObject());
       return {
         success: false,
-        message: `删除实体失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `删除实体失败: ${error.message}`,
       };
     }
   }
@@ -264,11 +284,15 @@ export class CadOperationService {
         message: `找到 ${results.length} 个符合条件的实体`,
         entities: results,
       };
-    } catch (error: any) {
-      logger.error('[CadOperationService] 查询实体失败', { error, params });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'queryEntities',
+      });
+      logger.error('[CadOperationService] 查询实体失败', error.toLogObject());
       return {
         success: false,
-        message: `查询实体失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        message: `查询实体失败: ${error.message}`,
       };
     }
   }
@@ -355,9 +379,13 @@ export class CadOperationService {
       });
 
       return dxf.toDxfString();
-    } catch (error: any) {
-      logger.error('[CadOperationService] 生成 DXF 文件失败', { error });
-      throw new Error(`生成 DXF 文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadOperationService',
+        operation: 'generateDxf',
+      });
+      logger.error('[CadOperationService] 生成 DXF 文件失败', error.toLogObject());
+      throw new Error(`生成 DXF 文件失败: ${error.message}`);
     }
   }
 }

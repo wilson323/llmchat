@@ -12,6 +12,7 @@ import type { Pool, PoolClient } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import logger from './logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface MigrationRecord {
   id: number;
@@ -138,8 +139,12 @@ export class MigrationManager {
 
       logger.info(`[Migration] ✅ 迁移 ${migration.version} 完成 (${executionTime}ms)`);
       return executionTime;
-    } catch (error: any) {
-      logger.error(`[Migration] ❌ 迁移 ${migration.version} 失败`, { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'MigrationManager',
+        operation: 'executeMigration',
+      });
+      logger.error(`[Migration] ❌ 迁移 ${migration.version} 失败`, { error: error.toLogObject() });
       throw error;
     }
   }
@@ -195,10 +200,14 @@ export class MigrationManager {
       });
 
       return { executed, skipped, totalTime };
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
       // 回滚事务
       await client.query('ROLLBACK');
-      logger.error('[Migration] ❌ 迁移执行失败，已回滚', { error });
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'MigrationManager',
+        operation: 'runMigrations',
+      });
+      logger.error('[Migration] ❌ 迁移执行失败，已回滚', { error: error.toLogObject() });
       throw error;
     } finally {
       client.release();

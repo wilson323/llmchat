@@ -35,6 +35,7 @@ const buttonVariants = cva(
           'bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-md border border-white/30 text-foreground shadow-xl hover:from-white/25 hover:to-white/10 hover:shadow-2xl dark:from-white/10 dark:to-white/5 dark:border-white/20',
       },
       size: {
+        xs: 'h-7 px-2 text-xs',
         sm: 'h-8 px-3 text-xs',
         md: 'h-10 px-4 py-2',
         lg: 'h-11 px-8 text-base',

@@ -121,8 +121,9 @@ export const useOptimisticSessionSwitch = ({
       onSessionLoadComplete?.(sessionId, true);
       return messages;
 
-    } catch (error) {
-      console.error('加载会话数据失败:', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.error('加载会话数据失败:', error.message);
 
       if (sessionCacheRef.current[sessionId]) {
         sessionCacheRef.current[sessionId].error = '加载失败';
@@ -196,9 +197,10 @@ export const useOptimisticSessionSwitch = ({
       performanceMonitor.current.endSessionSwitch(sessionId);
       return true;
 
-    } catch (error) {
-      console.error('切换会话失败:', error);
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.error('切换会话失败:', error.message);
+      const errorMessage = error.message;
       performanceMonitor.current.endSessionSwitch(sessionId, errorMessage);
       return false;
     }

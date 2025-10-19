@@ -6,6 +6,7 @@
 import '../src/dotenv-loader'; // 加载环境变量
 import { initDB, getPool } from '../src/utils/db';
 import { logger } from '../src/utils/logger';
+import { createErrorFromUnknown } from '../src/errors/errorUtils';
 
 async function manualSeed() {
   try {
@@ -36,12 +37,15 @@ async function manualSeed() {
     
     console.log('\n========== 种子完成 ==========\n');
     process.exit(0);
-  } catch (error) {
-    console.error('\n❌ 种子失败:', error);
-    logger.error('手动种子失败', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'manualSeed',
+      operation: 'manualSeed',
+    });
+    console.error('\n❌ 种子失败:', error.message);
+    logger.error('手动种子失败', { error: error.toLogObject() });
     process.exit(1);
   }
 }
 
 manualSeed();
-

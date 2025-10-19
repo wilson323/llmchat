@@ -432,7 +432,6 @@ export default {
   LazyChartComponent,
   LazyEChartsComponent,
   LazyChatAttachments,
-  LazyVoiceChat,
   LazyInteractiveComponents,
   usePrefetchComponents,
   useNetworkStatus,

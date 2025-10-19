@@ -7,6 +7,7 @@ import type { Pool, PoolClient } from 'pg';
 import fs from 'fs/promises';
 import path from 'path';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface Migration {
   version: string;
@@ -134,8 +135,12 @@ export class MigrationManager {
       }
 
       return migrations;
-    } catch (error: any) {
-      logger.error('加载迁移脚本失败', { component: 'MigrationManager', error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'MigrationManager',
+        operation: 'loadMigrations',
+      });
+      logger.error('加载迁移脚本失败', { component: 'MigrationManager', error: error.toLogObject() });
       throw error;
     }
   }
@@ -176,14 +181,18 @@ export class MigrationManager {
           logger.info(`迁移成功: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
           });
-        } catch (error: any) {
+        } catch (unknownError: unknown) {
           await client.query('ROLLBACK');
+          const error = createErrorFromUnknown(unknownError, {
+            component: 'MigrationManager',
+            operation: 'migrateUp',
+          });
           logger.error(`迁移失败: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
-            error,
+            error: error.toLogObject(),
           });
           throw new Error(
-            `Migration ${migration.version} failed: ${error instanceof Error ? error.message : String(error)}`,
+            `Migration ${migration.version} failed: ${error.message}`,
           );
         }
       }
@@ -240,14 +249,18 @@ export class MigrationManager {
           logger.info(`回滚成功: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
           });
-        } catch (error: any) {
+        } catch (unknownError: unknown) {
           await client.query('ROLLBACK');
+          const error = createErrorFromUnknown(unknownError, {
+            component: 'MigrationManager',
+            operation: 'migrateDown',
+          });
           logger.error(`回滚失败: ${migration.version} - ${migration.name}`, {
             component: 'MigrationManager',
-            error,
+            error: error.toLogObject(),
           });
           throw new Error(
-            `Migration rollback ${version} failed: ${error instanceof Error ? error.message : String(error)}`,
+            `Migration rollback ${version} failed: ${error.message}`,
           );
         }
       }

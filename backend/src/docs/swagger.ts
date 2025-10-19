@@ -53,7 +53,11 @@ export async function setupSwagger(app: Application): Promise<void> {
 
     logger.debug('✅ Swagger API文档已启用');
     logger.debug('📄 访问地址: http://localhost:3001/api-docs');
-  } catch (error: any) {
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'swagger',
+      operation: 'setupSwagger',
+    });
     logger.warn('⚠️ Swagger依赖未安装，API文档功能已禁用');
     logger.warn(
       '💡 运行以下命令安装: pnpm add -D swagger-jsdoc swagger-ui-express @types/swagger-jsdoc @types/swagger-ui-express',

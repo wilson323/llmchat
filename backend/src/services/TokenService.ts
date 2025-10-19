@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import type { Pool } from 'pg';
-import { ValidationError, SystemError } from '@/types/errors';
+import { ValidationError, SystemError, createErrorFromUnknown } from '@/types/errors';
 import logger from '@/utils/logger';
 import { getPool } from '@/utils/db';
 import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
@@ -79,11 +79,15 @@ export class TokenService {
     if (this.redis.status !== 'ready') {
       try {
         await this.redis.connect();
-      } catch (error: any) {
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'TokenService',
+          operation: 'ensureRedisConnected',
+        });
         throw new SystemError({
           message: 'Failed to connect to Redis',
           code: 'REDIS_CONNECTION_ERROR',
-          originalError: error as Error,
+          originalError: error,
         });
       }
     }
@@ -180,21 +184,25 @@ export class TokenService {
       await this.updateLastAccessed(tokenKey);
 
       return payload;
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'TokenService',
+        operation: 'verifyAccessToken',
+      });
       if (error instanceof jwt.JsonWebTokenError) {
         logger.warn('Invalid JWT token', {
           component: 'TokenService',
-          error: (error as Error).message,
+          error: error.message,
         });
       } else if (error instanceof jwt.TokenExpiredError) {
         logger.info('Token expired', {
           component: 'TokenService',
-          expiredAt: (error).expiredAt,
+          expiredAt: error.expiredAt,
         });
       } else {
         logger.error('Token verification error', {
           component: 'TokenService',
-          error,
+          error: error.toLogObject(),
         });
       }
       return null;
@@ -351,11 +359,15 @@ export class TokenService {
         username: user.username as string,
         role: user.role as 'admin' | 'user',
       };
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'TokenService',
+        operation: 'getUserInfo',
+      });
       logger.error('Failed to fetch user info from database', {
         component: 'TokenService',
         userId,
-        error,
+        error: error.toLogObject(),
       });
       return null;
     }

@@ -141,8 +141,12 @@ async function main() {
         process.exit(1);
       }
     }
-  } catch (error: any) {
-    logger.error('\n❌ 迁移失败:', error instanceof Error ? error.message : String(error));
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'migrate',
+      operation: 'main',
+    });
+    logger.error('\n❌ 迁移失败:', error.message);
     logger.error('');
     process.exit(1);
   } finally {

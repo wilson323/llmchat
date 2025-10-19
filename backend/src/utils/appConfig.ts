@@ -3,6 +3,7 @@ import path from 'path';
 import { stripJsonComments } from './config';
 import logger from '@/utils/logger';
 import { resolveEnvInJsonc, getEnvNumber, getEnvBoolean, getEnvString } from '@/utils/envResolver';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface LoggingExporterConfig {
   type: 'http' | 'elasticsearch' | 'clickhouse';
@@ -77,8 +78,12 @@ export function loadAppConfig(): AppConfig {
       }
 
       return config;
-    } catch (error: any) {
-      logger.warn('[AppConfig] Failed to parse configuration', { file, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AppConfig',
+        operation: 'loadAppConfig',
+      });
+      logger.warn('[AppConfig] Failed to parse configuration', { file, error: error.toLogObject() });
     }
   }
   return {};
@@ -115,8 +120,12 @@ function parseHeadersEnv(headers?: string | null): Record<string, string> | unde
         return acc;
       }, {});
     }
-  } catch (error: any) {
-    logger.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AppConfig',
+      operation: 'parseHeadersEnv',
+    });
+    logger.warn('[AppConfig] Failed to parse LOG_EXPORT_HTTP_HEADERS env', { error: error.toLogObject() });
   }
   return undefined;
 }

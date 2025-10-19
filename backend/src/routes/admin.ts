@@ -67,12 +67,19 @@ router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
         timestamp: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
-    logger.error('Failed to get system info', error);
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'adminRoutes',
+      operation: 'getSystemInfo',
+    });
+    logger.error('Failed to get system info', error.toLogObject());
+    
+    const apiError = error.toApiError();
     res.status(500).json({
       code: 'SERVER_ERROR',
       message: '获取系统信息失败',
       data: null,
+      ...apiError,
     });
   }
 });
@@ -119,12 +126,19 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
         totalPages: Math.ceil(total / Number(limit)),
       },
     });
-  } catch (error: any) {
-    logger.error('Failed to get users', error);
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'adminRoutes',
+      operation: 'getUsers',
+    });
+    logger.error('Failed to get users', error.toLogObject());
+    
+    const apiError = error.toApiError();
     res.status(500).json({
       code: 'SERVER_ERROR',
       message: '获取用户列表失败',
       data: null,
+      ...apiError,
     });
   }
 });
@@ -171,12 +185,19 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
       message: 'success',
       data: result.rows,
     });
-  } catch (error: any) {
-    logger.error('Failed to get audit logs', error);
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'adminRoutes',
+      operation: 'getAuditLogs',
+    });
+    logger.error('Failed to get audit logs', error.toLogObject());
+    
+    const apiError = error.toApiError();
     res.status(500).json({
       code: 'SERVER_ERROR',
       message: '获取审计日志失败',
       data: null,
+      ...apiError,
     });
   }
 });

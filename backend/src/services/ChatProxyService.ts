@@ -594,10 +594,14 @@ export class ChatProxyService {
     try {
       // 简化版本：直接执行请求，移除保护机制
       return await protectedOperation();
-    } catch (error: any) {
-      logger.error('智能体请求失败', { agentId, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatProxyService',
+        operation: 'sendMessage',
+      });
+      logger.error('智能体请求失败', { agentId, ...error.toLogObject() });
       throw new ExternalServiceError({
-        message: `智能体请求失败: ${getErrorMessage(error)}`,
+        message: `智能体请求失败: ${error.message}`,
         code: 'AGENT_REQUEST_FAILED',
         service: config.provider,
         originalError: error,
@@ -708,15 +712,19 @@ export class ChatProxyService {
     try {
       // 直接执行流式请求（简化版本）
       await protectedOperation();
-    } catch (error: any) {
-      logger.error('智能体流式请求失败', { agentId, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatProxyService',
+        operation: 'sendStreamMessage',
+      });
+      logger.error('智能体流式请求失败', { agentId, ...error.toLogObject() });
       onStatus?.({
         type: 'error',
         status: 'error',
-        error: getErrorMessage(error),
+        error: error.message,
       });
       throw new ExternalServiceError({
-        message: `智能体流式请求失败: ${getErrorMessage(error)}`,
+        message: `智能体流式请求失败: ${error.message}`,
         code: 'AGENT_STREAM_REQUEST_FAILED',
         service: config.provider,
         originalError: error,

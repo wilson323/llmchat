@@ -84,8 +84,12 @@ export class ChatHistoryService {
         );
 
         await client.query('COMMIT');
-      } catch (error: any) {
+      } catch (unknownError: unknown) {
         await client.query('ROLLBACK');
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'ChatHistoryService',
+          operation: 'saveMessage',
+        });
         throw error;
       }
     });

@@ -226,9 +226,9 @@ class TypeSafetyChecker {
           console.log(`   ✓ 无TypeScript错误`);
         }
 
-      } catch (error: any) {
+      } catch (unknownError: unknown) {
         // 解析TypeScript错误
-        const issues = this.parseTypeScriptErrors(error.stdout || error.stderr || '', dir);
+        const issues = this.parseTypeScriptErrors((unknownError as any).stdout || (unknownError as any).stderr || '', dir);
         this.issues.push(...issues);
 
         console.log(`   ❌ 发现 ${issues.length} 个TypeScript问题`);
@@ -262,8 +262,9 @@ class TypeSafetyChecker {
         console.log(`   发现 ${issues.length} 个ESLint类型问题`);
       }
 
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
       // ESLint返回非零退出码时仍然有输出
+      const error = unknownError as any;
       if (error.stdout) {
         try {
           const eslintResults = JSON.parse(error.stdout);

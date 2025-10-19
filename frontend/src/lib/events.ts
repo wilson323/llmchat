@@ -1,4 +1,3 @@
-
 import { FastGPTEvent } from '@/types';
 import { getNormalizedEventKey, isReasoningEvent, isChunkLikeEvent } from './fastgptEvents';
 import type {
@@ -88,7 +87,7 @@ const safeJsonParse = <T extends JsonValue = JsonValue>(input: unknown): T | nul
   for (const candidate of attempts) {
     try {
       return JSON.parse(candidate) as T;
-    } catch (error) {
+    } catch (unknownError: unknown) {
       continue;
     }
   }
@@ -554,7 +553,7 @@ const fallbackSummary = (payload: JsonValue): string | undefined => {
     try {
       const json = JSON.stringify(payload);
       return json.length > 0 ? json.slice(0, 120) : undefined;
-    } catch {
+    } catch (unknownError: unknown) {
       return undefined;
     }
   }

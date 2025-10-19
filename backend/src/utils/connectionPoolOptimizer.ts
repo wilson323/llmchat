@@ -7,6 +7,7 @@
 import type { Pool, PoolClient } from 'pg';
 import { getPool } from './db';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 // 连接池配置
 export interface PoolConfig {
@@ -179,8 +180,12 @@ export class ConnectionPoolOptimizer {
         总请求数: this.stats.totalRequests,
       });
 
-    } catch (error: any) {
-      logger.error('更新连接池统计失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'updatePoolStats',
+      });
+      logger.error('更新连接池统计失败', { error: error.toLogObject() });
     }
   }
 
@@ -203,8 +208,12 @@ export class ConnectionPoolOptimizer {
 
       logger.debug('连接池健康检查通过', { responseTime: `${responseTime.toFixed(2)}ms` });
 
-    } catch (error: any) {
-      logger.error('连接池健康检查失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'performHealthCheck',
+      });
+      logger.error('连接池健康检查失败', { error: error.toLogObject() });
     }
   }
 
@@ -234,8 +243,12 @@ export class ConnectionPoolOptimizer {
       pool.on('remove', () => {
         logger.info('连接池连接已移除');
       });
-    } catch (error: any) {
-      logger.error('设置连接池事件监听失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'setupPoolEventListeners',
+      });
+      logger.error('设置连接池事件监听失败', { error: error.toLogObject() });
     }
   }
 
@@ -334,8 +347,12 @@ export class ConnectionPoolOptimizer {
         connectionTimeoutMillis: poolOptions.options?.connectionTimeoutMillis,
         maxUses: poolOptions.options?.maxUses,
       };
-    } catch (error: any) {
-      logger.error('获取连接池配置失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'getCurrentPoolConfig',
+      });
+      logger.error('获取连接池配置失败', { error: error.toLogObject() });
       return {};
     }
   }
@@ -442,8 +459,12 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
       // 重新初始化（这里需要重新调用initDB）
       logger.info('✅ 连接池清理完成');
 
-    } catch (error: any) {
-      logger.error('❌ 连接池清理失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'cleanupPool',
+      });
+      logger.error('❌ 连接池清理失败', { error: error.toLogObject() });
       throw error;
     }
   }
@@ -476,8 +497,12 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
 
       logger.info(`✅ 连接池预热完成，预热连接数: ${connectionCount}`);
 
-    } catch (error: any) {
-      logger.error('❌ 连接池预热失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ConnectionPoolOptimizer',
+        operation: 'warmupPool',
+      });
+      logger.error('❌ 连接池预热失败', { error: error.toLogObject() });
       throw error;
     }
   }
@@ -504,7 +529,11 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
             const client = await pool.connect();
             await client.query('SELECT 1, pg_sleep(0.1)');
             client.release();
-          } catch (error: any) {
+          } catch (unknownError: unknown) {
+            const error = createErrorFromUnknown(unknownError, {
+              component: 'ConnectionPoolOptimizer',
+              operation: 'testPoolPerformance',
+            });
             // 记录失败但不抛出异常
           }
         })()

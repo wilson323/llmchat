@@ -146,8 +146,12 @@ export class GeoService {
         province,
         city: record.city || null,
       };
-    } catch (error: any) {
-      logger.warn('[GeoService] lookup failed', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'GeoService',
+        operation: 'lookup',
+      });
+      logger.warn('[GeoService] lookup failed', error.toLogObject());
       return {
         country: 'UNKNOWN',
         province: '未知',

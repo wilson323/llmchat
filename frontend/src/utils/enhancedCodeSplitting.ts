@@ -32,6 +32,8 @@ export interface LazyComponentConfig {
   errorFallback?: React.ComponentType<{ error?: Error; onRetry: () => void }>;
   /** 优先级（用于预加载排序） */
   priority?: number;
+  /** 延迟加载时间（毫秒） */
+  delay?: number;
 }
 
 // 组件加载结果

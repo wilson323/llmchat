@@ -105,8 +105,12 @@ export class CacheService {
       this.connected = true;
 
       logger.info('✓ Redis 缓存服务已启动', { prefix: this.prefix, defaultTTL: this.defaultTTL });
-    } catch (error: any) {
-      logger.error('Redis 连接失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'connect',
+      });
+      logger.error('Redis 连接失败', error.toLogObject());
       this.client = null;
       this.connected = false;
     }
@@ -152,8 +156,12 @@ export class CacheService {
       this.updateHitRate();
 
       return JSON.parse(value) as T;
-    } catch (error: any) {
-      logger.error('缓存读取失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'get',
+      });
+      logger.error('缓存读取失败', { key, ...error.toLogObject() });
       this.stats.errors++;
       return null;
     }
@@ -182,8 +190,12 @@ export class CacheService {
         this.stats.sets++;
         return true;
       }
-    } catch (error: any) {
-      logger.error('缓存写入失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'set',
+      });
+      logger.error('缓存写入失败', { key, ...error.toLogObject() });
       this.stats.errors++;
       return false;
     }
@@ -202,8 +214,12 @@ export class CacheService {
       const result = await this.client.del(fullKey);
       this.stats.dels++;
       return result > 0;
-    } catch (error: any) {
-      logger.error('缓存删除失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'del',
+      });
+      logger.error('缓存删除失败', { key, ...error.toLogObject() });
       this.stats.errors++;
       return false;
     }
@@ -228,8 +244,12 @@ export class CacheService {
       const result = await this.client.del(keys);
       this.stats.dels += result;
       return result;
-    } catch (error: any) {
-      logger.error('批量删除缓存失败', { pattern, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'delPattern',
+      });
+      logger.error('批量删除缓存失败', { pattern, ...error.toLogObject() });
       this.stats.errors++;
       return 0;
     }
@@ -247,8 +267,12 @@ export class CacheService {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.exists(fullKey);
       return result > 0;
-    } catch (error: any) {
-      logger.error('检查缓存存在失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'exists',
+      });
+      logger.error('检查缓存存在失败', { key, ...error.toLogObject() });
       return false;
     }
   }
@@ -265,8 +289,12 @@ export class CacheService {
       const fullKey = this.getFullKey(key, options?.prefix);
       const result = await this.client.expire(fullKey, ttl);
       return result === 1;
-    } catch (error: any) {
-      logger.error('设置缓存过期时间失败', { key, ttl, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'expire',
+      });
+      logger.error('设置缓存过期时间失败', { key, ttl, ...error.toLogObject() });
       return false;
     }
   }
@@ -289,8 +317,12 @@ export class CacheService {
       }
 
       return result;
-    } catch (error: any) {
-      logger.error('缓存递增失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'incr',
+      });
+      logger.error('缓存递增失败', { key, ...error.toLogObject() });
       this.stats.errors++;
       return 0;
     }
@@ -318,8 +350,12 @@ export class CacheService {
       await this.set(key, value, options);
 
       return value;
-    } catch (error: any) {
-      logger.error('getOrSet fallback 执行失败', { key, error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'getOrSet',
+      });
+      logger.error('getOrSet fallback 执行失败', { key, ...error.toLogObject() });
       return null;
     }
   }
@@ -378,8 +414,12 @@ export class CacheService {
     try {
       const result = await this.client.ping();
       return result === 'PONG';
-    } catch (error: any) {
-      logger.error('Redis ping 失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'ping',
+      });
+      logger.error('Redis ping 失败', error.toLogObject());
       return false;
     }
   }
@@ -395,8 +435,12 @@ export class CacheService {
     try {
       const size = await this.client.dbsize();
       return size;
-    } catch (error: any) {
-      logger.error('获取Redis dbsize失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CacheService',
+        operation: 'dbsize',
+      });
+      logger.error('获取Redis dbsize失败', error.toLogObject());
       return 0;
     }
   }

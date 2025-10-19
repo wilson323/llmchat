@@ -138,11 +138,12 @@ export function useLazyLoad<T = unknown>(
             });
           }
         })
-        .catch((error) => {
+        .catch((unknownError: unknown) => {
           if (mounted) {
             if (timeoutRef.current) {
               clearTimeout(timeoutRef.current);
             }
+            const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
             setState({
               component: null,
               loading: false,
@@ -338,13 +339,13 @@ export function useLazyLoadData<T>(
         isValidating: false,
         retryCount: 0,
       });
-    } catch (error) {
-      const err = error as Error;
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
 
       setState({
         data: null,
         loading: false,
-        error: err,
+        error,
         isValidating: false,
         retryCount: state.retryCount + 1,
       });

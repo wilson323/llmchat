@@ -5,6 +5,7 @@
 
 import jwt from 'jsonwebtoken';
 import { LogSanitizer } from './logSanitizer';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface JWTPayload {
   userId: string;
@@ -58,8 +59,12 @@ export class SecureJWT {
       // Test token creation
       const testPayload = { test: 'validation' };
       jwt.sign(testPayload, config.secret, { algorithm: config.algorithm });
-    } catch (error: any) {
-      errors.push(`JWT configuration error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureJWT',
+        operation: 'validateConfiguration',
+      });
+      errors.push(`JWT configuration error: ${error.message}`);
     }
 
     return {
@@ -110,7 +115,11 @@ export class SecureJWT {
       }) as JWTPayload;
 
       return decoded;
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureJWT',
+        operation: 'verifyToken',
+      });
       if (error instanceof jwt.TokenExpiredError) {
         throw new Error('Token expired');
       } else if (error instanceof jwt.JsonWebTokenError) {

@@ -12,7 +12,9 @@
 import { useCallback } from 'react';
 import { chatService } from '@/services/api';
 import { logger } from '@/lib/logger';
-// import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter'; // 已删除
+import { enhancedLogger } from '@/lib/enhancedLogger';
+import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter';
+import { useErrorHandler } from './useErrorHandler';
 
 // 直接导入store实例以便在组件外部使用getState
 import messageStore from '@/store/messageStore';
@@ -29,11 +31,21 @@ import { debugLog } from '@/lib/debug';
 
 export const useChat = () => {
   const { t } = useI18n();
+  const { handleAsyncError } = useErrorHandler();
+  
+  // 记录Hook初始化
+  enhancedLogger.hookExecution('useChat', 'init');
 
   const sendMessage = useCallback(async (
     content: string,
     options?: ChatOptions,
   ) => {
+    // 记录消息发送开始
+    enhancedLogger.userAction('sendMessage', {
+      contentLength: content.length,
+      hasAttachments: !!options?.attachments,
+      hasVoiceNote: !!options?.voiceNote,
+    });
     // 从各个Store获取状态
     const currentAgent = agentStore.getState().currentAgent;
     const currentSession = sessionStore.getState().currentSession;
@@ -58,6 +70,12 @@ export const useChat = () => {
       ...(options?.voiceNote ? { voiceNote: options.voiceNote } : {}),
     };
     messageStore.getState().addMessage(userMessage);
+    
+    // 记录消息添加
+    enhancedLogger.stateUpdate('messageStore', 'addMessage', {
+      messageType: 'user',
+      messageLength: content.length,
+    });
 
     // 生成响应ID
     const responseId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -100,6 +118,13 @@ export const useChat = () => {
         messageStore.getState().setStreamAbortController(controller);
 
         // 🚀 性能优化：使用缓冲机制
+        // 记录流式请求开始
+        enhancedLogger.serviceCall('chatService', 'sendStreamMessage', {
+          agentId: currentAgent.id,
+          messageCount: chatMessages.length,
+        });
+        
+        const startTime = enhancedLogger.startTimer('sendStreamMessage');
         await chatService.sendStreamMessage(
             currentAgent.id,
             chatMessages,
@@ -113,9 +138,18 @@ export const useChat = () => {
               messageStore.getState().setStreamingStatus(status);
             },
             onInteractive: (interactiveData) => {
-              // 直接使用interactive数据（移除过度工程化的转换器）
-              if (interactiveData) {
-                messageStore.getState().addMessage({ interactive: interactiveData });
+              try {
+                // 转换 FastGPT 交互数据为前端格式
+                const convertedData = convertFastGPTInteractiveData(interactiveData);
+                if (convertedData) {
+                  messageStore.getState().addMessage({ interactive: convertedData });
+                  enhancedLogger.stateUpdate('messageStore', 'addInteractiveMessage');
+                } else {
+                  logger.warn(t('无法转换 interactive 数据'), { interactiveData });
+                }
+              } catch (unknownError: unknown) {
+                const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+                logger.warn(t('处理 interactive 事件失败'), { error: error.message, interactiveData });
               }
             },
             onChatId: () => {},
@@ -123,27 +157,56 @@ export const useChat = () => {
           },
           mergedOptions,
         );
+        enhancedLogger.endTimer('sendStreamMessage', startTime, 'Send Stream Message', {
+          agentId: currentAgent.id,
+        });
       } else {
         // 非流式响应
+        // 记录非流式请求开始
+        enhancedLogger.serviceCall('chatService', 'sendMessage', {
+          agentId: currentAgent.id,
+          messageCount: chatMessages.length,
+        });
+        
+        const startTime = enhancedLogger.startTimer('sendMessage');
         const response = await chatService.sendMessage(
           currentAgent.id,
           chatMessages,
           mergedOptions,
         );
+        enhancedLogger.endTimer('sendMessage', startTime, 'Send Message', {
+          agentId: currentAgent.id,
+        });
 
         const assistantContent = response.choices[0]?.message?.content || '';
         messageStore.getState().updateLastMessage(assistantContent);
+        
+        // 记录响应更新
+        enhancedLogger.stateUpdate('messageStore', 'updateLastMessage', {
+          contentLength: assistantContent.length,
+        });
       }
 
-    } catch (error) {
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
       if (error instanceof DOMException && error.name === 'AbortError') {
         messageStore.getState().updateLastMessage(t('（生成已停止）'));
-      } else {
-        logger.error(t('发送消息失败'), error as Error, {
+        enhancedLogger.info('Message generation stopped by user', {
           agentId: currentAgent?.id,
           sessionId: currentSession?.id,
-        } as Record<string, unknown>);
+        });
+      } else {
+        handleAsyncError(error, {
+          agentId: currentAgent?.id,
+          sessionId: currentSession?.id,
+        });
         messageStore.getState().updateLastMessage(t('抱歉，发送消息时出现错误。请稍后重试。'));
+        
+        // 记录错误
+        enhancedLogger.error('Failed to send message', error, {
+          agentId: currentAgent?.id,
+          sessionId: currentSession?.id,
+        });
       }
     } finally {
       messageStore.getState().setStreamAbortController(null);
@@ -187,9 +250,24 @@ export const useChat = () => {
       });
 
       try {
+        // 记录重试操作
+        enhancedLogger.userAction('retryMessage', {
+          messageId,
+          agentId: currentAgent.id,
+          sessionId: currentSession.id,
+        });
+        
         messageStore.getState().setIsStreaming(true);
 
         if (preferences.streamingEnabled) {
+          // 记录流式重试请求开始
+          enhancedLogger.serviceCall('chatService', 'retryStreamMessage', {
+            agentId: currentAgent.id,
+            sessionId: currentSession.id,
+            messageId,
+          });
+          
+          const startTime = enhancedLogger.startTimer('retryStreamMessage');
           await chatService.retryStreamMessage(
             currentAgent.id,
             currentSession.id,
@@ -201,18 +279,35 @@ export const useChat = () => {
                   ...prev,
                   AI: `${prev.AI || ''}${chunk}`,
                 }));
+                
+                // 记录消息更新
+                enhancedLogger.stateUpdate('messageStore', 'updateMessageById', {
+                  messageId,
+                  chunkLength: chunk.length,
+                });
               },
               onStatus: (status) => {
                 messageStore.getState().setStreamingStatus(status);
+                enhancedLogger.stateUpdate('messageStore', 'setStreamingStatus');
               },
               onInteractive: (interactiveData) => {
-                // 直接使用interactive数据（移除过度工程化的转换器）
-                if (interactiveData) {
-                  messageStore.getState().addMessage({ interactive: interactiveData });
+                try {
+                  // 转换 FastGPT 交互数据为前端格式
+                  const convertedData = convertFastGPTInteractiveData(interactiveData);
+                  if (convertedData) {
+                    messageStore.getState().addMessage({ interactive: convertedData });
+                    enhancedLogger.stateUpdate('messageStore', 'addInteractiveMessage');
+                  } else {
+                    logger.warn(t('无法转换 retry interactive 数据'), { interactiveData });
+                  }
+                } catch (unknownError: unknown) {
+                  const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+                  logger.warn(t('处理 retry interactive 事件失败'), { error: error.message, interactiveData });
                 }
               },
               onChatId: (cid: string) => {
                 debugLog('重新生成消息使用 chatId:', cid);
+                enhancedLogger.debug('Chat ID received in retry', { chatId: cid });
               },
               onReasoning: (reasoningEvent) => {
                 const parsed = parseReasoningPayload(reasoningEvent);
@@ -226,7 +321,10 @@ export const useChat = () => {
 
                 if (parsed.finished) {
                   messageStore.getState().finalizeReasoning(parsed.totalSteps);
+                  enhancedLogger.stateUpdate('messageStore', 'finalizeReasoning');
                 }
+                
+                enhancedLogger.stateUpdate('messageStore', 'appendReasoningStep');
               },
               onEvent: (eventName, payload) => {
                 // 将SSEEventData转换为JsonValue
@@ -239,24 +337,59 @@ export const useChat = () => {
                   return;
                 }
                 messageStore.getState().appendAssistantEvent(normalized);
+                enhancedLogger.stateUpdate('messageStore', 'appendAssistantEvent', {
+                  eventName,
+                });
               },
             },
             { detail: true },
           );
+          enhancedLogger.endTimer('retryStreamMessage', startTime, 'Retry Stream Message', {
+            agentId: currentAgent.id,
+            messageId,
+          });
         } else {
+          // 记录非流式重试请求开始
+          enhancedLogger.serviceCall('chatService', 'retryMessage', {
+            agentId: currentAgent.id,
+            sessionId: currentSession.id,
+            messageId,
+          });
+          
+          const startTime = enhancedLogger.startTimer('retryMessage');
           const response = await chatService.retryMessage(currentAgent.id, currentSession.id, messageId, { detail: true });
+          enhancedLogger.endTimer('retryMessage', startTime, 'Retry Message', {
+            agentId: currentAgent.id,
+            messageId,
+          });
+          
           const assistantContent = response.choices[0]?.message?.content || '';
           messageStore.getState().updateMessageById(messageId, (prev: ChatMessage) => ({
             ...prev,
             AI: assistantContent,
           }));
+          
+          // 记录消息更新
+          enhancedLogger.stateUpdate('messageStore', 'updateMessageById', {
+            messageId,
+            contentLength: assistantContent.length,
+          });
         }
-      } catch (error) {
-        logger.error('重新生成消息失败', error as Error, {
+      } catch (unknownError: unknown) {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        handleAsyncError(error, {
           messageId,
           agentId: currentAgent.id,
           sessionId: currentSession.id,
         });
+        
+        // 记录错误
+        enhancedLogger.error('Failed to retry message', error, {
+          messageId,
+          agentId: currentAgent.id,
+          sessionId: currentSession.id,
+        });
+        
         messageStore.getState().updateMessageById(messageId, (prev: ChatMessage) => ({
           ...prev,
           AI: t('抱歉，重新生成时出现错误。请稍后重试。'),

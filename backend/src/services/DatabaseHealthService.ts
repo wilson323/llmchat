@@ -49,7 +49,11 @@ export class DatabaseHealthService {
           message: "简化模式：数据库健康检查"
         }
       };
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DatabaseHealthService',
+        operation: 'checkHealth',
+      });
       this.isHealthy = false;
       this.lastCheck = new Date();
 

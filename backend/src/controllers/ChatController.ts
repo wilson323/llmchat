@@ -143,15 +143,24 @@ async function requireAuthenticatedUser(req: Request): Promise<AuthUser> {
   const authorization = req.headers['authorization'];
   const token = (authorization ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
-    throw new Error('UNAUTHORIZED');
+    throw new AuthenticationError({
+      message: '未提供认证令牌',
+      code: 'UNAUTHORIZED',
+    });
   }
   try {
     return await authService.profile(token);
-  } catch (error: any) {
-    if (error instanceof Error && error.message === 'TOKEN_EXPIRED') {
-      throw new Error('TOKEN_EXPIRED');
+  } catch (unknownError: unknown) {
+    if (unknownError instanceof Error && unknownError.message === 'TOKEN_EXPIRED') {
+      throw new AuthenticationError({
+        message: '认证令牌已过期',
+        code: 'TOKEN_EXPIRED',
+      });
     }
-    throw new Error('UNAUTHORIZED');
+    throw new AuthenticationError({
+      message: '认证失败',
+      code: 'UNAUTHORIZED',
+    });
   }
 }
 

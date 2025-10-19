@@ -163,10 +163,14 @@ export class DifyInitService {
       logger.debug('✅ Dify Info API调用成功', { agentId: agent.id });
       return response.data;
 
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifyInitService',
+        operation: 'callDifyInfoAPI',
+      });
       logger.error('❌ Dify Info API调用失败', {
         agentId: agent.id,
-        error: error instanceof Error ? error.message : error,
+        ...error.toLogObject(),
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
@@ -205,10 +209,14 @@ export class DifyInitService {
       logger.debug('✅ Dify Parameters API调用成功', { agentId: agent.id });
       return response.data;
 
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifyInitService',
+        operation: 'callDifyParametersAPI',
+      });
       logger.error('❌ Dify Parameters API调用失败', {
         agentId: agent.id,
-        error: error instanceof Error ? error.message : error,
+        ...error.toLogObject(),
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
@@ -348,10 +356,14 @@ export class DifyInitService {
 
       return result;
 
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifyInitService',
+        operation: 'fetchAppInfoByCredentials',
+      });
       logger.error('❌ Dify应用信息获取失败', {
         endpoint,
-        error: error instanceof Error ? error.message : error,
+        ...error.toLogObject(),
       });
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;

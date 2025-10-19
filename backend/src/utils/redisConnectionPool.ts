@@ -6,6 +6,7 @@
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
 import { EventEmitter } from 'events';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface RedisPoolConfig {
   host: string;
@@ -107,8 +108,12 @@ export class RedisConnectionPool extends EventEmitter {
 
       await Promise.all(promises);
       logger.info(`RedisConnectionPool: Pool initialized with ${this.pool.length} connections`);
-    } catch (error: any) {
-      logger.error('RedisConnectionPool: Failed to initialize pool:', error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'RedisConnectionPool',
+        operation: 'initializePool',
+      });
+      logger.error('RedisConnectionPool: Failed to initialize pool:', error.toLogObject());
       throw error;
     }
   }
@@ -214,8 +219,12 @@ export class RedisConnectionPool extends EventEmitter {
         this.stats.lastUsed = new Date();
         this.logStatsIfNeeded(); // ✅ 添加统计调用
         return connection;
-      } catch (error: any) {
-        logger.error('RedisConnectionPool: Failed to create new connection:', error);
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'RedisConnectionPool',
+          operation: 'acquire.createConnection',
+        });
+        logger.error('RedisConnectionPool: Failed to create new connection:', error.toLogObject());
         throw error;
       }
     }
@@ -398,8 +407,12 @@ export class RedisConnectionPool extends EventEmitter {
       await connection.ping();
       this.release(connection);
       return true;
-    } catch (error: any) {
-      logger.error('RedisConnectionPool: Health check failed:', error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'RedisConnectionPool',
+        operation: 'healthCheck',
+      });
+      logger.error('RedisConnectionPool: Health check failed:', error.toLogObject());
       return false;
     }
   }

@@ -92,8 +92,12 @@ export class ObservabilityDispatcher {
         for (const slice of chunks) {
           try {
             await this.sendToExporter(exporter, slice);
-          } catch (error: any) {
-            logger.warn('[ObservabilityDispatcher] Export failed', { exporterType: exporter.type, error });
+          } catch (unknownError: unknown) {
+            const error = createErrorFromUnknown(unknownError, {
+              component: 'ObservabilityDispatcher',
+              operation: 'flushQueue',
+            });
+            logger.warn('[ObservabilityDispatcher] Export failed', { exporterType: exporter.type, ...error.toLogObject() });
           }
         }
       }),

@@ -200,9 +200,9 @@ export const useToast = () => {
 
     // 自动关闭
     if ((item.duration ?? 3000) > 0) {
-      const timer =     setTimeout(() => {
-      store.remove(id);
-    }, item.duration || 3000);
+      const timer = setTimeout(() => {
+        store.remove(id);
+      }, item.duration || 3000);
 
       return () => clearTimeout(timer);
     }
@@ -402,54 +402,55 @@ const ToastComponent = React.forwardRef<HTMLDivElement, ToastProps>(
 );
 ToastComponent.displayName = 'Toast';
 
+// 为ToastProvider添加Toast子组件（在组件定义之前添加）
+const ToastProviderWithSubComponent: React.FC<ToastProviderProps> & {
+  Toast: typeof ToastComponent;
+} = Object.assign(
+  ({ position = 'top-right', maxToasts = 5, swipeToClose = false, className, ...props }: ToastProviderProps) => {
+    const { getToastsByPosition } = useToastStore();
+    const toasts = getToastsByPosition(position);
+
+    // 限制显示数量
+    const visibleToasts = React.useMemo(
+      () => toasts.slice(-maxToasts),
+      [toasts, maxToasts]
+    );
+
+    const handleDismiss = React.useCallback((id: string) => {
+      useToastStore.getState().remove(id);
+    }, []);
+
+    return (
+      <div
+        className={cn(
+          'fixed z-[100] flex flex-col gap-2 p-4 pointer-events-none',
+          position.includes('top') ? 'top-0' : 'bottom-0',
+          position.includes('right') ? 'right-0' : position.includes('left') ? 'left-0' : 'left-1/2 -translate-x-1/2',
+          position.includes('center') && !position.includes('left') && !position.includes('right') && '-translate-x-1/2',
+          className
+        )}
+        {...props}
+      >
+        <AnimatePresence>
+          {visibleToasts.map((toast) => (
+            <ToastProviderWithSubComponent.Toast
+              key={toast.id}
+              toast={toast}
+              onClose={handleDismiss}
+              position={position}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+    );
+  },
+  {
+    Toast: ToastComponent,
+  }
+);
+
 // ToastProvider组件
-export const ToastProvider: React.FC<ToastProviderProps> = ({
-  position = 'top-right' as const,
-  maxToasts = 5,
-  swipeToClose = false,
-  className,
-  ...props
-}) => {
-  const { getToastsByPosition } = useToastStore();
-  const toasts = getToastsByPosition(position);
-
-  // 限制显示数量
-  const visibleToasts = React.useMemo(
-    () => toasts.slice(-maxToasts),
-    [toasts, maxToasts]
-  );
-
-  const handleDismiss = React.useCallback((id: string) => {
-    useToastStore.getState().remove(id);
-  }, []);
-
-  return (
-    <div
-      className={cn(
-        'fixed z-[100] flex flex-col gap-2 p-4 pointer-events-none',
-        position.includes('top') ? 'top-0' : 'bottom-0',
-        position.includes('right') ? 'right-0' : position.includes('left') ? 'left-0' : 'left-1/2 -translate-x-1/2',
-        position.includes('center') && !position.includes('left') && !position.includes('right') && '-translate-x-1/2',
-        className
-      )}
-      {...props}
-    >
-      <AnimatePresence>
-        {visibleToasts.map((toast) => (
-          <ToastProvider.Toast
-            key={toast.id}
-            toast={toast}
-            onClose={handleDismiss}
-            position={position}
-          />
-        ))}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-// 为ToastProvider添加Toast子组件
-ToastProvider.Toast = ToastComponent;
+export const ToastProvider = ToastProviderWithSubComponent;
 
 // 创建toast实例
 const createToast = (options: ToastOptions | string): string => {

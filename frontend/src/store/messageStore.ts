@@ -148,7 +148,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
       let idx = -1;
       for (let i = state.messages.length - 1; i >= 0; i -= 1) {
         const msg = state.messages[i];
-      if (msg && msg.interactive !== undefined) {
+        if (msg && msg.interactive !== undefined) {
           idx = i;
           break;
         }
@@ -178,17 +178,17 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
   flushBuffer: () => {
     set((state: any) => {
       if (!state.streamBuffer) {
-        return { flushScheduled: false };
+          return { flushScheduled: false };
         }
 
-      const targetIndex = findLastAssistantMessageIndex(state.messages);
-      if (targetIndex === -1) {
+        const targetIndex = findLastAssistantMessageIndex(state.messages);
+        if (targetIndex === -1) {
           debugLog('⚠️ flushBuffer: 未找到助手消息');
-        return { streamBuffer: '', flushScheduled: false };
+          return { streamBuffer: '', flushScheduled: false };
         }
 
-      const messages = state.messages.map((msg: ChatMessage, index: number) => {
-        if (index === targetIndex && msg.AI !== undefined) {
+        const messages = state.messages.map((msg: ChatMessage, index: number) => {
+          if (index === targetIndex && msg.AI !== undefined) {
             const updatedMessage = {
               ...msg,
               AI: (msg.AI || '') + state.streamBuffer,
@@ -202,10 +202,10 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
 
             return updatedMessage;
           }
-        return msg;
+          return msg;
         });
 
-      return {
+        return {
           messages,
           streamBuffer: '',
           flushScheduled: false,
@@ -216,26 +216,26 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
   // 兼容性：直接更新最后一条消息（不推荐，使用appendToBuffer代替）
   updateLastMessage: (content: string) => {
     set((state: any) => {
-      debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
+        debugLog('🔄 updateLastMessage 被调用:', content.substring(0, 50));
 
-      const targetIndex = findLastAssistantMessageIndex(state.messages);
-      if (targetIndex === -1) {
-        console.warn('⚠️ 未找到可更新的助手消息');
+        const targetIndex = findLastAssistantMessageIndex(state.messages);
+        if (targetIndex === -1) {
+          console.warn('⚠️ 未找到可更新的助手消息');
           return state;
         }
 
-      const messages = state.messages.map((msg: ChatMessage, index: number) => {
-        if (index === targetIndex && msg.AI !== undefined) {
-          return {
+        const messages = state.messages.map((msg: ChatMessage, index: number) => {
+          if (index === targetIndex && msg.AI !== undefined) {
+            return {
               ...msg,
               AI: (msg.AI || '') + content,
               _lastUpdate: Date.now(),
             } as ChatMessage;
           }
-        return msg;
+          return msg;
         });
 
-      return { messages };
+        return { messages };
     });
   },
 
@@ -248,18 +248,18 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
       }
 
       const messages = state.messages.map((msg: ChatMessage, index: number) => {
-      if (index === targetIndex && msg.AI !== undefined) {
+        if (index === targetIndex && msg.AI !== undefined) {
           const reasoning = msg.reasoning || { steps: [], isComplete: false };
           // ReasoningStepUpdate 只包含content、order、totalSteps、title、raw、timestamp属性
           const stepIndex = step.order ?? reasoning.steps.length;
           const existingStep = reasoning.steps.find((s: ReasoningStep) => s.index === stepIndex);
 
-        if (existingStep) {
+          if (existingStep) {
             // 处理content属性，使用text字段
-          if (step.content) {
+            if (step.content) {
               existingStep.text = mergeReasoningContent(existingStep.text, step.content);
             }
-          if (step.title) {
+            if (step.title) {
               existingStep.title = step.title;
             }
           } else {
@@ -277,9 +277,9 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             reasoning.steps.sort((a: ReasoningStep, b: ReasoningStep) => a.index - b.index);
           }
 
-        return { ...msg, reasoning } as ChatMessage;
+          return { ...msg, reasoning } as ChatMessage;
         }
-      return msg;
+        return msg;
       });
 
       return { messages };
@@ -295,8 +295,8 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
       }
 
       const messages = state.messages.map((msg: ChatMessage, index: number) => {
-      if (index === targetIndex && msg.AI !== undefined && msg.reasoning) {
-        return {
+        if (index === targetIndex && msg.AI !== undefined && msg.reasoning) {
+          return {
             ...msg,
             reasoning: {
               ...msg.reasoning,
@@ -306,7 +306,7 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
             },
           } as ChatMessage;
         }
-      return msg;
+        return msg;
       });
 
       return { messages };
@@ -322,12 +322,12 @@ const useMessageStore = create<MessageState>((set, get: () => any) => ({
       }
 
       const messages = state.messages.map((msg: ChatMessage, index: number) => {
-      if (index === targetIndex && msg.AI !== undefined) {
+        if (index === targetIndex && msg.AI !== undefined) {
           const events = msg.events || [];
           events.push(event);
-        return { ...msg, events } as ChatMessage;
+          return { ...msg, events } as ChatMessage;
         }
-      return msg;
+        return msg;
       });
 
       return { messages };

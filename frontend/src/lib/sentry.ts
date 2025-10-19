@@ -62,8 +62,9 @@ async function ensureSentryLoaded(): Promise<void> {
         ((tracingModule as { BrowserTracing?: BrowserTracingCtor }).BrowserTracing ??
         null);
       sentryAvailable = true;
-    } catch (error) {
-      console.info('ℹ️  Sentry未安装，错误追踪功能禁用', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.info('ℹ️  Sentry未安装，错误追踪功能禁用', error.message);
       Sentry = null;
       BrowserTracing = null;
       sentryAvailable = false;
@@ -224,8 +225,9 @@ export function setSentryUser(user: {
     }
 
     Sentry.setUser(userContext);
-  } catch (error) {
-    console.warn('设置Sentry用户上下文失败:', error);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.warn('设置Sentry用户上下文失败:', error.message);
   }
 }
 
@@ -239,8 +241,9 @@ export function clearSentryUser() {
 
   try {
     Sentry.setUser(null);
-  } catch (error) {
-    console.warn('清除Sentry用户上下文失败:', error);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.warn('清除Sentry用户上下文失败:', error.message);
   }
 }
 
@@ -261,8 +264,9 @@ export function captureError(error: Error, context?: Record<string, unknown>) {
     Sentry.captureException(error, {
       extra: context,
     });
-  } catch (e) {
-    console.error('Sentry捕获错误失败:', e);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.error('Sentry捕获错误失败:', error.message);
   }
 }
 
@@ -290,8 +294,9 @@ export function addBreadcrumb(
       level,
       timestamp: Date.now() / 1000,
     });
-  } catch (error) {
-    console.warn('添加Sentry面包屑失败:', error);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.warn('添加Sentry面包屑失败:', error.message);
   }
 }
 
@@ -309,8 +314,9 @@ export function startTransaction(name: string, op: string) {
 
   try {
     return Sentry.startTransaction({ name, op });
-  } catch (error) {
-    console.warn('启动Sentry事务失败:', error);
+  } catch (unknownError: unknown) {
+    const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+    console.warn('启动Sentry事务失败:', error.message);
     return null;
   }
 }

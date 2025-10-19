@@ -106,8 +106,12 @@ export class ChatInitService {
       // 流式输出完成后，返回完整数据
       onComplete(initData);
 
-    } catch (error: any) {
-      onError(error instanceof Error ? error : new Error('获取初始化数据失败'));
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatInitService',
+        operation: 'getInitData',
+      });
+      onError(error);
     }
   }
 
@@ -147,8 +151,12 @@ export class ChatInitService {
       logger.debug('✅ FastGPT初始化API调用成功');
       return responseData.data;
 
-    } catch (error: any) {
-      logger.error('❌ FastGPT初始化API调用失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatInitService',
+        operation: 'callFastGPTInitAPI',
+      });
+      logger.error('❌ FastGPT初始化API调用失败', error.toLogObject());
       if (error && typeof error === 'object' && 'isAxiosError' in error && (error as any).isAxiosError) {
         const axiosError = error as any;
         const message = axiosError.response?.data?.message || axiosError.message;

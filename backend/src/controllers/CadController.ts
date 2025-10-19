@@ -89,8 +89,12 @@ export class CadController {
         },
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
-      logger.error('[CadController] 上传 DXF 文件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadController',
+        operation: 'uploadDxf',
+      });
+      logger.error('[CadController] 上传 DXF 文件失败', error.toLogObject());
       next(error);
     }
   };
@@ -132,8 +136,12 @@ export class CadController {
         },
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
-      logger.error('[CadController] 获取 CAD 文件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadController',
+        operation: 'getCadFile',
+      });
+      logger.error('[CadController] 获取 CAD 文件失败', error.toLogObject());
       next(error);
     }
   };
@@ -209,8 +217,12 @@ export class CadController {
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
-      logger.error('[CadController] 执行 CAD 操作失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadController',
+        operation: 'executeCadOperation',
+      });
+      logger.error('[CadController] 执行 CAD 操作失败', error.toLogObject());
       next(error);
     }
   };
@@ -248,8 +260,12 @@ export class CadController {
       res.setHeader('Content-Type', 'application/dxf');
       res.setHeader('Content-Disposition', `attachment; filename="${cadFile.info.fileName}"`);
       res.send(dxfContent);
-    } catch (error: any) {
-      logger.error('[CadController] 导出 DXF 文件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadController',
+        operation: 'exportDxf',
+      });
+      logger.error('[CadController] 导出 DXF 文件失败', error.toLogObject());
       next(error);
     }
   };
@@ -268,8 +284,12 @@ export class CadController {
         },
         timestamp: new Date().toISOString(),
       });
-    } catch (error: any) {
-      logger.error('[CadController] 获取工具定义失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadController',
+        operation: 'getFunctionTools',
+      });
+      logger.error('[CadController] 获取工具定义失败', error.toLogObject());
       next(error);
     }
   };

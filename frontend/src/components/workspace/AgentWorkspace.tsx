@@ -20,11 +20,12 @@ import { useI18n } from '@/i18n';
 import type { WorkspaceType } from '@/types';
 
 // 代码分割：动态导入工作区组件
-const ProductPreviewWorkspace = lazy(() =>
-  import('@/components/product/ProductPreviewWorkspace').then(module => ({
-    default: module.ProductPreviewWorkspace,
-  })),
-);
+// ProductPreviewWorkspace组件已删除
+// const ProductPreviewWorkspace = lazy(() =>
+//   import('@/components/product/ProductPreviewWorkspace').then(module => ({
+//     default: module.ProductPreviewWorkspace,
+//   })),
+// );
 
 // VoiceCallWorkspace组件已删除
 // const VoiceCallWorkspace = lazy(() =>

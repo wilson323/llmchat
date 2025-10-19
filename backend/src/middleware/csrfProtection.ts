@@ -36,8 +36,12 @@ function verifyToken(cookieToken: string | undefined, headerToken: string | unde
     }
 
     return crypto.timingSafeEqual(cookieBuffer, headerBuffer);
-  } catch (error: any) {
-    logger.warn('CSRF token 验证异常', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'csrfProtection',
+      operation: 'verifyToken',
+    });
+    logger.warn('CSRF token 验证异常', error.toLogObject());
     return false;
   }
 }

@@ -1227,8 +1227,8 @@ export function wrapAsyncHandler<T extends any[], R>(
   return async (...args: T): Promise<R> => {
     try {
       return await handler(...args);
-    } catch (error: any) {
-      const typedError = createErrorFromUnknown(error, options);
+    } catch (unknownError: unknown) {
+      const typedError = createErrorFromUnknown(unknownError, options);
       throw typedError;
     }
   };

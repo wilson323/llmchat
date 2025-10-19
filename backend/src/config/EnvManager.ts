@@ -155,7 +155,12 @@ export class EnvManager {
   public getRequired(key: string): string {
     const value = this.config.get(key);
     if (!value || value.trim() === '') {
-      throw new Error(`Required environment variable not found: ${key}`);
+      throw new SystemError({
+        message: `Required environment variable not found: ${key}`,
+        code: 'MISSING_ENV_VARIABLE',
+        component: 'EnvManager',
+        context: { key },
+      });
     }
     return value;
   }
@@ -228,7 +233,11 @@ export class EnvManager {
    */
   public getAllSafe(): Record<string, string> {
     if (this.isProduction()) {
-      throw new Error('getAllSafe is disabled in production');
+      throw new SystemError({
+        message: 'getAllSafe is disabled in production',
+        code: 'GET_ALL_SAFE_DISABLED',
+        component: 'EnvManager',
+      });
     }
 
     const safe: Record<string, string> = {};
@@ -290,7 +299,11 @@ export class EnvManager {
    */
   public reload(): void {
     if (this.isProduction()) {
-      throw new Error('Hot reload is disabled in production');
+      throw new SystemError({
+        message: 'Hot reload is disabled in production',
+        code: 'HOT_RELOAD_DISABLED',
+        component: 'EnvManager',
+      });
     }
 
     safeLogger.info('🔄 Reloading environment variables...');

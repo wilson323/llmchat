@@ -53,10 +53,12 @@ export class AgentService {
         agents
       };
 
-    } catch (error: any) {
-      logger.error('[AgentService] 同步失败', {
-        error: error instanceof Error ? error.message : String(error)
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentService',
+        operation: 'syncAgents',
       });
+      logger.error('[AgentService] 同步失败', error.toLogObject());
       throw error;
     }
   }
@@ -66,16 +68,32 @@ export class AgentService {
    */
   validateConfig(config: Partial<AgentConfig>): void {
     if (!config.id) {
-      throw new Error('Agent ID is required');
+      throw new ValidationError({
+        message: '智能体ID是必需的',
+        code: 'AGENT_ID_REQUIRED',
+        field: 'id',
+      });
     }
     if (!config.name) {
-      throw new Error('Agent name is required');
+      throw new ValidationError({
+        message: '智能体名称是必需的',
+        code: 'AGENT_NAME_REQUIRED',
+        field: 'name',
+      });
     }
     if (!config.endpoint) {
-      throw new Error('Agent endpoint is required');
+      throw new ValidationError({
+        message: '智能体端点是必需的',
+        code: 'AGENT_ENDPOINT_REQUIRED',
+        field: 'endpoint',
+      });
     }
     if (!config.apiKey) {
-      throw new Error('Agent API key is required');
+      throw new ValidationError({
+        message: '智能体API密钥是必需的',
+        code: 'AGENT_API_KEY_REQUIRED',
+        field: 'apiKey',
+      });
     }
   }
 
@@ -119,17 +137,18 @@ export class AgentService {
         responseTime: 100
       };
 
-    } catch (error: any) {
-      logger.error('[AgentService] 状态检查失败', {
-        error: error instanceof Error ? error.message : String(error),
-        agentId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentService',
+        operation: 'checkStatus',
       });
+      logger.error('[AgentService] 状态检查失败', error.toLogObject());
 
       return {
         id: agentId,
         status: 'error',
         lastCheck: new Date(),
-        errorMessage: error instanceof Error ? error.message : String(error)
+        errorMessage: error.message
       };
     }
   }

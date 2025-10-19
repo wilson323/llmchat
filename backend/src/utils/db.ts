@@ -7,6 +7,7 @@ import { deepReplaceEnvVariables } from '@/utils/envHelper';
 import logger from '@/utils/logger';
 import MigrationManager from './MigrationManager';
 import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface PgConfig {
   database?: {
@@ -138,8 +139,12 @@ export async function initDB(): Promise<void> {
         Object.assign(rawPg, configPg);
         logger.info('[initDB] 配置文件加载成功');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] 配置文件加载失败，使用环境变量默认值', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.configLoad',
+      });
+      logger.warn('[initDB] 配置文件加载失败，使用环境变量默认值', { error: error.toLogObject() });
     }
   }
 
@@ -290,9 +295,13 @@ export async function initDB(): Promise<void> {
     try {
       await client.query('ALTER TABLE users DROP COLUMN IF EXISTS password_plain;');
       logger.info('[initDB] ✅ 已移除不安全的明文密码列');
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.dropColumn',
+      });
       // 列可能不存在，忽略错误
-      logger.info('[initDB] 明文密码列不存在或已移除');
+      logger.info('[initDB] 明文密码列不存在或已移除', error.toLogObject());
     }
 
     // Schema演进：添加缺失的列（兼容旧版本数据库）
@@ -309,8 +318,12 @@ export async function initDB(): Promise<void> {
         await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;');
         logger.info('[initDB] ✅ 添加email列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] email列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addEmailColumn',
+      });
+      logger.warn('[initDB] email列添加失败', { error: error.toLogObject() });
     }
 
     try {
@@ -325,8 +338,12 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;');
         logger.info('[initDB] ✅ 添加email_verified列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] email_verified列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addEmailVerifiedColumn',
+      });
+      logger.warn('[initDB] email_verified列添加失败', { error: error.toLogObject() });
     }
 
     try {
@@ -341,8 +358,12 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0;');
         logger.info('[initDB] ✅ 添加failed_login_attempts列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] failed_login_attempts列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addFailedLoginAttemptsColumn',
+      });
+      logger.warn('[initDB] failed_login_attempts列添加失败', { error: error.toLogObject() });
     }
 
     try {
@@ -357,8 +378,12 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN locked_until TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加locked_until列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] locked_until列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addLockedUntilColumn',
+      });
+      logger.warn('[initDB] locked_until列添加失败', { error: error.toLogObject() });
     }
 
     try {
@@ -373,8 +398,12 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMPTZ;');
         logger.info('[initDB] ✅ 添加last_login_at列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] last_login_at列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addLastLoginAtColumn',
+      });
+      logger.warn('[initDB] last_login_at列添加失败', { error: error.toLogObject() });
     }
 
     try {
@@ -389,8 +418,12 @@ export async function initDB(): Promise<void> {
         await client.query('ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(45);');
         logger.info('[initDB] ✅ 添加last_login_ip列');
       }
-    } catch (error: any) {
-      logger.warn('[initDB] last_login_ip列添加失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'db',
+        operation: 'initDB.addLastLoginIpColumn',
+      });
+      logger.warn('[initDB] last_login_ip列添加失败', { error: error.toLogObject() });
     }
 
     await client.query(`
@@ -541,8 +574,12 @@ export async function initDB(): Promise<void> {
     logger.info('🌱 开始种子智能体数据...');
     await seedAgentsFromFile();
     logger.info('✅ 智能体数据种子完成');
-  } catch (error: any) {
-    logger.error('❌ 智能体数据种子失败', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'db',
+      operation: 'seedAgents',
+    });
+    logger.error('❌ 智能体数据种子失败', { error: error.toLogObject() });
     // 不抛出异常，允许服务继续启动
   }
 
@@ -556,8 +593,12 @@ export async function initDB(): Promise<void> {
       skipped: result.skipped,
       totalTimeMs: result.totalTime
     });
-  } catch (error: any) {
-    logger.warn('⚠️  数据库迁移失败，使用现有表结构', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'db',
+      operation: 'runMigrations',
+    });
+    logger.warn('⚠️  数据库迁移失败，使用现有表结构', { error: error.toLogObject() });
     // 不抛出异常，允许服务继续启动
   }
 }

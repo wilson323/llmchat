@@ -110,17 +110,19 @@ export async function getConfigHealth(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 获取配置健康状态失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'getConfigHealthStatus',
     });
+    logger.error('[AdminController] 获取配置健康状态失败', error.toLogObject());
 
+    const apiError = error.toApiError();
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       message: '获取配置健康状态失败',
       data: null,
+      ...apiError,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -215,17 +217,19 @@ export async function compareConfigSnapshot(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 配置快照对比失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'compareConfigSnapshot',
     });
+    logger.error('[AdminController] 配置快照对比失败', error.toLogObject());
 
+    const apiError = error.toApiError();
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       message: '配置快照对比失败',
       data: null,
+      ...apiError,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -301,12 +305,12 @@ export async function cleanupObsoleteConfigs(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 清理废弃配置失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'cleanupObsoleteConfigs',
     });
+    logger.error('[AdminController] 清理废弃配置失败', error.toLogObject());
 
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
@@ -389,17 +393,19 @@ export async function getConfigDetails(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 获取配置详情失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'getConfigDetails',
     });
+    logger.error('[AdminController] 获取配置详情失败', error.toLogObject());
 
+    const apiError = error.toApiError();
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       message: '获取配置详情失败',
       data: null,
+      ...apiError,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -500,7 +506,13 @@ export class AdminController {
         },
       };
       return res.json({ data: info });
-    } catch (e: unknown) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'systemInfo',
+      });
+      logger.error('[AdminController] 系统信息获取失败', error.toLogObject());
+
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         code: 'UNAUTHORIZED',
         message: '未授权',
@@ -519,7 +531,13 @@ export class AdminController {
         return rows;
       });
       return res.json({ data });
-    } catch (e: unknown) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'users',
+      });
+      logger.error('[AdminController] 用户列表获取失败', error.toLogObject());
+
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
         code: 'UNAUTHORIZED',
         message: '未授权',
@@ -720,19 +738,19 @@ export class AdminController {
       const data = { provinces: [] };
 
       return res.json({ data });
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+    } catch (unknownError: unknown) {
+      if (unknownError instanceof Error && unknownError.message === 'UNAUTHORIZED') {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           code: 'UNAUTHORIZED',
           message: '未授权',
           timestamp: new Date().toISOString(),
         });
       }
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('[AdminController] provinceHeatmap failed', {
-        error: errorMessage,
-        type: error instanceof Error ? error.constructor.name : 'Unknown',
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'provinceHeatmap',
       });
+      logger.error('[AdminController] provinceHeatmap failed', error.toLogObject());
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'INTERNAL_ERROR',
         message: '获取地域热点数据失败',
@@ -805,19 +823,19 @@ export class AdminController {
       const data = { series: [] };
 
       return res.json({ data });
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+    } catch (unknownError: unknown) {
+      if (unknownError instanceof Error && unknownError.message === 'UNAUTHORIZED') {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           code: 'UNAUTHORIZED',
           message: '未授权',
           timestamp: new Date().toISOString(),
         });
       }
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('[AdminController] conversationSeries failed', {
-        error: errorMessage,
-        type: error instanceof Error ? error.constructor.name : 'Unknown',
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'conversationSeries',
       });
+      logger.error('[AdminController] conversationSeries failed', error.toLogObject());
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'INTERNAL_ERROR',
         message: '获取智能体对话趋势失败',
@@ -883,19 +901,19 @@ export class AdminController {
     const data = { totals: [] };
 
       return res.json({ data });
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+    } catch (unknownError: unknown) {
+      if (unknownError instanceof Error && unknownError.message === 'UNAUTHORIZED') {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
           code: 'UNAUTHORIZED',
           message: '未授权',
           timestamp: new Date().toISOString(),
         });
       }
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('[AdminController] conversationAgents failed', {
-        error: errorMessage,
-        type: error instanceof Error ? error.constructor.name : 'Unknown',
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'conversationAgents',
       });
+      logger.error('[AdminController] conversationAgents failed', error.toLogObject());
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'INTERNAL_ERROR',
         message: '获取智能体会话对比失败',
@@ -1000,7 +1018,13 @@ export class AdminController {
         return rows[0];
       });
       return res.json({ data });
-    } catch (e: unknown) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'updateUser',
+      });
+      logger.error('[AdminController] 更新用户失败', error.toLogObject());
+
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'INTERNAL_ERROR',
         message: '更新用户失败',
@@ -1045,7 +1069,13 @@ export class AdminController {
       });
 
       return res.json({ ok: true, newPassword: pwd });
-    } catch (e: unknown) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AdminController',
+        operation: 'resetUserPassword',
+      });
+      logger.error('[AdminController] 重置密码失败', error.toLogObject());
+
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'INTERNAL_ERROR',
         message: '重置密码失败',
@@ -1161,17 +1191,19 @@ export async function getAdminStats(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 获取统计数据失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'getAdminStats',
     });
+    logger.error('[AdminController] 获取统计数据失败', error.toLogObject());
 
+    const apiError = error.toApiError();
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       message: '获取统计数据失败',
       data: null,
+      ...apiError,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -1260,17 +1292,19 @@ export async function getAdminMetrics(
     };
 
     return res.json(response);
-  } catch (error: any) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error('[AdminController] 获取指标数据失败', {
-      error: errorMessage,
-      type: error instanceof Error ? error.constructor.name : 'Unknown',
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'AdminController',
+      operation: 'getAdminMetrics',
     });
+    logger.error('[AdminController] 获取指标数据失败', error.toLogObject());
 
+    const apiError = error.toApiError();
     const response: ApiResponse<null> = {
       code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       message: '获取指标数据失败',
       data: null,
+      ...apiError,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);

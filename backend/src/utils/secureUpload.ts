@@ -7,6 +7,7 @@ import type { Request } from 'express';
 import { LogSanitizer } from './logSanitizer';
 import { promises as fs } from 'fs';
 import { logger } from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface FileValidationOptions {
   maxSize?: number;
@@ -202,8 +203,12 @@ export class SecureUpload {
       }
 
       return { safe: true };
-    } catch (error: any) {
-      logger.error('Malware scan failed:', error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureUpload',
+        operation: 'scanForMalware',
+      });
+      logger.error('Malware scan failed:', error.toLogObject());
       return { safe: false, threat: 'Scan failed' };
     }
   }

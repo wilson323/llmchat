@@ -56,11 +56,12 @@ const upload = multer({
       }
 
       cb(null, true);
-    } catch (error: any) {
-      safeLogger.error('[CAD Route] File validation error', {
-        filename: file.originalname,
-        error: error instanceof Error ? error.message : String(error),
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'cadRoutes',
+        operation: 'fileFilter',
       });
+      safeLogger.error('[CAD Route] File validation error', error.toLogObject());
       cb(new Error('文件验证过程中发生错误'));
     }
   },

@@ -1,0 +1,426 @@
+﻿[96msrc/components/admin/dashboard/useDashboardConversationAnalytics.ts[0m:[93m123[0m:[93m17[0m - [91merror[0m[90m TS2345: [0mArgument of type 'AgentItem[]' is not assignable to parameter of type 'SetStateAction<AgentItem[]>'.
+  Type 'import("F:/ss/aa/sssss/llmchat/frontend/src/services/agentsApi").AgentItem[]' is not assignable to type 'import("F:/ss/aa/sssss/llmchat/frontend/src/types/admin").AgentItem[]'.
+    Type 'import("F:/ss/aa/sssss/llmchat/frontend/src/services/agentsApi").AgentItem' is not assignable to type 'import("F:/ss/aa/sssss/llmchat/frontend/src/types/admin").AgentItem'.
+      Types of property 'status' are incompatible.
+        Type '"loading" | "error" | "active" | "inactive"' is not assignable to type '"active" | "inactive" | undefined'.
+          Type '"loading"' is not assignable to type '"active" | "inactive" | undefined'.
+
+[7m123[0m       setAgents(data);
+[7m   [0m [91m                ~~~~[0m
+
+[96msrc/components/ui/Button.tsx[0m:[93m178[0m:[93m37[0m - [91merror[0m[90m TS2322: [0mType 'SizeVariant | undefined' is not assignable to type '"sm" | "md" | "lg" | "xl" | "icon" | "icon-sm" | "icon-lg" | null | undefined'.
+  Type '"xs"' is not assignable to type '"sm" | "md" | "lg" | "xl" | "icon" | "icon-sm" | "icon-lg" | null | undefined'.
+
+[7m178[0m           buttonVariants({ variant, size, shape: finalShape }),
+[7m   [0m [91m                                    ~~~~[0m
+
+[96msrc/components/ui/Card.tsx[0m:[93m41[0m:[93m8[0m - [91merror[0m[90m TS2322: [0mType '{ children: ReactNode; style?: CSSProperties | undefined; 'data-testid'?: string | undefined; disabled?: boolean | undefined; visible?: boolean | undefined; ... 5 more ...; className: string; }' is not assignable to type 'SVGProps<SVGSymbolElement>'.
+  Types of property 'ref' are incompatible.
+    Type 'ForwardedRef<HTMLHeadingElement>' is not assignable to type 'LegacyRef<SVGSymbolElement> | undefined'.
+      Type '(instance: HTMLHeadingElement | null) => void' is not assignable to type 'LegacyRef<SVGSymbolElement> | undefined'.
+        Type '(instance: HTMLHeadingElement | null) => void' is not assignable to type '(instance: SVGSymbolElement | null) => void'.
+          Types of parameters 'instance' and 'instance' are incompatible.
+            Type 'SVGSymbolElement | null' is not assignable to type 'HTMLHeadingElement | null'.
+              Type 'SVGSymbolElement' is missing the following properties from type 'HTMLHeadingElement': align, accessKey, accessKeyLabel, autocapitalize, and 26 more.
+
+[7m41[0m       <HeadingTag
+[7m  [0m [91m       ~~~~~~~~~~[0m
+
+[96msrc/components/ui/Card.tsx[0m:[93m42[0m:[93m9[0m - [91merror[0m[90m TS2590: [0mExpression produces a union type that is too complex to represent.
+
+[7m 42[0m         ref={ref}
+[7m   [0m [91m        ~~~~~~~~~[0m
+[7m 43[0m         className={cn(
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m 46[0m         )}
+[7m   [0m [91m~~~~~~~~~~[0m
+[7m 47[0m         {...props}
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/ui/Dropdown.tsx[0m:[93m187[0m:[93m8[0m - [91merror[0m[90m TS2322: [0mType '{ children: ReactNode; disabled: boolean; form?: string | undefined; formAction?: string | undefined; formEncType?: string | undefined; formMethod?: string | undefined; formNoValidate?: boolean | undefined; ... 268 more ...; onClick: (e: MouseEvent<...>) => void; }' is not assignable to type 'BaseButtonProps'.
+  Types of property 'onChange' are incompatible.
+    Type 'FormEventHandler<HTMLButtonElement> | undefined' is not assignable to type 'ChangeEventHandler<HTMLElement> | undefined'.
+      Type 'FormEventHandler<HTMLButtonElement>' is not assignable to type 'ChangeEventHandler<HTMLElement>'.
+        Types of parameters 'event' and 'event' are incompatible.
+          Type 'ChangeEvent<HTMLElement>' is not assignable to type 'FormEvent<HTMLButtonElement>'.
+            Types of property 'currentTarget' are incompatible.
+              Type 'EventTarget & HTMLElement' is not assignable to type 'EventTarget & HTMLButtonElement'.
+                Type 'EventTarget & HTMLElement' is missing the following properties from type 'HTMLButtonElement': disabled, form, formAction, formEnctype, and 15 more.
+
+[7m187[0m       <Button
+[7m   [0m [91m       ~~~~~~[0m
+
+[96msrc/components/ui/Input.tsx[0m:[93m308[0m:[93m12[0m - [91merror[0m[90m TS2322: [0mType '{ id: string; name: string; type: "number" | "search" | "text" | "tel" | "url" | "email" | "date" | "password" | "datetime-local" | "file"; value: (string | number | readonly string[]) & (string | number); ... 294 more ...; "data-slot": string; }' is not assignable to type 'DetailedHTMLProps<InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>'.
+  Type '{ id: string; name: string; type: "number" | "search" | "text" | "tel" | "url" | "email" | "date" | "password" | "datetime-local" | "file"; value: (string | number | readonly string[]) & (string | number); ... 294 more ...; "data-slot": string; }' is not assignable to type 'InputHTMLAttributes<HTMLInputElement>'.
+    Types of property '"aria-invalid"' are incompatible.
+      Type 'string' is not assignable to type 'boolean | "true" | "false" | "grammar" | "spelling" | undefined'.
+
+[7m308[0m           <input
+[7m   [0m [91m           ~~~~~[0m
+
+[96msrc/components/ui/LazyComponent.tsx[0m:[93m223[0m:[93m10[0m - [91merror[0m[90m TS2352: [0mConversion of type 'MemoExoticComponent<(props: P) => Element>' to type 'ComponentType<P>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'MemoExoticComponent<(props: P) => Element>' is not comparable to type 'FunctionComponent<P>'.
+    Types of parameters 'props' and 'props' are incompatible.
+      Type 'P' is not comparable to type 'PropsWithRef<P>'.
+        Type 'object' is not comparable to type 'PropsWithRef<P>'.
+
+[7m223[0m   return React.memo((props: P) => (
+[7m   [0m [91m         ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m224[0m     <LazyComponent component={LazyLoadedComponent} config={config} {...props} />
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m225[0m   )) as ComponentType<P>;
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/components/ui/Modal.tsx[0m:[93m451[0m:[93m28[0m - [91merror[0m[90m TS2322: [0mType '{ isOpen: boolean | undefined; onClose: () => Promise<void>; onConfirm: () => Promise<void>; loading: boolean; }' is not assignable to type 'ModalContextType'.
+  Types of property 'isOpen' are incompatible.
+    Type 'boolean | undefined' is not assignable to type 'boolean'.
+      Type 'undefined' is not assignable to type 'boolean'.
+
+[7m451[0m             <ModalProvider value={contextValue}>
+[7m   [0m [91m                           ~~~~~[0m
+
+  [96msrc/components/ui/Modal.tsx[0m:[93m97[0m:[93m3[0m
+    [7m97[0m   value: ModalContextType;
+    [7m  [0m [96m  ~~~~~[0m
+    The expected type comes from property 'value' which is declared here on type 'IntrinsicAttributes & { children: ReactNode; value: ModalContextType; }'
+
+[96msrc/components/ui/Select.tsx[0m:[93m172[0m:[93m7[0m - [91merror[0m[90m TS2339: [0mProperty 'onClick' does not exist on type 'SelectTriggerProps'.
+
+[7m172[0m       onClick,
+[7m   [0m [91m      ~~~~~~~[0m
+
+[96msrc/components/ui/Select.tsx[0m:[93m474[0m:[93m10[0m - [91merror[0m[90m TS2322: [0mType '{ children: ("" | Element | undefined)[]; title?: string | undefined; style?: CSSProperties | undefined; id?: string | undefined; "aria-label"?: string | undefined; ... 269 more ...; className: string; }' is not assignable to type 'DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>'.
+  Type '{ children: ("" | Element | undefined)[]; title?: string | undefined; style?: CSSProperties | undefined; id?: string | undefined; "aria-label"?: string | undefined; ... 269 more ...; className: string; }' is not assignable to type 'HTMLAttributes<HTMLDivElement>'.
+    Types of property 'onCopy' are incompatible.
+      Type 'ClipboardEventHandler<HTMLSelectElement> | undefined' is not assignable to type 'ClipboardEventHandler<HTMLDivElement> | undefined'.
+        Type 'ClipboardEventHandler<HTMLSelectElement>' is not assignable to type 'ClipboardEventHandler<HTMLDivElement>'.
+          Property 'align' is missing in type 'HTMLSelectElement' but required in type 'HTMLDivElement'.
+
+[7m474[0m         <div ref={ref} className={cn('space-y-2', className)} {...props}>
+[7m   [0m [91m         ~~~[0m
+
+  [96mC:/Users/wss/AppData/Roaming/npm/node_modules/typescript/lib/lib.dom.d.ts[0m:[93m10668[0m:[93m5[0m
+    [7m10668[0m     align: string;
+    [7m     [0m [96m    ~~~~~[0m
+    'align' is declared here.
+
+[96msrc/components/ui/Tabs.tsx[0m:[93m214[0m:[93m8[0m - [91merror[0m[90m TS2322: [0mType '{ children: (string | number | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode>)[] | null | undefined; ... 22 more ...; "aria-orientation": "horizontal" | ... 1 more ... | undefined; }' is not assignable to type 'DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>'.
+  Type '{ children: (string | number | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode>)[] | null | undefined; ... 22 more ...; "aria-orientation": "horizontal" | ... 1 more ... | undefined; }' is not assignable to type 'HTMLAttributes<HTMLDivElement>'.
+    Types of property 'onChange' are incompatible.
+      Type 'ChangeEventHandler<HTMLElement> | undefined' is not assignable to type 'FormEventHandler<HTMLDivElement> | undefined'.
+        Type 'ChangeEventHandler<HTMLElement>' is not assignable to type 'FormEventHandler<HTMLDivElement>'.
+          Types of parameters 'event' and 'event' are incompatible.
+            Type 'FormEvent<HTMLDivElement>' is not assignable to type 'ChangeEvent<HTMLElement>'.
+              Types of property 'target' are incompatible.
+                Type 'EventTarget' is not assignable to type 'EventTarget & HTMLElement'.
+                  Type 'EventTarget' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, dir, and 301 more.
+
+[7m214[0m       <div
+[7m   [0m [91m       ~~~[0m
+
+[96msrc/components/ui/Tabs.tsx[0m:[93m275[0m:[93m8[0m - [91merror[0m[90m TS2322: [0mType '{ children: (false | "" | 0 | Element | null | undefined)[]; title?: string | undefined; description?: string | undefined; style?: CSSProperties | undefined; ... 22 more ...; onClick: (e: MouseEvent<...>) => void; }' is not assignable to type 'DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>'.
+  Type '{ children: (false | "" | 0 | Element | null | undefined)[]; title?: string | undefined; description?: string | undefined; style?: CSSProperties | undefined; ... 22 more ...; onClick: (e: MouseEvent<...>) => void; }' is not assignable to type 'ButtonHTMLAttributes<HTMLButtonElement>'.
+    Types of property 'onChange' are incompatible.
+      Type 'ChangeEventHandler<HTMLElement> | undefined' is not assignable to type 'FormEventHandler<HTMLButtonElement> | undefined'.
+        Type 'ChangeEventHandler<HTMLElement>' is not assignable to type 'FormEventHandler<HTMLButtonElement>'.
+          Types of parameters 'event' and 'event' are incompatible.
+            Type 'FormEvent<HTMLButtonElement>' is not assignable to type 'ChangeEvent<HTMLElement>'.
+              Types of property 'target' are incompatible.
+                Type 'EventTarget' is not assignable to type 'EventTarget & HTMLElement'.
+                  Type 'EventTarget' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, dir, and 301 more.
+
+[7m275[0m       <button
+[7m   [0m [91m       ~~~~~~[0m
+
+[96msrc/components/ui/Tabs.tsx[0m:[93m282[0m:[93m45[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type '"default" | "underline" | "pills" | "enclosed" | null | undefined'.
+
+[7m282[0m         className={cn(tabsTriggerVariants({ variant: finalVariant, orientation }), {
+[7m   [0m [91m                                            ~~~~~~~[0m
+
+[96msrc/components/ui/Tabs.tsx[0m:[93m344[0m:[93m8[0m - [91merror[0m[90m TS2322: [0mType '{ children: ReactNode; asChild?: boolean | undefined; title?: string | undefined; description?: string | undefined; style?: CSSProperties | undefined; 'data-testid'?: string | undefined; ... 21 more ...; className: string; }' is not assignable to type 'DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>'.
+  Type '{ children: ReactNode; asChild?: boolean | undefined; title?: string | undefined; description?: string | undefined; style?: CSSProperties | undefined; 'data-testid'?: string | undefined; ... 21 more ...; className: string; }' is not assignable to type 'HTMLAttributes<HTMLDivElement>'.
+    Types of property 'onChange' are incompatible.
+      Type 'ChangeEventHandler<HTMLElement> | undefined' is not assignable to type 'FormEventHandler<HTMLDivElement> | undefined'.
+        Type 'ChangeEventHandler<HTMLElement>' is not assignable to type 'FormEventHandler<HTMLDivElement>'.
+          Types of parameters 'event' and 'event' are incompatible.
+            Type 'FormEvent<HTMLDivElement>' is not assignable to type 'ChangeEvent<HTMLElement>'.
+              Types of property 'target' are incompatible.
+                Type 'EventTarget' is not assignable to type 'EventTarget & HTMLElement'.
+                  Type 'EventTarget' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, dir, and 301 more.
+
+[7m344[0m       <div
+[7m   [0m [91m       ~~~[0m
+
+[96msrc/components/ui/Toast.tsx[0m:[93m484[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '() => void' is not assignable to type 'string'.
+
+[7m484[0m     return () => clearTimeout(timer);
+[7m   [0m [91m    ~~~~~~[0m
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m188[0m:[93m23[0m - [91merror[0m[90m TS2540: [0mCannot assign to 'current' because it is a read-only property.
+
+[7m188[0m     localContainerRef.current = element;
+[7m   [0m [91m                      ~~~~~~~[0m
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m189[0m:[93m25[0m - [91merror[0m[90m TS2540: [0mCannot assign to 'current' because it is a read-only property.
+
+[7m189[0m     virtualContainerRef.current = element;
+[7m   [0m [91m                        ~~~~~~~[0m
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m229[0m:[93m40[0m - [91merror[0m[90m TS2740: [0mType '{ element: HTMLDivElement | null; scrollToIndex: (index: number) => void; scrollToOffset: (offset: number) => void; getScrollTop: () => number; getScrollHeight: () => number; getClientHeight: () => number; }' is missing the following properties from type 'HTMLDivElement': align, addEventListener, removeEventListener, accessKey, and 305 more.
+
+[7m229[0m   React.useImperativeHandle(ref, () => ({
+[7m   [0m [91m                                       ~~[0m
+[7m230[0m     element: localContainerRef.current,
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m...[0m 
+[7m235[0m     getClientHeight: () => localContainerRef.current?.clientHeight || 0
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m236[0m   }), [scrollToIndexInternal, scrollToOffsetInternal]);
+[7m   [0m [91m~~~~[0m
+
+  [96m../node_modules/.pnpm/@types+react@18.3.26/node_modules/@types/react/index.d.ts[0m:[93m2056[0m:[93m81[0m
+    [7m2056[0m     function useImperativeHandle<T, R extends T>(ref: Ref<T> | undefined, init: () => R, deps?: DependencyList): void;
+    [7m    [0m [96m                                                                                ~~~~~~~[0m
+    The expected type comes from the return type of this signature.
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m267[0m:[93m12[0m - [91merror[0m[90m TS2554: [0mExpected 2-3 arguments, but got 1.
+
+[7m267[0m           {renderItem({
+[7m   [0m [91m           ~~~~~~~~~~[0m
+
+  [96msrc/components/ui/ui.types.ts[0m:[93m712[0m:[93m27[0m
+    [7m712[0m   renderItem: (item: any, index: number, style?: React.CSSProperties) => React.ReactNode;
+    [7m   [0m [96m                          ~~~~~~~~~~~~~[0m
+    An argument for 'index' was not provided.
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m317[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'ComponentType<{}>' is not assignable to type 'ReactI18NextChildren | Iterable<ReactI18NextChildren>'.
+  Type 'ComponentClass<{}, any>' is not assignable to type 'ReactI18NextChildren | Iterable<ReactI18NextChildren>'.
+
+[7m317[0m           {emptyComponent}
+[7m   [0m [91m          ~~~~~~~~~~~~~~~~[0m
+
+  [96m../node_modules/.pnpm/react-i18next@16.1.0_i18next@25.6.0_react-dom@18.3.1_react@18.3.1_typescript@5.9.3/node_modules/react-i18next/index.d.ts[0m:[93m68[0m:[93m5[0m
+    [7m68[0m     children?: ReactI18NextChildren | Iterable<ReactI18NextChildren>;
+    [7m  [0m [96m    ~~~~~~~~[0m
+    The expected type comes from property 'children' which is declared here on type 'DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>'
+
+[96msrc/components/ui/VirtualScroll.tsx[0m:[93m335[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'ComponentType<{}>' is not assignable to type 'ReactI18NextChildren | Iterable<ReactI18NextChildren>'.
+  Type 'ComponentClass<{}, any>' is not assignable to type 'ReactI18NextChildren | Iterable<ReactI18NextChildren>'.
+
+[7m335[0m           {loadingComponent}
+[7m   [0m [91m          ~~~~~~~~~~~~~~~~~~[0m
+
+  [96m../node_modules/.pnpm/react-i18next@16.1.0_i18next@25.6.0_react-dom@18.3.1_react@18.3.1_typescript@5.9.3/node_modules/react-i18next/index.d.ts[0m:[93m68[0m:[93m5[0m
+    [7m68[0m     children?: ReactI18NextChildren | Iterable<ReactI18NextChildren>;
+    [7m  [0m [96m    ~~~~~~~~[0m
+    The expected type comes from property 'children' which is declared here on type 'DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>'
+
+[96msrc/components/visualization/VisualizationDashboard.tsx[0m:[93m315[0m:[93m28[0m - [91merror[0m[90m TS7006: [0mParameter 'e' implicitly has an 'any' type.
+
+[7m315[0m                 onChange={(e) => updateConfig({ refreshInterval: parseInt(e.target.value) })}
+[7m   [0m [91m                           ~[0m
+
+[96msrc/components/visualization/VisualizationDashboard.tsx[0m:[93m326[0m:[93m28[0m - [91merror[0m[90m TS7006: [0mParameter 'e' implicitly has an 'any' type.
+
+[7m326[0m                 onChange={(e) => updateConfig({ maxDataPoints: parseInt(e.target.value) })}
+[7m   [0m [91m                           ~[0m
+
+[96msrc/hooks/useAgentAutoFetch.ts[0m:[93m2[0m:[93m52[0m - [91merror[0m[90m TS2724: [0m'"@/services/agentsApi"' has no exported member named 'FetchAgentInfoParams'. Did you mean 'fetchAgentInfo'?
+
+[7m2[0m import { fetchAgentInfo as fetchAgentInfoApi, type FetchAgentInfoParams, type AgentInfo } from '@/services/agentsApi';
+[7m [0m [91m                                                   ~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96msrc/services/agentsApi.ts[0m:[93m570[0m:[93m23[0m
+    [7m570[0m export async function fetchAgentInfo(params: {
+    [7m   [0m [96m                      ~~~~~~~~~~~~~~[0m
+    'fetchAgentInfo' is declared here.
+
+[96msrc/hooks/useAgentAutoFetch.ts[0m:[93m15[0m:[93m20[0m - [91merror[0m[90m TS2339: [0mProperty 'data' does not exist on type 'AgentInfo'.
+
+[7m15[0m       if (response.data) {
+[7m  [0m [91m                   ~~~~[0m
+
+[96msrc/hooks/useAgentAutoFetch.ts[0m:[93m16[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'data' does not exist on type 'AgentInfo'.
+
+[7m16[0m         return response.data;
+[7m  [0m [91m                        ~~~~[0m
+
+[96msrc/hooks/useChat.ts[0m:[93m15[0m:[93m47[0m - [91merror[0m[90m TS2307: [0mCannot find module '@/utils/interactiveDataConverter' or its corresponding type declarations.
+
+[7m15[0m import { convertFastGPTInteractiveData } from '@/utils/interactiveDataConverter';
+[7m  [0m [91m                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/fastgpt.ts[0m:[93m76[0m:[93m54[0m - [91merror[0m[90m TS2345: [0mArgument of type '{}' is not assignable to parameter of type 'string | number | Date | undefined'.
+
+[7m76[0m   updatedAt: detail.metadata?.updatedAt ? coerceDate(detail.metadata.updatedAt) : new Date(),
+[7m  [0m [91m                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m10[0m:[93m3[0m - [91merror[0m[90m TS2724: [0m'"./types/api-common"' has no exported member named 'QueryParams'. Did you mean 'LogQueryParams'?
+
+[7m10[0m   QueryParams
+[7m  [0m [91m  ~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m380[0m:[93m16[0m - [91merror[0m[90m TS2352: [0mConversion of type 'ApiResult<LogsPage>' to type 'ApiResult<LogItem[]>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'LogsPage' is missing the following properties from type 'LogItem[]': length, pop, push, concat, and 29 more.
+
+[7m380[0m         return pageResult as ApiResult<LogItem[]>;
+[7m   [0m [91m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m385[0m:[93m15[0m - [91merror[0m[90m TS18048: [0m'pageResult.data' is possibly 'undefined'.
+
+[7m385[0m         data: pageResult.data.items,
+[7m   [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m613[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 'requestId' does not exist on type '{ ok: boolean; newPassword: string; }'.
+
+[7m613[0m           requestId: response.data.requestId || 'unknown',
+[7m   [0m [91m                                   ~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m667[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'page' does not exist on type 'AuditLogParams'.
+
+[7m667[0m           page: params?.page || 1,
+[7m   [0m [91m                        ~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m668[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'pageSize' does not exist on type 'AuditLogParams'.
+
+[7m668[0m           pageSize: params?.pageSize || 50,
+[7m   [0m [91m                            ~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m675[0m:[93m27[0m - [91merror[0m[90m TS2339: [0mProperty 'sortBy' does not exist on type 'AuditLogParams'.
+
+[7m675[0m           sortBy: params?.sortBy || 'timestamp',
+[7m   [0m [91m                          ~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m676[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'sortOrder' does not exist on type 'AuditLogParams'.
+
+[7m676[0m           sortOrder: params?.sortOrder || 'desc'
+[7m   [0m [91m                             ~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m727[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ category: string | undefined; }' is not assignable to type 'JsonValue | undefined'.
+  Type '{ category: string | undefined; }' is not assignable to type 'undefined'.
+
+[7m727[0m         additional: { category }
+[7m   [0m [91m        ~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m824[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ type: "full" | "incremental"; description: string | undefined; }' is not assignable to type 'JsonValue | undefined'.
+  Type '{ type: "full" | "incremental"; description: string | undefined; }' is not assignable to type 'undefined'.
+
+[7m824[0m         additional: { type, description }
+[7m   [0m [91m        ~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m949[0m:[93m10[0m - [91merror[0m[90m TS18048: [0m'result.data' is possibly 'undefined'.
+
+[7m949[0m   return result.data.items;
+[7m   [0m [91m         ~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m963[0m:[93m5[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'confirmPassword' does not exist in type 'CreateUserPayload'.
+
+[7m963[0m     confirmPassword: payload.password // 向后兼容
+[7m   [0m [91m    ~~~~~~~~~~~~~~~[0m
+
+[96msrc/services/adminApi.ts[0m:[93m981[0m:[93m51[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ id: number; role?: string | undefined; status?: string | undefined; }' is not assignable to parameter of type '{ id: number; role?: UserRole | undefined; status?: string | undefined; email?: string | undefined; }'.
+  Types of property 'role' are incompatible.
+    Type 'string | undefined' is not assignable to type 'UserRole | undefined'.
+      Type 'string' is not assignable to type 'UserRole | undefined'.
+
+[7m981[0m   const result = await AdminApiService.updateUser(payload);
+[7m   [0m [91m                                                  ~~~~~~~[0m
+
+[96msrc/services/agentsApi.ts[0m:[93m499[0m:[93m18[0m - [91merror[0m[90m TS18048: [0m'result.data' is possibly 'undefined'.
+
+[7m499[0m     totalAgents: result.data.totalAgents,
+[7m   [0m [91m                 ~~~~~~~~~~~[0m
+
+[96msrc/services/agentsApi.ts[0m:[93m500[0m:[93m19[0m - [91merror[0m[90m TS18048: [0m'result.data' is possibly 'undefined'.
+
+[7m500[0m     activeAgents: result.data.activeAgents
+[7m   [0m [91m                  ~~~~~~~~~~~[0m
+
+[96msrc/services/agentsApi.ts[0m:[93m551[0m:[93m10[0m - [91merror[0m[90m TS18048: [0m'result.data' is possibly 'undefined'.
+
+[7m551[0m   return result.data.agents;
+[7m   [0m [91m         ~~~~~~~~~~~[0m
+
+[96msrc/services/authApi.ts[0m:[93m248[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'warning' does not exist in type '{ requestId?: string | undefined; duration?: number | undefined; timestamp?: string | undefined; cached?: boolean | undefined; }'.
+
+[7m248[0m           warning: '服务器登出失败，但本地状态已清除'
+[7m   [0m [91m          ~~~~~~~[0m
+
+  [96msrc/services/types/api-response.ts[0m:[93m64[0m:[93m3[0m
+    [7m64[0m   metadata?: {
+    [7m  [0m [96m  ~~~~~~~~[0m
+    The expected type comes from property 'metadata' which is declared here on type 'ApiResult<void>'
+
+[96msrc/services/authApi.ts[0m:[93m395[0m:[93m15[0m - [91merror[0m[90m TS2322: [0mType '{ requiresReauth: true; code: "NETWORK_ERROR"; status?: number | undefined; statusText?: string | undefined; url?: string | undefined; timeout?: boolean | undefined; message: string; details?: JsonValue | undefined; timestamp: string; requestId?: string | undefined; stack?: string | undefined; } | ... 7 more ... | {...' is not assignable to type 'AuthenticationError'.
+  Type '{ requiresReauth: true; code: "NETWORK_ERROR"; status?: number; statusText?: string; url?: string; timeout?: boolean; message: string; details?: JsonValue; timestamp: string; requestId?: string; stack?: string; }' is not assignable to type 'AuthenticationError'.
+    Types of property 'code' are incompatible.
+      Type '"NETWORK_ERROR"' is not assignable to type '"AUTH_ERROR" | "TOKEN_EXPIRED" | "INVALID_TOKEN" | "UNAUTHORIZED"'.
+
+[7m395[0m         const authError: AuthenticationError = {
+[7m   [0m [91m              ~~~~~~~~~[0m
+
+[96msrc/services/sync/SyncManager.ts[0m:[93m658[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '{}' is not assignable to type 'number'.
+
+[7m658[0m     return remote.metadata?.version || 1;
+[7m   [0m [91m    ~~~~~~[0m
+
+[96msrc/services/types/api-common.ts[0m:[93m369[0m:[93m58[0m - [91merror[0m[90m TS2344: [0mType 'T' does not satisfy the constraint 'JsonValue'.
+  Type 'T' is not assignable to type '{ readonly [key: string]: JsonValue; }'.
+
+[7m369[0m export type ApiDataResponse<T> = Omit<ApiSuccessResponse<T>, 'data'> & {
+[7m   [0m [91m                                                         ~[0m
+
+  [96msrc/services/types/api-common.ts[0m:[93m369[0m:[93m29[0m
+    [7m369[0m export type ApiDataResponse<T> = Omit<ApiSuccessResponse<T>, 'data'> & {
+    [7m   [0m [96m                            ~[0m
+    This type parameter might need an `extends { readonly [key: string]: JsonValue; }` constraint.
+  [96msrc/services/types/api-common.ts[0m:[93m369[0m:[93m29[0m
+    [7m369[0m export type ApiDataResponse<T> = Omit<ApiSuccessResponse<T>, 'data'> & {
+    [7m   [0m [96m                            ~[0m
+    This type parameter might need an `extends JsonValue` constraint.
+
+[96msrc/services/types/api-common.ts[0m:[93m376[0m:[93m63[0m - [91merror[0m[90m TS2344: [0mType 'PaginatedResponse<T>' does not satisfy the constraint 'JsonValue'.
+  Type 'PaginatedResponse<T>' is not assignable to type '{ readonly [key: string]: JsonValue; }'.
+    Index signature for type 'string' is missing in type 'PaginatedResponse<T>'.
+
+[7m376[0m export type ApiPaginatedResponse<T> = Omit<ApiSuccessResponse<PaginatedResponse<T>>, 'data'> & {
+[7m   [0m [91m                                                              ~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/services/types/api-errors.ts[0m:[93m435[0m:[93m22[0m - [91merror[0m[90m TS2339: [0mProperty 'retryable' does not exist on type 'NetworkError | ServerError | TimeoutError'.
+  Property 'retryable' does not exist on type 'NetworkError'.
+
+[7m435[0m         return error.retryable ?? true;
+[7m   [0m [91m                     ~~~~~~~~~[0m
+
+[96msrc/services/types/api-errors.ts[0m:[93m447[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType 'boolean | undefined' is not assignable to type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+
+[7m447[0m     return (
+[7m   [0m [91m    ~~~~~~[0m
+
+
+Found 51 errors in 21 files.
+
+Errors  Files
+     1  src/components/admin/dashboard/useDashboardConversationAnalytics.ts[90m:123[0m
+     1  src/components/ui/Button.tsx[90m:178[0m
+     2  src/components/ui/Card.tsx[90m:41[0m
+     1  src/components/ui/Dropdown.tsx[90m:187[0m
+     1  src/components/ui/Input.tsx[90m:308[0m
+     1  src/components/ui/LazyComponent.tsx[90m:223[0m
+     1  src/components/ui/Modal.tsx[90m:451[0m
+     2  src/components/ui/Select.tsx[90m:172[0m
+     4  src/components/ui/Tabs.tsx[90m:214[0m
+     1  src/components/ui/Toast.tsx[90m:484[0m
+     6  src/components/ui/VirtualScroll.tsx[90m:188[0m
+     2  src/components/visualization/VisualizationDashboard.tsx[90m:315[0m
+     3  src/hooks/useAgentAutoFetch.ts[90m:2[0m
+     1  src/hooks/useChat.ts[90m:15[0m
+     1  src/lib/fastgpt.ts[90m:76[0m
+    13  src/services/adminApi.ts[90m:10[0m
+     3  src/services/agentsApi.ts[90m:499[0m
+     2  src/services/authApi.ts[90m:248[0m
+     1  src/services/sync/SyncManager.ts[90m:658[0m
+     2  src/services/types/api-common.ts[90m:369[0m
+     2  src/services/types/api-errors.ts[90m:435[0m

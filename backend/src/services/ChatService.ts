@@ -94,13 +94,12 @@ export class ChatService {
 
       return result;
 
-    } catch (error: any) {
-      logger.error('[ChatService] 消息处理失败', {
-        error: error instanceof Error ? error.message : String(error),
-        sessionId,
-        userId,
-        agentId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'processMessage',
       });
+      logger.error('[ChatService] 消息处理失败', error.toLogObject());
       throw error;
     }
   }
@@ -130,11 +129,12 @@ export class ChatService {
         }
       );
 
-    } catch (error: any) {
-      logger.error('[ChatService] 流式处理失败', {
-        error: error instanceof Error ? error.message : String(error),
-        sessionId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'processStreamMessage',
       });
+      logger.error('[ChatService] 流式处理失败', error.toLogObject());
       throw error;
     }
   }
@@ -147,11 +147,12 @@ export class ChatService {
       // 这里应该从数据库获取，暂时返回空数组
       logger.info('[ChatService] 获取会话历史', { sessionId, limit });
       return [];
-    } catch (error: any) {
-      logger.error('[ChatService] 获取历史失败', {
-        error: error instanceof Error ? error.message : String(error),
-        sessionId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'getSessionHistory',
       });
+      logger.error('[ChatService] 获取历史失败', error.toLogObject());
       throw error;
     }
   }
@@ -168,11 +169,12 @@ export class ChatService {
       logger.info('[ChatService] 搜索消息', { query, options });
       // 暂时返回空数组
       return [];
-    } catch (error: any) {
-      logger.error('[ChatService] 搜索失败', {
-        error: error instanceof Error ? error.message : String(error),
-        query
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'searchMessages',
       });
+      logger.error('[ChatService] 搜索失败', error.toLogObject());
       throw error;
     }
   }
@@ -184,11 +186,12 @@ export class ChatService {
     try {
       logger.info('[ChatService] 清除缓存', { sessionId });
       // 实际实现应该清除Redis缓存
-    } catch (error: any) {
-      logger.error('[ChatService] 清除缓存失败', {
-        error: error instanceof Error ? error.message : String(error),
-        sessionId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'clearCache',
       });
+      logger.error('[ChatService] 清除缓存失败', error.toLogObject());
       throw error;
     }
   }
@@ -213,11 +216,12 @@ export class ChatService {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
 
-    } catch (error: any) {
-      logger.error('[ChatService] 流式响应失败', {
-        error: error instanceof Error ? error.message : String(error),
-        sessionId
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'ChatService',
+        operation: 'streamResponse',
       });
+      logger.error('[ChatService] 流式响应失败', error.toLogObject());
       throw error;
     }
   }

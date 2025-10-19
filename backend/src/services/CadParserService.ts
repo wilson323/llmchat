@@ -81,9 +81,13 @@ export class CadParserService {
         layers: Array.from(layersSet),
         bounds,
       };
-    } catch (error: any) {
-      logger.error('[CadParserService] DXF 解析失败', { error });
-      throw new Error(`DXF 文件解析失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CadParserService',
+        operation: 'parseDxf',
+      });
+      logger.error('[CadParserService] DXF 解析失败', error.toLogObject());
+      throw new Error(`DXF 文件解析失败: ${error.message}`);
     }
   }
 

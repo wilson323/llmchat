@@ -174,8 +174,9 @@ export const useKeyboardManager = ({
 
           try {
             shortcut.action();
-          } catch (error) {
-            console.error('快捷键执行错误:', error);
+          } catch (unknownError: unknown) {
+            const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+            console.error('快捷键执行错误:', error.message);
           }
 
           break;

@@ -150,18 +150,14 @@ export class AgentController {
         ...(req.requestId ? { requestId: req.requestId } : {}),
         metadata: { extra: { total: agents.length } },
       });
-    } catch (error: any) {
-      logger.error('获取智能体列表失败', { error: error as Error });
-      const apiError: ApiError = {
-        code: 'GET_AGENTS_FAILED',
-        message: '获取智能体列表失败',
-        timestamp: new Date().toISOString(),
-      };
-
-      if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
-      }
-
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'getAgents',
+      });
+      logger.error('获取智能体列表失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
@@ -203,18 +199,14 @@ export class AgentController {
         message: '获取智能体信息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('获取智能体信息失败', { error: error as Error });
-      const apiError: ApiError = {
-        code: 'GET_AGENT_FAILED',
-        message: '获取智能体信息失败',
-        timestamp: new Date().toISOString(),
-      };
-
-      if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
-      }
-
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'getAgent',
+      });
+      logger.error('获取智能体信息失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
@@ -237,16 +229,18 @@ export class AgentController {
         message: '创建智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('创建智能体失败', { error: error as Error });
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        code: 'CREATE_AGENT_FAILED',
-        message: '创建智能体失败',
-        timestamp: new Date().toISOString(),
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'createAgent',
       });
+      logger.error('创建智能体失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -274,18 +268,14 @@ export class AgentController {
         message: '获取智能体状态成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('检查智能体状态失败', { error: error as Error });
-      const apiError: ApiError = {
-        code: 'GET_AGENT_STATUS_FAILED',
-        message: '检查智能体状态失败',
-        timestamp: new Date().toISOString(),
-      };
-
-      if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
-      }
-
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'getAgentStatus',
+      });
+      logger.error('检查智能体状态失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
@@ -306,21 +296,17 @@ export class AgentController {
         message: '智能体配置已重新加载',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('重新加载智能体配置失败', { error: error as Error });
-      const apiError: ApiError = {
-        code: 'RELOAD_AGENTS_FAILED',
-        message: '重新加载智能体配置失败',
-        timestamp: new Date().toISOString(),
-      };
-
-      if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
-      }
-
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'reloadAgents',
+      });
+      logger.error('重新加载智能体配置失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
@@ -355,17 +341,22 @@ export class AgentController {
         message: '验证智能体配置成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('验证智能体配置失败', { error: error as Error });
-
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'validateAgent',
+      });
+      logger.error('验证智能体配置失败', error.toLogObject());
+      
       const apiError: ApiError = {
         code: 'VALIDATE_AGENT_FAILED',
         message: '验证智能体配置失败',
         timestamp: new Date().toISOString(),
+        ...error.toApiError(),
       };
 
       if (process.env.NODE_ENV === 'development') {
-        apiError.details = { error: error instanceof Error ? error.message : String(error) } as JsonValue;
+        apiError.details = { error: error.message } as JsonValue;
       }
 
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
@@ -399,11 +390,15 @@ export class AgentController {
         message: '更新智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('更新智能体失败', { error: error as Error });
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'updateAgent',
+      });
+      logger.error('更新智能体失败', error.toLogObject());
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'UPDATE_AGENT_FAILED', message: '更新智能体失败', timestamp: new Date().toISOString() });
     }
   };
@@ -425,11 +420,15 @@ export class AgentController {
         message: '删除智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('删除智能体失败', { error: error as Error });
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'deleteAgent',
+      });
+      logger.error('删除智能体失败', error.toLogObject());
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'DELETE_AGENT_FAILED', message: '删除智能体失败', timestamp: new Date().toISOString() });
     }
   };
@@ -451,11 +450,15 @@ export class AgentController {
         message: '导入智能体成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('导入智能体失败', { error: error as Error });
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'importAgents',
+      });
+      logger.error('导入智能体失败', error.toLogObject());
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ code: 'IMPORT_AGENT_FAILED', message: '导入智能体失败', timestamp: new Date().toISOString() });
     }
   };
@@ -586,15 +589,20 @@ export class AgentController {
         message: '获取智能体信息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      if (handleAdminAuthError(error, res)) {
+    } catch (unknownError: unknown) {
+      if (handleAdminAuthError(unknownError, res)) {
         return;
       }
-      logger.error('获取智能体信息失败', { error: error as Error });
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentController',
+        operation: 'fetchAgentInfo',
+      });
+      logger.error('获取智能体信息失败', error.toLogObject());
       res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         code: 'FETCH_AGENT_INFO_FAILED',
-        message: error instanceof Error ? error.message : '获取智能体信息失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...error.toApiError(),
       });
     }
   };

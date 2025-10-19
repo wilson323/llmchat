@@ -460,10 +460,12 @@ export class AgentConfigService {
       this.agents = map;
       this.lastLoadTime = Date.now();
       return Array.from(map.values());
-    } catch (error: any) {
-      logger.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置', {
-        error,
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'loadAgentsFromFile',
       });
+      logger.warn('[AgentConfigService] 读取配置文件失败，使用内置示例配置', error.toLogObject());
       return this.loadDefaultAgentsInMemory();
     }
   }
@@ -700,8 +702,12 @@ export class AgentConfigService {
           }
         }
       }
-    } catch (error: any) {
-      logger.warn('从文件回填智能体失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'seedAgentsFromConfig',
+      });
+      logger.warn('从文件回填智能体失败', error.toLogObject());
     }
 
     if (!seededFromFile && this.agents.size === 0) {
@@ -750,8 +756,12 @@ export class AgentConfigService {
         JSON.stringify(config, null, 2),
         'utf-8',
       );
-    } catch (error: any) {
-      logger.warn('写入智能体快照失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'writeSnapshotToFile',
+      });
+      logger.warn('写入智能体快照失败', error.toLogObject());
     } finally {
       this.snapshotWriting = false;
     }
@@ -786,8 +796,12 @@ export class AgentConfigService {
 
       // 对于示例智能体使用静默模式，不记录环境变量警告
       fileConfigs = deepReplaceEnvVariables(fileConfigs, true);
-    } catch (error: any) {
-      logger.warn('[AgentConfigService] 读取配置文件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'compareConfigSnapshot',
+      });
+      logger.warn('[AgentConfigService] 读取配置文件失败', error.toLogObject());
       fileConfigs = [];
     }
 
@@ -922,10 +936,12 @@ export class AgentConfigService {
           this.agents.delete(config.id);
           deletedIds.push(config.id);
           logger.info(`[AgentConfigService] 已删除废弃配置: ${config.id}`);
-        } catch (error: any) {
-          logger.error(`[AgentConfigService] 删除废弃配置失败: ${config.id}`, {
-            error,
+        } catch (unknownError: unknown) {
+          const error = createErrorFromUnknown(unknownError, {
+            component: 'AgentConfigService',
+            operation: 'cleanupObsoleteConfigs',
           });
+          logger.error(`[AgentConfigService] 删除废弃配置失败: ${config.id}`, error.toLogObject());
         }
       }
 
@@ -938,8 +954,12 @@ export class AgentConfigService {
         deletedCount: deletedIds.length,
         deletedIds,
       };
-    } catch (error: any) {
-      logger.error('[AgentConfigService] 清理废弃配置失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'cleanupObsoleteConfigs',
+      });
+      logger.error('[AgentConfigService] 清理废弃配置失败', error.toLogObject());
       return {
         deletedCount: 0,
         deletedIds: [],
@@ -970,8 +990,12 @@ export class AgentConfigService {
       await this.writeSnapshotToFile();
 
       logger.info('[AgentConfigService] 每日清理任务完成');
-    } catch (error: any) {
-      logger.error('[AgentConfigService] 每日清理任务失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'AgentConfigService',
+        operation: 'dailyCleanupTask',
+      });
+      logger.error('[AgentConfigService] 每日清理任务失败', error.toLogObject());
     }
   }
 

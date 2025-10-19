@@ -353,9 +353,9 @@ export class ApiResponseHandler {
   static safeJsonStringify(data: JsonValue): string {
     try {
       return JSON.stringify(data, null, 2);
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
       // 记录序列化错误
-      createErrorFromUnknown(error, {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'ApiResponseHandler',
         operation: 'safeJsonStringify',
         context: { dataType: typeof data },

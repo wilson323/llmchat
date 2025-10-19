@@ -18,6 +18,7 @@ import type {
 import { getErrorMessage } from '@/utils/helpers';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import { SessionEventService } from './SessionEventService';
+import { createErrorFromUnknown } from '@/types/errors';
 
 interface RequestDescriptor {
   method: 'get' | 'post' | 'delete';
@@ -194,7 +195,11 @@ export class FastGPTSessionService {
           params: options.params ?? {},
           headers,
         });
-      } catch (error) {
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'FastGPTSessionService',
+          operation: 'requestWithFallback',
+        });
         lastError = error;
         // 若 404，尝试 /v1 回退
         const status = (error as any)?.response?.status;
@@ -637,9 +642,13 @@ export class FastGPTSessionService {
         hasNext: (params?.page ?? 1) * (params?.pageSize ?? 10) < (rawData?.total || sessions.length),
         hasPrev: (params?.page ?? 1) > 1,
       };
-    } catch (error) {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'FastGPTSessionService',
+        operation: 'listHistoriesAdvanced',
+      });
       // 如果增强API不可用，回退到基础API并应用本地处理
-      logger.warn('增强版会话API不可用，使用基础API + 本地处理', { error });
+      logger.warn('增强版会话API不可用，使用基础API + 本地处理', { error: error.toLogObject() });
       const allSessions = await this.listHistories(agentId, { page: 1, pageSize: 1000 });
       return this.applyLocalFilteringAndPagination(allSessions, params);
     }
@@ -804,11 +813,15 @@ export class FastGPTSessionService {
         }
 
         results.success++;
-      } catch (error) {
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'FastGPTSessionService',
+          operation: 'batchOperation',
+        });
         results.failed++;
-        const errorMsg = `会话 ${sessionId} 操作失败: ${getErrorMessage(error)}`;
+        const errorMsg = `会话 ${sessionId} 操作失败: ${error.message}`;
         results.errors.push(errorMsg);
-        logger.error(errorMsg);
+        logger.error(errorMsg, error.toLogObject());
       }
     }
 
@@ -930,8 +943,12 @@ export class FastGPTSessionService {
           // 这里需要获取会话详情，但需要知道agentId
           // 暂时跳过，实际实现时需要传入agentId
           logger.debug('获取会话的详细消息', { chatId: session.chatId });
-        } catch (error) {
-          logger.warn('获取会话消息失败', { chatId: session.chatId, error });
+        } catch (unknownError: unknown) {
+          const error = createErrorFromUnknown(unknownError, {
+            component: 'FastGPTSessionService',
+            operation: 'exportToJson',
+          });
+          logger.warn('获取会话消息失败', { chatId: session.chatId, error: error.toLogObject() });
         }
       }
 
@@ -1025,8 +1042,12 @@ export class FastGPTSessionService {
         metadata,
         context,
       );
-    } catch (error) {
-      logger.error('记录会话事件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'FastGPTSessionService',
+        operation: 'recordEvent',
+      });
+      logger.error('记录会话事件失败', { error: error.toLogObject() });
       // 事件记录失败不应该影响主要功能
     }
   }
@@ -1040,8 +1061,12 @@ export class FastGPTSessionService {
   ): Promise<PaginatedResponse<SessionEvent>> {
     try {
       return await this.eventService.queryEvents(agentId, params);
-    } catch (error) {
-      logger.error('查询会话事件失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'FastGPTSessionService',
+        operation: 'queryEvents',
+      });
+      logger.error('查询会话事件失败', { error: error.toLogObject() });
       // 返回空结果而不是抛出错误
       return {
         data: [],

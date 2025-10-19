@@ -73,48 +73,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// 错误边界组件
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // eslint-disable-next-line no-console
-    console.error('错误边界捕获:', error, errorInfo);
-  }
-
-  override render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-          <div className="text-center space-y-4 p-8">
-            <h1 className="text-2xl font-bold text-destructive">页面加载失败</h1>
-            <p className="text-muted-foreground">
-              {this.state.error?.message ?? '未知错误'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            >
-              重新加载
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // 登录页面包装组件，处理登录成功后的跳转
 function LoginPageWrapper() {

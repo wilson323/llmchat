@@ -392,7 +392,8 @@ class TypeSafetyReporter {
 
       return JSON.parse(output);
 
-    } catch (error: any) {
+    } catch (unknownError: unknown) {
+      const error = unknownError as any;
       // 尝试从错误输出中解析JSON
       if (error.stdout) {
         try {

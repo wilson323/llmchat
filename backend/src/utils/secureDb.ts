@@ -10,6 +10,7 @@ import { Pool } from 'pg';
 import type { EncryptedData } from './secureCredentials';
 import { SecureCredentialsManager } from './secureCredentials';
 import logger from './logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface SecurePgConfig {
   database?: {
@@ -94,8 +95,12 @@ function decryptPasswordIfNeeded(password: string | EncryptedData, isEncrypted?:
   if (isEncrypted && typeof password === 'object' && SecureCredentialsManager.validateEncryptedData(password)) {
     try {
       return SecureCredentialsManager.decryptDatabasePassword(password);
-    } catch (error: any) {
-      logger.error('[secureDb] Failed to decrypt database password', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'secureDb',
+        operation: 'decryptPasswordIfNeeded',
+      });
+      logger.error('[secureDb] Failed to decrypt database password', { error: error.toLogObject() });
       throw new Error('Failed to decrypt database password');
     }
   }
@@ -209,8 +214,12 @@ export function validateSecureConfig(config: SecurePgConfig): boolean {
     }
 
     return true;
-  } catch (error: any) {
-    logger.error('[secureDb] Configuration validation failed', { error });
+  } catch (unknownError: unknown) {
+    const error = createErrorFromUnknown(unknownError, {
+      component: 'secureDb',
+      operation: 'validateSecureConfig',
+    });
+    logger.error('[secureDb] Configuration validation failed', { error: error.toLogObject() });
     return false;
   }
 }

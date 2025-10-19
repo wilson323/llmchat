@@ -53,7 +53,8 @@ async function quickTest() {
       process.exit(1);
     }
     
-  } catch (error: any) {
+  } catch (unknownError: unknown) {
+    const error = unknownError as any;
     console.error('\n❌ 测试失败:', error.message);
     console.error('   请确保后端服务已启动: pnpm run backend:dev');
     process.exit(1);

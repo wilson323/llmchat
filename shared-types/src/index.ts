@@ -34,7 +34,6 @@ export {
   SessionConverter,
   UserConverter,
   UniversalConverter,
-  TypeSafeConverter,
   Validator,
   ValidationResult,
   ValidationError,
@@ -197,6 +196,36 @@ export interface ExternalServiceResponse {
 }
 
 // ============================================================================
+// 查询参数类型
+// ============================================================================
+
+/**
+ * 基础查询参数接口
+ */
+export interface QueryParams {
+  /** 页码 */
+  page?: number;
+  /** 每页大小 */
+  pageSize?: number;
+  /** 排序字段 */
+  sortBy?: string;
+  /** 排序顺序 */
+  sortOrder?: 'asc' | 'desc';
+  /** 搜索关键词 */
+  search?: string;
+  /** 过滤条件 */
+  filters?: Record<string, unknown>;
+}
+
+/**
+ * 分页参数接口
+ */
+export interface PaginationParams extends QueryParams {
+  page: number;
+  pageSize: number;
+}
+
+// ============================================================================
 // FastGPT特定动态类型
 // ============================================================================
 
@@ -331,46 +360,6 @@ export interface FastGPTEvent {
   payload?: JsonValue;
   timestamp: string;
   raw?: JsonValue;
-}
-
-// ============================================================================
-// 查询参数类型
-// ============================================================================
-
-/**
- * 分页查询参数
- */
-export interface PaginationParams {
-  page?: number;
-  pageSize?: number;
-  offset?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
-
-/**
- * 时间范围查询参数
- */
-export interface DateRangeParams {
-  startDate?: string; // ISO 8601格式
-  endDate?: string;   // ISO 8601格式
-}
-
-/**
- * 搜索过滤参数
- */
-export interface SearchFilterParams {
-  search?: string;
-  filters?: JsonObject;
-  tags?: string[];
-}
-
-/**
- * 组合查询参数
- */
-export interface QueryParams extends PaginationParams, DateRangeParams, SearchFilterParams {
-  [key: string]: UnknownValue;
 }
 
 // ============================================================================

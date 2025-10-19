@@ -186,7 +186,7 @@ function VirtualScrollImpl(
   // 合并refs
   const mergedRef = useCallback((element: HTMLDivElement | null) => {
     localContainerRef.current = element;
-    virtualContainerRef.current = element;
+    // virtualContainerRef 来自 useVirtualScroll hook，不应该直接赋值
     if (typeof ref === 'function') {
       ref(element);
     } else if (ref) {
@@ -226,14 +226,17 @@ function VirtualScrollImpl(
   }, [onScroll, onEndReached, hasMore, loading, endReachedThreshold, handleVirtualScroll]);
 
   // 暴露给父组件的方法
-  React.useImperativeHandle(ref, () => ({
-    element: localContainerRef.current,
-    scrollToIndex: scrollToIndexInternal,
-    scrollToOffset: scrollToOffsetInternal,
-    getScrollTop: () => localContainerRef.current?.scrollTop || 0,
-    getScrollHeight: () => localContainerRef.current?.scrollHeight || 0,
-    getClientHeight: () => localContainerRef.current?.clientHeight || 0
-  }), [scrollToIndexInternal, scrollToOffsetInternal]);
+  React.useImperativeHandle(ref, () => {
+    const element = localContainerRef.current;
+    return {
+      element,
+      scrollToIndex: scrollToIndexInternal,
+      scrollToOffset: scrollToOffsetInternal,
+      getScrollTop: () => element?.scrollTop || 0,
+      getScrollHeight: () => element?.scrollHeight || 0,
+      getClientHeight: () => element?.clientHeight || 0
+    } as VirtualScrollRef;
+  }, [scrollToIndexInternal, scrollToOffsetInternal]);
 
   // 清理timeout
   useEffect(() => {
@@ -314,7 +317,7 @@ function VirtualScrollImpl(
             justifyContent: 'center'
           }}
         >
-          {emptyComponent}
+          {typeof emptyComponent === 'function' ? emptyComponent() : emptyComponent}
         </div>
       )}
 
@@ -332,7 +335,7 @@ function VirtualScrollImpl(
             padding: '1rem'
           }}
         >
-          {loadingComponent}
+          {typeof loadingComponent === 'function' ? loadingComponent() : loadingComponent}
         </div>
       )}
     </div>

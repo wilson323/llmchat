@@ -63,15 +63,19 @@ export class DifySessionController {
         message: '获取 Dify 会话列表成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('获取 Dify 会话列表失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'getConversations',
       });
+      logger.error('获取 Dify 会话列表失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取会话列表失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }
@@ -138,15 +142,19 @@ export class DifySessionController {
         message: '获取 Dify 会话消息成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('获取 Dify 会话消息失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'getMessages',
       });
+      logger.error('获取 Dify 会话消息失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取会话消息失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }
@@ -208,15 +216,19 @@ export class DifySessionController {
         message: '获取 Dify 消息详情成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('获取 Dify 消息详情失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'getMessageDetail',
       });
+      logger.error('获取 Dify 消息详情失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取消息详情失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }
@@ -278,15 +290,19 @@ export class DifySessionController {
         message: '会话删除成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('删除 Dify 会话失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'deleteConversation',
       });
+      logger.error('删除 Dify 会话失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '删除会话失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }
@@ -351,15 +367,19 @@ export class DifySessionController {
         message: '反馈提交成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('提交 Dify 消息反馈失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'submitFeedback',
       });
+      logger.error('提交 Dify 消息反馈失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '提交反馈失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }
@@ -421,15 +441,19 @@ export class DifySessionController {
         message: '获取建议问题成功',
         ...(req.requestId ? { requestId: req.requestId } : {}),
       });
-    } catch (error: any) {
-      logger.error('获取 Dify 建议问题失败', {
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'DifySessionController',
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'getSuggestedQuestions',
       });
+      logger.error('获取 Dify 建议问题失败', error.toLogObject());
+      
+      const apiError = error.toApiError();
       res.status(500).json({
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取建议问题失败',
+        message: error.message,
         timestamp: new Date().toISOString(),
+        ...apiError,
       });
     }
   }

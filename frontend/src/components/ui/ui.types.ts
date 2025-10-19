@@ -288,7 +288,7 @@ export interface BaseInputProps extends UIComponentProps {
 
 /** Input组件Props - 继承HTMLInputElement属性但排除冲突项 */
 export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'state' | 'onChange'> & 
-  BaseInputProps & {
+  Omit<BaseInputProps, 'onChange'> & {
     /** 变化事件处理器 - 支持简化签名和标准事件 */
     onChange?: ((value: string) => void) | React.ChangeEventHandler<HTMLInputElement>;
   };
@@ -371,7 +371,7 @@ export interface BaseTabsProps extends UIComponentProps {
 }
 
 /** Tabs组件Props */
-export type TabsProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'orientation'> & BaseTabsProps;
+export type TabsProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'children'> & BaseTabsProps;
 
 /** TabsList组件Props */
 export interface TabsListProps extends UIComponentProps {
@@ -475,14 +475,18 @@ export interface BaseSelectProps extends UIComponentProps {
 }
 
 /** Select组件Props */
-export type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'variant'> & BaseSelectProps;
+export type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size' | 'variant' | 'onChange'> & 
+  BaseSelectProps & {
+    /** 值变化回调 */
+    onValueChange?: (value: string) => void;
+    /** 是否只读 */
+    readonly?: boolean;
+  };
 
 /** Select Trigger组件Props */
 export interface SelectTriggerProps extends BaseComponentProps {
   /** 只读 */
   readonly?: boolean;
-  /** 点击事件 */
-  onClick?: ClickEventHandler;
 }
 
 /** Select Value组件Props */
@@ -685,9 +689,9 @@ export interface VirtualScrollOptions {
   /** 估算项目高度 */
   estimatedItemHeight?: number;
   /** 空状态组件 */
-  emptyComponent?: React.ComponentType;
+  emptyComponent?: React.ReactNode;
   /** 加载组件 */
-  loadingComponent?: React.ComponentType;
+  loadingComponent?: React.ReactNode;
   /** 是否正在加载 */
   loading?: boolean;
   /** 是否有更多数据 */
@@ -706,6 +710,10 @@ export interface VirtualScrollProps {
   height?: number;
   /** 渲染项目函数 */
   renderItem: (item: any, index: number, style?: React.CSSProperties) => React.ReactNode;
+  /** 自定义样式 */
+  className?: string;
+  /** 行内样式 */
+  style?: React.CSSProperties;
   /** 滚动回调 */
   onScroll?: (scrollInfo: { scrollTop: number; scrollHeight: number; clientHeight: number }) => void;
   /** 到达底部回调 */
@@ -717,9 +725,9 @@ export interface VirtualScrollProps {
   /** 估算项目高度 */
   estimatedItemHeight?: number;
   /** 空状态组件 */
-  emptyComponent?: React.ComponentType;
+  emptyComponent?: React.ReactNode | (() => React.ReactNode);
   /** 加载组件 */
-  loadingComponent?: React.ComponentType;
+  loadingComponent?: React.ReactNode | (() => React.ReactNode);
   /** 是否正在加载 */
   loading?: boolean;
   /** 是否有更多数据 */

@@ -4,6 +4,7 @@
  */
 
 import logger from './logger';
+import { createErrorFromUnknown } from '../errors/errorUtils';
 
 export interface QualityIssue {
   type: 'error' | 'warning' | 'info';
@@ -76,9 +77,13 @@ export class CodeQualityChecker {
       });
 
       return report;
-    } catch (error) {
-      logger.error('Code quality check failed', { error });
-      return this.createErrorReport(error as Error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'CodeQualityChecker',
+        operation: 'runBasicCheck',
+      });
+      logger.error('Code quality check failed', { error: error.toLogObject() });
+      return this.createErrorReport(error);
     }
   }
 

@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { fetchAgentInfo as fetchAgentInfoApi, type FetchAgentInfoParams, type AgentInfo } from '@/services/agentsApi';
+// 修复导入错误，使用正确的类型
+import { fetchAgentInfo as fetchAgentInfoApi, type AgentInfo } from '@/services/agentsApi';
+
+// 定义FetchAgentInfoParams类型
+interface FetchAgentInfoParams {
+  provider: 'fastgpt' | 'dify';
+  endpoint: string;
+  apiKey: string;
+  appId?: string;
+}
 
 export function useAgentAutoFetch() {
   const [loading, setLoading] = useState(false);
@@ -12,7 +21,8 @@ export function useAgentAutoFetch() {
     try {
       const response = await fetchAgentInfoApi(params);
 
-      if (response.data) {
+      // 修复属性访问错误
+      if ('data' in response && response.data) {
         return response.data;
       }
 

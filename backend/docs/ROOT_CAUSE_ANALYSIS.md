@@ -147,8 +147,12 @@ req: Request, res: Response, next: NextFunction
 3. **泛型回调**:
 ```typescript
 // ❌ 错误处理器
-catch (error: any) {
-  logger.error('操作失败', { error });
+catch (unknownError: unknown) {
+  const error = createErrorFromUnknown(unknownError, {
+    component: 'example',
+    operation: 'exampleOperation',
+  });
+  logger.error('操作失败', error.toLogObject());
 }
 
 // ✅ 正确做法

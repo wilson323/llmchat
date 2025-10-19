@@ -20,11 +20,19 @@ export class AppConfig {
     const port = process.env.REDIS_PORT;
 
     if (!host) {
-      throw new Error('REDIS_HOST 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'REDIS_HOST 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_REDIS_HOST',
+        component: 'AppConfig',
+      });
     }
 
     if (!port) {
-      throw new Error('REDIS_PORT 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'REDIS_PORT 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_REDIS_PORT',
+        component: 'AppConfig',
+      });
     }
 
     return {
@@ -50,23 +58,43 @@ export class AppConfig {
     const database = process.env.DB_NAME;
 
     if (!host) {
-      throw new Error('DB_HOST 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'DB_HOST 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_DB_HOST',
+        component: 'AppConfig',
+      });
     }
 
     if (!port) {
-      throw new Error('DB_PORT 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'DB_PORT 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_DB_PORT',
+        component: 'AppConfig',
+      });
     }
 
     if (!user) {
-      throw new Error('DB_USER 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'DB_USER 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_DB_USER',
+        component: 'AppConfig',
+      });
     }
 
     if (!password) {
-      throw new Error('DB_PASSWORD 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'DB_PASSWORD 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_DB_PASSWORD',
+        component: 'AppConfig',
+      });
     }
 
     if (!database) {
-      throw new Error('DB_NAME 未配置，请检查根目录 .env 文件');
+      throw new SystemError({
+        message: 'DB_NAME 未配置，请检查根目录 .env 文件',
+        code: 'MISSING_DB_NAME',
+        component: 'AppConfig',
+      });
     }
 
     return {
@@ -109,7 +137,11 @@ export class AppConfig {
     if (missing.length > 0) {
       const error = `缺少必需的环境变量: ${missing.join(', ')}\n请检查根目录的 .env 文件`;
       logger.error('配置验证失败', { missing });
-      throw new Error(error);
+      throw new SystemError({
+        message: error,
+        code: 'CONFIG_VALIDATION_FAILED',
+        component: 'AppConfig',
+      });
     }
 
     // 记录配置信息（不记录敏感信息）

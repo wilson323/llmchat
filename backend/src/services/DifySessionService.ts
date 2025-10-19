@@ -2,6 +2,7 @@ import type { AxiosInstance } from 'axios';
 import axios from 'axios';
 import type { AgentConfig } from '@/types';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 /**
  * Dify 会话接口
@@ -174,16 +175,19 @@ export class DifySessionService {
         has_more: response.data.has_more || false,
         limit: response.data.limit ?? 20,
       };
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'getConversations',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 会话列表查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
-      throw new Error(`获取会话列表失败: ${errMsg}`);
+      throw new Error(`获取会话列表失败: ${error.message}`);
     }
   }
 
@@ -224,17 +228,20 @@ export class DifySessionService {
         has_more: response.data.has_more || false,
         limit: response.data.limit ?? 20,
       };
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'getConversationMessages',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 会话消息查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
         conversationId: params.conversation_id,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
-      throw new Error(`获取会话消息失败: ${errMsg}`);
+      throw new Error(`获取会话消息失败: ${error.message}`);
     }
   }
 
@@ -269,17 +276,20 @@ export class DifySessionService {
       });
 
       return response.data;
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'getMessageDetail',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 消息详情查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
         messageId,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
-      throw new Error(`获取消息详情失败: ${errMsg}`);
+      throw new Error(`获取消息详情失败: ${error.message}`);
     }
   }
 
@@ -311,17 +321,20 @@ export class DifySessionService {
         agentId: agent.id,
         conversationId,
       });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'deleteConversation',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 会话删除失败', {
         component: 'DifySessionService',
         agentId: agent.id,
         conversationId,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
-      throw new Error(`删除会话失败: ${errMsg}`);
+      throw new Error(`删除会话失败: ${error.message}`);
     }
   }
 
@@ -359,17 +372,20 @@ export class DifySessionService {
       });
 
       return response.data;
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'submitFeedback',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 消息反馈提交失败', {
         component: 'DifySessionService',
         agentId: agent.id,
         messageId: params.message_id,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
-      throw new Error(`提交反馈失败: ${errMsg}`);
+      throw new Error(`提交反馈失败: ${error.message}`);
     }
   }
 
@@ -405,14 +421,17 @@ export class DifySessionService {
       });
 
       return response.data.data ?? [];
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'getSuggestedQuestions',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.error('Dify 建议问题查询失败', {
         component: 'DifySessionService',
         agentId: agent.id,
         messageId,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
       // 建议问题失败不抛错，返回空数组
@@ -455,14 +474,17 @@ export class DifySessionService {
         conversationId,
         newName: name,
       });
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DifySessionService',
+        operation: 'renameConversation',
+      });
       const errStatus = (error as {response?: {status?: number}})?.response?.status;
       logger.warn('Dify 会话重命名失败（API 可能不支持）', {
         component: 'DifySessionService',
         agentId: agent.id,
         conversationId,
-        error: errMsg,
+        error: error.toLogObject(),
         status: errStatus,
       });
       // 不抛错，因为 Dify API 可能不支持此功能

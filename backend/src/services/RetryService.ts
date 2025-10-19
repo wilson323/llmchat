@@ -4,6 +4,7 @@
  */
 
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface RetryConfig {
   maxRetries: number;                    // 最大重试次数
@@ -137,8 +138,12 @@ export class RequestDeduplicator {
       metrics.totalDuration = Date.now() - startTime;
       this.requestMetrics.set(key, metrics);
       return result;
-    } catch (error: any) {
-      metrics.error = error as Error;
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'RequestDeduplicator',
+        operation: 'executeWithMetrics',
+      });
+      metrics.error = error;
       metrics.totalDuration = Date.now() - startTime;
       this.requestMetrics.set(key, metrics);
       throw error;
@@ -286,8 +291,12 @@ export class RetryService {
           totalDelay,
           fallbackUsed: false,
         };
-      } catch (error: any) {
-        lastError = error as Error;
+      } catch (unknownError: unknown) {
+        const error = createErrorFromUnknown(unknownError, {
+          component: 'RetryService',
+          operation: 'executeWithRetry',
+        });
+        lastError = error;
 
         // 检查是否应该重试
         if (attempt === this.retryConfig.maxRetries || !this.shouldRetry(lastError)) {

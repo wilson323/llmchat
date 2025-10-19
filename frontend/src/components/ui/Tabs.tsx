@@ -80,7 +80,7 @@ const tabsTriggerVariants = cva(
 );
 
 // Tabs组件Props - 使用类型别名避免循环引用
-export type TabsProps = Omit<ITabsProps, 'orientation'> & Omit<VariantProps<typeof tabsVariants>, 'orientation'> & {
+export type TabsProps = ITabsProps & VariantProps<typeof tabsVariants> & {
   /** 标签变化回调 */
   onValueChange?: (value: string) => void;
   /** 是否激活动画 */
@@ -92,7 +92,7 @@ export type TabsListProps = ITabsListProps & VariantProps<typeof tabsListVariant
   loop?: boolean;
 };
 
-export type TabsTriggerProps = Omit<ITabsTriggerProps, 'onClick'> & VariantProps<typeof tabsTriggerVariants> & {
+export type TabsTriggerProps = ITabsTriggerProps & VariantProps<typeof tabsTriggerVariants> & {
   /** 加载状态 */
   loading?: boolean;
   /** 前缀图标 */

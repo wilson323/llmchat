@@ -354,7 +354,7 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputComponentProps>(
 InputImpl.displayName = 'Input';
 
 // 创建Input组件类型
-export type InputComponent = ForwardRefComponent<HTMLInputElement, InputProps>;
+export type InputComponent = ForwardRefComponent<HTMLInputElement, IInputProps>;
 
 // 导出Input组件
 export const Input = InputImpl as InputComponent;

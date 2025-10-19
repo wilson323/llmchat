@@ -170,8 +170,9 @@ class Analytics {
     const startTime = performance.now();
     try {
       sessionStorage.setItem(`timing_${eventName}`, startTime.toString());
-    } catch (error) {
-      console.warn('无法写入sessionStorage:', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.warn('无法写入sessionStorage:', error.message);
     }
   }
 
@@ -186,8 +187,9 @@ class Analytics {
     let startTimeStr: string | null = null;
     try {
       startTimeStr = sessionStorage.getItem(`timing_${eventName}`);
-    } catch (error) {
-      console.warn('无法读取sessionStorage:', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.warn('无法读取sessionStorage:', error.message);
       return;
     }
 
@@ -205,8 +207,9 @@ class Analytics {
 
     try {
       sessionStorage.removeItem(`timing_${eventName}`);
-    } catch (error) {
-      console.warn('无法删除sessionStorage项:', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.warn('无法删除sessionStorage项:', error.message);
     }
 
     this.trackEvent(eventName, {
@@ -241,9 +244,9 @@ class Analytics {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-      }).catch((error: Error | unknown) => {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error('发送分析事件失败:', errorMsg);
+      }).catch((unknownError: unknown) => {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        console.error('发送分析事件失败:', error.message);
       });
     }
   }
@@ -256,16 +259,18 @@ class Analytics {
 
     try {
       sessionId = sessionStorage.getItem('analytics_session_id');
-    } catch (error) {
-      console.warn('无法读取sessionStorage中的会话ID:', error);
+    } catch (unknownError: unknown) {
+      const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+      console.warn('无法读取sessionStorage中的会话ID:', error.message);
     }
 
     if (!sessionId) {
       sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
       try {
         sessionStorage.setItem('analytics_session_id', sessionId);
-      } catch (error) {
-        console.warn('无法写入sessionStorage中的会话ID:', error);
+      } catch (unknownError: unknown) {
+        const error = unknownError instanceof Error ? unknownError : new Error(String(unknownError));
+        console.warn('无法写入sessionStorage中的会话ID:', error.message);
       }
     }
 

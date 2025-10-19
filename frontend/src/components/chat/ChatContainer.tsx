@@ -160,6 +160,7 @@ export const ChatContainer: React.FC = () => {
       }
 
       if (messages.length === 0 && currentAgent.provider === 'fastgpt') {
+        const initChat = async () => {
           try {
             const response = await chatService.init(currentAgent.id);
             const chatId = response.chatId;
@@ -179,6 +180,9 @@ export const ChatContainer: React.FC = () => {
           } catch (error) {
             console.error(t('获取开场白失败'), error);
           }
+        };
+
+        initChat();
       }
   }, [currentAgent, currentSession, messages.length, bindSessionId, t]);
   // 性能监控已移除 - 过度工程化

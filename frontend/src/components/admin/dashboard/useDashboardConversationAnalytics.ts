@@ -7,7 +7,14 @@ import { useI18n } from '@/i18n';
 import { toast } from '@/components/ui/Toast';
 import { getConversationSeries, getAgentComparison } from '@/services/analyticsApi';
 import { listAgents } from '@/services/agentsApi';
-import type { ConversationAnalyticsFilters, DashboardConversationAnalytics, ConversationSeriesDataset, AgentComparisonDataset, AgentItem } from '@/types';
+import type {
+  ConversationAnalyticsFilters,
+  DashboardConversationAnalytics,
+  ConversationSeriesDataset,
+  AgentComparisonDataset,
+} from '@/types';
+// 从agentsApi导入AgentItem类型而不是从types导入
+import type { AgentItem } from '@/services/agentsApi';
 
 // 工具函数
 const formatDateInputValue = (date: Date): string => {

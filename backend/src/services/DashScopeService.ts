@@ -136,8 +136,12 @@ export class DashScopeService {
       });
 
       return response.data;
-    } catch (error: any) {
-      logger.error('[DashScopeService] 请求失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DashScopeService',
+        operation: 'chatCompletion',
+      });
+      logger.error('[DashScopeService] 请求失败', error.toLogObject());
       throw this.handleError(error);
     }
   }
@@ -208,8 +212,12 @@ export class DashScopeService {
           }
         }
       }
-    } catch (error: any) {
-      logger.error('[DashScopeService] 流式请求失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DashScopeService',
+        operation: 'chatCompletionStream',
+      });
+      logger.error('[DashScopeService] 流式请求失败', error.toLogObject());
       throw this.handleError(error);
     }
   }
@@ -266,8 +274,12 @@ export class DashScopeService {
 
       await this.chatCompletion(testMessages, { maxTokens: 10 });
       return true;
-    } catch (error: any) {
-      logger.error('[DashScopeService] 健康检查失败', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'DashScopeService',
+        operation: 'healthCheck',
+      });
+      logger.error('[DashScopeService] 健康检查失败', error.toLogObject());
       return false;
     }
   }

@@ -8,6 +8,7 @@ import logger from '@/utils/logger';
 import type { QueueJob, QueueOptions} from '@/types/queue';
 import { JobStatus, BackoffStrategy } from '@/types/queue';
 import type RedisConnectionPool from '@/utils/redisConnectionPool';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface BatchOperation {
   type: 'add' | 'remove' | 'retry' | 'update';
@@ -91,11 +92,15 @@ export class BatchOperationService {
         // 逐个添加
         await this.batchAddSequential(queueName, operations, successful, failed);
       }
-    } catch (error) {
-      logger.error(`BatchOperationService: Error in batch add jobs for queue ${queueName}:`, error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'BatchOperationService',
+        operation: 'batchAddJobs',
+      });
+      logger.error(`BatchOperationService: Error in batch add jobs for queue ${queueName}:`, error.toLogObject());
       failed.push({
         index: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.message,
         data: operations
       });
     }
@@ -193,10 +198,14 @@ export class BatchOperationService {
             }
 
             successful.push({ id: jobId, index: globalIndex });
-          } catch (error: any) {
+          } catch (unknownError: unknown) {
+            const error = createErrorFromUnknown(unknownError, {
+              component: 'BatchOperationService',
+              operation: 'batchAddJobs',
+            });
             failed.push({
               index: globalIndex,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error.message,
               data: operation
             });
           }
@@ -290,11 +299,15 @@ export class BatchOperationService {
       } finally {
         this.connectionPool.release(redis);
       }
-    } catch (error: any) {
-      logger.error(`BatchOperationService: Error in batch remove jobs for queue ${queueName}:`, error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'BatchOperationService',
+        operation: 'batchRemoveJobs',
+      });
+      logger.error(`BatchOperationService: Error in batch remove jobs for queue ${queueName}:`, error.toLogObject());
       failed.push({
         index: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.message,
         data: jobIds
       });
     }
@@ -370,10 +383,14 @@ export class BatchOperationService {
                   newPipeline.hset(`${queueName}:jobs`, currentJobId, JSON.stringify(job));
                   await newPipeline.exec();
 
-                } catch (parseError) {
+                } catch (unknownParseError: unknown) {
+                  const parseError = createErrorFromUnknown(unknownParseError, {
+                    component: 'BatchOperationService',
+                    operation: 'batchRetryJobs',
+                  });
                   failed.push({
                     index: globalIndex,
-                    error: `Parse error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+                    error: `Parse error: ${parseError.message}`,
                     data: { jobId: jobIds[globalIndex] || 'unknown' }
                   });
                 }
@@ -390,11 +407,15 @@ export class BatchOperationService {
       } finally {
         this.connectionPool.release(redis);
       }
-    } catch (error: any) {
-      logger.error(`BatchOperationService: Error in batch retry jobs for queue ${queueName}:`, error);
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'BatchOperationService',
+        operation: 'batchRetryJobs',
+      });
+      logger.error(`BatchOperationService: Error in batch retry jobs for queue ${queueName}:`, error.toLogObject());
       failed.push({
         index: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error.message,
         data: jobIds
       });
     }

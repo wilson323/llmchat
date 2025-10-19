@@ -81,13 +81,13 @@ export function authenticateJWT() {
       });
 
       next();
-    } catch (error: any) {
-      if (error instanceof jwt.TokenExpiredError) {
+    } catch (unknownError: unknown) {
+      if (unknownError instanceof jwt.TokenExpiredError) {
         safeLogger.warn('JWT token 已过期', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
-          expiredAt: error.expiredAt,
+          expiredAt: unknownError.expiredAt,
         });
 
         res.status(401).json({
@@ -98,12 +98,12 @@ export function authenticateJWT() {
         return;
       }
 
-      if (error instanceof jwt.JsonWebTokenError) {
+      if (unknownError instanceof jwt.JsonWebTokenError) {
         safeLogger.warn('无效的 JWT token', {
           component: 'jwtAuth',
           path: req.path,
           ip: req.ip,
-          error: error.message,
+          error: unknownError.message,
         });
 
         res.status(401).json({
@@ -114,17 +114,17 @@ export function authenticateJWT() {
         return;
       }
 
-      safeLogger.error('JWT 认证失败', {
+      const error = createErrorFromUnknown(unknownError, {
         component: 'jwtAuth',
-        path: req.path,
-        ip: req.ip,
-        error: error instanceof Error ? error.message : String(error),
+        operation: 'authenticateJWT',
       });
+      safeLogger.error('JWT 认证失败', error.toLogObject());
 
       res.status(500).json({
         success: false,
         code: 'AUTHENTICATION_ERROR',
         message: '认证过程发生错误',
+        ...error.toApiError(),
       });
       return;
     }

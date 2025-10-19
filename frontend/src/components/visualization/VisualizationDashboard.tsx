@@ -11,7 +11,7 @@ import Alert from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import Tabs from '@/components/ui/Tabs';
 import { Switch } from '@/components/ui/Switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import Select, { SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import {

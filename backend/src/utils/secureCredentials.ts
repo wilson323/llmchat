@@ -7,6 +7,7 @@
 
 import crypto from 'crypto';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface EncryptedData {
   data: string;      // Base64 encoded encrypted data
@@ -60,8 +61,12 @@ export class SecureCredentialsManager {
         iv: iv.toString('base64'),
         algorithm: this.ALGORITHM,
       };
-    } catch (error: any) {
-      logger.error('[SecureCredentialsManager] Encryption failed', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureCredentialsManager',
+        operation: 'encrypt',
+      });
+      logger.error('[SecureCredentialsManager] Encryption failed', { error: error.toLogObject() });
       throw new Error('Failed to encrypt sensitive data');
     }
   }
@@ -83,8 +88,12 @@ export class SecureCredentialsManager {
       ]);
 
       return decrypted.toString('utf8');
-    } catch (error: any) {
-      logger.error('[SecureCredentialsManager] Decryption failed', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureCredentialsManager',
+        operation: 'decrypt',
+      });
+      logger.error('[SecureCredentialsManager] Decryption failed', { error: error.toLogObject() });
       throw new Error('Failed to decrypt sensitive data');
     }
   }
@@ -146,8 +155,12 @@ export class SecureCredentialsManager {
     try {
       this.deriveKey();
       return true;
-    } catch (error: any) {
-      logger.warn('[SecureCredentialsManager] Encryption not available', { error });
+    } catch (unknownError: unknown) {
+      const error = createErrorFromUnknown(unknownError, {
+        component: 'SecureCredentialsManager',
+        operation: 'isEncryptionAvailable',
+      });
+      logger.warn('[SecureCredentialsManager] Encryption not available', { error: error.toLogObject() });
       return false;
     }
   }
