@@ -10,7 +10,6 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePerformanceMonitor } from '@/utils/performanceOptimizer';
 
 interface LazyLoadOptions {
   rootMargin?: string;

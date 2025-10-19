@@ -18,7 +18,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area,
 } from 'recharts';
-import { SafeAccess } from '@/utils/SafeAccess';
+// SafeAccess已删除，使用简单的属性访问
 
 interface VisualizationConfig {
   enabled: boolean;
@@ -103,7 +103,7 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 检查功能是否启用
   const isFeatureEnabled = useCallback((feature: keyof VisualizationConfig['features']) => {
-    return SafeAccess.getBoolean(config, 'enabled') && SafeAccess.getBoolean(config, ['features', feature]);
+    return config?.enabled === true && config?.features?.[feature] === true;
   }, [config]);
 
   // 获取可视化配置
@@ -255,20 +255,20 @@ export const VisualizationDashboard: React.FC = () => {
 
   // 定期刷新数据
   useEffect(() => {
-    if (!SafeAccess.getBoolean(config, 'enabled')) {
+    if (!config?.enabled) {
       return;
     }
 
     const interval = setInterval(() => {
       fetchDashboardData();
-    }, SafeAccess.getNumber(config, 'refreshInterval', 5000));
+    }, config?.refreshInterval || 5000);
 
     return () => clearInterval(interval);
   }, [config, fetchDashboardData]);
 
   // 获取图表数据
   useEffect(() => {
-    if (SafeAccess.getBoolean(config, 'enabled')) {
+    if (config?.enabled) {
       fetchChartData('queue', 'waitingJobs');
       fetchChartData('queue', 'activeJobs');
       fetchChartData('system', 'cpu');
@@ -299,7 +299,7 @@ export const VisualizationDashboard: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Switch
               id="enabled"
-              checked={SafeAccess.getBoolean(config, 'enabled', false)}
+              checked={config?.enabled || false}
               onCheckedChange={(enabled: boolean) => updateConfig({ enabled })}
             />
             <Label htmlFor="enabled">启用可视化</Label>
@@ -311,7 +311,7 @@ export const VisualizationDashboard: React.FC = () => {
               <Input
                 id="refreshInterval"
                 type="number"
-                value={SafeAccess.getNumber(config, 'refreshInterval', 5000)}
+                value={config?.refreshInterval || 5000}
                 onChange={(e) => updateConfig({ refreshInterval: parseInt(e.target.value) })}
                 min="1000"
                 max="300000"
@@ -322,7 +322,7 @@ export const VisualizationDashboard: React.FC = () => {
               <Input
                 id="maxDataPoints"
                 type="number"
-                value={SafeAccess.getNumber(config, 'maxDataPoints', 1000)}
+                value={config?.maxDataPoints || 1000}
                 onChange={(e) => updateConfig({ maxDataPoints: parseInt(e.target.value) })}
                 min="10"
                 max="10000"
@@ -338,7 +338,7 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Title>功能开关</Card.Title>
         </Card.Header>
         <Card.Content className="space-y-4">
-          {Object.entries(SafeAccess.getObject(config, 'features', {})).map(([key, value]: [string, boolean]) => (
+          {Object.entries(config?.features || {}).map(([key, value]: [string, boolean]) => (
             <div key={key} className="flex items-center space-x-2">
               <Switch
                 id={key}
@@ -346,13 +346,13 @@ export const VisualizationDashboard: React.FC = () => {
                 onCheckedChange={(checked: boolean) =>
                   updateConfig({
                     features: {
-                      dashboard: SafeAccess.getBoolean(config, ['features', 'dashboard'], true),
-                      realTimeMonitoring: SafeAccess.getBoolean(config, ['features', 'realTimeMonitoring'], true),
-                      queueManagement: SafeAccess.getBoolean(config, ['features', 'queueManagement'], true),
-                      performanceAnalytics: SafeAccess.getBoolean(config, ['features', 'performanceAnalytics'], true),
-                      alertManagement: SafeAccess.getBoolean(config, ['features', 'alertManagement'], true),
-                      systemHealth: SafeAccess.getBoolean(config, ['features', 'systemHealth'], true),
-                      ...SafeAccess.getObject(config, 'features', {}),
+                      dashboard: config?.features?.dashboard ?? true,
+                      realTimeMonitoring: config?.features?.realTimeMonitoring ?? true,
+                      queueManagement: config?.features?.queueManagement ?? true,
+                      performanceAnalytics: config?.features?.performanceAnalytics ?? true,
+                      alertManagement: config?.features?.alertManagement ?? true,
+                      systemHealth: config?.features?.systemHealth ?? true,
+                      ...(config?.features || {}),
                       [key]: checked,
                     },
                   })
@@ -546,10 +546,10 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={SafeAccess.getArray(chartData, ['queue_waitingJobs', 'labels'], []).map((label, index) => ({
+                <LineChart data={(chartData?.queue_waitingJobs?.labels || []).map((label, index: number) => ({
                   time: label,
-                  waiting: SafeAccess.getNumber(chartData, ['queue_waitingJobs', 'datasets', 0, 'data', index], 0),
-                  active: SafeAccess.getNumber(chartData, ['queue_activeJobs', 'datasets', 0, 'data', index], 0),
+                  waiting: (chartData?.queue_waitingJobs?.datasets?.[0]?.data?.[index] as number) || 0,
+                  active: (chartData?.queue_activeJobs?.datasets?.[0]?.data?.[index] as number) || 0,
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
@@ -572,10 +572,10 @@ export const VisualizationDashboard: React.FC = () => {
           <Card.Content>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={SafeAccess.getArray(chartData, ['system_cpu', 'labels'], []).map((label, index) => ({
+                <AreaChart data={(chartData?.system_cpu?.labels || []).map((label, index: number) => ({
                   time: label,
-                  cpu: SafeAccess.getNumber(chartData, ['system_cpu', 'datasets', 0, 'data', index], 0),
-                  memory: SafeAccess.getNumber(chartData, ['system_memoryUsage', 'datasets', 0, 'data', index], 0),
+                  cpu: (chartData?.system_cpu?.datasets?.[0]?.data?.[index] as number) || 0,
+                  memory: (chartData?.system_memoryUsage?.datasets?.[0]?.data?.[index] as number) || 0,
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
@@ -602,7 +602,7 @@ export const VisualizationDashboard: React.FC = () => {
     );
   }
 
-  if (!SafeAccess.getBoolean(config, 'enabled')) {
+  if (!config?.enabled) {
     return (
       <div className="space-y-4">
         <Alert>

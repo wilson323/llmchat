@@ -26,7 +26,6 @@ import { useI18n } from '@/i18n';
 import { parseReasoningPayload } from '@/lib/reasoning';
 import { normalizeFastGPTEvent } from '@/lib/events';
 import { debugLog } from '@/lib/debug';
-import { perfMonitor } from '@/utils/performanceMonitor';
 
 export const useChat = () => {
   const { t } = useI18n();

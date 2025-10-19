@@ -18,7 +18,7 @@ import Avatar from '@/components/ui/Avatar';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { sanitizeHTML, sanitizeMarkdown, detectXSS, secureContentSanitizer } from '@/utils/secureContentSanitizer';
+// Removed: secureContentSanitizer (over-engineered)
 
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';

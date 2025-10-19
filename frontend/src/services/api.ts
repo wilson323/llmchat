@@ -5,7 +5,6 @@ import { toast } from '@/components/ui/Toast';
 import { translate } from '@/i18n';
 import { logger } from '@/lib/logger';
 import type { ApiSuccessPayload } from '@/types/dynamic';
-import { requestMonitor } from '@/utils/performanceOptimizer';
 import {
   Agent,
   OriginalChatMessage,

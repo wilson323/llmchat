@@ -10,8 +10,6 @@ import { uploadAttachment } from '@/services/api';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
 import type { ChatInputProps, ChatAttachmentMetadata, VoiceNoteMetadata } from '@/types';
-import { createChangeHandler, createFormHandler, createKeyboardHandler } from '../../utils/eventAdapter';
-import type { ChangeEventHandler, FormSubmitHandler, KeyboardEventHandler } from '../../types/event-handlers';
 
 export const MessageInput: React.FC<ChatInputProps> = ({
   onSendMessage,

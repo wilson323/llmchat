@@ -12,7 +12,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { ChatMessage } from '@/types';
 import { useChatStore } from '@/store/chatStore';
-import { usePerformanceMonitor, memoryMonitor } from '@/utils/performanceOptimizer';
 
 interface OptimizedChatOptions {
   maxMessagesInMemory?: number;
