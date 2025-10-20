@@ -6,7 +6,7 @@
     "moduleDetection": "force",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "rootDir": "./",
+    "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -27,26 +27,20 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
-    "types": ["node", "jest"],
-    "baseUrl": "./src",
+    // "types": ["node", "jest"], // 🔧 移除types限制，允许加载src/types/express.d.ts等自定义类型定义
+    "typeRoots": ["./node_modules/@types", "./src/types"], // 🔧 明确指定类型定义查找路径
+    "baseUrl": ".",
 
     "paths": {
-      "@/*": ["*"],
-      "@/types/*": ["types/*"],
-      "@/services/*": ["services/*"],
-      "@/controllers/*": ["controllers/*"],
-      "@/routes/*": ["routes/*"],
-      "@/middleware/*": ["middleware/*"],
-      "@/utils/*": ["utils/*"]
+      "@/*": ["src/*"],
+      "@/types/*": ["src/types/*"],
+      "@/services/*": ["src/services/*"],
+      "@/controllers/*": ["src/controllers/*"],
+      "@/routes/*": ["src/routes/*"],
+      "@/middleware/*": ["src/middleware/*"],
+      "@/utils/*": ["src/utils/*"]
     }
   },
   "include": ["src/**/*", "jest.config.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "scripts",
-    "src/scripts",
-    "../frontend/**/*",
-    "**/*.skip.ts"
-  ]
+  "exclude": ["node_modules", "dist", "scripts", "src/scripts", "../frontend/**/*", "**/*.skip.ts"]
 }

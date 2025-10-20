@@ -25,11 +25,21 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
     setIsLoading(true);
     setError(null);
     try {
+      console.log('🔄 开始登录...', { username });
       const data = await loginApi(username, password);
+      console.log('✅ 登录API成功:', { 
+        token: data.token ? '已获取' : '未获取',
+        user: data.user,
+        expiresIn: data.expiresIn 
+      });
+      
       login(data);
+      console.log('✅ 用户信息已保存到authStore');
+      
       toast({ type: 'success', title: t('登录成功') });
       onSuccess?.();
     } catch (err) {
+      console.error('❌ 登录失败:', err);
       const message = t('用户名或密码错误');
       setError(message);
       toast({ type: 'error', title: t('登录失败'), description: message });
@@ -67,26 +77,35 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">{t('用户名')}</label>
+              <label htmlFor="username-input" className="block text-sm font-medium text-foreground mb-2">
+                {t('用户名')}
+              </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  id="username-input"
                   name="username"
                   data-testid="username-input"
                   value={username}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
                   placeholder={t('输入用户名')}
                   className="pl-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
+                  autoComplete="username"
+                  autoCapitalize="off"
+                  aria-label={t('用户名')}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">{t('密码')}</label>
+              <label htmlFor="password-input" className="block text-sm font-medium text-foreground mb-2">
+                {t('密码')}
+              </label>
               <div className="relative">
-                <EyeOff className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <EyeOff className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  id="password-input"
                   name="password"
                   data-testid="password-input"
                   type={showPassword ? 'text' : 'password'}
@@ -94,12 +113,17 @@ export default function LoginPage({ onSuccess }: { onSuccess?: () => void }) {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   placeholder={t('输入密码')}
                   className="pl-11 pr-11 h-12 rounded-xl border-border/30 bg-background/50 backdrop-blur-sm focus:border-[var(--brand)]/50 focus:ring-[var(--brand)]/20"
+                  autoComplete="current-password"
+                  autoCapitalize="off"
+                  aria-label={t('密码')}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? t('隐藏密码') : t('显示密码')}
+                  title={showPassword ? t('隐藏密码') : t('显示密码')}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>

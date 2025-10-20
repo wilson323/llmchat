@@ -34,7 +34,6 @@ export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onTog
     { id: 'agents', name: t('智能体管理'), icon: Users },
     { id: 'sessions', name: t('会话管理'), icon: MessageSquare },
     { id: 'monitoring', name: t('SLA监控'), icon: Monitor },
-    { id: 'analytics', name: t('数据分析'), icon: BarChart3 },
     { id: 'logs', name: t('日志管理'), icon: FileText },
     { id: 'settings', name: t('系统设置'), icon: Settings },
   ];
@@ -46,7 +45,7 @@ export const Sidebar = memo(function Sidebar({ isOpen, onClose, collapsed, onTog
       exit={{ x: -300 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className={`fixed left-0 top-0 h-full bg-background/95 backdrop-blur-xl border-r border-border/50 shadow-2xl flex flex-col z-50 lg:relative lg:translate-x-0 ${collapsed ? 'w-20' : 'w-64'} transition-all duration-300 ${!isOpen && 'translate-x-0 lg:translate-x-0'}`}
-      >
+    >
       <div className="p-4 border-b border-border/50">
         <div className="flex items-center justify-between">
           {!collapsed && (

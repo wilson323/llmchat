@@ -1,257 +1,142 @@
+/**
+ * 批量标签模态框组件
+ */
+
 'use client';
 
-
-import { Loader2, Plus, Tag, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { X, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useI18n } from '@/i18n';
-import { toast } from '@/components/ui/Toast';
-import {
-  batchAddTags,
-  batchRemoveTags,
-  type BatchOperationResult,
-} from '@/services/sessionApi';
 
 interface BatchTagModalProps {
   isOpen: boolean;
+  selectedCount?: number;
+  sessionIds?: string[];
+  operation?: 'add' | 'remove';
   onClose: () => void;
-  sessionIds: string[];
-  operation: 'add' | 'remove';
+  onConfirm?: (tags: string[]) => void;
   onSuccess?: () => void;
 }
 
-export function BatchTagModal({
-  isOpen,
-  onClose,
-  sessionIds,
-  operation,
-  onSuccess,
-}: BatchTagModalProps) {
-  const { t } = useI18n();
+/**
+ * 批量标签模态框
+ * @param isOpen - 是否显示
+ * @param selectedCount - 选中的会话数量
+ * @param sessionIds - 选中的会话ID列表
+ * @param operation - 操作类型
+ * @param onClose - 关闭回调
+ * @param onConfirm - 确认回调
+ * @param onSuccess - 成功回调
+ */
+export function BatchTagModal({ isOpen, selectedCount, sessionIds, operation, onClose, onConfirm, onSuccess }: BatchTagModalProps) {
+  if (!isOpen) {
+    return null;
+  }
 
+  const count = selectedCount ?? sessionIds?.length ?? 0;
+  const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  // 重置状态
-  useEffect(() => {
-    if (isOpen) {
-      setTags([]);
-      setInputValue('');
-    }
-  }, [isOpen]);
-
-  // 添加标签
-  const addTag = () => {
-    const trimmed = inputValue.trim();
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags([...tags, trimmed]);
-      setInputValue('');
+  const handleAddTag = () => {
+    const trimmedTag = tagInput.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setTagInput('');
     }
   };
 
-  // 移除标签
-  const removeTag = (tagToRemove: string) => {
-    setTags((tags: string[]) => tags.filter((tag: string) => tag !== tagToRemove));
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
-  // 处理输入框回车
-  const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  // 执行批量操作
-  const handleSubmit = async () => {
-    if (tags.length === 0) {
-      toast({ type: 'error', title: t('请至少添加一个标签') });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      let result: BatchOperationResult;
-
-      if (operation === 'add') {
-        result = await batchAddTags(sessionIds, tags);
-      } else {
-        result = await batchRemoveTags(sessionIds, tags);
+  const handleConfirm = () => {
+    if (tags.length > 0) {
+      if (onConfirm) {
+        onConfirm(tags);
       }
-
-      if (result.failed === 0) {
-        toast({ type: 'success', title: t('批量操作成功') });
-        onSuccess?.();
-        onClose();
-      } else {
-        toast({ type: 'warning', title: t('批量操作部分成功') + ' - ' + t('成功: {success}，失败: {failed}', { success: result.success, failed: result.failed }) });
-        onSuccess?.();
-        onClose();
+      if (onSuccess) {
+        onSuccess();
       }
-    } catch (error) {
-      console.error('Failed to batch update tags:', error);
-      toast({ type: 'error', title: t('操作失败') });
-    } finally {
-      setLoading(false);
+      onClose();
     }
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="bg-background border border-border rounded-xl shadow-2xl w-full max-w-md"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div 
+        className="bg-background rounded-lg shadow-xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">批量添加标签</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            aria-label="关闭"
           >
-            {/* 头部 */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <div className="flex items-center gap-3">
-                {operation === 'add' ? (
-                  <Tag className="w-5 h-5 text-brand-500" />
-                ) : (
-                  <X className="w-5 h-5 text-red-500" />
-                )}
-                <h2 className="text-lg font-medium">
-                  {operation === 'add' ? t('添加标签') : t('移除标签')}
-                </h2>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="p-2"
-              >
-                <X className="w-4 h-4" />
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-4">
+          将为 <strong>{count}</strong> 个会话{operation === 'remove' ? '移除' : '添加'}标签
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-600 mb-2 block">添加标签</label>
+            <div className="flex gap-2">
+              <Input
+                value={tagInput}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTagInput(e.target.value)}
+                onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter') {
+                    handleAddTag();
+                  }
+                }}
+                placeholder="输入标签名称"
+                className="flex-1"
+              />
+              <Button onClick={handleAddTag} size="sm">
+                <Tag className="w-4 h-4" />
               </Button>
             </div>
+          </div>
 
-            {/* 内容 */}
-            <div className="p-6 space-y-4">
-              {/* 说明文字 */}
-              <div className="text-sm text-muted-foreground">
-                {operation === 'add' ? (
-                  <p>
-                    {t('将为 {count} 个会话添加以下标签', { count: sessionIds.length })}
-                  </p>
-                ) : (
-                  <p>
-                    {t('将从 {count} 个会话中移除以下标签', { count: sessionIds.length })}
-                  </p>
-                )}
-              </div>
-
-              {/* 输入框 */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder={t('输入标签名称')}
-                  value={inputValue}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-                  onKeyDown={handleInputKeyDown}
-                  disabled={loading}
-                />
-                <Button
-                  variant="outline"
-                  onClick={addTag}
-                  disabled={!inputValue.trim() || loading}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* 标签列表 */}
-              {tags.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">
-                    {operation === 'add' ? t('要添加的标签') : t('要移除的标签')}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag: string, index: number) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
-                          operation === 'add'
-                            ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700'
-                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700'
-                        }`}
-                      >
-                        {tag}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeTag(tag)}
-                          className="p-1 h-auto"
-                          disabled={loading}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 常用标签建议 */}
-              <div className="space-y-2">
-                <div className="text-sm font-medium">{t('常用标签')}</div>
-                <div className="flex flex-wrap gap-2">
-                  {(['重要', '待处理', '已完成', '需要跟进', '客户支持', '技术问题', '产品反馈'] as const).map((suggestion: string) => (
-                    <Button
-                      key={suggestion}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (!tags.includes(suggestion)) {
-                          setTags((tags: string[]) => [...tags, suggestion]);
-                        }
-                      }}
-                      disabled={tags.includes(suggestion) || loading}
-                      className="text-xs"
+          {tags.length > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-600 mb-2 block">已添加的标签</label>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, index) => (
+                  <span 
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-1"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="hover:text-blue-600"
+                      aria-label={`删除标签 ${tag}`}
                     >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* 底部按钮 */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                disabled={loading}
-              >
-                {t('取消')}
-              </Button>
-              <Button
-                variant={operation === 'add' ? 'brand' : 'destructive'}
-                onClick={handleSubmit}
-                disabled={tags.length === 0 || loading}
-              >
-                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {operation === 'add' ? t('添加') : t('移除')}
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>取消</Button>
+          <Button onClick={handleConfirm} disabled={tags.length === 0}>
+            确认添加
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
+

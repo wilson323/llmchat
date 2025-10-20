@@ -212,23 +212,9 @@ export const LazyUserManagement = createLazyComponent(
   },
 );
 
-export const LazyAgentConfig = createLazyComponent(
-  () => import('@/components/admin/AgentBatchImport').then(module => ({ default: module.AgentBatchImport })),
-  {
-    prefetch: false,
-    timeout: 10000,
-    loadingType: 'spinner',
-  },
-);
-
-export const LazyAnalytics = createLazyComponent(
-  () => import('@/components/admin/AnalyticsPanel'),
-  {
-    prefetch: false,
-    timeout: 15000,
-    loadingType: 'progress',
-  },
-);
+// 已删除的组件 - 功能已整合到其他组件
+// export const LazyAgentConfig = ...
+// export const LazyAnalytics = ...
 
 // Lazy loaded 3D/CAD components - using placeholder for now
 const ThreeDViewerPlaceholder = () => <div className="p-4 text-center">3D Viewer Placeholder</div>;
@@ -300,8 +286,6 @@ export function usePrefetchComponents() {
     const componentMap: Record<string, () => Promise<{ default: React.ComponentType<any> }>> = {
       'AdminDashboard': () => import('@/components/admin/AdminHome'),
       'UserManagement': () => import('@/components/admin/AgentsPanel'),
-      'AgentConfig': () => import('@/components/admin/AgentBatchImport').then(module => ({ default: module.AgentBatchImport })),
-      'Analytics': () => import('@/components/admin/AnalyticsPanel'),
       'ThreeDViewer': () => Promise.resolve({ default: ThreeDViewerPlaceholder }),
       'CADRenderer': () => Promise.resolve({ default: CADRendererPlaceholder }),
       'ChartComponent': () => import('@/components/admin/SessionStatsChart').then(module => ({ default: module.SessionStatsChart })),
@@ -321,7 +305,6 @@ export function usePrefetchComponents() {
   const prefetchAdminComponents = useCallback(() => {
     prefetchComponent('AdminDashboard');
     prefetchComponent('UserManagement');
-    prefetchComponent('AgentConfig');
   }, [prefetchComponent]);
 
   const prefetchChatComponents = useCallback(() => {
@@ -425,8 +408,6 @@ export function SmartLoader({
 export default {
   LazyAdminDashboard,
   LazyUserManagement,
-  LazyAgentConfig,
-  LazyAnalytics,
   LazyThreeDViewer,
   LazyCADRenderer,
   LazyChartComponent,

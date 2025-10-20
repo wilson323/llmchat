@@ -149,63 +149,109 @@ export async function initDB(): Promise<void> {
   }
 
   const pg = normalizePostgresConfig(rawPg);
+  console.log('[DB] ========== 数据库配置详情 ==========');
+  console.log('[DB] Host:', pg.host);
+  console.log('[DB] Port:', pg.port);
+  console.log('[DB] User:', pg.user);
+  console.log('[DB] Password:', pg.password ? '***' : '(empty)');
+  console.log('[DB] Database:', pg.database);
+  console.log('[DB] SSL:', pg.ssl);
+  console.log('[DB] =====================================');
+  
   logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}, User: ${pg.user}`);
 
-  // 先连接到 postgres 默认数据库，检查并创建目标数据库
-  logger.info('[initDB] 连接到 postgres 默认数据库...');
-  const tempPool = new Pool({
+  // 尝试连接目标数据库，如果不存在则自动创建
+  console.log(`[DB] 开始连接数据库...`);
+  logger.info(`[initDB] 尝试连接到目标数据库 "${pg.database}"...`);
+
+  // 先创建一个临时连接池测试目标数据库是否存在
+  console.log(`[DB] 创建临时连接池测试目标数据库...`);
+  const testPool = new Pool({
     host: pg.host,
     port: pg.port ?? 5432,
     user: pg.user,
     password: pg.password,
-    database: 'postgres', // 先连接到默认数据库
+    database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    connectionTimeoutMillis: 5000,  // 5秒连接超时
-    query_timeout: 5000,  // 5秒查询超时
+    connectionTimeoutMillis: 5000,
   });
 
+  let databaseExists = false;
   try {
-    logger.info('[initDB] 尝试连接到 postgres 数据库（5秒超时）...');
-    const client = await Promise.race([
-      tempPool.connect(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('连接超时')), 5000)
-      )
-    ]);
-    logger.info('[initDB] 成功连接到 postgres 数据库');
+    console.log('[DB] 测试连接到目标数据库...');
+    const testClient = await testPool.connect();
+    console.log('[DB] ✓ 目标数据库存在且可连接');
+    testClient.release();
+    databaseExists = true;
+  } catch (testError: any) {
+    console.log('[DB] 连接目标数据库失败');
+    console.log('[DB] 错误代码:', testError.code);
+    console.log('[DB] 错误消息:', testError.message);
+    
+    // 错误码 3D000 表示数据库不存在
+    if (testError.code === '3D000') {
+      console.log('[DB] ⚠️  数据库不存在，尝试自动创建...');
+      logger.info(`[initDB] 数据库 "${pg.database}" 不存在，尝试创建...`);
+      
+      // 连接到postgres默认数据库来创建目标数据库
+      console.log('[DB] 连接到postgres默认数据库...');
+      const postgresPool = new Pool({
+        host: pg.host,
+        port: pg.port ?? 5432,
+        user: pg.user,
+        password: pg.password,
+        database: 'postgres',
+        ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
+        connectionTimeoutMillis: 5000,
+      });
 
-    try {
-      // 检查数据库是否存在
-      logger.info(`[initDB] 检查数据库 "${pg.database}" 是否存在...`);
-      const result = await client.query(
-        'SELECT 1 FROM pg_database WHERE datname = $1',
-        [pg.database],
-      );
-
-      if (result.rows.length === 0) {
-        // 数据库不存在，创建它
-        logger.info(`🔨 数据库 "${pg.database}" 不存在，正在创建...`);
-        await client.query(`CREATE DATABASE "${pg.database}"`);
-        logger.info(`✅ 数据库 "${pg.database}" 创建成功`);
-      } else {
-        logger.info(`✅ 数据库 "${pg.database}" 已存在`);
+      try {
+        const postgresClient = await postgresPool.connect();
+        console.log('[DB] ✓ 已连接到postgres数据库');
+        
+        try {
+          console.log(`[DB] 执行CREATE DATABASE "${pg.database}"...`);
+          await postgresClient.query(`CREATE DATABASE "${pg.database}"`);
+          console.log(`[DB] ✓ 数据库 "${pg.database}" 创建成功！`);
+          logger.info(`[initDB] 数据库 "${pg.database}" 创建成功`);
+          databaseExists = true;
+        } catch (createError: any) {
+          console.error('[DB] ✗ 创建数据库失败！');
+          console.error('[DB] 错误代码:', createError.code);
+          console.error('[DB] 错误消息:', createError.message);
+          throw createError;
+        } finally {
+          postgresClient.release();
+          console.log('[DB] 释放postgres连接');
+        }
+      } catch (postgresError: any) {
+        console.error('[DB] ✗ 无法连接到postgres数据库！');
+        console.error('[DB] 错误代码:', postgresError.code);
+        console.error('[DB] 错误消息:', postgresError.message);
+        console.error('[DB] 完整错误:', postgresError);
+        throw postgresError;
+      } finally {
+        await postgresPool.end();
+        console.log('[DB] 关闭postgres连接池');
       }
-    } catch (checkError) {
-      logger.error('[initDB] 检查/创建数据库时出错', { error: checkError });
-      throw checkError;
-    } finally {
-      client.release();
-      logger.info('[initDB] 释放临时连接');
+    } else {
+      // 其他错误，直接抛出
+      console.error('[DB] ✗ 连接失败（非数据库不存在错误）');
+      console.error('[DB] 错误类型:', testError.constructor.name);
+      console.error('[DB] 完整错误:', testError);
+      throw testError;
     }
-  } catch (tempPoolError) {
-    logger.error('[initDB] 连接到 postgres 数据库失败', { error: tempPoolError });
-    throw tempPoolError;
   } finally {
-    await tempPool.end();
-    logger.info('[initDB] 关闭临时连接池');
+    await testPool.end();
+    console.log('[DB] 关闭测试连接池');
   }
 
-  // 现在连接到目标数据库
+  if (!databaseExists) {
+    throw new Error(`数据库 "${pg.database}" 不存在且创建失败`);
+  }
+
+  // 现在连接到目标数据库（已确认存在）
+  console.log(`[DB] 创建正式连接池到 "${pg.database}"...`);
   logger.info(`[initDB] 连接到目标数据库 "${pg.database}"...`);
   pool = new Pool({
     host: pg.host,
@@ -218,20 +264,45 @@ export async function initDB(): Promise<void> {
     // ✅ T006: 动态连接池配置（环境变量控制）
     max: parseInt(process.env.DB_POOL_MAX || '50'),          // 最大连接数（默认50）
     min: parseInt(process.env.DB_POOL_MIN || '10'),          // 最小连接数（默认10）
-    idleTimeoutMillis: 30_000,        // 30秒空闲超时
+    idleTimeoutMillis: 600_000,      // 🔧 10分钟空闲超时（防止连接意外终止）
     connectionTimeoutMillis: 5000,   // 5秒连接超时
     query_timeout: 5000,             // 5秒查询超时
     maxUses: 7500,                    // 每个连接最多使用7500次后回收
+
+    // 🔧 TCP Keepalive配置（防止远程服务器/防火墙关闭空闲连接）
+    keepAlive: true,                 // 启用TCP keepalive
+    keepAliveInitialDelayMillis: 60_000,  // 60秒后开始发送keepalive包
 
     // ✅ 应用标识
     application_name: 'llmchat-backend',
   });
 
+  console.log('[DB] ✓ 正式连接池已创建');
+  console.log('[DB] 连接池配置: min=' + pool.options.min + ', max=' + pool.options.max);
   logger.info('[initDB] 数据库连接池创建成功', {
     min: pool.options.min,
     max: pool.options.max,
     idleTimeout: pool.options.idleTimeoutMillis,
   });
+
+  // 最终验证连接
+  console.log('[DB] 最终验证数据库连接...');
+  try {
+    const finalClient = await pool.connect();
+    console.log('[DB] ✓ 数据库连接验证成功！');
+    const result = await finalClient.query('SELECT current_database(), current_user, version()');
+    console.log('[DB] 当前数据库:', result.rows[0].current_database);
+    console.log('[DB] 当前用户:', result.rows[0].current_user);
+    console.log('[DB] PostgreSQL版本:', result.rows[0].version);
+    finalClient.release();
+    console.log('[DB] ✓ 验证连接已释放');
+  } catch (finalError: any) {
+    console.error('[DB] ✗ 最终验证失败！');
+    console.error('[DB] 错误类型:', finalError.constructor.name);
+    console.error('[DB] 错误代码:', finalError.code);
+    console.error('[DB] 错误消息:', finalError.message);
+    throw finalError;
+  }
 
   // ✅ T006: 连接池事件监听
   pool.on('connect', (_client) => {
@@ -556,16 +627,21 @@ export async function initDB(): Promise<void> {
         ON chat_geo_events (agent_id, created_at);
     `);
 
-    // 首次空库自动种子管理员（仅非生产环境）——使用安全哈希
+    // 首次空库自动种子管理员（仅非生产环境）——使用bcrypt安全哈希
     const { rows } = await client.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM users');
     const count = parseInt(rows[0]?.count || '0', 10);
     if (count === 0) {
-      const { salt, hash } = hashPassword('admin');
+      // 🔧 修复：使用bcrypt而不是SHA-256，与AuthServiceV2保持一致
+      const bcrypt = await import('bcrypt');
+      const SALT_ROUNDS = 12;
+      const passwordHash = await bcrypt.hash('admin', SALT_ROUNDS);
+      const randomSalt = crypto.randomBytes(16).toString('hex'); // 保持字段兼容性
+      
       await client.query(
         'INSERT INTO users(username, password_salt, password_hash, role, status) VALUES ($1,$2,$3,$4,$5)',
-        ['admin', salt, hash, 'admin', 'active'],
+        ['admin', randomSalt, passwordHash, 'admin', 'active'],
       );
-      logger.info('[initDB] ✅ 安全管理员账户已创建（密码：admin，请立即修改）');
+      logger.info('[initDB] ✅ 安全管理员账户已创建（用户名:admin 密码:admin，请立即修改）');
     }
   });
 

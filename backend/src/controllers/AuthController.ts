@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'; // [L1]
 import logger from '@/utils/logger'; // [L2]
 import { AuthServiceV2 } from '@/services/AuthServiceV2'; // [L3]
+import { authService } from '@/services/authInstance'; // [L3.5] 🔧 修复：导入单例实例
 import { toEnhancedError, ExpressErrorHandler } from '@/utils/errorHandler'; // [L4]
 import type { AuthenticatedRequest } from '@/middleware/jwtAuth';
 
@@ -13,7 +14,8 @@ export class AuthController { // [L10]
   private readonly authService: AuthServiceV2; // [L11]
 
   constructor() { // [L13]
-    this.authService = new AuthServiceV2(); // [L14]
+    // 🔧 修复：使用单例authService，避免创建多个实例导致Redis连接冲突
+    this.authService = authService as AuthServiceV2; // [L14]
   } // [L15]
 
   /**

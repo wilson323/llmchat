@@ -23,9 +23,11 @@ if (useAuthV2) {
 }
 
 // 导出统一接口（兼容旧代码）
+console.log('[AUTH_INSTANCE] 开始创建authService实例...');
 export const authService = useAuthV2
   ? getAuthServiceV2()
   : new AuthService();
+console.log('[AUTH_INSTANCE] ✓ authService实例创建成功');
 
 // 导出类型（用于Controller）
 export const isAuthV2 = useAuthV2;

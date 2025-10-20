@@ -2,9 +2,9 @@ module.exports = {
   // TypeScript/JavaScript文件的处理 - 严格零容忍模式
   '*.{ts,tsx}': [
     // 1. 自动修复ESLint问题
-    'ESLINT_DEV=true eslint --fix --format=compact',
+    'cross-env ESLINT_DEV=true eslint --fix --format=compact',
     // 2. ESLint严格检查 - 0错误0警告
-    'ESLINT_DEV=true eslint --format=compact',
+    'cross-env ESLINT_DEV=true eslint --format=compact',
     // 3. 自动格式化Prettier
     'prettier --write',
     // 4. TypeScript类型检查 - 0错误

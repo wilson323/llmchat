@@ -4,7 +4,6 @@
   "description": "LLMChat 前后端共享类型定义包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
@@ -47,26 +46,32 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
     "./entities": {
       "types": "./dist/entities/index.d.ts",
+      "require": "./dist/entities/index.js",
       "import": "./dist/entities/index.js"
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
+      "require": "./dist/components/index.js",
       "import": "./dist/components/index.js"
     },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
+      "require": "./dist/utils/index.js",
       "import": "./dist/utils/index.js"
     },
     "./providers": {
       "types": "./dist/providers/index.d.ts",
+      "require": "./dist/providers/index.js",
       "import": "./dist/providers/index.js"
     },
     "./api": {
       "types": "./dist/api/index.d.ts",
+      "require": "./dist/api/index.js",
       "import": "./dist/api/index.js"
     }
   },

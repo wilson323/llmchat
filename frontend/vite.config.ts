@@ -56,11 +56,22 @@ export default defineConfig({
   server: {
     port: 3004,
     host: true,
+    // 移除全局headers设置，让Vite根据文件类型自动设置正确的Content-Type
     proxy: {
       '/api': {
         target: 'http://localhost:3005',
         changeOrigin: true,
         secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // 只为API请求设置content-type
+            if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+              if (req.headers['content-type']) {
+                proxyReq.setHeader('Content-Type', req.headers['content-type']);
+              }
+            }
+          });
+        }
       }
     }
   },
@@ -73,7 +84,8 @@ export default defineConfig({
       'react-router-dom',
       'zustand',
       'lucide-react',
-      'date-fns'
+      'date-fns',
+      'framer-motion'  // 添加 framer-motion 到预优化
     ],
     exclude: [
       // 排除可能导致问题的依赖
@@ -82,6 +94,10 @@ export default defineConfig({
       '@react-three/drei'
     ],
     force: true,
+    esbuildOptions: {
+      // 针对 framer-motion 的特殊处理
+      target: 'es2020'
+    }
   },
 
   // 环境变量配置

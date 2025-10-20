@@ -32,13 +32,11 @@ CREATE TABLE IF NOT EXISTS agent_configs (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   avatar_url TEXT,
-  description TEXT,
-  agent_id TEXT
+  description TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_agent_configs_provider ON agent_configs(provider);
 CREATE INDEX IF NOT EXISTS idx_agent_configs_is_active ON agent_configs(is_active);
-CREATE INDEX IF NOT EXISTS idx_agent_configs_agent_id ON agent_configs(agent_id);
 
 -- 审计日志表
 CREATE TABLE IF NOT EXISTS audit_logs (

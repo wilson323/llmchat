@@ -702,7 +702,6 @@ export function SessionManagement({ className }: SessionManagementProps) {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
         session={selectedSession}
-        onExport={handleExportSession}
       />
 
       {/* 批量标签模态框 */}

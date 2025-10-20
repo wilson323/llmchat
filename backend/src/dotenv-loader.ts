@@ -106,3 +106,6 @@ if (missingVars.length > 0) {
 log.debug('✓ 所有必需环境变量已就绪');
 log.debug('✓ DB_HOST =', process.env.DB_HOST);
 log.debug('✓ DB_PORT =', process.env.DB_PORT);
+log.debug('✓ DB_USER =', process.env.DB_USER);
+log.debug('✓ DB_NAME =', process.env.DB_NAME);
+log.debug('✓ DB_PASSWORD =', process.env.DB_PASSWORD ? '***' : '(empty)');

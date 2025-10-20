@@ -18,10 +18,12 @@ import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import logger from "./utils/logger";
 import { errorHandler } from "./middleware/errorHandler";
+import { prometheusMiddleware } from "./middleware/prometheusMiddleware";
 import { createErrorFromUnknown } from "./types/errors";
 
 // 🔧 核心路由导入
 import healthRouter from "./routes/health";
+import metricsRouter from "./routes/metrics";
 import authRouter from "./routes/auth";
 import agentsRouter from "./routes/agents";
 import chatRouter from "./routes/chat";
@@ -34,8 +36,14 @@ import uploadRouter from "./routes/upload";
 import { initDB } from "./utils/db";
 import { AgentConfigService } from "./services/AgentConfigService";
 
+console.log('[INIT] ========================================');
+console.log('[INIT] ✓ 所有模块导入成功');
+console.log('[INIT] ========================================');
+
 // ===== 全局错误处理器（必须在最前面） =====
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('[REJECTION] 未处理的Promise拒绝:', reason?.message || reason);
+  console.error('[REJECTION] 堆栈:', reason?.stack);
   logger.error('未处理的Promise拒绝', {
     reason: reason?.message || reason,
     stack: reason?.stack,
@@ -44,6 +52,8 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
 });
 
 process.on('uncaughtException', (error: Error) => {
+  console.error('[UNCAUGHT] 未捕获的异常:', error.message);
+  console.error('[UNCAUGHT] 堆栈:', error.stack);
   logger.error('未捕获的异常', {
     message: error.message,
     stack: error.stack,
@@ -54,7 +64,9 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 // ===== Express应用实例 =====
+console.log('[INIT] 创建Express应用实例...');
 const app: express.Express = express();
+console.log('[INIT] ✓ Express应用实例创建成功');
 
 // 声明全局服务实例
 let agentConfigService: AgentConfigService | null = null;
@@ -93,12 +105,30 @@ async function findAvailablePort(startPort: number = 3005): Promise<number> {
 }
 
 // ===== 中间件配置 =====
+console.log('[INIT] ========================================');
+console.log('[INIT] 开始配置中间件...');
 logger.info("🔧 配置中间件...");
 
 // 安全头部
 app.use(helmet({
   contentSecurityPolicy: false, // 开发环境禁用
+  xssFilter: false, // 禁用过时的X-XSS-Protection头
 }));
+
+// 响应头优化中间件
+app.use((req, res, next) => {
+  // 移除不必要的安全头
+  res.removeHeader('X-XSS-Protection');
+  
+  // 确保JSON响应使用正确的Content-Type
+  const originalJson = res.json;
+  res.json = function(data) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return originalJson.call(this, data);
+  };
+  
+  next();
+});
 
 // 压缩
 app.use(compression({
@@ -124,6 +154,9 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Prometheus监控中间件
+app.use(prometheusMiddleware());
+
 // 速率限制
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10),
@@ -139,15 +172,11 @@ logger.info("✅ 中间件配置完成");
 // ===== 路由注册 =====
 logger.info("🔧 注册路由...");
 
-// 健康检查（无需认证）
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: 'LLMChat Backend',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
+// 健康检查路由（无需认证）
+app.use('/health', healthRouter);
+
+// Prometheus metrics端点（无需认证）
+app.use('/metrics', metricsRouter);
 
 // 核心API路由
 app.use('/api/auth', authRouter);
@@ -179,11 +208,15 @@ logger.info("✅ 错误处理已配置");
 // ===== 服务器启动 =====
 async function startServer() {
   try {
+    console.log('[INIT] ========================================');
+    console.log('[INIT] 🚀 开始初始化服务器...');
     logger.info("🚀 开始初始化服务器...");
 
     // 1. 初始化数据库
+    console.log('[INIT] 📦 初始化数据库连接...');
     logger.info("📦 初始化数据库连接...");
     await initDB();
+    console.log('[INIT] ✅ 数据库连接成功');
     logger.info("✅ 数据库连接成功");
 
     // 2. 初始化智能体配置服务
@@ -218,10 +251,20 @@ async function startServer() {
 
 // 启动服务器（非测试环境）
 if (process.env.NODE_ENV !== 'test') {
+  console.log('[INIT] ========================================');
+  console.log('[INIT] NODE_ENV =', process.env.NODE_ENV);
+  console.log('[INIT] 准备启动服务器...');
   startServer().catch(error => {
+    console.error('[INIT] ❌ 服务器启动失败!');
+    console.error('[INIT] 错误类型:', error?.constructor?.name);
+    console.error('[INIT] 错误消息:', error?.message);
+    console.error('[INIT] 错误堆栈:', error?.stack);
+    console.error('[INIT] 完整错误:', error);
     logger.error('服务器启动失败:', error);
     process.exit(1);
   });
+} else {
+  console.log('[INIT] Test mode, server not started');
 }
 
 // ===== 优雅关闭 =====

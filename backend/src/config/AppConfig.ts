@@ -49,53 +49,18 @@ export class AppConfig {
 
   /**
    * PostgreSQL 配置
-   * 从环境变量读取，无默认值
+   * 从环境变量读取，提供开发环境默认值
    */
   static getDatabaseConfig() {
-    const host = process.env.DB_HOST;
-    const port = process.env.DB_PORT;
-    const user = process.env.DB_USER;
-    const password = process.env.DB_PASSWORD;
-    const database = process.env.DB_NAME;
+    const host = process.env.DB_HOST || 'localhost';
+    const port = process.env.DB_PORT || '5432';
+    const user = process.env.DB_USER || 'postgres';
+    const password = process.env.DB_PASSWORD || '';
+    const database = process.env.DB_NAME || 'llmchat';
 
-    if (!host) {
-      throw new SystemError({
-        message: 'DB_HOST 未配置，请检查根目录 .env 文件',
-        code: 'MISSING_DB_HOST',
-        component: 'AppConfig',
-      });
-    }
-
-    if (!port) {
-      throw new SystemError({
-        message: 'DB_PORT 未配置，请检查根目录 .env 文件',
-        code: 'MISSING_DB_PORT',
-        component: 'AppConfig',
-      });
-    }
-
-    if (!user) {
-      throw new SystemError({
-        message: 'DB_USER 未配置，请检查根目录 .env 文件',
-        code: 'MISSING_DB_USER',
-        component: 'AppConfig',
-      });
-    }
-
-    if (!password) {
-      throw new SystemError({
-        message: 'DB_PASSWORD 未配置，请检查根目录 .env 文件',
-        code: 'MISSING_DB_PASSWORD',
-        component: 'AppConfig',
-      });
-    }
-
-    if (!database) {
-      throw new SystemError({
-        message: 'DB_NAME 未配置，请检查根目录 .env 文件',
-        code: 'MISSING_DB_NAME',
-        component: 'AppConfig',
-      });
+    // 开发环境警告：使用默认配置
+    if (process.env.NODE_ENV === 'development' && (!process.env.DB_HOST || !process.env.DB_USER)) {
+      console.warn('⚠️  [开发模式] 使用数据库默认配置，生产环境请配置完整的数据库环境变量');
     }
 
     return {
@@ -120,18 +85,13 @@ export class AppConfig {
   }
 
   /**
-   * 启动时验证所有必需配置
+   * 启动时验证所有必需配置（开发模式：数据库配置可选）
    */
   static validate() {
-    const required = [
-      'REDIS_HOST',
-      'REDIS_PORT',
-      'DB_HOST',
-      'DB_PORT',
-      'DB_USER',
-      'DB_PASSWORD',
-      'DB_NAME',
-    ];
+    // 开发环境：只验证关键配置
+    const required = process.env.NODE_ENV === 'production' 
+      ? ['REDIS_HOST', 'REDIS_PORT', 'DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME']
+      : ['REDIS_HOST', 'REDIS_PORT']; // 开发环境只要求Redis配置
 
     const missing = required.filter(key => !process.env[key]);
 
@@ -148,17 +108,17 @@ export class AppConfig {
     // 记录配置信息（不记录敏感信息）
     logger.info('✅ 配置验证通过', {
       redis: {
-        host: process.env.REDIS_HOST,
-        port: process.env.REDIS_PORT,
+        host: process.env.REDIS_HOST || 'localhost',
+        port: process.env.REDIS_PORT || '6379',
       },
       database: {
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        database: process.env.DB_NAME,
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || '5432',
+        database: process.env.DB_NAME || 'llmchat',
       },
       server: {
-        port: process.env.PORT,
-        nodeEnv: process.env.NODE_ENV,
+        port: process.env.PORT || '3005',
+        nodeEnv: process.env.NODE_ENV || 'development',
       }
     });
   }
