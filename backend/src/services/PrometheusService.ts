@@ -134,7 +134,7 @@ export class PrometheusService {
    */
   private normalizeRoute(route: string): string {
     // 移除查询参数
-    const pathOnly = route.split('?')[0];
+    const pathOnly = route.split('?')[0] ?? route;
 
     // 替换常见的动态参数模式
     return pathOnly
