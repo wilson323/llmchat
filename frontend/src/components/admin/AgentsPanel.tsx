@@ -16,8 +16,10 @@ import {
   createAgent, 
   updateAgent, 
   deleteAgent,
+  fetchAgentInfo,
   type AgentItem,
-  type AgentPayload 
+  type AgentPayload,
+  type AgentInfo 
 } from '@/services/agentsApi';
 import type { AgentProvider } from '@/services/types/api-common';
 import { RefreshCw, Plus, Edit, Trash2, Power, PowerOff, X, Save } from 'lucide-react';
@@ -50,9 +52,65 @@ function AgentEditModal({
     isActive: agent?.isActive ?? true,
   });
   const [saving, setSaving] = useState(false);
+  const [fetching, setFetching] = useState(false);
 
   // 根据提供商判断是否需要appId
   const needsAppId = formData.provider === 'fastgpt' || formData.provider === 'dify';
+
+  /**
+   * 自动获取智能体配置
+   * 调用初始化接口获取FastGPT/Dify的完整配置信息
+   */
+  const handleFetchAgentInfo = async () => {
+    if (!formData.endpoint || !formData.apiKey) {
+      toast.error('请先填写API端点和密钥');
+      return;
+    }
+
+    if (needsAppId && !formData.appId) {
+      toast.error('请先填写应用ID');
+      return;
+    }
+
+    try {
+      setFetching(true);
+      const info = await fetchAgentInfo({
+        provider: formData.provider as 'fastgpt' | 'dify',
+        endpoint: formData.endpoint,
+        apiKey: formData.apiKey,
+        appId: formData.appId,
+      });
+
+      // 自动填充获取到的配置
+      setFormData({
+        ...formData,
+        name: info.name || formData.name,
+        description: info.description || formData.description,
+        model: info.model || formData.model,
+        systemPrompt: info.systemPrompt || formData.systemPrompt,
+        temperature: info.temperature ?? formData.temperature,
+        maxTokens: info.maxTokens ?? formData.maxTokens,
+        capabilities: info.capabilities || formData.capabilities,
+        features: {
+          ...formData.features,
+          ...info.features,
+          supportsStream: info.supportedFeatures?.supportsStream ?? formData.features?.supportsStream,
+          supportsChatId: info.supportedFeatures?.supportsChatId ?? formData.features?.supportsChatId,
+          supportsDetail: info.supportedFeatures?.supportsDetail ?? formData.features?.supportsDetail,
+        },
+      });
+
+      toast.success('✅ 智能体配置已自动获取');
+    } catch (err: unknown) {
+      let message = '获取配置失败';
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      toast.error(message);
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,24 +245,57 @@ function AgentEditModal({
 
           {/* FastGPT/Dify专用字段 */}
           {needsAppId && (
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                应用ID * 
-                <span className="text-xs text-gray-500 ml-2">
-                  ({formData.provider === 'fastgpt' ? 'FastGPT' : 'Dify'}专用)
-                </span>
-              </label>
-              <Input
-                value={formData.appId}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, appId: e.target.value })}
-                placeholder={formData.provider === 'fastgpt' ? '64f...' : 'app-...'}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.provider === 'fastgpt' 
-                  ? 'FastGPT的应用ID，可在应用详情页获取' 
-                  : 'Dify的应用ID，格式为app-开头'}
-              </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  应用ID * 
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({formData.provider === 'fastgpt' ? 'FastGPT' : 'Dify'}专用)
+                  </span>
+                </label>
+                <Input
+                  value={formData.appId}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, appId: e.target.value })}
+                  placeholder={formData.provider === 'fastgpt' ? '64f...' : 'app-...'}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.provider === 'fastgpt' 
+                    ? 'FastGPT的应用ID，可在应用详情页获取' 
+                    : 'Dify的应用ID，格式为app-开头'}
+                </p>
+              </div>
+
+              {/* 自动获取配置按钮 */}
+              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                    🚀 自动获取智能体配置
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                    填写端点、密钥和应用ID后，点击按钮自动获取名称、模型、系统提示词等配置
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleFetchAgentInfo}
+                  disabled={fetching || !formData.endpoint || !formData.apiKey || !formData.appId}
+                  size="sm"
+                  variant="outline"
+                >
+                  {fetching ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                      获取中...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      自动获取
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
 
