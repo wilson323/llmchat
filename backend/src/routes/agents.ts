@@ -136,5 +136,99 @@ router.post('/reload', agentController.reloadAgents);
  */
 router.get('/:id/validate', agentController.validateAgent);
 
+/**
+ * @swagger
+ * /api/agents:
+ *   post:
+ *     summary: 创建新智能体
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - provider
+ *               - endpoint
+ *               - apiKey
+ *               - model
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               provider:
+ *                 type: string
+ *                 enum: [fastgpt, openai, anthropic, dify, custom]
+ *               endpoint:
+ *                 type: string
+ *               apiKey:
+ *                 type: string
+ *               model:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: 智能体创建成功
+ *       400:
+ *         description: 请求参数错误
+ *       401:
+ *         description: 未授权
+ */
+router.post('/', agentController.createAgent);
+
+/**
+ * @swagger
+ * /api/agents/{id}:
+ *   put:
+ *     summary: 更新智能体配置
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: 更新成功
+ *       404:
+ *         description: 智能体不存在
+ */
+router.put('/:id', agentController.updateAgent);
+
+/**
+ * @swagger
+ * /api/agents/{id}:
+ *   delete:
+ *     summary: 删除智能体
+ *     tags: [Agents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 删除成功
+ *       404:
+ *         description: 智能体不存在
+ */
+router.delete('/:id', agentController.deleteAgent);
+
 export default router;
 export { router as agentRoutes };

@@ -1,6 +1,6 @@
 /**
  * 智能体管理面板
- * 完整的智能体列表展示和管理功能
+ * 完整的智能体CRUD功能：列表展示、创建、编辑、删除
  */
 
 'use client';
@@ -9,9 +9,221 @@ import { memo, useState, useEffect } from 'react';
 import { useI18n } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
 import { toast } from 'react-hot-toast';
-import { listAgents, type AgentItem } from '@/services/agentsApi';
-import { RefreshCw, Plus, Edit, Trash2, Power, PowerOff } from 'lucide-react';
+import { 
+  listAgents, 
+  createAgent, 
+  updateAgent, 
+  deleteAgent,
+  type AgentItem,
+  type AgentPayload 
+} from '@/services/agentsApi';
+import type { AgentProvider } from '@/services/types/api-common';
+import { RefreshCw, Plus, Edit, Trash2, Power, PowerOff, X, Save } from 'lucide-react';
+
+/**
+ * 智能体编辑模态框
+ */
+function AgentEditModal({ 
+  agent, 
+  onClose, 
+  onSuccess 
+}: { 
+  agent: AgentItem | null; 
+  onClose: () => void; 
+  onSuccess: () => void;
+}) {
+  const { t } = useI18n();
+  const isEdit = !!agent;
+  const [formData, setFormData] = useState<Partial<AgentPayload>>({
+    name: agent?.name || '',
+    description: agent?.description || '',
+    provider: (agent?.provider as AgentProvider) || 'openai',
+    endpoint: agent?.endpoint || '',
+    apiKey: '', // apiKey不从AgentItem获取（安全原因）
+    model: agent?.model || '',
+    maxTokens: agent?.maxTokens || 4096,
+    temperature: agent?.temperature || 0.7,
+    systemPrompt: agent?.systemPrompt || '',
+    isActive: agent?.isActive ?? true,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.provider || !formData.endpoint || !formData.apiKey || !formData.model) {
+      toast.error('请填写所有必填字段');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (isEdit && agent) {
+        await updateAgent(agent.id, formData);
+        toast.success('智能体更新成功');
+      } else {
+        await createAgent(formData as AgentPayload);
+        toast.success('智能体创建成功');
+      }
+      onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      let message = isEdit ? '更新失败' : '创建失败';
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div 
+        className="bg-background rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-background border-b border-border p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">{isEdit ? '编辑智能体' : '创建智能体'}</h2>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">名称 *</label>
+            <Input
+              value={formData.name}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="例如：GPT-4 助手"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">描述</label>
+            <Input
+              value={formData.description}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="智能体功能描述"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">提供商 *</label>
+              <select
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                value={formData.provider}
+                onChange={(e) => setFormData({ ...formData, provider: e.target.value as any })}
+                required
+              >
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="fastgpt">FastGPT</option>
+                <option value="dify">Dify</option>
+                <option value="custom">自定义</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">模型 *</label>
+              <Input
+                value={formData.model}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, model: e.target.value })}
+                placeholder="例如：gpt-4"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">API端点 *</label>
+            <Input
+              value={formData.endpoint}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, endpoint: e.target.value })}
+              placeholder="https://api.openai.com/v1/chat/completions"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">API密钥 *</label>
+            <Input
+              type="password"
+              value={formData.apiKey}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, apiKey: e.target.value })}
+              placeholder="sk-..."
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">最大Token</label>
+              <Input
+                type="number"
+                value={formData.maxTokens}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, maxTokens: parseInt(e.target.value) })}
+                min="1"
+                max="32768"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">温度</label>
+              <Input
+                type="number"
+                step="0.1"
+                value={formData.temperature}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+                min="0"
+                max="2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">系统提示词</label>
+            <textarea
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background min-h-[100px]"
+              value={formData.systemPrompt}
+              onChange={(e) => setFormData({ ...formData, systemPrompt: e.target.value })}
+              placeholder="你是一个有帮助的AI助手..."
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={formData.isActive}
+              onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <label htmlFor="isActive" className="text-sm font-medium">启用此智能体</label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+              取消
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? '保存中...' : (isEdit ? '更新' : '创建')}
+              <Save className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 /**
  * 智能体管理面板组件
@@ -21,6 +233,9 @@ export default memo(function AgentsPanel() {
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingAgent, setEditingAgent] = useState<AgentItem | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   /**
    * 加载智能体列表
@@ -57,6 +272,47 @@ export default memo(function AgentsPanel() {
     void loadAgents();
   };
 
+  /**
+   * 删除智能体
+   */
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`确定要删除智能体 "${name}" 吗？此操作不可恢复。`)) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      await deleteAgent(id);
+      toast.success('智能体删除成功');
+      await loadAgents();
+    } catch (err: unknown) {
+      let message = '删除失败';
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      toast.error(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  /**
+   * 切换智能体启用状态
+   */
+  const handleToggleActive = async (agent: AgentItem) => {
+    try {
+      await updateAgent(agent.id, { isActive: !agent.isActive });
+      toast.success(agent.isActive ? '已禁用' : '已启用');
+      await loadAgents();
+    } catch (err: unknown) {
+      let message = '状态切换失败';
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      toast.error(message);
+    }
+  };
+
   return (
     <main className="transition-all duration-300 lg:ml-64">
       <div className="p-6">
@@ -80,9 +336,7 @@ export default memo(function AgentsPanel() {
                 刷新
               </Button>
               <Button
-                onClick={() => {
-                  toast('智能体创建功能即将推出', { icon: '🚧' });
-                }}
+                onClick={() => setShowCreateModal(true)}
                 size="sm"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -169,9 +423,7 @@ export default memo(function AgentsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          toast('智能体编辑功能即将推出', { icon: '🚧' });
-                        }}
+                        onClick={() => setEditingAgent(agent)}
                         title="编辑"
                       >
                         <Edit className="w-4 h-4" />
@@ -179,9 +431,7 @@ export default memo(function AgentsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          toast('智能体启用/禁用功能即将推出', { icon: '🚧' });
-                        }}
+                        onClick={() => handleToggleActive(agent)}
                         title={agent.isActive ? '禁用' : '启用'}
                       >
                         {agent.isActive ? (
@@ -193,12 +443,15 @@ export default memo(function AgentsPanel() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          toast('智能体删除功能即将推出', { icon: '🚧' });
-                        }}
+                        onClick={() => handleDelete(agent.id, agent.name)}
+                        disabled={deletingId === agent.id}
                         title="删除"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        {deletingId === agent.id ? (
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -211,14 +464,33 @@ export default memo(function AgentsPanel() {
           {!loading && !error && agents.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-2">📝</div>
-              <p className="text-sm text-muted-foreground">暂无智能体</p>
-              <Button onClick={handleRefresh} variant="outline" size="sm" className="mt-4">
-                刷新列表
+              <p className="text-sm text-muted-foreground mb-4">暂无智能体</p>
+              <Button onClick={() => setShowCreateModal(true)} size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                创建第一个智能体
               </Button>
             </div>
           )}
         </div>
       </div>
+
+      {/* 编辑模态框 */}
+      {editingAgent && (
+        <AgentEditModal
+          agent={editingAgent}
+          onClose={() => setEditingAgent(null)}
+          onSuccess={loadAgents}
+        />
+      )}
+
+      {/* 创建模态框 */}
+      {showCreateModal && (
+        <AgentEditModal
+          agent={null}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={loadAgents}
+        />
+      )}
     </main>
   );
 });
