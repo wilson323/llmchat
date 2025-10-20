@@ -42,6 +42,7 @@ function AgentEditModal({
     provider: (agent?.provider as AgentProvider) || 'openai',
     endpoint: agent?.endpoint || '',
     apiKey: '', // apiKey不从AgentItem获取（安全原因）
+    appId: agent?.appId || '', // FastGPT/Dify专用
     model: agent?.model || '',
     maxTokens: agent?.maxTokens || 4096,
     temperature: agent?.temperature || 0.7,
@@ -50,11 +51,20 @@ function AgentEditModal({
   });
   const [saving, setSaving] = useState(false);
 
+  // 根据提供商判断是否需要appId
+  const needsAppId = formData.provider === 'fastgpt' || formData.provider === 'dify';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.provider || !formData.endpoint || !formData.apiKey || !formData.model) {
       toast.error('请填写所有必填字段');
+      return;
+    }
+
+    // FastGPT和Dify必须有appId
+    if (needsAppId && !formData.appId) {
+      toast.error(`${formData.provider === 'fastgpt' ? 'FastGPT' : 'Dify'}必须填写应用ID`);
       return;
     }
 
@@ -137,7 +147,13 @@ function AgentEditModal({
               <Input
                 value={formData.model}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, model: e.target.value })}
-                placeholder="例如：gpt-4"
+                placeholder={
+                  formData.provider === 'openai' ? 'gpt-4, gpt-3.5-turbo' :
+                  formData.provider === 'anthropic' ? 'claude-3-opus, claude-3-sonnet' :
+                  formData.provider === 'fastgpt' ? '(由FastGPT应用配置决定)' :
+                  formData.provider === 'dify' ? '(由Dify应用配置决定)' :
+                  '模型名称'
+                }
                 required
               />
             </div>
@@ -162,7 +178,35 @@ function AgentEditModal({
               placeholder="sk-..."
               required
             />
+            {isEdit && (
+              <p className="text-xs text-gray-500 mt-1">
+                ℹ️ 编辑时需重新输入API密钥（出于安全考虑不显示原密钥）
+              </p>
+            )}
           </div>
+
+          {/* FastGPT/Dify专用字段 */}
+          {needsAppId && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                应用ID * 
+                <span className="text-xs text-gray-500 ml-2">
+                  ({formData.provider === 'fastgpt' ? 'FastGPT' : 'Dify'}专用)
+                </span>
+              </label>
+              <Input
+                value={formData.appId}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, appId: e.target.value })}
+                placeholder={formData.provider === 'fastgpt' ? '64f...' : 'app-...'}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.provider === 'fastgpt' 
+                  ? 'FastGPT的应用ID，可在应用详情页获取' 
+                  : 'Dify的应用ID，格式为app-开头'}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -198,6 +242,62 @@ function AgentEditModal({
               placeholder="你是一个有帮助的AI助手..."
             />
           </div>
+
+          {/* FastGPT/Dify高级配置 */}
+          {(formData.provider === 'fastgpt' || formData.provider === 'dify') && (
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-3">
+              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                {formData.provider === 'fastgpt' ? 'FastGPT' : 'Dify'} 高级配置
+              </h4>
+              
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.features?.supportsStream ?? true}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      features: { ...formData.features, supportsStream: e.target.checked }
+                    })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">支持流式输出</span>
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.features?.supportsChatId ?? true}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      features: { ...formData.features, supportsChatId: e.target.checked }
+                    })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">支持对话ID</span>
+                </label>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.features?.supportsDetail ?? false}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      features: { ...formData.features, supportsDetail: e.target.checked }
+                    })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">详细响应模式</span>
+                </label>
+              </div>
+
+              {formData.provider === 'fastgpt' && (
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  💡 提示：FastGPT支持工作流和插件调用，确保应用已配置相应功能
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <input
