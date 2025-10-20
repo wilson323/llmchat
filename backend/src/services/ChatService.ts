@@ -8,6 +8,7 @@
 import { ChatProxyService } from './ChatProxyService';
 import { ChatSessionService } from './ChatSessionService';
 import type { AgentConfigService } from './AgentConfigService';
+import { createErrorFromUnknown } from '@/types/errors';
 import type { AgentConfig, ChatResponse as APIChatResponse } from '@/types';
 import logger from '@/utils/logger';
 

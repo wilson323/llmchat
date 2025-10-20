@@ -312,7 +312,7 @@ export const VisualizationDashboard: React.FC = () => {
                 id="refreshInterval"
                 type="number"
                 value={config?.refreshInterval || 5000}
-                onChange={(e) => updateConfig({ refreshInterval: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig({ refreshInterval: parseInt(e.target.value) })}
                 min="1000"
                 max="300000"
               />
@@ -323,7 +323,7 @@ export const VisualizationDashboard: React.FC = () => {
                 id="maxDataPoints"
                 type="number"
                 value={config?.maxDataPoints || 1000}
-                onChange={(e) => updateConfig({ maxDataPoints: parseInt(e.target.value) })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateConfig({ maxDataPoints: parseInt(e.target.value) })}
                 min="10"
                 max="10000"
               />

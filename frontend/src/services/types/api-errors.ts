@@ -430,9 +430,10 @@ export class ApiErrorHandler {
     switch (error.code) {
       case 'NETWORK_ERROR':
       case 'TIMEOUT_ERROR':
+        return true;  // 超时错误默认可重试
       case 'SERVER_ERROR':
       case 'SERVICE_UNAVAILABLE':
-        return error.retryable ?? true;
+        return (error as ServerError).retryable ?? true;  // 修复：类型断言访问retryable
       case 'RATE_LIMIT_EXCEEDED':
         return error.retryAfter !== undefined && error.retryAfter <= 60; // 1分钟内可重试
       default:
@@ -447,7 +448,7 @@ export class ApiErrorHandler {
     return (
       error.code === 'TOKEN_EXPIRED' ||
       error.code === 'INVALID_TOKEN' ||
-      (error.code === 'AUTH_ERROR' && (error as AuthenticationError).requiresReauth)
+      (error.code === 'AUTH_ERROR' && ((error as AuthenticationError).requiresReauth ?? false))  // 修复：处理undefined
     );
   }
 

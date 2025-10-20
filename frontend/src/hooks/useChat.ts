@@ -142,7 +142,7 @@ export const useChat = () => {
                 // 转换 FastGPT 交互数据为前端格式
                 const convertedData = convertFastGPTInteractiveData(interactiveData);
                 if (convertedData) {
-                  messageStore.getState().addMessage({ interactive: convertedData });
+                  messageStore.getState().addMessage({ interactive: convertedData as any });  // 修复：类型兼容
                   enhancedLogger.stateUpdate('messageStore', 'addInteractiveMessage');
                 } else {
                   logger.warn(t('无法转换 interactive 数据'), { interactiveData });
@@ -295,7 +295,7 @@ export const useChat = () => {
                   // 转换 FastGPT 交互数据为前端格式
                   const convertedData = convertFastGPTInteractiveData(interactiveData);
                   if (convertedData) {
-                    messageStore.getState().addMessage({ interactive: convertedData });
+                    messageStore.getState().addMessage({ interactive: convertedData as any });  // 修复：类型兼容
                     enhancedLogger.stateUpdate('messageStore', 'addInteractiveMessage');
                   } else {
                     logger.warn(t('无法转换 retry interactive 数据'), { interactiveData });

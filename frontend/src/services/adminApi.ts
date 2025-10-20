@@ -558,7 +558,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/config',
         method: 'GET',
-        additional: { category },
+        additional: category ? { category } : undefined,  // 修复：过滤undefined值
       });
 
       return {
@@ -657,7 +657,7 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/backups',
         method: 'POST',
-        additional: { type, description },
+        additional: { type, ...(description ? { description } : {}) },  // 修复：过滤undefined值
       });
 
       return {
@@ -688,6 +688,44 @@ export class AdminApiService {
       ApiErrorHandler.logError(apiError, {
         url: '/admin/maintenance/tasks',
         method: 'GET',
+      });
+
+      return {
+        success: false,
+        error: apiError,
+      };
+    }
+  }
+
+  /**
+   * 导出日志为CSV格式
+   */
+  static async exportLogsCsv(params?: GetLogsParams): Promise<ApiResult<Blob>> {
+    try {
+      const response = await api.get('/admin/logs/export', {
+        params: {
+          level: params?.level,
+          start: params?.startDate,
+          end: params?.endDate,
+          module: params?.module,
+          userId: params?.userId,
+          agentId: params?.agentId,
+          sessionId: params?.sessionId,
+          search: params?.search,
+        },
+        responseType: 'blob',
+      });
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      const apiError = ApiErrorFactory.fromUnknownError(error);
+      ApiErrorHandler.logError(apiError, {
+        url: '/admin/logs/export',
+        method: 'GET',
+        additional: params as any,
       });
 
       return {
@@ -824,6 +862,19 @@ export async function createBackup(type: 'full' | 'incremental', description?: s
  */
 export async function getMaintenanceTasks(): Promise<MaintenanceTask[]> {
   const result = await AdminApiService.getMaintenanceTasks();
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return result.data!;
+}
+
+/**
+ * 导出日志为CSV格式
+ */
+export async function exportLogsCsv(params?: GetLogsParams): Promise<Blob> {
+  const result = await AdminApiService.exportLogsCsv(params);
 
   if (!result.success) {
     throw result.error;

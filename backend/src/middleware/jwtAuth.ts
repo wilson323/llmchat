@@ -7,6 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { SecureJWT } from '@/utils/secureJwt';
 import { safeLogger } from '@/utils/logSanitizer';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -122,8 +123,6 @@ export function authenticateJWT() {
 
       res.status(500).json({
         success: false,
-        code: 'AUTHENTICATION_ERROR',
-        message: '认证过程发生错误',
         ...error.toApiError(),
       });
       return;

@@ -4,7 +4,7 @@
  */
 
 import logger from './logger';
-import { createErrorFromUnknown } from '../errors/errorUtils';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface QualityIssue {
   type: 'error' | 'warning' | 'info';

@@ -496,8 +496,8 @@ export async function reloadAgents(): Promise<{ totalAgents: number; activeAgent
   }
 
   return {
-    totalAgents: result.data.totalAgents,
-    activeAgents: result.data.activeAgents
+    totalAgents: result.data?.totalAgents ?? 0,
+    activeAgents: result.data?.activeAgents ?? 0
   };
 }
 
@@ -548,7 +548,7 @@ export async function importAgents(payload: { agents: AgentPayload[] }): Promise
     throw result.error;
   }
 
-  return result.data.agents;
+  return result.data?.agents ?? [];
 }
 
 /**

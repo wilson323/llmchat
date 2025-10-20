@@ -9,6 +9,7 @@ import {
 } from '@/controllers/AdminController';
 import { adminGuard } from '@/middleware/adminGuard';
 import { safeLogger as logger } from '@/utils/logSanitizer';
+import { createErrorFromUnknown } from '@/types/errors';
 
 const router: Router = Router();
 
@@ -75,12 +76,7 @@ router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
     logger.error('Failed to get system info', error.toLogObject());
     
     const apiError = error.toApiError();
-    res.status(500).json({
-      code: 'SERVER_ERROR',
-      message: '获取系统信息失败',
-      data: null,
-      ...apiError,
-    });
+    res.status(500).json(apiError);
   }
 });
 
@@ -134,12 +130,7 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
     logger.error('Failed to get users', error.toLogObject());
     
     const apiError = error.toApiError();
-    res.status(500).json({
-      code: 'SERVER_ERROR',
-      message: '获取用户列表失败',
-      data: null,
-      ...apiError,
-    });
+    res.status(500).json(apiError);
   }
 });
 
@@ -193,12 +184,7 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
     logger.error('Failed to get audit logs', error.toLogObject());
     
     const apiError = error.toApiError();
-    res.status(500).json({
-      code: 'SERVER_ERROR',
-      message: '获取审计日志失败',
-      data: null,
-      ...apiError,
-    });
+    res.status(500).json(apiError);
   }
 });
 

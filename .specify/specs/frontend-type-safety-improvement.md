@@ -101,6 +101,14 @@
 - Q: 类型验证可观测性要求 → A: 建立完整的可观测体系：类型覆盖率监控、错误趋势分析、质量仪表板
 - Q: 类型安全与可访问性集成 → A: 集成可访问性要求到类型定义
 
+### Session 2025-10-20
+
+- Q: Store类型定义策略（Phase 4核心任务） → A: 严格类型守卫模式 - 所有状态操作都通过类型守卫函数，零容忍any，确保与React 18+并发特性兼容
+- Q: Service API类型错误处理策略（Phase 4核心任务） → A: 分层错误类型系统 - 区分NetworkError/ValidationError/BusinessError，每层独立类型定义，便于精准错误处理
+- Q: UI组件条件Props类型约束策略（Phase 4核心任务） → A: 联合类型 + 类型判别式 - 使用discriminated unions精确建模条件Props依赖关系，确保编译时类型安全
+- Q: 第三方库类型定义缺失的处理策略 → A: 内部类型补充 + 上游贡献 - 项目内创建.d.ts补充定义，同时提PR到上游改进生态
+- Q: 类型检查严格度权衡策略 → A: 分级严格度 + 例外审批 - 核心业务代码零容忍any，工具/适配代码允许有限例外（需审批+文档）
+
 ---
 
 ## ✅ 功能需求
@@ -147,21 +155,25 @@
 - 所有使用处引用同一类型定义
 - 类型定义完整覆盖所有使用场景
 
-### FR4: 修复UI组件类型声明
+### FR4: 修复UI组件类型声明（Phase 4增强）
 
-**需求描述**: 为所有UI组件提供完整的类型声明，包括子组件和可访问性属性
+**需求描述**: 为所有UI组件提供完整的类型声明，包括子组件、可访问性属性和条件Props约束
 
 **场景**:
 - 使用带有子组件的UI组件（如Card.Header）
 - 传递props到UI组件
 - 使用ref引用UI组件
 - 添加ARIA属性和可访问性支持
+- 处理条件Props依赖关系（如variant="custom"时必须提供customConfig）
 
 **验收标准**:
 - 所有UI组件子组件都有类型声明
 - IDE能够准确提示可用的子组件
 - 使用不存在的子组件时显示编译错误
 - ARIA属性类型完整且类型安全
+- **Phase 4新增**: 条件Props依赖通过discriminated unions精确建模
+- **Phase 4新增**: 编译时强制验证条件Props的一致性（如variant变化时必须提供对应配置）
+- **Phase 4新增**: IDE能够根据判别式字段准确提示条件必需的其他Props
 
 ### FR5: 规范导入导出类型
 
@@ -176,6 +188,98 @@
 - 组件使用default export，类型使用named export
 - 导入语句与导出方式一致
 - 不存在导入导出类型不匹配的错误
+
+### FR6: Store状态管理类型安全（Phase 4核心）
+
+**需求描述**: 为所有状态管理（Zustand/Redux等）实施严格类型守卫模式
+
+**场景**:
+- 定义Store状态结构
+- 创建状态更新action
+- 状态选择器（selector）类型推断
+- 异步状态处理和错误状态管理
+- 状态订阅和派生状态计算
+
+**验收标准**:
+- 所有Store定义必须有完整的TypeScript接口，零容忍`any`类型
+- 每个状态更新操作都必须通过类型守卫函数验证
+- selector函数返回类型必须精确匹配状态结构
+- 异步action必须明确定义loading/success/error状态类型
+- 状态变更必须通过类型安全的不可变更新方式
+- 与React 18并发特性完全兼容（无类型推断失败）
+- IDE能够准确提示所有状态属性和方法
+
+### FR7: Service API分层错误类型系统（Phase 4核心）
+
+**需求描述**: 为所有API服务层实施分层错误类型系统，精确区分不同错误类别
+
+**场景**:
+- HTTP请求失败（网络错误、超时、连接中断）
+- 服务端返回业务错误（如权限不足、资源不存在）
+- 数据验证失败（响应格式不符、字段缺失）
+- 请求参数校验失败
+- 认证和授权错误
+
+**错误类型层次**:
+- `NetworkError`: 网络层错误（包含statusCode、timeout、isRetryable等属性）
+- `ValidationError`: 数据验证错误（包含fieldErrors、validationRules等）
+- `BusinessError`: 业务逻辑错误（包含errorCode、userMessage、developerMessage等）
+- `AuthError`: 认证授权错误（包含authType、requiredPermissions等）
+
+**验收标准**:
+- 所有API函数返回值必须明确包含错误类型：`Promise<Result<T, ApiError>>`
+- 每种错误类型都有独立的TypeScript接口定义
+- 错误对象必须包含足够的上下文信息用于调试和用户提示
+- 所有错误处理代码必须通过类型守卫区分错误类别
+- IDE能够准确提示可用的错误属性和方法
+- 支持错误链追踪（原始错误 → 转换后的错误）
+- 统一的错误序列化/反序列化机制（用于日志和监控）
+
+### FR8: 第三方库类型补充机制
+
+**需求描述**: 为缺少或不完整类型定义的第三方库建立统一的类型补充和贡献流程
+
+**场景**:
+- 使用的第三方库没有官方TypeScript类型定义
+- 第三方库的类型定义不完整或不准确
+- 社区提供的@types包版本滞后或质量不佳
+- 项目使用了库的未文档化API
+
+**处理流程**:
+1. **内部补充阶段**（立即解除项目阻塞）:
+   - 在`frontend/src/types/third-party/`目录创建对应的`.d.ts`文件
+   - 使用`declare module 'library-name'`声明补充类型
+   - 添加JSDoc注释说明补充原因和上游状态
+   - 在补充文件顶部记录创建日期和负责人
+
+2. **上游贡献阶段**（改进生态）:
+   - 向库的官方仓库或@types仓库提交PR
+   - 在PR描述中引用项目内部补充作为参考
+   - 跟踪PR状态，合并后删除内部补充
+
+3. **维护阶段**（持续同步）:
+   - 定期检查上游类型定义更新
+   - 库升级时优先使用官方类型定义
+   - 记录类型补充的生命周期（创建→PR→合并→清理）
+
+**验收标准**:
+- 所有使用的第三方库都有明确的类型定义（官方或项目补充）
+- 项目内补充的类型定义必须有完整的JSDoc说明
+- 每个补充定义都有对应的上游贡献计划或跟踪issue
+- 禁止使用`any`作为类型缺失的临时方案
+- 类型补充文件组织规范：`types/third-party/<library-name>.d.ts`
+- 定期审查（每季度）清理已被上游合并的补充定义
+
+**文件组织示例**:
+```
+frontend/src/types/third-party/
+├── README.md                    # 说明补充策略和维护流程
+├── some-library.d.ts           # 补充定义示例
+├── another-lib/
+│   ├── index.d.ts              # 主类型定义
+│   └── submodule.d.ts          # 子模块定义
+└── .tracking.json              # 跟踪上游贡献状态
+```
 
 ---
 
@@ -195,6 +299,11 @@
 - 所有组件都有完整的类型定义
 - 所有函数都有明确的参数和返回值类型
 - 可选属性访问100%包含空值检查
+- **Phase 4新增**: 核心业务代码（Level 1）零`any`类型，100%类型安全
+- **Phase 4新增**: 工具/适配代码（Level 2）例外率 < 5%，所有例外已审批
+- **Phase 4新增**: Store状态管理100%类型守卫覆盖
+- **Phase 4新增**: Service API 100%使用分层错误类型系统
+- **Phase 4新增**: UI组件条件Props 100%使用discriminated unions
 
 ### 开发体验指标
 
@@ -277,6 +386,120 @@
 - ref类型必须与实际DOM元素匹配
 - className为可选，使用时需要空值处理
 
+**条件Props示例**（Phase 4核心模式）**:
+```typescript
+// ✅ 正确：使用discriminated unions建模条件Props
+type ButtonProps = 
+  | { variant: 'default'; size?: 'sm' | 'md' | 'lg' }
+  | { variant: 'icon'; icon: ReactNode; 'aria-label': string }
+  | { variant: 'custom'; customConfig: CustomButtonConfig }
+  | { variant: 'link'; href: string; external?: boolean };
+
+// 使用时IDE会根据variant自动提示必需的其他props
+const MyButton = () => (
+  <>
+    <Button variant="default" size="lg" /> {/* ✅ 合法 */}
+    <Button variant="icon" icon={<Icon />} aria-label="Close" /> {/* ✅ 必须提供icon和aria-label */}
+    <Button variant="custom" customConfig={config} /> {/* ✅ 必须提供customConfig */}
+    <Button variant="icon" /> {/* ❌ 编译错误：缺少icon和aria-label */}
+  </>
+);
+```
+
+**类型守卫使用**:
+```typescript
+function isIconButton(props: ButtonProps): props is Extract<ButtonProps, { variant: 'icon' }> {
+  return props.variant === 'icon';
+}
+
+// 组件内部通过类型守卫收窄类型
+if (isIconButton(props)) {
+  // 此处TypeScript知道props.icon和props['aria-label']一定存在
+  return <button aria-label={props['aria-label']}>{props.icon}</button>;
+}
+```
+
+### Store（状态管理Store）
+
+**核心属性**:
+- state: 完整状态树（所有字段必须类型化）
+- actions: 状态更新方法集合
+- selectors: 状态选择器函数
+- middleware: 中间件配置（可选）
+
+**类型安全需求**（Phase 4严格要求）**:
+- 状态结构必须定义完整的TypeScript接口，禁止使用`any`
+- 所有action函数必须有明确的参数类型和返回值类型
+- selector函数返回值类型必须与状态结构精确匹配
+- 异步操作必须包含类型化的loading/error状态
+- 状态更新必须通过类型守卫函数验证合法性
+- 派生状态（computed values）必须有明确的依赖类型声明
+
+### ApiService（API服务）
+
+**核心属性**:
+- baseURL: API基础地址
+- defaultHeaders: 默认请求头
+- requestInterceptors: 请求拦截器链
+- responseInterceptors: 响应拦截器链
+- errorHandlers: 分层错误处理器
+
+**类型安全需求**（Phase 4严格要求）**:
+- 所有API方法返回值必须是`Promise<Result<T, ApiError>>`类型
+- 请求参数必须有完整的类型定义（含可选字段标注）
+- 响应数据必须通过运行时验证确保类型安全
+- 错误处理必须区分NetworkError/ValidationError/BusinessError/AuthError
+- 每种错误类型都有独立的类型守卫函数
+- 支持泛型约束确保请求/响应类型一致性
+
+### ApiError（API错误类型层次）
+
+**错误类型层次结构**:
+```typescript
+interface BaseApiError {
+  type: 'network' | 'validation' | 'business' | 'auth';
+  message: string;
+  timestamp: Date;
+  requestId?: string;
+  cause?: Error; // 原始错误
+}
+
+interface NetworkError extends BaseApiError {
+  type: 'network';
+  statusCode?: number;
+  timeout?: boolean;
+  isRetryable: boolean;
+}
+
+interface ValidationError extends BaseApiError {
+  type: 'validation';
+  fieldErrors: Array<{ field: string; message: string }>;
+  validationRules?: Record<string, unknown>;
+}
+
+interface BusinessError extends BaseApiError {
+  type: 'business';
+  errorCode: string;
+  userMessage: string;
+  developerMessage: string;
+  context?: Record<string, unknown>;
+}
+
+interface AuthError extends BaseApiError {
+  type: 'auth';
+  authType: 'unauthenticated' | 'unauthorized';
+  requiredPermissions?: string[];
+}
+
+type ApiError = NetworkError | ValidationError | BusinessError | AuthError;
+```
+
+**类型安全需求**:
+- 所有错误处理代码必须使用类型守卫区分错误类型
+- 错误对象必须包含完整的上下文信息用于调试
+- 支持错误序列化用于日志记录和监控系统
+- IDE能够根据类型守卫准确提示错误特有属性
+
 ---
 
 ## 📐 边界与约束
@@ -288,6 +511,7 @@
 - 所有frontend/src/services下的服务函数
 - 所有frontend/src/types下的类型定义
 - UI组件库（frontend/src/components/ui）
+- 状态管理Store（frontend/src/store）
 
 **具体工作**:
 - 添加类型守卫函数
@@ -295,6 +519,10 @@
 - 统一类型定义
 - 完善UI组件类型声明
 - 规范导入导出
+- **Phase 4核心**: 为所有Store实施严格类型守卫，零容忍`any`类型
+- **Phase 4核心**: 为Service API实施分层错误类型系统
+- **Phase 4核心**: 使用discriminated unions建模UI组件条件Props
+- **Phase 4核心**: 建立第三方库类型补充机制和上游贡献流程
 
 ### 范围外
 
@@ -310,6 +538,60 @@
 - 不修改组件的API接口（除了类型定义）
 - 不影响现有的业务逻辑
 - 不改变构建流程和工具配置
+
+### 类型检查严格度分级策略
+
+**核心原则**: 保持整体严格标准的同时，为极少数复杂场景提供受控例外通道
+
+**严格度分级**:
+
+**Level 1 - 核心业务代码（零容忍）**:
+- 范围: 所有业务组件、Store状态管理、核心Service API
+- 标准: 禁止`any`类型，禁止类型断言（除非有运行时验证配套）
+- 违规处理: 必须重构代码架构以满足类型安全
+
+**Level 2 - 工具/适配代码（有限例外）**:
+- 范围: 第三方库适配器、复杂类型工具函数、遗留代码集成层
+- 标准: 允许使用`unknown` + 类型守卫，限制使用`any`（需审批）
+- 例外条件:
+  - 第三方库类型定义缺失且无法补充
+  - 极端复杂的泛型运算（超过3层嵌套）
+  - 运行时动态类型场景（有验证保障）
+
+**Level 3 - 测试代码（适度宽松）**:
+- 范围: 测试文件、Mock数据生成
+- 标准: 允许类型断言简化测试编写，但核心测试逻辑仍需类型安全
+- 原因: 避免为了类型安全而过度复杂化测试代码
+
+**例外审批流程**:
+1. **申请**: 开发者在代码中添加详细注释说明例外原因
+   ```typescript
+   // TYPE_EXCEPTION: 第三方库xyz缺少类型定义
+   // Reason: 库v2.x无官方类型，社区@types包版本滞后
+   // Mitigation: 已创建内部补充types/third-party/xyz.d.ts
+   // Tracking: 已提PR到上游 (PR#123)
+   // Review: @architect-name approved on 2025-10-20
+   const result = someLibraryFunction() as any;
+   ```
+
+2. **审批**: 需要架构师或技术负责人review并批准
+   - 检查是否确实无法通过重构满足类型安全
+   - 确认是否有缓解措施（如运行时验证）
+   - 评估对整体类型安全的影响
+
+3. **跟踪**: 在`frontend/docs/type-exceptions.md`中记录所有例外
+   - 例外位置（文件路径+行号）
+   - 例外原因和缓解措施
+   - 审批人和日期
+   - 预期移除时间（如等待上游库更新）
+
+4. **定期审查**: 每季度审查所有例外，清理已过期的例外
+
+**验收标准**:
+- 核心业务代码（Level 1）达成100%类型安全，0个`any`
+- 工具/适配代码（Level 2）例外数量 < 总文件数的5%
+- 所有例外都有完整的审批记录和跟踪文档
+- 每个例外都有明确的缓解措施或移除计划
 
 ---
 

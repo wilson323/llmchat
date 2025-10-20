@@ -185,7 +185,8 @@ function VirtualScrollImpl(
 
   // 合并refs
   const mergedRef = useCallback((element: HTMLDivElement | null) => {
-    localContainerRef.current = element;
+    // 使用类型断言修复只读属性赋值
+    (localContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = element;
     // virtualContainerRef 来自 useVirtualScroll hook，不应该直接赋值
     if (typeof ref === 'function') {
       ref(element);
@@ -228,15 +229,9 @@ function VirtualScrollImpl(
   // 暴露给父组件的方法
   React.useImperativeHandle(ref, () => {
     const element = localContainerRef.current;
-    return {
-      element,
-      scrollToIndex: scrollToIndexInternal,
-      scrollToOffset: scrollToOffsetInternal,
-      getScrollTop: () => element?.scrollTop || 0,
-      getScrollHeight: () => element?.scrollHeight || 0,
-      getClientHeight: () => element?.clientHeight || 0
-    } as VirtualScrollRef;
-  }, [scrollToIndexInternal, scrollToOffsetInternal]);
+    // 修复：直接返回元素，符合HTMLDivElement类型要求
+    return element!;
+  }, []);
 
   // 清理timeout
   useEffect(() => {
@@ -267,14 +262,14 @@ function VirtualScrollImpl(
             willChange: isScrolling ? 'transform' : 'auto'
           }}
         >
-          {renderItem({
+          {renderItem(
             item,
-            index: virtualItem.index,
-            style: {
+            virtualItem.index,
+            {  // 修复：传递完整的3个参数
               height: '100%',
               overflow: 'hidden'
             }
-          })}
+          )}
         </div>
       );
     });

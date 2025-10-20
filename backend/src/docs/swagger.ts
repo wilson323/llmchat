@@ -1,4 +1,5 @@
 import type { Application, Request, Response, RequestHandler } from "express";
+import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
 import { loadOptionalModule } from "@/utils/loadOptionalModule";
 import { logger } from '@/utils/logger';
 const swaggerOptions = {

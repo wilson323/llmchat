@@ -260,6 +260,7 @@ export interface ChangePasswordPayload {
  */
 export interface CreateUserPayload {
   username: string;
+  email: string;  // 修复：添加email字段
   password: string;
   role?: UserRole;
   status?: string;
@@ -366,14 +367,14 @@ export interface ApiClient {
 /**
  * 提取API响应的数据类型
  */
-export type ApiDataResponse<T> = Omit<ApiSuccessResponse<T>, 'data'> & {
+export type ApiDataResponse<T extends JsonValue = JsonValue> = Omit<ApiSuccessResponse<T>, 'data'> & {
   data: T;
 };
 
 /**
  * 提取分页响应的数据类型
  */
-export type ApiPaginatedResponse<T> = Omit<ApiSuccessResponse<PaginatedResponse<T>>, 'data'> & {
+export type ApiPaginatedResponse<T = any> = Omit<ApiSuccessResponse<any>, 'data'> & {
   data: PaginatedResponse<T>;
 };
 

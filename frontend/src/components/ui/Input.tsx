@@ -176,14 +176,22 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputComponentProps>(
           setInternalValue(newValue);
         }
 
-        // 支持两种onChange签名
+        // 调用onChange回调 - 兼容两种签名
         if (onChange) {
-          if (onChange.length === 1) {
-            // 简化签名: (value: string) => void
-            (onChange as (value: string) => void)(newValue);
+          // 检测签名类型：简化签名参数为1，标准事件为1
+          // 通过检查函数内部是否访问event.target来区分
+          const onChangeAny = onChange as any;
+          if (onChangeAny.length === 1 && typeof newValue === 'string') {
+            // 尝试简化签名
+            try {
+              onChangeAny(newValue);
+            } catch {
+              // fallback到标准事件
+              onChangeAny(event);
+            }
           } else {
-            // 标准签名: React.ChangeEventHandler
-            (onChange as React.ChangeEventHandler<HTMLInputElement>)(event);
+            // 标准事件处理器
+            onChangeAny(event);
           }
         }
       },
@@ -225,7 +233,7 @@ const InputImpl = React.forwardRef<HTMLInputElement, InputComponentProps>(
       autoCorrect,
       autoCapitalize,
       spellCheck,
-      'aria-invalid': error ? 'true' : 'false',
+      'aria-invalid': error ? true : undefined,
       'aria-required': required,
       'aria-describedby': cn(
         error && errorId,

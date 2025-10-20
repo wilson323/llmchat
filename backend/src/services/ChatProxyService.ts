@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { createErrorFromUnknown } from '@/types/errors';
 import type {
   AgentConfig,
   ChatMessage,

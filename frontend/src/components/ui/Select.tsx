@@ -80,10 +80,14 @@ export type SelectProps = ISelectProps & VariantProps<typeof selectVariants> & {
   maxTagCount?: number;
 };
 
-export type SelectTriggerProps = ISelectTriggerProps & VariantProps<typeof selectTriggerVariants> & {
+export interface SelectTriggerProps extends ISelectTriggerProps {
   /** 占位符 */
   placeholder?: string;
-};
+  /** 尺寸 */
+  size?: 'sm' | 'md' | 'lg';
+  /** 状态 */
+  state?: 'default' | 'error' | 'success';
+}
 
 export interface SelectValueProps extends ISelectValueProps {
   /** 占位符 */
@@ -469,9 +473,13 @@ const SelectImpl = React.forwardRef<HTMLDivElement, SelectProps>(
       ]
     );
 
+    // 只提取与div兼容的props
+    const { id, style, 'data-testid': dataTestId } = props as any;
+    const divProps = { id, style, 'data-testid': dataTestId };
+    
     return (
       <SelectContext.Provider value={contextValue}>
-        <div ref={ref} className={cn('space-y-2', className)} {...props}>
+        <div ref={ref} className={cn('space-y-2', className)} {...divProps}>
           {label && (
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {label}

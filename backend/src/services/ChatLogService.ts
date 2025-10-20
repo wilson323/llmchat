@@ -4,6 +4,7 @@ import { withClient } from '@/utils/db';
 import { loadAppConfig } from '@/utils/appConfig';
 import { ObservabilityDispatcher } from '@/services/ObservabilityDispatcher';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 interface NormalLogEntry {
   timestamp: string;

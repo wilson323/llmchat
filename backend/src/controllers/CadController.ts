@@ -5,6 +5,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
 import { CadParserService } from '@/services/CadParserService';
 import { CadOperationService } from '@/services/CadOperationService';
 import { CAD_FUNCTION_TOOLS } from '@/utils/cadFunctionTools';

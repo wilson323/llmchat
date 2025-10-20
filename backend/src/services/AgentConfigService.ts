@@ -9,7 +9,7 @@ import {
   containsUnresolvedPlaceholders,
 } from '@/utils/envHelper';
 import logger from '@/utils/logger';
-import { ResourceError, ValidationError } from '@/types/errors';
+import { ResourceError, ValidationError, createErrorFromUnknown } from '@/types/errors';
 
 interface AgentSeed {
   id: string;

@@ -1,5 +1,5 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'crypto';
-import { ValidationError, SystemError } from '@/types/errors';
+import { ValidationError, SystemError, createErrorFromUnknown } from '@/types/errors';
 
 /**
  * 密码强度检查结果

@@ -179,3 +179,59 @@ type-check-output.txt
 # 临时文档
 docs/temp/
 *_TEMP_*.md
+.env.backup.local.20251017_213134
+.gitignore
+backend/log/.a03a5b593ea2d7a1d4b69de945b4f05e0b4f4d39-audit.json
+backend/log/.c4e495ecd45f6250f44b20b111759cc8e88625ec-audit.json
+# ========================================
+#  环境配置文件（严格禁止提交）
+# ========================================
+# 唯一配置入口：项目根目录的 .env 文件
+.env
+.env.local
+.env.*.local
+
+# 禁止子目录的 .env 文件
+backend/.env*
+frontend/.env*
+shared-types/.env*
+
+# 依赖和构建产物
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# 日志文件
+*.log
+backend/log/
+backend/logs/
+log/
+logs/
+
+# 测试和覆盖率
+coverage/
+test-results/
+playwright-report/
+
+# 临时文件
+*.tmp
+*.bak
+*.backup
+*-output.txt
+*-result.txt
+*-errors.txt
+test-*.txt
+tsc-*.txt
+
+# 敏感信息
+*.pem
+*.key
+*.cert
+config/agents.json
+backend/uploads/*
+
+# IDE
+.vscode/*
+.idea/
+.DS_Store

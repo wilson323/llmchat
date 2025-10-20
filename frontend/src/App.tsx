@@ -1,67 +1,16 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ToastProvider as Toaster } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
-import { createEnhancedLazyComponent } from '@/components/ui/EnhancedLazyComponent';
-// Component registry and code splitting removed - production optimization
-// import CodeSplittingMonitor from '@/components/dev/CodeSplittingMonitor'; // 已禁用
 
 // ========================================
-// 增强版代码分割：懒加载组件
+// 标准代码分割：使用React.lazy() - 生产环境优化
 // ========================================
 
-// 组件注册表已删除 - 生产环境优化
-// initializeComponentRegistry();
-
-// 主要页面懒加载 - 使用增强版懒加载
-const ChatApp = createEnhancedLazyComponent(
-  'ChatApp',
-  () => import('@/components/ChatApp'),
-  {
-    priority: 10,
-    preloadStrategy: 'immediate',
-    showProgress: true,
-    delay: 0,
-    minLoadingTime: 300,
-  },
-);
-
-// AgentWorkspace removed - production optimization
-
-const LoginPage = createEnhancedLazyComponent(
-  'LoginPage',
-  () => import('@/components/admin/LoginPage'),
-  {
-    priority: 8,
-    preloadStrategy: 'hover',
-    showProgress: false,
-    delay: 200,
-  },
-);
-
-const AdminHome = createEnhancedLazyComponent(
-  'AdminHome',
-  () => import('@/components/admin/AdminHome'),
-  {
-    priority: 7,
-    preloadStrategy: 'idle',
-    showProgress: true,
-    delay: 150,
-    minLoadingTime: 500,
-  },
-);
-
-// 按需加载的功能组件 - 性能监控已禁用（减少资源占用）
-// const PerformanceDashboard = createEnhancedLazyComponent(
-//   'PerformanceDashboard',
-//   () => import('@/components/monitoring/PerformanceDashboard'),
-//   {
-//     priority: 3,
-//     preloadStrategy: 'idle',
-//     showProgress: false,
-//     delay: 500,
-//   },
-// );
+// 主要页面懒加载
+const ChatApp = lazy(() => import('@/components/ChatApp'));
+const LoginPage = lazy(() => import('@/components/admin/LoginPage'));
+const AdminHome = lazy(() => import('@/components/admin/AdminHome'));
 
 // 加载占位组件
 const LoadingSpinner = () => (

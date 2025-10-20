@@ -36,19 +36,17 @@ CardHeaderImpl.displayName = 'Card.Header';
 
 const CardTitleImpl = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ children, className = '', level = 3, ...props }, ref) => {
-    const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
-    return (
-      <HeadingTag
-        ref={ref}
-        className={cn(
-          'text-lg font-semibold leading-none tracking-tight text-foreground',
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </HeadingTag>
-    );
+    const headingProps = {
+      ref,
+      className: cn(
+        'text-lg font-semibold leading-none tracking-tight text-foreground',
+        className
+      ),
+      ...props,
+    };
+    
+    // 使用React.createElement避免动态标签的类型问题
+    return React.createElement(`h${level}`, headingProps, children);
   }
 );
 CardTitleImpl.displayName = 'Card.Title';

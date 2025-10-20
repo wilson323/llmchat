@@ -395,7 +395,7 @@ const ModalImpl = React.forwardRef<HTMLDivElement, ModalProps>(
     // Context值
     const contextValue = React.useMemo(
       () => ({
-        isOpen: open,
+        isOpen: open ?? false,  // 修复：确保isOpen始终是boolean
         onClose: handleClose,
         onConfirm: handleConfirm,
         loading,

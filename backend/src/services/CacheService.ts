@@ -6,6 +6,7 @@
 import Redis from 'ioredis';
 import logger from '@/utils/logger';
 import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface CacheOptions {
   ttl?: number;        // 过期时间（秒）

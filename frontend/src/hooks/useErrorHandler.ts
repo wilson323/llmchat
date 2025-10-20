@@ -22,7 +22,10 @@ export function useErrorHandler() {
    */
   const handleValidationError = useCallback((error: unknown, context?: Record<string, unknown>) => {
     // 记录验证错误日志
-    logger.warn('表单验证失败', error instanceof Error ? error : new Error(String(error)), context);
+    logger.warn('表单验证失败', { 
+      error: error instanceof Error ? error.message : String(error),
+      context 
+    });
     
     // 可以在这里添加用户反馈逻辑
     // 例如显示表单错误信息等

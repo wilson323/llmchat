@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { AuthenticationError } from '@/types/errors';
 
 /**
  * 扩展的 Express Request 接口，包含保护上下文

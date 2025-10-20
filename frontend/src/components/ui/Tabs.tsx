@@ -210,13 +210,17 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     // 键盘导航
     useKeyboardNavigation(triggers, activeIndex, setActiveIndex, orientation || 'horizontal', loop);
 
+    // 只提取与div兼容的props
+    const { id, style, 'data-testid': dataTestId } = props as any;
+    const divProps = { id, style, 'data-testid': dataTestId };
+    
     return (
       <div
         ref={ref}
         className={cn(tabsListVariants({ variant, orientation }), className)}
         role="tablist"
         aria-orientation={orientation}
-        {...props}
+        {...divProps}
       >
         {React.Children.map(children, (child, index) =>
           React.isValidElement(child)
@@ -271,6 +275,10 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       [disabled, loading, value, onValueChange, onClick]
     );
 
+    // 只提取与button兼容的props
+    const { id, title, 'aria-label': ariaLabel, 'data-testid': dataTestId } = props as any;
+    const buttonProps = { id, title, 'aria-label': ariaLabel, 'data-testid': dataTestId };
+
     return (
       <button
         ref={ref}
@@ -279,12 +287,12 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         aria-selected={isActive}
         aria-disabled={disabled}
         data-state={isActive ? 'active' : 'inactive'}
-        className={cn(tabsTriggerVariants({ variant: finalVariant, orientation }), {
+        className={cn(tabsTriggerVariants({ variant: finalVariant as 'default' | 'underline' | 'pills' | 'enclosed', orientation }), {  // 修复：类型断言
           'opacity-50 cursor-not-allowed': disabled,
         }, className)}
         disabled={disabled}
         onClick={handleClick}
-        {...props}
+        {...buttonProps}
       >
         {loading && (
           <svg
@@ -340,6 +348,10 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       return null;
     }
 
+    // 只提取与div兼容的props
+    const { id, style, title, description, 'data-testid': dataTestId } = props as any;
+    const divProps = { id, style, title, 'data-testid': dataTestId };
+
     return (
       <div
         ref={ref}
@@ -353,7 +365,7 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
           className
         )}
         tabIndex={activationMode === 'manual' && isActive ? 0 : -1}
-        {...props}
+        {...divProps}
       >
         {children}
       </div>

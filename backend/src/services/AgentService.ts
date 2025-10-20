@@ -8,6 +8,7 @@
 import { AgentConfigService } from './AgentConfigService';
 import type { AgentConfig } from '@/types';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown, ValidationError } from '@/types/errors';
 
 export interface SyncResult {
   synced: number;

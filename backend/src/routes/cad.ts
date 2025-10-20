@@ -8,6 +8,7 @@ import { CadController } from '@/controllers/CadController';
 import { SecureUpload } from '@/utils/secureUpload';
 import { safeLogger } from '@/utils/logSanitizer';
 import { authenticateJWT } from '@/middleware/jwtAuth';
+import { createErrorFromUnknown } from '@/types/errors';
 
 const router: RouterType = Router();
 const cadController = new CadController();

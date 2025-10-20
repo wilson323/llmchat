@@ -1,5 +1,6 @@
 import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export interface ChatHistoryQueryOptions {
   limit?: number;

@@ -1,5 +1,6 @@
 import geoip from 'geoip-lite';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 interface GeoLookupResult {
   country: string;

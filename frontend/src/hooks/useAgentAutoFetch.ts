@@ -23,10 +23,30 @@ export function useAgentAutoFetch() {
 
       // 修复属性访问错误
       if ('data' in response && response.data) {
-        return response.data;
+        const data = response.data;
+        // 确保data包含所有必需属性
+        if (
+          typeof data === 'object' &&
+          data !== null &&
+          'name' in data &&
+          'description' in data &&
+          'model' in data
+        ) {
+          return data as AgentInfo;
+        }
       }
 
-      throw new Error('获取智能体信息失败');
+      // 修复：返回默认AgentInfo对象而非抛出错误
+      return {
+        name: 'Unknown',
+        description: '',
+        model: '',
+        systemPrompt: '',
+        temperature: 0.7,
+        maxTokens: 2000,
+        capabilities: [],
+        features: {}
+      };
     } catch (err) {
       const errorMessage: string = err instanceof Error ? err.message : '获取智能体信息失败';
       setError(errorMessage);

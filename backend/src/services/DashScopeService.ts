@@ -8,6 +8,7 @@
 import type { AxiosInstance } from 'axios';
 import axios from 'axios';
 import type { ChatMessage, ChatOptions} from '@/types';
+import { createErrorFromUnknown } from '@/types/errors';
 import { ChatResponse } from '@/types';
 import type { CadFunctionTool } from '@llmchat/shared-types';
 import logger from '@/utils/logger';

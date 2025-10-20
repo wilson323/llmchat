@@ -3,7 +3,7 @@ import type { AgentConfigService } from './AgentConfigService';
 import type { AgentConfig } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import logger from '@/utils/logger';
-import { ResourceError, ValidationError, ExternalServiceError } from '@/types/errors';
+import { ResourceError, ValidationError, ExternalServiceError, createErrorFromUnknown } from '@/types/errors';
 
 /**
  * Dify应用信息接口

@@ -73,5 +73,5 @@ export const mergeHistoryDetailIntoSession = (
   id: detail.chatId || session.id,
   title: detail.title || session.title,
   messages: mapHistoryDetailToMessages(detail),
-  updatedAt: detail.metadata?.updatedAt ? coerceDate(detail.metadata.updatedAt) : new Date(),
+  updatedAt: detail.metadata?.updatedAt ? coerceDate(String(detail.metadata.updatedAt)) : new Date(),  // 修复：确保参数是string
 });

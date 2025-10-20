@@ -1,5 +1,12 @@
 /**
- * 最小化服务器 - 逐步排查问题
+ * LLMChat 后端服务入口 - 生产级完整版本
+ * 
+ * 功能：
+ * - Express服务器
+ * - 数据库连接
+ * - 智能体配置
+ * - 完整路由注册
+ * - 错误处理
  */
 
 import "./dotenv-loader"; // 必须最先加载环境变量
@@ -10,8 +17,47 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import logger from "./utils/logger";
+import { errorHandler } from "./middleware/errorHandler";
+import { createErrorFromUnknown } from "./types/errors";
 
+// 🔧 核心路由导入
+import healthRouter from "./routes/health";
+import authRouter from "./routes/auth";
+import agentsRouter from "./routes/agents";
+import chatRouter from "./routes/chat";
+import adminRouter from "./routes/admin";
+import chatSessionsRouter from "./routes/chatSessions";
+import sessionRoutesRouter from "./routes/sessionRoutes";
+import uploadRouter from "./routes/upload";
+
+// 🔧 核心服务导入
+import { initDB } from "./utils/db";
+import { AgentConfigService } from "./services/AgentConfigService";
+
+// ===== 全局错误处理器（必须在最前面） =====
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('未处理的Promise拒绝', {
+    reason: reason?.message || reason,
+    stack: reason?.stack,
+    promise: String(promise),
+  });
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('未捕获的异常', {
+    message: error.message,
+    stack: error.stack,
+  });
+  if (error.message?.includes('FATAL') || error.message?.includes('MODULE_NOT_FOUND')) {
+    process.exit(1);
+  }
+});
+
+// ===== Express应用实例 =====
 const app: express.Express = express();
+
+// 声明全局服务实例
+let agentConfigService: AgentConfigService | null = null;
 
 // 自动端口检测函数
 async function findAvailablePort(startPort: number = 3005): Promise<number> {
@@ -46,38 +92,35 @@ async function findAvailablePort(startPort: number = 3005): Promise<number> {
   });
 }
 
-async function startServer() {
-  const PORT = await findAvailablePort(parseInt(process.env.PORT ?? '3005'));
+// ===== 中间件配置 =====
+logger.info("🔧 配置中间件...");
 
-  // 全局错误处理器
-process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-  logger.error('未处理的Promise拒绝', {
-    reason: reason?.message || reason,
-    stack: reason?.stack,
-    promise: String(promise),
-  });
-});
+// 安全头部
+app.use(helmet({
+  contentSecurityPolicy: false, // 开发环境禁用
+}));
 
-process.on('uncaughtException', (error: Error) => {
-  logger.error('未捕获的异常', {
-    message: error.message,
-    stack: error.stack,
-  });
-  if (error.message?.includes('FATAL') || error.message?.includes('MODULE_NOT_FOUND')) {
-    process.exit(1);
-  }
-});
+// 压缩
+app.use(compression({
+  filter: (req, res) => {
+    // SSE流不压缩
+    if (req.path.includes("/chat/completions") && req.query.stream === "true") {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+}));
 
-logger.info("🔧 开始初始化最小化服务器");
-
-// 基础中间件
-app.use(helmet());
-app.use(compression());
+// CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+  origin: process.env.FRONTEND_URL ?? "http://localhost:3004",
   credentials: true,
 }));
+
+// Cookie解析
 app.use(cookieParser());
+
+// Body解析
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -91,20 +134,33 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
-logger.info("✅ 基础中间件已配置");
+logger.info("✅ 中间件配置完成");
 
-// 健康检查路由
+// ===== 路由注册 =====
+logger.info("🔧 注册路由...");
+
+// 健康检查（无需认证）
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'LLMChat Backend - 最小化模式',
+    message: 'LLMChat Backend',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
   });
 });
 
-logger.info("✅ 健康检查路由已配置");
+// 核心API路由
+app.use('/api/auth', authRouter);
+app.use('/api/agents', agentsRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/chat-sessions', chatSessionsRouter);
+app.use('/api/sessions', sessionRoutesRouter);
+app.use('/api/upload', uploadRouter);
 
+logger.info("✅ 路由注册完成");
+
+// ===== 错误处理 =====
 // 404处理
 app.use((req, res) => {
   res.status(404).json({
@@ -116,32 +172,66 @@ app.use((req, res) => {
 });
 
 // 全局错误处理
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('全局错误处理', { error: err.message, stack: err.stack });
-  res.status(500).json({
-    code: "INTERNAL_ERROR",
-    message: "服务器内部错误",
-    data: null,
-    timestamp: new Date().toISOString(),
-  });
-});
+app.use(errorHandler);
 
 logger.info("✅ 错误处理已配置");
 
-  // 启动服务器
-  app.listen(PORT, () => {
-    logger.info(`🚀 最小化服务器启动成功`);
-    logger.info(`📍 端口: ${PORT}`);
-    logger.info(`🌍 环境: ${process.env.NODE_ENV ?? "development"}`);
-    logger.info(`✅ 系统状态: 正常`);
+// ===== 服务器启动 =====
+async function startServer() {
+  try {
+    logger.info("🚀 开始初始化服务器...");
+
+    // 1. 初始化数据库
+    logger.info("📦 初始化数据库连接...");
+    await initDB();
+    logger.info("✅ 数据库连接成功");
+
+    // 2. 初始化智能体配置服务
+    logger.info("🤖 初始化智能体配置服务...");
+    agentConfigService = new AgentConfigService();
+    logger.info("✅ 智能体配置服务已就绪");
+
+    // 3. 查找可用端口
+    const PORT = await findAvailablePort(parseInt(process.env.PORT ?? '3005'));
+
+    // 4. 启动HTTP服务器
+    app.listen(PORT, () => {
+      logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      logger.info(`🎉 LLMChat 后端服务启动成功`);
+      logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      logger.info(`📍 端口: ${PORT}`);
+      logger.info(`🌍 环境: ${process.env.NODE_ENV ?? "development"}`);
+      logger.info(`🔗 健康检查: http://localhost:${PORT}/health`);
+      logger.info(`🔗 API文档: http://localhost:${PORT}/api/agents`);
+      logger.info(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    });
+
+  } catch (error: unknown) {
+    const err = createErrorFromUnknown(error, {
+      component: 'index',
+      operation: 'startServer',
+    });
+    logger.error('服务器初始化失败', err.toLogObject());
+    process.exit(1);
+  }
+}
+
+// 启动服务器（非测试环境）
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch(error => {
+    logger.error('服务器启动失败:', error);
+    process.exit(1);
   });
 }
 
-// 启动服务器
-startServer().catch(error => {
-  logger.error('服务器启动失败:', error);
-  process.exit(1);
-});
+// ===== 优雅关闭 =====
+const gracefulShutdown = (signal: string) => {
+  logger.info(`收到 ${signal} 信号，开始优雅关闭...`);
+  process.exit(0);
+};
 
-export { app };
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+export { app, agentConfigService };
 export default app;

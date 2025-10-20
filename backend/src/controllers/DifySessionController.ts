@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
 import { difySessionService } from '@/services/DifySessionService';
 import { AgentConfigService } from '@/services/AgentConfigService';
 import logger from '@/utils/logger';
@@ -71,12 +72,7 @@ export class DifySessionController {
       logger.error('获取 Dify 会话列表失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 
@@ -150,12 +146,7 @@ export class DifySessionController {
       logger.error('获取 Dify 会话消息失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 
@@ -224,12 +215,7 @@ export class DifySessionController {
       logger.error('获取 Dify 消息详情失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 
@@ -298,12 +284,7 @@ export class DifySessionController {
       logger.error('删除 Dify 会话失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 
@@ -375,12 +356,7 @@ export class DifySessionController {
       logger.error('提交 Dify 消息反馈失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 
@@ -449,12 +425,7 @@ export class DifySessionController {
       logger.error('获取 Dify 建议问题失败', error.toLogObject());
       
       const apiError = error.toApiError();
-      res.status(500).json({
-        code: 'INTERNAL_ERROR',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...apiError,
-      });
+      res.status(500).json(apiError);
     }
   }
 }

@@ -655,7 +655,7 @@ export class SyncManager implements ISyncManager {
 
   private extractVersionFromRemoteData(remote: FastGPTChatHistoryDetail): number {
     // 从远程数据中提取版本信息
-    return remote.metadata?.version || 1;
+    return (remote.metadata?.version as number) || 1;  // 修复：明确类型转换
   }
 
   private calculateChecksum(data: any): string {

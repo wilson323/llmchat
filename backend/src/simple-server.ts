@@ -2,14 +2,14 @@
  * 简化服务器 - 仅用于验证系统正常
  */
 
-import express from 'express';
+import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { logger } from '@/utils/logger';
 
-const app = express();
+const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
 // 基础中间件

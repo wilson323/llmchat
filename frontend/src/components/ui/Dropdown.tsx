@@ -183,6 +183,9 @@ const DropdownTrigger = React.forwardRef<HTMLButtonElement, DropdownTriggerProps
       }
     }, [trigger, setIsOpen]);
 
+    // 排除与Button不兼容的props
+    const { onChange, ...compatibleProps } = props;
+
     return (
       <Button
         ref={ref}
@@ -195,7 +198,7 @@ const DropdownTrigger = React.forwardRef<HTMLButtonElement, DropdownTriggerProps
         aria-expanded={isOpen}
         aria-haspopup="menu"
         disabled={disabled}
-        {...props}
+        {...compatibleProps}
       >
         {children}
       </Button>

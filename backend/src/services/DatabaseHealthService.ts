@@ -3,6 +3,7 @@
  */
 
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 export class DatabaseHealthService {
   private static instance: DatabaseHealthService | null = null;

@@ -3,6 +3,7 @@ import type { AgentConfigService } from './AgentConfigService';
 import type { AgentConfig, FastGPTInitResponse } from '@/types';
 import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import logger from '@/utils/logger';
+import { createErrorFromUnknown } from '@/types/errors';
 
 /**
  * 聊天初始化服务

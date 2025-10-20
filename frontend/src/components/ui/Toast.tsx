@@ -477,11 +477,9 @@ const createToast = (options: ToastOptions | string): string => {
 
   // 自动关闭
   if ((item.duration || 3000) > 0) {
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       useToastStore.getState().remove(id);
     }, item.duration || 3000);
-
-    return () => clearTimeout(timer);
   }
 
   return id;

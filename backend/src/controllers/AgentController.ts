@@ -11,7 +11,7 @@ import logger from '@/utils/logger';
 import { HTTP_STATUS } from '@/constants/httpStatus';
 import type { JsonValue } from '@/types/dynamic';
 import { authService } from '@/services/authInstance';
-import { AuthenticationError, AuthorizationError, ValidationError } from '@/types/errors';
+import { AuthenticationError, AuthorizationError, ValidationError, createErrorFromUnknown } from '@/types/errors';
 import type {
   JoiValidationResult,
   AgentConfigValidation,
@@ -348,14 +348,9 @@ export class AgentController {
       });
       logger.error('验证智能体配置失败', error.toLogObject());
       
-      const apiError: ApiError = {
-        code: 'VALIDATE_AGENT_FAILED',
-        message: '验证智能体配置失败',
-        timestamp: new Date().toISOString(),
-        ...error.toApiError(),
-      };
-
-      if (process.env.NODE_ENV === 'development') {
+      const apiError = error.toApiError();
+      
+      if (process.env.NODE_ENV === 'development' && !apiError.details) {
         apiError.details = { error: error.message } as JsonValue;
       }
 
@@ -598,12 +593,7 @@ export class AgentController {
         operation: 'fetchAgentInfo',
       });
       logger.error('获取智能体信息失败', error.toLogObject());
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        code: 'FETCH_AGENT_INFO_FAILED',
-        message: error.message,
-        timestamp: new Date().toISOString(),
-        ...error.toApiError(),
-      });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(error.toApiError());
     }
   };
 

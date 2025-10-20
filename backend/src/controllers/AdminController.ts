@@ -5,6 +5,7 @@ import { safeLogger as logger } from '@/utils/logSanitizer';
 import { HTTP_STATUS } from '@/constants/httpStatus';
 import { TIME_CONSTANTS, TIME_UNITS } from '@/constants/intervals';
 import type { UserQueryResult, CountResult, LogQueryResult } from '@/types/validation';
+import { createErrorFromUnknown } from '@/types/errors';
 
 // 创建服务实例
 const configService = new AgentConfigService();
@@ -118,14 +119,7 @@ export async function getConfigHealth(
     logger.error('[AdminController] 获取配置健康状态失败', error.toLogObject());
 
     const apiError = error.toApiError();
-    const response: ApiResponse<null> = {
-      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      message: '获取配置健康状态失败',
-      data: null,
-      ...apiError,
-    };
-
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
   }
 }
 
@@ -225,14 +219,7 @@ export async function compareConfigSnapshot(
     logger.error('[AdminController] 配置快照对比失败', error.toLogObject());
 
     const apiError = error.toApiError();
-    const response: ApiResponse<null> = {
-      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      message: '配置快照对比失败',
-      data: null,
-      ...apiError,
-    };
-
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(apiError);
   }
 }
 
@@ -401,11 +388,9 @@ export async function getConfigDetails(
     logger.error('[AdminController] 获取配置详情失败', error.toLogObject());
 
     const apiError = error.toApiError();
-    const response: ApiResponse<null> = {
-      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      message: '获取配置详情失败',
-      data: null,
+    const response = {
       ...apiError,
+      data: null,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -1199,11 +1184,9 @@ export async function getAdminStats(
     logger.error('[AdminController] 获取统计数据失败', error.toLogObject());
 
     const apiError = error.toApiError();
-    const response: ApiResponse<null> = {
-      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      message: '获取统计数据失败',
-      data: null,
+    const response = {
       ...apiError,
+      data: null,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
@@ -1300,11 +1283,9 @@ export async function getAdminMetrics(
     logger.error('[AdminController] 获取指标数据失败', error.toLogObject());
 
     const apiError = error.toApiError();
-    const response: ApiResponse<null> = {
-      code: HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      message: '获取指标数据失败',
-      data: null,
+    const response = {
       ...apiError,
+      data: null,
     };
 
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);

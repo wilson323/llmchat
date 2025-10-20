@@ -216,7 +216,7 @@ export interface UIComponentProps extends
 // =============================================================================
 
 /** Button组件基础Props */
-export interface BaseButtonProps extends UIComponentProps {
+export interface BaseButtonProps extends Omit<UIComponentProps, 'onChange'> {  // 修复：排除onChange避免与ButtonHTMLAttributes冲突
   /** 按钮变体 */
   variant?: ColorVariant;
   /** 按钮大小 */
@@ -255,7 +255,7 @@ export interface IconButtonProps extends Omit<ButtonProps, 'size' | 'leftIcon' |
 // =============================================================================
 
 /** Input组件基础Props */
-export interface BaseInputProps extends UIComponentProps {
+export interface BaseInputProps extends Omit<UIComponentProps, 'onChange'> {  // 修复：排除onChange避免类型冲突
   /** 输入框类型 */
   type?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'datetime-local' | 'file';
   /** 输入框大小 */
@@ -298,7 +298,7 @@ export type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size
 // =============================================================================
 
 /** Card组件基础Props */
-export interface BaseCardProps extends UIComponentProps {
+export interface BaseCardProps extends Omit<UIComponentProps, 'onChange'> {  // 修复：排除onChange避免类型冲突
   /** 卡片变体 */
   variant?: 'default' | 'outlined' | 'elevated' | 'filled';
   /** 卡片大小 */
@@ -355,7 +355,7 @@ export type CardComponent = ComponentWithSubComponents<CardProps, {
 // =============================================================================
 
 /** Tabs组件基础Props */
-export interface BaseTabsProps extends UIComponentProps {
+export interface BaseTabsProps extends Omit<UIComponentProps, 'onChange'> {  // 修复：排除onChange避免类型冲突
   /** 标签页变体 */
   variant?: 'default' | 'underline' | 'pills' | 'enclosed';
   /** 标签页方向 */
@@ -451,7 +451,7 @@ export type ModalProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'size'> & Ba
 // =============================================================================
 
 /** Select组件基础Props */
-export interface BaseSelectProps extends UIComponentProps {
+export interface BaseSelectProps extends Omit<UIComponentProps, 'onChange' | 'onCopy'> {  // 修复：排除冲突属性
   /** 选择框变体 */
   variant?: 'default' | 'outlined' | 'filled';
   /** 选择框大小 */
@@ -487,6 +487,8 @@ export type SelectProps = Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 's
 export interface SelectTriggerProps extends BaseComponentProps {
   /** 只读 */
   readonly?: boolean;
+  /** 点击事件处理器 */
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 /** Select Value组件Props */

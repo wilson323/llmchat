@@ -4,6 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
 import crypto from 'crypto';
 import logger from '@/utils/logger';
 

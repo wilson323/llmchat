@@ -14,6 +14,7 @@
  */
 
 import * as dotenv from 'dotenv';
+import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
 import * as path from 'path';
 import { existsSync } from 'fs';
 import * as crypto from 'crypto';

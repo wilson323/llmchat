@@ -222,7 +222,7 @@ export function createLazyComponent<P extends object = {}>(
 
   return React.memo((props: P) => (
     <LazyComponent component={LazyLoadedComponent} config={config} {...props} />
-  )) as ComponentType<P>;
+  )) as unknown as ComponentType<P>;  // 修复：通过unknown进行类型转换
 }
 
 /**

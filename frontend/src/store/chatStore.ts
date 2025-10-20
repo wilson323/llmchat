@@ -5,6 +5,7 @@ import { normalizeReasoningDisplay } from '@/lib/reasoning';
 import { debugLog } from '@/lib/debug';
 import { generateSmartTitle, updateSessionTitleIfNeeded } from '@/utils/titleGeneration';
 import { logger } from '@/lib/logger';
+import { isValidAgent, isValidChatMessage, isString } from '@/utils/typeGuards';
 
 // 类型安全的Store辅助类型
 type SetState<T> = (partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: boolean) => void;
@@ -197,6 +198,13 @@ export const useChatStore = create<ChatStore>()(
           return;
         }
 
+        // 类型守卫验证
+        if (!isValidAgent(agent)) {
+          console.error('Invalid agent object:', agent);
+          set({ agentsError: 'Invalid agent object' });
+          return;
+        }
+
         set((state: ChatState) => {
           const existingSessions = state.agentSessions[agent.id] ?? [];
           const latestSession = existingSessions[0] || null;
@@ -209,6 +217,7 @@ export const useChatStore = create<ChatStore>()(
             currentAgent: agent,
             currentSession: latestSession,
             messages: latestSession ? latestSession.messages : [],
+            agentsError: null, // 清除之前的错误
           };
         });
       },
@@ -217,7 +226,13 @@ export const useChatStore = create<ChatStore>()(
       setAgentsError: (error: string | null) => set({ agentsError: error }),
 
       // 添加消息（按 huihua.md 格式）
-      addMessage: (message: ChatMessage) =>
+      addMessage: (message: ChatMessage) => {
+        // 类型守卫验证
+        if (!isValidChatMessage(message)) {
+          console.error('Invalid chat message:', message);
+          return;
+        }
+
         set((state: ChatState) => {
           // 确保消息有时间戳
           const messageWithTimestamp = {
@@ -264,7 +279,8 @@ export const useChatStore = create<ChatStore>()(
           }
 
           return { messages: updatedMessages };
-        }),
+        });
+      },
 
       // 移除最后一个交互气泡（提交后隐藏交互UI）
       removeLastInteractiveMessage: () =>

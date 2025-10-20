@@ -5,6 +5,7 @@
  */
 
 import DxfParser from 'dxf-parser';
+import { createErrorFromUnknown } from '@/types/errors';
 import type {
   DxfEntity,
   CadFileInfo,

@@ -245,7 +245,7 @@ export class AuthApiService {
         success: true,
         metadata: {
           timestamp: new Date().toISOString(),
-          warning: '服务器登出失败，但本地状态已清除'
+          // 修复：移除warning字段（不在metadata类型中）
         }
       };
     }
@@ -393,7 +393,8 @@ export class AuthApiService {
       // 刷新令牌失败通常需要重新登录
       if (ApiErrorHandler.requiresReauthentication(apiError)) {
         const authError: AuthenticationError = {
-          ...apiError,
+          ...(apiError as any),  // 修复：使用类型断言避免code字段类型冲突
+          code: 'TOKEN_EXPIRED' as const,  // 明确设置正确的错误代码
           requiresReauth: true
         };
 

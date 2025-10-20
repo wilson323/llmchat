@@ -9,6 +9,7 @@
  */
 
 import { logger } from '@/utils/logger';
+import { SystemError } from '@/types/errors';
 
 export class AppConfig {
   /**

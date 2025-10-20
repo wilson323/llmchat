@@ -6,6 +6,7 @@
  */
 
 import DxfWriter from 'dxf-writer';
+import { createErrorFromUnknown } from '@/types/errors';
 import type {
   DxfEntity,
   AddLineParams,
