@@ -262,16 +262,16 @@ export async function initDB(): Promise<void> {
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
 
     // ✅ T006: 动态连接池配置（环境变量控制）
-    max: parseInt(process.env.DB_POOL_MAX || '50'),          // 最大连接数（默认50）
-    min: parseInt(process.env.DB_POOL_MIN || '10'),          // 最小连接数（默认10）
-    idleTimeoutMillis: 600_000,      // 🔧 10分钟空闲超时（防止连接意外终止）
-    connectionTimeoutMillis: 5000,   // 5秒连接超时
-    query_timeout: 5000,             // 5秒查询超时
-    maxUses: 7500,                    // 每个连接最多使用7500次后回收
+    max: parseInt(process.env.DB_POOL_MAX || '20'),          // 最大连接数（优化为20，避免过多连接）
+    min: parseInt(process.env.DB_POOL_MIN || '2'),           // 最小连接数（优化为2）
+    idleTimeoutMillis: 300_000,      // 🔧 5分钟空闲超时（避免长时间空闲导致断开）
+    connectionTimeoutMillis: 10_000, // 10秒连接超时（远程数据库需要更长时间）
+    query_timeout: 30_000,           // 30秒查询超时（复杂查询需要更长时间）
+    maxUses: 5000,                   // 每个连接最多使用5000次后回收
 
     // 🔧 TCP Keepalive配置（防止远程服务器/防火墙关闭空闲连接）
     keepAlive: true,                 // 启用TCP keepalive
-    keepAliveInitialDelayMillis: 60_000,  // 60秒后开始发送keepalive包
+    keepAliveInitialDelayMillis: 10_000,  // 🔧 10秒后开始发送keepalive包（更频繁的心跳）
 
     // ✅ 应用标识
     application_name: 'llmchat-backend',
@@ -332,6 +332,12 @@ export async function initDB(): Promise<void> {
       error: err.message,
       stack: err.stack,
     });
+    
+    // 🔧 如果是连接终止错误，尝试恢复连接池
+    if (err.message.includes('Connection terminated') || err.message.includes('ECONNRESET')) {
+      logger.warn('DB Pool: 检测到连接断开，连接池将自动创建新连接');
+      // node-postgres会自动重连，这里只记录日志
+    }
   });
 
   // ✅ T006: 定期报告连接池状态（每分钟）
@@ -344,6 +350,20 @@ export async function initDB(): Promise<void> {
       });
     }
   }, 60000);
+
+  // 🔧 主动连接健康检查（每3分钟执行一次简单查询保持连接活跃）
+  setInterval(async () => {
+    if (pool) {
+      try {
+        await pool.query('SELECT 1');
+        logger.debug('DB Pool: 连接健康检查通过');
+      } catch (err: unknown) {
+        logger.warn('DB Pool: 健康检查失败，连接池将自动恢复', {
+          error: err instanceof Error ? err.message : String(err)
+        });
+      }
+    }
+  }, 180_000); // 3分钟
 
   // 建表（若不存在）
   await withClient(async (client) => {
