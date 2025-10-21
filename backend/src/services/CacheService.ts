@@ -536,4 +536,3 @@ export function Cacheable(key: string, ttl = 300) {
 }
 
 export default CacheService;
-

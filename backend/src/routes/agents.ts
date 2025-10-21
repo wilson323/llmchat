@@ -46,7 +46,9 @@ const router: RouterType = Router();
 // 创建控制器实例
 const agentController = new AgentController();
 
-router.get('/', agentController.getAgents);
+router.get('/', (req, res, next) => {
+  agentController.getAgents(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -78,7 +80,9 @@ router.get('/', agentController.getAgents);
  *       500:
  *         description: 服务器错误
  */
-router.get('/:id', agentController.getAgent);
+router.get('/:id', (req, res, next) => {
+  agentController.getAgent(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -99,7 +103,9 @@ router.get('/:id', agentController.getAgent);
  *       503:
  *         description: 智能体不可用
  */
-router.get('/:id/status', agentController.getAgentStatus);
+router.get('/:id/status', (req, res, next) => {
+  agentController.getAgentStatus(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -113,7 +119,9 @@ router.get('/:id/status', agentController.getAgentStatus);
  *       500:
  *         description: 重新加载失败
  */
-router.post('/reload', agentController.reloadAgents);
+router.post('/reload', (req, res, next) => {
+  agentController.reloadAgents(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -134,7 +142,9 @@ router.post('/reload', agentController.reloadAgents);
  *       400:
  *         description: 配置验证失败
  */
-router.get('/:id/validate', agentController.validateAgent);
+router.get('/:id/validate', (req, res, next) => {
+  agentController.validateAgent(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -178,7 +188,9 @@ router.get('/:id/validate', agentController.validateAgent);
  *       401:
  *         description: 未授权
  */
-router.post('/', agentController.createAgent);
+router.post('/', (req, res, next) => {
+  agentController.createAgent(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -206,7 +218,9 @@ router.post('/', agentController.createAgent);
  *       404:
  *         description: 智能体不存在
  */
-router.put('/:id', agentController.updateAgent);
+router.put('/:id', (req, res, next) => {
+  agentController.updateAgent(req, res, next).catch(next);
+});
 
 /**
  * @swagger
@@ -228,7 +242,9 @@ router.put('/:id', agentController.updateAgent);
  *       404:
  *         description: 智能体不存在
  */
-router.delete('/:id', agentController.deleteAgent);
+router.delete('/:id', (req, res, next) => {
+  agentController.deleteAgent(req, res, next).catch(next);
+});
 
 export default router;
 export { router as agentRoutes };

@@ -18,6 +18,24 @@ const HTTP_STATUS_NOT_FOUND = 404;
 /** HTTP 内部服务器错误状态码 */
 const HTTP_STATUS_INTERNAL_ERROR = 500;
 
+// ===== 业务常量 =====
+/** 最大天数限制 */
+const MAX_DAYS_LIMIT = 365;
+/** 默认天数 */
+const DEFAULT_DAYS = 30;
+/** 最小天数 */
+const MIN_DAYS = 1;
+/** 地理分布限制数量 */
+const GEO_DISTRIBUTION_LIMIT = 100;
+/** 数值精度系数 */
+const DECIMAL_PRECISION = 10;
+/** 基数10 */
+const RADIX_DECIMAL = 10;
+/** 数组索引0 */
+const ARRAY_INDEX_ZERO = 0;
+/** 数组索引1 */
+const _ARRAY_INDEX_ONE = 1;
+
 /**
  * 系统概览数据接口
  */
@@ -36,6 +54,70 @@ interface SystemOverviewData {
   }>;
   provider_distribution: Record<string, number>;
   updated_at: string;
+}
+
+/**
+ * 每日趋势数据接口
+ */
+interface DailyTrendData {
+  summary_date: string;
+  total_sessions: number;
+  total_users: number;
+  total_messages: number;
+  active_agents: number;
+  fastgpt_sessions: number;
+  dify_sessions: number;
+  self_hosted_sessions: number;
+}
+
+/**
+ * 地理分布数据接口
+ */
+interface GeoDistributionData {
+  country: string;
+  province: string;
+  city: string;
+  event_count: number;
+  agents_used: number;
+  unique_sessions: number;
+  last_event_at: string;
+}
+
+/**
+ * 省份统计数据接口
+ */
+interface ProvinceCountData {
+  province: string;
+  count: string;
+}
+
+/**
+ * 对话系列原始数据接口
+ */
+interface ConversationSeriesRawData {
+  date: Date;
+  total: string;
+  agent_id: string;
+}
+
+/**
+ * 智能体对比原始数据接口
+ */
+interface AgentComparisonRawData {
+  agent_id: string;
+  agent_name?: string;
+  provider: string;
+  is_active?: boolean;
+  sessions: string;
+}
+
+/**
+ * 日期桶数据接口
+ */
+interface DateBucket {
+  date: string;
+  total: number;
+  byAgent: Array<{ agentId: string; count: number }>;
 }
 
 /**
@@ -162,16 +244,16 @@ export class AnalyticsController {
    */
   static async getDailyTrends(req: Request, res: Response): Promise<void> {
     try {
-      const days = parseInt(req.query.days as string) || 30;
+      const days = parseInt(req.query.days as string, RADIX_DECIMAL) || DEFAULT_DAYS;
 
-      if (days < 1 || days > 365) {
+      if (days < MIN_DAYS || days > MAX_DAYS_LIMIT) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '天数范围必须在1-365之间',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '天数范围必须在1-365之间',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
       logger.info('获取每日趋势数据', { days });
@@ -179,17 +261,17 @@ export class AnalyticsController {
       const pool = getPool();
       if (!pool) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '数据库连接池未初始化',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '数据库连接池未初始化',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
       // 从汇总表获取趋势数据
-      const result = await pool.query(
-        `SELECT 
+      const result = await pool.query<DailyTrendData>(
+        `SELECT
           summary_date,
           total_sessions,
           total_users,
@@ -205,11 +287,14 @@ export class AnalyticsController {
       );
 
       // 计算汇总数据
-      const dailyStats = result.rows;
-      const totalSessions = dailyStats.reduce((sum, row) => sum + (row.total_sessions || 0), 0);
+      const dailyStats: DailyTrendData[] = result.rows;
+      const totalSessions = dailyStats.reduce(
+        (sum: number, row: DailyTrendData) => sum + (row.total_sessions ?? 0),
+        0,
+      );
       const avgSessionsPerDay = dailyStats.length > 0 ? totalSessions / dailyStats.length : 0;
 
-      let peakDay = null;
+      let peakDay: string | null = null;
       let peakSessions = 0;
       for (const row of dailyStats) {
         if (row.total_sessions > peakSessions) {
@@ -220,12 +305,13 @@ export class AnalyticsController {
 
       const responseData = {
         period: `${days} days`,
-        start_date: dailyStats[0]?.summary_date || null,
-        end_date: dailyStats[dailyStats.length - 1]?.summary_date || null,
+        start_date: dailyStats[ARRAY_INDEX_ZERO]?.summary_date ?? null,
+        end_date: dailyStats[dailyStats.length - 1]?.summary_date ?? null,
         daily_stats: dailyStats,
         aggregates: {
           total_sessions: totalSessions,
-          avg_sessions_per_day: Math.round(avgSessionsPerDay * 10) / 10,
+          avg_sessions_per_day:
+            Math.round(avgSessionsPerDay * DECIMAL_PRECISION) / DECIMAL_PRECISION,
           peak_day: peakDay,
           peak_sessions: peakSessions,
         },
@@ -264,17 +350,17 @@ export class AnalyticsController {
       const pool = getPool();
       if (!pool) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '数据库连接池未初始化',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '数据库连接池未初始化',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
       // 从视图获取地理分布数据
-      const result = await pool.query(
-        `SELECT 
+      const result = await pool.query<GeoDistributionData>(
+        `SELECT
           country,
           province,
           city,
@@ -284,7 +370,7 @@ export class AnalyticsController {
           last_event_at
         FROM v_geo_distribution_stats
         ORDER BY event_count DESC
-        LIMIT 100`,
+        LIMIT ${GEO_DISTRIBUTION_LIMIT}`,
       );
 
       logger.info('地理分布数据获取成功', { count: result.rows.length });
@@ -319,17 +405,17 @@ export class AnalyticsController {
       const pool = getPool();
       if (!pool) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '数据库连接池未初始化',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '数据库连接池未初始化',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
       // 构建查询条件
       let query = `
-        SELECT 
+        SELECT
           province,
           COUNT(*) as count
         FROM v_geo_distribution_stats
@@ -349,15 +435,15 @@ export class AnalyticsController {
 
       query += ' GROUP BY province ORDER BY count DESC';
 
-      const result = await pool.query(query, params);
+      const result = await pool.query<ProvinceCountData>(query, params);
 
       // 构建响应数据
-      const points = result.rows.map(row => ({
+      const points = result.rows.map((row: ProvinceCountData) => ({
         province: row.province,
-        count: parseInt(row.count, 10),
+        count: parseInt(row.count, RADIX_DECIMAL),
       }));
 
-      const total = points.reduce((sum, p) => sum + p.count, 0);
+      const total = points.reduce((sum: number, p: { count: number }) => sum + p.count, 0);
 
       const responseData = {
         start: start ?? null,
@@ -405,72 +491,18 @@ export class AnalyticsController {
       const pool = getPool();
       if (!pool) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '数据库连接池未初始化',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '数据库连接池未初始化',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
-      // 构建查询 - 按日期汇总会话数
-      let query = `
-        SELECT 
-          DATE(created_at) as date,
-          COUNT(*) as total,
-          agent_id
-        FROM chat_sessions
-        WHERE 1=1
-      `;
-      const params: Array<string | number> = [];
+      const result = await this.buildConversationSeriesQuery(pool, start, end, agentId);
+      const buckets = this.processConversationSeriesData(result.rows);
 
-      if (start && typeof start === 'string') {
-        params.push(start);
-        query += ` AND created_at >= $${params.length}::timestamp`;
-      }
-
-      if (end && typeof end === 'string') {
-        params.push(end);
-        query += ` AND created_at <= $${params.length}::timestamp`;
-      }
-
-      if (agentId && typeof agentId === 'string' && agentId !== 'all') {
-        params.push(agentId);
-        query += ` AND agent_id = $${params.length}`;
-      }
-
-      query += ' GROUP BY DATE(created_at), agent_id ORDER BY date ASC';
-
-      const result = await pool.query(query, params);
-
-      // 按日期分组数据
-      interface DateBucket {
-        date: string;
-        total: number;
-        byAgent: Array<{ agentId: string; count: number }>;
-      }
-      const bucketMap = new Map<string, DateBucket>();
-
-      for (const row of result.rows) {
-        const dateKey = row.date.toISOString().split('T')[0];
-        if (!bucketMap.has(dateKey)) {
-          bucketMap.set(dateKey, {
-            date: dateKey,
-            total: 0,
-            byAgent: [],
-          });
-        }
-
-        const bucket = bucketMap.get(dateKey)!;
-        bucket.total += parseInt(row.total, 10);
-        bucket.byAgent.push({
-          agentId: row.agent_id,
-          count: parseInt(row.total, 10),
-        });
-      }
-
-      const buckets = Array.from(bucketMap.values());
-      const total = buckets.reduce((sum, b) => sum + b.total, 0);
+      const total = buckets.reduce((sum: number, b: DateBucket) => sum + b.total, 0);
 
       const responseData = {
         start: start ?? null,
@@ -503,6 +535,81 @@ export class AnalyticsController {
   }
 
   /**
+   * 构建对话系列查询
+   */
+  private static async buildConversationSeriesQuery(
+    pool: { query: <T>(sql: string, params?: unknown[]) => Promise<{ rows: T[] }> },
+    start: unknown,
+    end: unknown,
+    agentId: unknown,
+  ): Promise<{ rows: ConversationSeriesRawData[] }> {
+    // 构建查询 - 按日期汇总会话数
+    let query = `
+      SELECT
+        DATE(created_at) as date,
+        COUNT(*) as total,
+        agent_id
+      FROM chat_sessions
+      WHERE 1=1
+    `;
+    const params: Array<string | number> = [];
+
+    if (start && typeof start === 'string') {
+      params.push(start);
+      query += ` AND created_at >= $${params.length}::timestamp`;
+    }
+
+    if (end && typeof end === 'string') {
+      params.push(end);
+      query += ` AND created_at <= $${params.length}::timestamp`;
+    }
+
+    if (agentId && typeof agentId === 'string' && agentId !== 'all') {
+      params.push(agentId);
+      query += ` AND agent_id = $${params.length}`;
+    }
+
+    query += ' GROUP BY DATE(created_at), agent_id ORDER BY date ASC';
+
+    return pool.query<ConversationSeriesRawData>(query, params);
+  }
+
+  /**
+   * 处理对话系列数据
+   */
+  private static processConversationSeriesData(rows: ConversationSeriesRawData[]): DateBucket[] {
+    const bucketMap = new Map<string, DateBucket>();
+
+    for (const row of rows) {
+      const datePart = row.date.toISOString().split('T')[ARRAY_INDEX_ZERO];
+      // 确保datePart不为undefined
+      if (!datePart) {
+        continue; // 跳过无效的日期
+      }
+
+      if (!bucketMap.has(datePart)) {
+        bucketMap.set(datePart, {
+          date: datePart,
+          total: 0,
+          byAgent: [],
+        });
+      }
+
+      const bucket = bucketMap.get(datePart);
+      if (bucket) {
+        const totalCount = parseInt(row.total, RADIX_DECIMAL);
+        bucket.total += totalCount;
+        bucket.byAgent.push({
+          agentId: row.agent_id,
+          count: totalCount,
+        });
+      }
+    }
+
+    return Array.from(bucketMap.values());
+  }
+
+  /**
    * 获取智能体对比数据
    * GET /api/admin/analytics/conversations/agents?start=2025-01-01&end=2025-12-31
    */
@@ -515,17 +622,17 @@ export class AnalyticsController {
       const pool = getPool();
       if (!pool) {
         const apiError: ApiError = {
-        code: 'VALIDATION_ERROR',
-        message: '数据库连接池未初始化',
-        timestamp: new Date().toISOString(),
-      };
-      res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
-      return;
+          code: 'VALIDATION_ERROR',
+          message: '数据库连接池未初始化',
+          timestamp: new Date().toISOString(),
+        };
+        res.status(HTTP_STATUS_BAD_REQUEST).json(apiError);
+        return;
       }
 
       // 构建查询
       let query = `
-        SELECT 
+        SELECT
           c.agent_id,
           a.name as agent_name,
           a.provider,
@@ -549,20 +656,20 @@ export class AnalyticsController {
 
       query += ' GROUP BY c.agent_id, a.name, a.provider, a.is_active ORDER BY sessions DESC';
 
-      const result = await pool.query(query, params);
+      const result = await pool.query<AgentComparisonRawData>(query, params);
 
-      const totals = result.rows.map(row => ({
+      const totals = result.rows.map((row: AgentComparisonRawData) => ({
         agentId: row.agent_id,
-        name: row.agent_name || row.agent_id,
-        isActive: row.is_active || false,
-        count: parseInt(row.sessions, 10),
+        name: row.agent_name ?? row.agent_id,
+        isActive: row.is_active ?? false,
+        count: parseInt(row.sessions, RADIX_DECIMAL),
       }));
 
-      const total = totals.reduce((sum, t) => sum + t.count, 0);
+      const total = totals.reduce((sum: number, t: { count: number }) => sum + t.count, 0);
 
       const responseData = {
-        start: start || null,
-        end: end || null,
+        start: start ?? null,
+        end: end ?? null,
         totals,
         total,
         generatedAt: new Date().toISOString(),

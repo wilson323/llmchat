@@ -1,6 +1,6 @@
 /**
- * !ίωaόϊ
+ * Mock exports for testing
  */
 
-// ‚φ:zMΡο
+// Re-export all mocks
 export const mocks = {};

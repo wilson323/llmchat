@@ -23,6 +23,15 @@ import logger from '@/utils/logger';
 import { AuthenticationError, ValidationError, ResourceError, BusinessLogicError, createErrorFromUnknown } from '@/types/errors';
 import type { FailedLoginAttemptsResult } from '@/types/validation';
 
+// ==================== 常量定义 ====================
+
+const MIN_SECRET_LENGTH = 32;
+const DEFAULT_REDIS_PORT = 7788;
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY = 200;
+const MAX_RETRY_DELAY = 2000;
+const MIN_PASSWORD_LENGTH = 8;
+
 // ==================== 类型定义 ====================
 
 export interface AuthUser {
@@ -88,9 +97,9 @@ export class AuthServiceV2 {
 
     // 获取JWT密钥
     this.tokenSecret = envManager.get('TOKEN_SECRET');
-    if (!this.tokenSecret || this.tokenSecret.length < 32) {
+    if (!this.tokenSecret || this.tokenSecret.length < MIN_SECRET_LENGTH) {
       throw new Error(
-        'TOKEN_SECRET must be set and at least 32 characters long for security',
+        `TOKEN_SECRET must be set and at least ${MIN_SECRET_LENGTH} characters long for security`,
       );
     }
 
@@ -116,15 +125,15 @@ export class AuthServiceV2 {
     try {
       this.redis = new Redis({
         host: envManager.get('REDIS_HOST'),
-        port: envManager.getInt('REDIS_PORT', 7788),
+        port: envManager.getInt('REDIS_PORT', DEFAULT_REDIS_PORT),
         password: envManager.get('REDIS_PASSWORD', ''),
         db: envManager.getInt('REDIS_DB', 0),
         retryStrategy: (times: number) => {
-          if (times > 3) {
+          if (times > MAX_RETRIES) {
             logger.error('Redis连接失败，切换到内存模式');
             return null; // 停止重试
           }
-          return Math.min(times * 200, 2000);
+          return Math.min(times * BASE_RETRY_DELAY, MAX_RETRY_DELAY);
         },
       });
 
@@ -214,7 +223,7 @@ export class AuthServiceV2 {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email ?? '',
-      role: dbUser.role || 'user',
+      role: dbUser.role ?? 'user',
     };
 
     const token = await this.generateToken(user);
@@ -267,7 +276,7 @@ export class AuthServiceV2 {
         component: 'AuthServiceV2',
         operation: 'validateToken',
       });
-      
+
       if (error instanceof jwt.TokenExpiredError) {
         return { valid: false, error: 'TOKEN_EXPIRED' };
       }
@@ -339,7 +348,7 @@ export class AuthServiceV2 {
         id: dbUser.id,
         username: dbUser.username,
         email: dbUser.email ?? '',
-        role: dbUser.role || 'user',
+        role: dbUser.role ?? 'user',
       };
 
       const newToken = await this.generateToken(user);
@@ -447,7 +456,7 @@ export class AuthServiceV2 {
       await client.query(
         `INSERT INTO users (id, username, email, password_hash, role, status, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-        [userId, username, email || null, passwordHash, 'user', 'active'],
+        [userId, username, email ?? null, passwordHash, 'user', 'active'],
       );
     });
 
@@ -469,7 +478,7 @@ export class AuthServiceV2 {
     if (!result.valid || !result.user) {
       throw new AuthenticationError({
         message: 'Token 验证失败',
-        code: result.error || 'UNAUTHORIZED',
+        code: result.error ?? 'UNAUTHORIZED',
       });
     }
     return result.user;
@@ -477,12 +486,12 @@ export class AuthServiceV2 {
 
   // ==================== 私有辅助方法 ====================
 
-  private async generateToken(user: AuthUser): Promise<string> {
+  private generateToken(user: AuthUser): string {
     const jti = generateId();
     const payload: JWTPayload = {
       sub: user.id,
       username: user.username,
-      role: user.role || 'user',
+      role: user.role ?? 'user',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + this.tokenTTL,
       jti,
@@ -491,11 +500,11 @@ export class AuthServiceV2 {
     return jwt.sign(payload, this.tokenSecret);
   }
 
-  private async generateRefreshToken(user: AuthUser): Promise<string> {
+  private generateRefreshToken(user: AuthUser): string {
     const payload: JWTPayload = {
       sub: user.id,
       username: user.username,
-      role: user.role || 'user',
+      role: user.role ?? 'user',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_TTL,
     };
@@ -609,7 +618,7 @@ export class AuthServiceV2 {
       await withClient(async (client) => {
         await client.query(
           'UPDATE users SET last_login_at = CURRENT_TIMESTAMP, last_login_ip = $1 WHERE id = $2',
-          [ip || null, userId],
+          [ip ?? null, userId],
         ).catch(() => {}); // ✅ 字段不存在时静默失败
       });
     } catch (unknownError: unknown) {
@@ -651,7 +660,7 @@ export class AuthServiceV2 {
   }
 
   private validatePasswordStrength(password: string): void {
-    if (password.length < 8) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       throw new ValidationError({
         message: '密码长度至少8位',
         code: 'PASSWORD_TOO_SHORT',
@@ -708,4 +717,3 @@ export function getAuthService(): AuthServiceV2 {
   }
   return authServiceInstance;
 }
-

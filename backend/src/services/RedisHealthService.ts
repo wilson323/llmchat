@@ -11,7 +11,7 @@ export class RedisHealthService {
   private lastCheck: Date = new Date();
 
   private constructor() {
-    logger.info("简化版RedisHealthService已初始化");
+    logger.info('简化版RedisHealthService已初始化');
   }
 
   public static getInstance(): RedisHealthService {
@@ -22,11 +22,11 @@ export class RedisHealthService {
   }
 
   public async start(): Promise<void> {
-    logger.info("Redis健康检查服务已启动");
+    logger.info('Redis健康检查服务已启动');
   }
 
   public async stop(): Promise<void> {
-    logger.info("Redis健康检查服务已停止");
+    logger.info('Redis健康检查服务已停止');
   }
 
   public async checkHealth(): Promise<{
@@ -47,8 +47,8 @@ export class RedisHealthService {
         lastCheck: this.lastCheck,
         responseTime: Date.now() - startTime,
         details: {
-          message: "简化模式：Redis健康检查"
-        }
+          message: '简化模式：Redis健康检查',
+        },
       };
     } catch (unknownError: unknown) {
       const error = createErrorFromUnknown(unknownError, {
@@ -63,8 +63,8 @@ export class RedisHealthService {
         lastCheck: this.lastCheck,
         responseTime: Date.now() - startTime,
         details: {
-          error: error.message
-        }
+          error: error.message,
+        },
       };
     }
   }

@@ -65,7 +65,7 @@ export enum RetryStrategy {
  * 请求去重器
  */
 export class RequestDeduplicator {
-  private readonly pendingRequests: Map<string, Promise<any>> = new Map();
+  private readonly pendingRequests: Map<string, Promise<unknown>> = new Map();
   private readonly requestMetrics: Map<string, RequestMetrics> = new Map();
   private readonly cleanupInterval: NodeJS.Timeout;
 
@@ -97,7 +97,7 @@ export class RequestDeduplicator {
     const existingRequest = this.pendingRequests.get(key);
     if (existingRequest) {
       logger.debug('请求去重，复用现有请求', { key });
-      return existingRequest;
+      return existingRequest as Promise<T>;
     }
 
     // 检查并发请求数量

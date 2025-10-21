@@ -84,9 +84,9 @@ export class ConnectionPoolOptimizer {
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private isMonitoring = false;
 
-  private constructor() {
-    // 不在构造函数中获取连接池，而是延迟获取
-  }
+  // 私有构造函数确保单例模式 - 延迟初始化连接池
+  // eslint-disable-next-line no-useless-constructor
+  private constructor() {}
 
   static getInstance(): ConnectionPoolOptimizer {
     if (!ConnectionPoolOptimizer.instance) {
@@ -489,7 +489,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
       await Promise.all(
         connections.map(async (client) => {
           await client.query('SELECT 1');
-        })
+        }),
       );
 
       // 释放所有连接
@@ -536,7 +536,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
             });
             // 记录失败但不抛出异常
           }
-        })()
+        })(),
       );
     }
 
@@ -548,7 +548,7 @@ ${recommendations.map(rec => `- ${rec}`).join('\n')}
     const failed = results.filter(r => r.status === 'rejected').length;
     const averageTime = totalTime / concurrency;
 
-    logger.info(`🧪 连接池性能测试完成`, {
+    logger.info('🧪 连接池性能测试完成', {
       成功: success,
       失败: failed,
       并发数: concurrency,

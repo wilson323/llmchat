@@ -251,4 +251,3 @@ export class CadParserService {
     return results;
   }
 }
-

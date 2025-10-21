@@ -12,18 +12,40 @@
 import multer from 'multer';
 import type express from 'express';
 import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 import crypto from 'crypto';
 import logger from '@/utils/logger';
+
+// 文件上传常量
+const FILE_CONSTANTS = {
+  TOKEN_BYTES: 8,
+  MAX_FILES: 10,
+  MAX_FIELDS: 20,
+  FIELD_SIZE: 1024 * 1024, // 1MB
+  CAD_MAX_FILES: 1,
+  COOKIE_MAX_AGE: 86400000, // 24小时
+  SIZE_MULTIPLIER: 10,
+  SIZE_DOCUMENT_MULTIPLIER: 20,
+  SIZE_CAD_MULTIPLIER: 50,
+} as const;
 
 /**
  * 确保上传目录存在
  */
 const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  logger.info('Upload directory created', { path: uploadDir });
+async function ensureUploadDirectory(): Promise<void> {
+  try {
+    await fs.access(uploadDir);
+  } catch {
+    await fs.mkdir(uploadDir, { recursive: true });
+    logger.info('Upload directory created', { path: uploadDir });
+  }
 }
+
+// 初始化上传目录
+ensureUploadDirectory().catch((error: unknown) => {
+  logger.error('Failed to create upload directory', { error, path: uploadDir });
+});
 
 /**
  * 允许的文件类型（MIME类型白名单）
@@ -45,7 +67,7 @@ const ALLOWED_MIME_TYPES = [
   // CAD文件
   'application/dxf',
   'application/acad',
-];
+] as const;
 
 /**
  * 允许的文件扩展名（白名单）
@@ -54,17 +76,26 @@ const ALLOWED_EXTENSIONS = [
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
   '.pdf', '.docx', '.xlsx', '.pptx', '.txt', '.csv',
   '.dxf', '.dwg',
-];
+] as const;
 
 /**
  * 文件大小限制（字节）
  */
+const SIZE_MULTIPLIERS = {
+  MB: 1024 * 1024,
+} as const;
+
 const FILE_SIZE_LIMITS = {
-  image: 10 * 1024 * 1024,      // 图片：10MB
-  document: 20 * 1024 * 1024,    // 文档：20MB
-  cad: 50 * 1024 * 1024,         // CAD文件：50MB
-  default: 10 * 1024 * 1024,     // 默认：10MB
-};
+  image: FILE_CONSTANTS.SIZE_MULTIPLIER * SIZE_MULTIPLIERS.MB,      // 图片：10MB
+  document: FILE_CONSTANTS.SIZE_DOCUMENT_MULTIPLIER * SIZE_MULTIPLIERS.MB,    // 文档：20MB
+  cad: FILE_CONSTANTS.SIZE_CAD_MULTIPLIER * SIZE_MULTIPLIERS.MB,         // CAD文件：50MB
+  default: FILE_CONSTANTS.SIZE_MULTIPLIER * SIZE_MULTIPLIERS.MB,     // 默认：10MB
+} as const;
+
+// 扩展的Multer文件接口，包含自定义code属性
+interface MulterError extends Error {
+  code?: string;
+}
 
 /**
  * 生成安全的文件名
@@ -73,14 +104,14 @@ const FILE_SIZE_LIMITS = {
 function generateSafeFilename(originalname: string): string {
   const ext = path.extname(originalname).toLowerCase();
   const timestamp = Date.now();
-  const randomHash = crypto.randomBytes(8).toString('hex');
+  const randomHash = crypto.randomBytes(FILE_CONSTANTS.TOKEN_BYTES).toString('hex');
   return `${timestamp}-${randomHash}${ext}`;
 }
 
 /**
  * 获取文件大小限制
  */
-function getFileSizeLimit(mimetype: string, ext: string): number {
+function _getFileSizeLimit(mimetype: string, ext: string): number {
   if (mimetype.startsWith('image/')) {
     return FILE_SIZE_LIMITS.image;
   }
@@ -110,15 +141,15 @@ const storage = multer.diskStorage({
  * 文件过滤器（安全验证）
  */
 const fileFilter = (
-  req: Express.Request,
+  req: express.Request,
   file: Express.Multer.File,
-  cb: multer.FileFilterCallback
+  cb: multer.FileFilterCallback,
 ): void => {
   const ext = path.extname(file.originalname).toLowerCase();
 
   // 检查文件扩展名
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    const error = new Error(`File type not allowed: ${ext}`) as any;
+  if (!ALLOWED_EXTENSIONS.includes(ext as typeof ALLOWED_EXTENSIONS[number])) {
+    const error = new Error(`File type not allowed: ${ext}`) as MulterError;
     error.code = 'INVALID_FILE_TYPE';
     logger.warn('File upload rejected - invalid extension', {
       filename: file.originalname,
@@ -129,8 +160,8 @@ const fileFilter = (
   }
 
   // 检查MIME类型
-  if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    const error = new Error(`MIME type not allowed: ${file.mimetype}`) as any;
+  if (!ALLOWED_MIME_TYPES.includes(file.mimetype as typeof ALLOWED_MIME_TYPES[number])) {
+    const error = new Error(`MIME type not allowed: ${file.mimetype}`) as MulterError;
     error.code = 'INVALID_MIME_TYPE';
     logger.warn('File upload rejected - invalid MIME type', {
       filename: file.originalname,
@@ -152,9 +183,9 @@ const uploadConfig: multer.Options = {
   fileFilter,
   limits: {
     fileSize: FILE_SIZE_LIMITS.cad,  // 使用最大限制（动态检查）
-    files: 10,                        // 最多10个文件
-    fields: 20,                       // 最多20个字段
-    fieldSize: 1024 * 1024,          // 字段大小1MB
+    files: FILE_CONSTANTS.MAX_FILES,  // 最多10个文件
+    fields: FILE_CONSTANTS.MAX_FIELDS, // 最多20个字段
+    fieldSize: FILE_CONSTANTS.FIELD_SIZE, // 字段大小1MB
   },
 };
 
@@ -173,7 +204,7 @@ export const uploadSingle: express.RequestHandler = upload.single('file');
  * 多文件上传中间件（同一字段）
  * 使用方式: router.post('/upload', uploadMultiple, handler)
  */
-export const uploadMultiple: express.RequestHandler = upload.array('files', 10);
+export const uploadMultiple: express.RequestHandler = upload.array('files', FILE_CONSTANTS.MAX_FILES);
 
 /**
  * 多字段文件上传中间件
@@ -201,14 +232,14 @@ const cadUploader = multer({
     if (ext === '.dxf' || ext === '.dwg') {
       cb(null, true);
     } else {
-      const error = new Error('Only CAD files (.dxf, .dwg) are allowed') as any;
+      const error = new Error('Only CAD files (.dxf, .dwg) are allowed') as MulterError;
       error.code = 'INVALID_CAD_FILE';
       cb(error);
     }
   },
   limits: {
     fileSize: FILE_SIZE_LIMITS.cad,
-    files: 1,
+    files: FILE_CONSTANTS.CAD_MAX_FILES,
   },
 }).single('cadFile');
 
@@ -222,5 +253,5 @@ export {
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS,
   FILE_SIZE_LIMITS,
+  FILE_CONSTANTS,
 };
-

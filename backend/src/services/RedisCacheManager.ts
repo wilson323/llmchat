@@ -22,9 +22,9 @@ const compress = (data: Buffer): Buffer => gzipSync(data);
 const decompress = (data: Buffer): Buffer => gunzipSync(data);
 
 // 缓存项接口
-export interface CacheItem<T = any> {
-  /** 缓存数据 */
-  data: T;
+export interface CacheItem<T = unknown> {
+  /** 缓存数据（序列化后的字符串或压缩后的Buffer） */
+  data: Buffer | string;
   /** 创建时间戳 */
   createdAt: number;
   /** 过期时间戳 */
@@ -62,7 +62,7 @@ export interface RedisCacheConfig {
   /** 是否启用雪崩防护 */
   enableAvalancheProtection: boolean;
   /** 穿透防护返回值 */
-  nullFallback?: any;
+  nullFallback?: unknown;
 }
 
 // 缓存统计接口
@@ -128,9 +128,9 @@ export class RedisCacheManager {
   private readonly memoryCache = new Map<string, CacheItem>();
   private config: RedisCacheConfig;
   private stats: RedisCacheStats;
-  private readonly lockPromises = new Map<string, Promise<any>>();
+  private readonly lockPromises = new Map<string, Promise<unknown>>();
   private readonly prewarmedKeys = new Set<string>();
-  private readonly protectionCache = new Map<string, any>();
+  private readonly protectionCache = new Map<string, unknown>();
 
   constructor(config: Partial<RedisCacheConfig> = {}) {
     this.config = {
@@ -262,7 +262,7 @@ export class RedisCacheManager {
   /**
    * 压缩数据
    */
-  private compressData(data: any): { compressed: boolean; data: any; size: number } {
+  private compressData(data: unknown): { compressed: boolean; data: Buffer | string; size: number } {
     const serialized = JSON.stringify(data);
     const size = Buffer.byteLength(serialized, 'utf8');
 
@@ -293,7 +293,7 @@ export class RedisCacheManager {
   /**
    * 解压数据
    */
-  private decompressData(item: CacheItem): any {
+  private decompressData<T = unknown>(item: CacheItem): T | null {
     if (!item.compressed) {
       return JSON.parse(item.data as string);
     }
@@ -382,7 +382,7 @@ export class RedisCacheManager {
         this.stats.hits++;
         this.updateStats();
         logger.debug('🎯 内存缓存命中', { key: key.substring(0, 50) });
-        return this.decompressData(memoryItem);
+        return await this.decompressData(memoryItem);
       }
 
       // 2. 穿透防护
@@ -392,7 +392,7 @@ export class RedisCacheManager {
         if (protectedValue !== undefined) {
           this.stats.protectionHits++;
           logger.debug('🛡️ 穿透防护命中', { key: key.substring(0, 50) });
-          return protectedValue;
+          return protectedValue as T | null;
         }
       }
 
@@ -406,7 +406,7 @@ export class RedisCacheManager {
             // 雪崩防护：如果大量请求同时访问，设置短期保护
             if (this.config.enableAvalancheProtection && redisItem.accessCount > 100) {
               const protectionKey = `protect:${fullKey}`;
-              const protectionTtl = Math.min(60, redisItem.expiresAt - now);
+              const _protectionTtl = Math.min(60, redisItem.expiresAt - now);
               this.protectionCache.set(protectionKey, this.decompressData(redisItem));
               this.stats.avalancheHits++;
               logger.debug('🏔️ 雪崩防护触发', { key: key.substring(0, 50) });
@@ -425,7 +425,7 @@ export class RedisCacheManager {
             this.stats.hits++;
             this.updateStats();
             logger.debug('🔥 Redis缓存命中', { key: key.substring(0, 50) });
-            return this.decompressData(redisItem);
+            return await this.decompressData(redisItem);
           }
         } catch (unknownError: unknown) {
           const error = createErrorFromUnknown(unknownError, {
@@ -463,7 +463,7 @@ export class RedisCacheManager {
       tags?: string[];
       strategy?: CacheStrategy;
       compress?: boolean;
-    } = {}
+    } = {},
   ): Promise<boolean> {
     const now = Date.now();
     const ttl = options.ttl || this.config.defaultTtl;
@@ -515,7 +515,7 @@ export class RedisCacheManager {
         ttl,
         size,
         compressed,
-        strategy: options.strategy
+        strategy: options.strategy,
       });
       return true;
     } catch (unknownError: unknown) {
@@ -533,7 +533,7 @@ export class RedisCacheManager {
    * 删除缓存
    */
   async del(key: string, options: { tags?: string[] } = {}): Promise<boolean> {
-    return await this.delete(key, options);
+    return this.delete(key, options);
   }
 
   /**
@@ -650,7 +650,7 @@ export class RedisCacheManager {
       tags?: string[];
       strategy?: CacheStrategy;
       compress?: boolean;
-    } = {}
+    } = {},
   ): Promise<T | null> {
     // 尝试从缓存获取
     const cached = await this.get<T>(key, options);
@@ -682,7 +682,7 @@ export class RedisCacheManager {
   async lock(
     key: string,
     ttl = 30,
-    options: { retry?: number; delay?: number } = {}
+    options: { retry?: number; delay?: number } = {},
   ): Promise<boolean> {
     if (!this.config.enableLocks) {
       return true; // 未启用锁，直接返回成功
@@ -709,7 +709,7 @@ export class RedisCacheManager {
         // 使用Redis原生的SET NX EX命令实现分布式锁
         const lockValue = JSON.stringify({
           locked: true,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         let acquired = false;
@@ -775,7 +775,7 @@ export class RedisCacheManager {
    */
   async prewarmKeys(keys: Array<{
     key: string;
-    fallback: () => Promise<any>;
+    fallback: () => Promise<unknown>;
     ttl?: number;
     tags?: string[];
   }>): Promise<void> {
@@ -788,8 +788,12 @@ export class RedisCacheManager {
     const promises = keys.map(async ({ key, fallback, ttl, tags }) => {
       try {
         const options: { ttl?: number; tags?: string[] } = {};
-        if (ttl !== undefined) options.ttl = ttl;
-        if (tags) options.tags = tags;
+        if (ttl !== undefined) {
+options.ttl = ttl;
+}
+        if (tags) {
+options.tags = tags;
+}
         await this.getOrSet(key, fallback, options);
         this.prewarmedKeys.add(key);
         this.stats.prewarmedHits++;
@@ -805,7 +809,7 @@ export class RedisCacheManager {
     const results = await Promise.allSettled(promises);
     logger.info('✅ 缓存预热完成', {
       totalKeys: keys.length,
-      successCount: results.filter(r => r.status === 'fulfilled').length
+      successCount: results.filter(r => r.status === 'fulfilled').length,
     });
   }
 
@@ -906,7 +910,7 @@ export class RedisCacheManager {
     const stats = this.getStats();
     const memoryItems = Array.from(this.memoryCache.entries()).slice(0, 10).map(([key, item]) => ({
       key,
-      ...item
+      ...item,
     }));
     const health = await this.healthCheck();
 
@@ -1228,7 +1232,7 @@ ${this.generateRecommendations()}
    */
   async warmup(data: Array<{
     key: string;
-    value: any;
+    value: unknown;
     ttl?: number;
     tags?: string[];
   }>): Promise<{
@@ -1241,8 +1245,12 @@ ${this.generateRecommendations()}
     for (const item of data) {
       try {
         const options: { ttl?: number; tags?: string[] } = {};
-        if (item.ttl !== undefined) options.ttl = item.ttl;
-        if (item.tags) options.tags = item.tags;
+        if (item.ttl !== undefined) {
+options.ttl = item.ttl;
+}
+        if (item.tags) {
+options.tags = item.tags;
+}
         const result = await this.set(item.key, item.value, options);
         if (result) {
           success++;
@@ -1260,7 +1268,7 @@ ${this.generateRecommendations()}
       }
     }
 
-    logger.info(`缓存预热完成`, { total: data.length, success, failed });
+    logger.info('缓存预热完成', { total: data.length, success, failed });
     return { success, failed };
   }
 

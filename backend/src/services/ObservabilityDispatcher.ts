@@ -1,6 +1,5 @@
 import axios from 'axios';
-import type { AppConfig, LoggingExporterConfig } from '@/utils/appConfig';
-import { loadAppConfig, resolveLoggingExportersFromEnv } from '@/utils/appConfig';
+import { loadAppConfig, resolveLoggingExportersFromEnv, type AppConfig, type LoggingExporterConfig } from '@/utils/appConfig';
 import logger from '@/utils/logger';
 import { createErrorFromUnknown } from '@/types/errors';
 
@@ -186,4 +185,3 @@ function chunk<T>(items: T[], size: number): T[][] {
   }
   return result;
 }
-

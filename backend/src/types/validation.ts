@@ -153,4 +153,3 @@ export interface FailedLoginAttemptsResult {
 export interface DbOperationResult {
   rowCount: number;
 }
-

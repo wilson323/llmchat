@@ -5,7 +5,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
+import { createErrorFromUnknown } from '@/types/errors';
 import { CadParserService } from '@/services/CadParserService';
 import { CadOperationService } from '@/services/CadOperationService';
 import { CAD_FUNCTION_TOOLS } from '@/utils/cadFunctionTools';
@@ -22,8 +22,16 @@ import type {
 import logger from '@/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
+// HTTP 状态码常量
+const HTTP_STATUS = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+} as const;
+
 // 内存存储（生产环境应使用数据库或文件系统）
-const cadFiles: Map<string, { info: CadFileInfo; entities: DxfEntity[]; content: string }> = new Map();
+const cadFiles: Map<string, { info: CadFileInfo; entities: DxfEntity[]; content: string }> =
+  new Map();
 
 /**
  * CAD 控制器类
@@ -40,10 +48,10 @@ export class CadController {
   /**
    * 上传 DXF 文件
    */
-  uploadDxf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  uploadDxf = (req: Request, res: Response, next: NextFunction): void => {
     try {
       if (!req.file) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'MISSING_FILE',
           message: '请上传 DXF 文件',
           data: null,
@@ -103,12 +111,12 @@ export class CadController {
   /**
    * 获取 CAD 文件信息
    */
-  getCadFile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getCadFile = (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { fileId } = req.params;
 
       if (!fileId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'INVALID_FILE_ID',
           message: '文件 ID 不能为空',
           data: null,
@@ -119,7 +127,7 @@ export class CadController {
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {
-        res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           code: 'FILE_NOT_FOUND',
           message: '未找到指定的 CAD 文件',
           data: null,
@@ -150,13 +158,16 @@ export class CadController {
   /**
    * 执行 CAD 操作
    */
-  executeCadOperation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  executeCadOperation = (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { fileId } = req.params;
-      const { operation, params } = req.body;
+      const { operation, params } = req.body as {
+        operation: string;
+        params: unknown;
+      };
 
       if (!fileId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'INVALID_FILE_ID',
           message: '文件 ID 不能为空',
           data: null,
@@ -167,7 +178,7 @@ export class CadController {
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {
-        res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           code: 'FILE_NOT_FOUND',
           message: '未找到指定的 CAD 文件',
           data: null,
@@ -179,25 +190,43 @@ export class CadController {
       let result;
       switch (operation) {
         case 'add_line':
-          result = this.operationService.addLine(cadFile.entities, params as AddLineParams);
+          result = this.operationService.addLine(
+            cadFile.entities,
+            params as AddLineParams,
+          );
           break;
         case 'add_circle':
-          result = this.operationService.addCircle(cadFile.entities, params as AddCircleParams);
+          result = this.operationService.addCircle(
+            cadFile.entities,
+            params as AddCircleParams,
+          );
           break;
         case 'add_arc':
-          result = this.operationService.addArc(cadFile.entities, params as AddArcParams);
+          result = this.operationService.addArc(
+            cadFile.entities,
+            params as AddArcParams,
+          );
           break;
         case 'move_entity':
-          result = this.operationService.moveEntity(cadFile.entities, params as MoveEntityParams);
+          result = this.operationService.moveEntity(
+            cadFile.entities,
+            params as MoveEntityParams,
+          );
           break;
         case 'delete_entity':
-          result = this.operationService.deleteEntity(cadFile.entities, params as DeleteEntityParams);
+          result = this.operationService.deleteEntity(
+            cadFile.entities,
+            params as DeleteEntityParams,
+          );
           break;
         case 'query_entities':
-          result = this.operationService.queryEntities(cadFile.entities, params as QueryEntitiesParams);
+          result = this.operationService.queryEntities(
+            cadFile.entities,
+            params as QueryEntitiesParams,
+          );
           break;
         default:
-          res.status(400).json({
+          res.status(HTTP_STATUS.BAD_REQUEST).json({
             code: 'INVALID_OPERATION',
             message: `不支持的操作: ${operation}`,
             data: null,
@@ -209,7 +238,9 @@ export class CadController {
       // 更新文件信息
       if (result.success && operation !== 'query_entities') {
         cadFile.info.entityCount = cadFile.entities.length;
-        cadFile.info.layers = Array.from(new Set(cadFile.entities.map(e => e.layer)));
+        cadFile.info.layers = Array.from(
+          new Set(cadFile.entities.map((e) => e.layer)),
+        );
       }
 
       res.json({
@@ -231,12 +262,12 @@ export class CadController {
   /**
    * 导出 DXF 文件
    */
-  exportDxf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  exportDxf = (req: Request, res: Response, next: NextFunction): void => {
     try {
       const { fileId } = req.params;
 
       if (!fileId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           code: 'INVALID_FILE_ID',
           message: '文件 ID 不能为空',
           data: null,
@@ -247,7 +278,7 @@ export class CadController {
 
       const cadFile = cadFiles.get(fileId);
       if (!cadFile) {
-        res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           code: 'FILE_NOT_FOUND',
           message: '未找到指定的 CAD 文件',
           data: null,
@@ -259,7 +290,10 @@ export class CadController {
       const dxfContent = this.operationService.generateDxf(cadFile.entities);
 
       res.setHeader('Content-Type', 'application/dxf');
-      res.setHeader('Content-Disposition', `attachment; filename="${cadFile.info.fileName}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${cadFile.info.fileName}"`,
+      );
       res.send(dxfContent);
     } catch (unknownError: unknown) {
       const error = createErrorFromUnknown(unknownError, {
@@ -274,9 +308,12 @@ export class CadController {
   /**
    * 获取 Function Calling 工具定义
    */
-  getFunctionTools = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getFunctionTools = (req: Request, res: Response, next: NextFunction): void => {
     try {
-      logger.info('[CadController] 获取工具定义请求', { path: req.path, method: req.method });
+      logger.info('[CadController] 获取工具定义请求', {
+        path: req.path,
+        method: req.method,
+      });
       res.json({
         code: 'SUCCESS',
         message: '获取工具定义成功',
@@ -295,4 +332,3 @@ export class CadController {
     }
   };
 }
-

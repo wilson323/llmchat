@@ -58,7 +58,7 @@ export class RedisConnectionPool extends EventEmitter {
     idle: 0,
     waiting: 0,
     errors: 0,
-    avgResponseTime: 0
+    avgResponseTime: 0,
   };
   private responseTimes: number[] = [];
   private maintenanceInterval?: NodeJS.Timeout;
@@ -82,7 +82,7 @@ export class RedisConnectionPool extends EventEmitter {
       keepAlive: 30000,
       connectTimeout: 10000,
       commandTimeout: 5000,
-      ...config
+      ...config,
     };
 
     // 异步初始化，避免阻塞构造函数
@@ -128,16 +128,16 @@ export class RedisConnectionPool extends EventEmitter {
       const connection = new Redis({
         host: this.config.host,
         port: this.config.port,
-        password: this.config.password,
         db: this.config.db ?? 0,
-        keyPrefix: this.config.keyPrefix || 'llmchat:',
-        enableOfflineQueue: this.config.enableOfflineQueue,
-        maxRetriesPerRequest: this.config.maxRetriesPerRequest,
-        lazyConnect: this.config.lazyConnect,
-        keepAlive: this.config.keepAlive,
-        connectTimeout: this.config.connectTimeout,
-        commandTimeout: this.config.commandTimeout,
-      } as any);
+        keyPrefix: this.config.keyPrefix ?? 'llmchat:',
+        ...(this.config.password !== undefined && { password: this.config.password }),
+        ...(this.config.enableOfflineQueue !== undefined && { enableOfflineQueue: this.config.enableOfflineQueue }),
+        ...(this.config.maxRetriesPerRequest !== undefined && { maxRetriesPerRequest: this.config.maxRetriesPerRequest }),
+        ...(this.config.lazyConnect !== undefined && { lazyConnect: this.config.lazyConnect }),
+        ...(this.config.keepAlive !== undefined && { keepAlive: this.config.keepAlive }),
+        ...(this.config.connectTimeout !== undefined && { connectTimeout: this.config.connectTimeout }),
+        ...(this.config.commandTimeout !== undefined && { commandTimeout: this.config.commandTimeout }),
+      });
 
       const timeout = setTimeout(() => {
         reject(new Error('Connection creation timeout'));
@@ -242,7 +242,7 @@ export class RedisConnectionPool extends EventEmitter {
       this.waitingQueue.push({
         resolve,
         reject,
-        timeout
+        timeout,
       });
 
       this.stats.waiting++;
@@ -330,7 +330,7 @@ export class RedisConnectionPool extends EventEmitter {
     return {
       ...this.stats,
       total: this.pool.length,
-      idle: this.pool.filter(conn => !this.activeConnections.has(conn)).length
+      idle: this.pool.filter(conn => !this.activeConnections.has(conn)).length,
     };
   }
 

@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
 
+// 常量定义
+const LOGGER_CONSTANTS = {
+  HTTP_STATUS_ERROR_THRESHOLD: 400,
+} as const;
+
 /**
  * 请求日志中间件
  */
@@ -21,7 +26,7 @@ export const requestLogger = (
     const { statusCode } = res;
 
     // 根据状态码选择日志级别
-    const logLevel = statusCode >= 400 ? '❌' : '✅';
+    const logLevel = statusCode >= LOGGER_CONSTANTS.HTTP_STATUS_ERROR_THRESHOLD ? '❌' : '✅';
 
     logger.debug(
       `${logLevel} [${new Date().toISOString()}] ${method} ${url} - ${statusCode} - ${duration}ms`,

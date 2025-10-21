@@ -72,11 +72,11 @@ export function deepReplaceEnvVariables<T>(obj: T, silent = false): T {
   }
 
   if (obj && typeof obj === 'object') {
-    const result: any = {};
+    const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       result[key] = deepReplaceEnvVariables(value, silent);
     }
-    return result;
+    return result as T;
   }
 
   return obj;

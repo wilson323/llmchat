@@ -8,16 +8,16 @@
 import logger from './logger';
 
 export const safeLogger = {
-  info: (message: string, meta?: unknown) => {
+  info: (message: string, meta?: unknown): void => {
     logger.info(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
-  error: (message: string, error?: unknown) => {
+  error: (message: string, error?: unknown): void => {
     logger.error(LogSanitizer.sanitize(message), error ? LogSanitizer.sanitizeObject(error) : undefined);
   },
-  warn: (message: string, meta?: unknown) => {
+  warn: (message: string, meta?: unknown): void => {
     logger.warn(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
-  debug: (message: string, meta?: unknown) => {
+  debug: (message: string, meta?: unknown): void => {
     logger.debug(LogSanitizer.sanitize(message), meta ? LogSanitizer.sanitizeObject(meta) : undefined);
   },
 };
@@ -29,7 +29,7 @@ export class LogSanitizer {
     { pattern: /secret/i, replacement: '***' },
     { pattern: /key/i, replacement: '***' },
     { pattern: /auth/i, replacement: '***' },
-    { pattern: /Bearer\s+[A-Za-z0-9\-._~+\/]+=*/g, replacement: 'Bearer ***' },
+    { pattern: /Bearer\s+[A-Za-z0-9\-._~+/]+=*/g, replacement: 'Bearer ***' },
     { pattern: /sk-[A-Za-z0-9-]+/g, replacement: 'sk-***' },
     { pattern: /mongodb:\/\/[^:]+:[^@]+@/g, replacement: 'mongodb://***:***@' },
     { pattern: /postgresql:\/\/[^:]+:[^@]+@/g, replacement: 'postgresql://***:***@' },

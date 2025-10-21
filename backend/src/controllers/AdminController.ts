@@ -5,7 +5,12 @@ import { safeLogger as logger } from '@/utils/logSanitizer';
 import { HTTP_STATUS } from '@/constants/httpStatus';
 import { TIME_CONSTANTS, TIME_UNITS } from '@/constants/intervals';
 import type { UserQueryResult, CountResult, LogQueryResult } from '@/types/validation';
-import { createErrorFromUnknown } from '@/types/errors';
+import {
+  createErrorFromUnknown,
+  AuthenticationError,
+  AuthorizationError,
+  BusinessLogicError,
+} from '@/types/errors';
 
 // 创建服务实例
 const configService = new AgentConfigService();
@@ -401,11 +406,6 @@ import os from 'os';
 import { authService } from '@/services/authInstance';
 import { withClient, hashPassword } from '@/utils/db';
 // import { analyticsService } from '@/services/analyticsInstance'; // 简化系统，暂时注释
-import {
-  AuthenticationError,
-  AuthorizationError,
-  BusinessLogicError,
-} from '@/types/errors';
 
 // 使用全局单例的 authService（见 services/authInstance.ts）
 
@@ -717,7 +717,7 @@ export class AdminController {
         });
       }
 
-      const filterAgentId = agentId && agentId !== 'all' ? agentId : null;
+      const _filterAgentId = agentId && agentId !== 'all' ? agentId : null;
 
       // 简化系统，返回空数据
       const data = { provinces: [] };
@@ -802,7 +802,7 @@ export class AdminController {
         });
       }
 
-      const filterAgentId = agentId && agentId !== 'all' ? agentId : null;
+      const _filterAgentId = agentId && agentId !== 'all' ? agentId : null;
 
       // 简化系统，返回空数据
       const data = { series: [] };
@@ -1291,4 +1291,3 @@ export async function getAdminMetrics(
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(response);
   }
 }
-

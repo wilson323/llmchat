@@ -5,31 +5,41 @@
  * to prevent plaintext password exposure in logs, memory dumps, and configuration files.
  */
 
-import type { PoolConfig } from 'pg';
-import { Pool } from 'pg';
-import type { EncryptedData } from './secureCredentials';
-import { SecureCredentialsManager } from './secureCredentials';
+import { Pool, type PoolConfig } from 'pg';
+import { SecureCredentialsManager, type EncryptedData } from './secureCredentials';
 import logger from './logger';
 import { createErrorFromUnknown } from '@/types/errors';
 
+// 数据库配置常量
+const MIN_PASSWORD_LENGTH_FOR_MASK = 4;
+const DEFAULT_POSTGRES_PORT = 5432;
+const POOL_CONFIG = {
+  MAX_POOL_SIZE: 50,
+  MIN_POOL_SIZE: 5,
+  IDLE_TIMEOUT: 30000,
+  CONNECTION_TIMEOUT: 10000,
+  MAX_USES: 7500,
+} as const;
+
+export interface PostgresConfig {
+  host: string;
+  port?: number | string;
+  user: string;
+  password: string | EncryptedData;
+  database: string;
+  ssl?: boolean | string;
+  encryptedPassword?: boolean;
+}
+
 export interface SecurePgConfig {
   database?: {
-    postgres?: {
-      host: string;
-      port?: number | string;
-      user: string;
-      password: string | EncryptedData; // Can be encrypted or plaintext (for migration)
-      database: string;
-      ssl?: boolean | string;
-      encryptedPassword?: boolean; // Flag to indicate if password is encrypted
-    }
+    postgres?: PostgresConfig;
   };
   auth?: {
     tokenTTLSeconds?: number;
   };
 }
 
-type PostgresConfig = NonNullable<NonNullable<SecurePgConfig['database']>['postgres']>;
 export type NormalizedSecurePostgresConfig = Omit<PostgresConfig, 'port' | 'ssl'> & {
   port?: number;
   ssl?: boolean;
@@ -116,7 +126,7 @@ function decryptPasswordIfNeeded(password: string | EncryptedData, isEncrypted?:
  * Masks password in logs and error messages
  */
 function maskPassword(password: string): string {
-  if (!password || password.length < 4) {
+  if (!password || password.length < MIN_PASSWORD_LENGTH_FOR_MASK) {
     return '***';
   }
   return password.substring(0, 2) + '***' + password.substring(password.length - 2);
@@ -144,13 +154,13 @@ export function normalizeSecurePostgresConfig(pg: PostgresConfig): NormalizedSec
 }
 
 export function createSecurePoolConfig(pg: PostgresConfig): PoolConfig {
-  const isEncrypted = (pg as any).encryptedPassword === true;
+  const isEncrypted = pg.encryptedPassword === true;
   const decryptedPassword = decryptPasswordIfNeeded(pg.password, isEncrypted);
 
   // Log masked password for security
   logger.info('[secureDb] Creating database connection pool', {
     host: pg.host,
-    port: Number(pg.port) ?? 5432,
+    port: Number(pg.port) ?? DEFAULT_POSTGRES_PORT,
     database: pg.database,
     user: pg.user,
     passwordMasked: maskPassword(decryptedPassword),
@@ -159,16 +169,16 @@ export function createSecurePoolConfig(pg: PostgresConfig): PoolConfig {
 
   return {
     host: pg.host,
-    port: Number(pg.port) ?? 5432,
+    port: Number(pg.port) ?? DEFAULT_POSTGRES_PORT,
     user: pg.user,
     password: decryptedPassword,
     database: pg.database,
-    ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    max: 50,                          // 连接池最大50个连接（支持1000并发）
-    min: 5,                           // 最小保持5个连接
-    idleTimeoutMillis: 30_000,        // 30秒空闲超时
-    connectionTimeoutMillis: 10_000,  // 10秒连接超时
-    maxUses: 7500,                    // 每个连接最多使用7500次后回收
+    ssl: pg.ssl ? { rejectUnauthorized: false } : undefined,
+    max: POOL_CONFIG.MAX_POOL_SIZE,
+    min: POOL_CONFIG.MIN_POOL_SIZE,
+    idleTimeoutMillis: POOL_CONFIG.IDLE_TIMEOUT,
+    connectionTimeoutMillis: POOL_CONFIG.CONNECTION_TIMEOUT,
+    maxUses: POOL_CONFIG.MAX_USES,
   };
 }
 
@@ -207,7 +217,7 @@ export function validateSecureConfig(config: SecurePgConfig): boolean {
       return false;
     }
 
-    const isEncrypted = (pg as any).encryptedPassword === true;
+    const isEncrypted = pg.encryptedPassword === true;
     if (isEncrypted && !SecureCredentialsManager.validateEncryptedData(pg.password)) {
       logger.error('[secureDb] Invalid encrypted password format');
       return false;
@@ -232,8 +242,14 @@ export function createSecurePool(config: SecurePgConfig): Pool {
     throw new Error('Invalid database configuration');
   }
 
-  const pg = config.database!.postgres!;
-  const poolConfig = createSecurePoolConfig(pg);
+  const database = config.database;
+  const postgres = database?.postgres;
+
+  if (!database || !postgres) {
+    throw new Error('Database configuration is missing');
+  }
+
+  const poolConfig = createSecurePoolConfig(postgres);
 
   return new Pool(poolConfig);
 }

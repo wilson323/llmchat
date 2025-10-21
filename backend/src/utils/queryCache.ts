@@ -8,7 +8,7 @@ import { createHash } from 'crypto';
 import logger from '@/utils/logger';
 
 // 缓存项接口
-export interface CacheItem<T = any> {
+export interface CacheItem<T = unknown> {
   /** 缓存的数据 */
   data: T;
   /** 创建时间 */
@@ -24,7 +24,7 @@ export interface CacheItem<T = any> {
   /** 查询语句 */
   query: string;
   /** 参数 */
-  params?: any[];
+  params?: Array<string | number | boolean | null>;
   /** 数据标签（用于失效） */
   tags?: string[];
   /** 数据大小（字节） */
@@ -106,7 +106,7 @@ export class QueryCache {
   /**
    * 生成缓存键
    */
-  private generateCacheKey(query: string, params?: any[]): string {
+  private generateCacheKey(query: string, params?: Array<string | number | boolean | null>): string {
     const keyData = {
       query: query.trim().toLowerCase(),
       params: params ?? [],
@@ -119,14 +119,14 @@ export class QueryCache {
   /**
    * 计算数据大小
    */
-  private calculateSize(data: any): number {
+  private calculateSize(data: unknown): number {
     return Buffer.byteLength(JSON.stringify(data), 'utf8');
   }
 
   /**
    * 压缩数据（如果需要）
    */
-  private compressData(data: any): any {
+  private compressData<T>(data: T): T {
     if (!this.config.enableCompression) {
       return data;
     }
@@ -144,7 +144,7 @@ export class QueryCache {
   /**
    * 解压数据
    */
-  private decompressData(data: any): any {
+  private decompressData<T>(data: T): T {
     // 对应压缩逻辑的实现
     return data;
   }
@@ -152,18 +152,18 @@ export class QueryCache {
   /**
    * 设置缓存项
    */
-  set<T = any>(
+  set<T = unknown>(
     query: string,
     data: T,
     options: {
       ttl?: number;
       tags?: string[];
-      params?: any[];
-    } = {}
+      params?: Array<string | number | boolean | null>;
+    } = {},
   ): void {
     const cacheKey = this.generateCacheKey(query, options.params);
     const now = Date.now();
-    const ttl = options.ttl || this.config.defaultTtl;
+    const ttl = options.ttl ?? this.config.defaultTtl;
     const size = this.calculateSize(data);
 
     // 检查是否需要清理空间
@@ -215,7 +215,7 @@ export class QueryCache {
   /**
    * 获取缓存项
    */
-  get<T = any>(query: string, params?: any[]): T | null {
+  get<T = unknown>(query: string, params?: Array<string | number | boolean | null>): T | null {
     const cacheKey = this.generateCacheKey(query, params);
     const item = this.cache.get(cacheKey);
 
@@ -249,7 +249,7 @@ export class QueryCache {
       age: now - item.createdAt,
     });
 
-    return this.decompressData(item.data);
+    return this.decompressData(item.data) as T;
   }
 
   /**
@@ -297,7 +297,7 @@ export class QueryCache {
       }
     }
 
-    logger.info(`按标签删除缓存项`, { tag, deletedCount });
+    logger.info('按标签删除缓存项', { tag, deletedCount });
     return deletedCount;
   }
 
@@ -315,7 +315,7 @@ export class QueryCache {
       }
     }
 
-    logger.info(`按查询模式删除缓存项`, { pattern: pattern.toString(), deletedCount });
+    logger.info('按查询模式删除缓存项', { pattern: pattern.toString(), deletedCount });
     return deletedCount;
   }
 
@@ -330,7 +330,7 @@ export class QueryCache {
     this.stats.totalItems = 0;
     this.stats.totalSize = 0;
 
-    logger.info(`缓存已清空`, { itemCount });
+    logger.info('缓存已清空', { itemCount });
   }
 
   /**
@@ -489,7 +489,7 @@ export class QueryCache {
 🏆 热门缓存项TOP10
 ${topItems.length > 0 ?
   topItems.map((item, index) =>
-    `${index + 1}. ${item.query.substring(0, 50)}... (访问${item.accessCount}次)`
+    `${index + 1}. ${item.query.substring(0, 50)}... (访问${item.accessCount}次)`,
   ).join('\n') :
   '暂无缓存项'
 }
@@ -573,10 +573,10 @@ export function cacheQuery(options: {
   tags?: string[];
   key?: string;
 } = {}) {
-  return function(target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
+  return function(target: object, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as (...args: Array<unknown>) => Promise<unknown>;
 
-    descriptor.value = async function(...args: any[]) {
+    descriptor.value = async function(...args: Array<unknown>) {
       const query = typeof args[0] === 'string' ? args[0] : '';
       const params = Array.isArray(args[1]) ? args[1] : undefined;
 
@@ -590,7 +590,11 @@ export function cacheQuery(options: {
       const result = await method.apply(this, args);
 
       // 存入缓存
-      const cacheOptions: { ttl?: number; tags?: string[]; params?: any[] } = {};
+      const cacheOptions: {
+        ttl?: number;
+        tags?: string[];
+        params?: Array<string | number | boolean | null>;
+      } = {};
       if (options.ttl !== undefined) {
         cacheOptions.ttl = options.ttl;
       }
@@ -605,6 +609,8 @@ export function cacheQuery(options: {
 
       return result;
     };
+
+    return descriptor;
   };
 }
 

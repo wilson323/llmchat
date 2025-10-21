@@ -22,18 +22,28 @@ const authController = new AuthController();
  */
 
 // POST /api/auth/login - 用户登录
-router.post('/login', loginRateLimiter, (req, res) => authController.login(req, res));
+router.post('/login', loginRateLimiter, (req, res, next) => {
+  authController.login(req, res, next).catch(next);
+});
 
 // POST /api/auth/logout - 用户登出
-router.post('/logout', authenticateJWT(), (req, res) => authController.logout(req, res));
+router.post('/logout', authenticateJWT(), (req, res, next) => {
+  authController.logout(req, res, next).catch(next);
+});
 
 // POST /api/auth/refresh - 刷新Token
-router.post('/refresh', authenticateJWT(), (req, res) => authController.refreshToken(req, res));
+router.post('/refresh', authenticateJWT(), (req, res, next) => {
+  authController.refreshToken(req, res, next).catch(next);
+});
 
 // GET /api/auth/verify - 验证Token
-router.get('/verify', authenticateJWT(), (req, res) => authController.verifyToken(req, res));
+router.get('/verify', authenticateJWT(), (req, res, next) => {
+  authController.verifyToken(req, res, next).catch(next);
+});
 
 // POST /api/auth/change-password - 修改密码
-router.post('/change-password', authenticateJWT(), (req, res) => authController.changePassword(req, res));
+router.post('/change-password', authenticateJWT(), (req, res, next) => {
+  authController.changePassword(req, res, next).catch(next);
+});
 
 export default router;

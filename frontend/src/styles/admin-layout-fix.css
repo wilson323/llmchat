@@ -80,16 +80,22 @@
   }
 }
 
-/* 强制修复图表区域布局 */
+/* 强制修复图表区域布局 - 支持3列 */
 .charts-grid {
   display: grid !important;
   gap: 24px !important;
   grid-template-columns: 1fr !important;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .charts-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .charts-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }
 

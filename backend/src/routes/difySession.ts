@@ -10,21 +10,33 @@ const router: RouterType = Router();
  */
 
 // 获取会话列表
-router.get('/conversations', DifySessionController.getConversations);
+router.get('/conversations', (req, res, next) => {
+  DifySessionController.getConversations(req, res, next).catch(next);
+});
 
 // 获取会话消息
-router.get('/messages', DifySessionController.getMessages);
+router.get('/messages', (req, res, next) => {
+  DifySessionController.getMessages(req, res, next).catch(next);
+});
 
 // 获取消息详情
-router.get('/messages/:messageId', DifySessionController.getMessageDetail);
+router.get('/messages/:messageId', (req, res, next) => {
+  DifySessionController.getMessageDetail(req, res, next).catch(next);
+});
 
 // 删除会话
-router.delete('/conversations/:conversationId', DifySessionController.deleteConversation);
+router.delete('/conversations/:conversationId', (req, res, next) => {
+  DifySessionController.deleteConversation(req, res, next).catch(next);
+});
 
 // 提交消息反馈
-router.post('/messages/:messageId/feedback', DifySessionController.submitFeedback);
+router.post('/messages/:messageId/feedback', (req, res, next) => {
+  DifySessionController.submitFeedback(req, res, next).catch(next);
+});
 
 // 获取建议问题
-router.get('/messages/:messageId/suggested', DifySessionController.getSuggestedQuestions);
+router.get('/messages/:messageId/suggested', (req, res, next) => {
+  DifySessionController.getSuggestedQuestions(req, res, next).catch(next);
+});
 
 export default router;

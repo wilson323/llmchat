@@ -4,20 +4,20 @@ export const mockFastGPTResponse = {
     {
       message: {
         role: 'assistant',
-        content: 'This is a mock response from FastGPT'
+        content: 'This is a mock response from FastGPT',
       },
-      finish_reason: 'stop'
-    }
+      finish_reason: 'stop',
+    },
   ],
   usage: {
     prompt_tokens: 10,
     completion_tokens: 15,
-    total_tokens: 25
-  }
+    total_tokens: 25,
+  },
 };
 
 export const mockFastGPTStream = {
   on: jest.fn(),
   pipe: jest.fn(),
-  destroy: jest.fn()
+  destroy: jest.fn(),
 };

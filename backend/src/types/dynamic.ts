@@ -5,35 +5,31 @@
  * 🎯 目标：统一前后端类型定义，避免重复和不一致
  */
 
-// 导入类型用于本文件内部使用
-import type {
-  JsonObject,
-  JsonArray,
-  JsonValue,
-  UnknownValue,
-  DataPayload,
-  ApiRequestPayload,
-  ApiSuccessResponse,
-  ApiResponsePayload,
-  ExternalServiceResponse,
-  PaginationParams,
-  DateRangeParams,
-  SearchFilterParams,
-  QueryParams,
-  FastGPTEventPayload,
-  FastGPTReasoningData,
-  ReasoningStepUpdate,
-  ParsedReasoningUpdate,
-  FastGPTStreamEventType,
-  FastGPTEventMetadata,
-  FastGPTEvent,
-} from '@llmchat/shared-types';
-
-// 导入类和工具
+// 导入所有需要的类型和工具
 import {
   DynamicTypeGuard,
   DynamicDataConverter,
   SafeAccess,
+  type JsonObject,
+  type JsonArray,
+  type JsonValue,
+  type UnknownValue,
+  type DataPayload,
+  type ApiRequestPayload,
+  type ApiSuccessResponse,
+  type ApiResponsePayload,
+  type ExternalServiceResponse,
+  type PaginationParams,
+  type DateRangeParams,
+  type SearchFilterParams,
+  type QueryParams,
+  type FastGPTEventPayload,
+  type FastGPTReasoningData,
+  type ReasoningStepUpdate,
+  type ParsedReasoningUpdate,
+  type FastGPTStreamEventType,
+  type FastGPTEventMetadata,
+  type FastGPTEvent,
 } from '@llmchat/shared-types';
 
 // 重新导出所有类型

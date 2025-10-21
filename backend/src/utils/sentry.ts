@@ -12,8 +12,15 @@
 
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
-import type { Express } from 'express';
+import type { Express, Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import { logger } from '@/utils/logger';
+
+// Sentry配置常量
+const SENTRY_CONFIG = {
+  TIMESTAMP_DIVISOR: 1000,
+  SAMPLE_RATE_PRODUCTION: 0.1,
+  SAMPLE_RATE_DEVELOPMENT: 1.0,
+} as const;
 
 /**
  * 初始化Sentry
@@ -41,8 +48,8 @@ export function initSentry(_app: Express): void {
       ],
 
       // 性能监控
-      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-      profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? SENTRY_CONFIG.SAMPLE_RATE_PRODUCTION : SENTRY_CONFIG.SAMPLE_RATE_DEVELOPMENT,
+      profilesSampleRate: process.env.NODE_ENV === 'production' ? SENTRY_CONFIG.SAMPLE_RATE_PRODUCTION : SENTRY_CONFIG.SAMPLE_RATE_DEVELOPMENT,
 
       // 数据清理
       beforeSend(event: Sentry.ErrorEvent, _hint: Sentry.EventHint): Sentry.ErrorEvent | null {
@@ -102,7 +109,7 @@ export function initSentry(_app: Express): void {
  * v10中已自动集成到 expressIntegration，这里保留为空中间件以兼容
  */
 export function sentryRequestHandler() {
-  return (_req: any, _res: any, next: any) => next();
+  return (_req: Request, _res: Response, next: NextFunction): void => next();
 }
 
 /**
@@ -110,13 +117,13 @@ export function sentryRequestHandler() {
  * v10中已集成到 expressIntegration 中
  */
 export function sentryTracingHandler() {
-  return (_req: any, _res: any, next: any) => next();
+  return (_req: Request, _res: Response, next: NextFunction): void => next();
 }
 
 /**
  * Express错误处理器（必须在所有路由之后）
  */
-export function sentryErrorHandler(): any {
+export function sentryErrorHandler(): ErrorRequestHandler {
   return Sentry.expressErrorHandler();
 }
 
@@ -169,14 +176,16 @@ export function addBreadcrumb(
     message,
     category,
     level,
-    timestamp: Date.now() / 1000,
+    timestamp: Date.now() / SENTRY_CONFIG.TIMESTAMP_DIVISOR,
   });
 }
 
 /**
  * 性能追踪中间件（简化版，v10推荐使用自动追踪）
  */
-export function performanceMiddleware(_name: string) {
+export function performanceMiddleware(
+  _name: string,
+): (req: unknown, res: unknown, next: () => void) => void {
   return (_req: unknown, _res: unknown, next: () => void) => {
     // v10中由 expressIntegration 自动处理
     // 这里保留接口兼容性但不做实际操作

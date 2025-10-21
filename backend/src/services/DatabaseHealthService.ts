@@ -11,7 +11,7 @@ export class DatabaseHealthService {
   private lastCheck: Date = new Date();
 
   private constructor() {
-    logger.info("简化版DatabaseHealthService已初始化");
+    logger.info('简化版DatabaseHealthService已初始化');
   }
 
   public static getInstance(): DatabaseHealthService {
@@ -22,11 +22,11 @@ export class DatabaseHealthService {
   }
 
   public async start(): Promise<void> {
-    logger.info("数据库健康检查服务已启动");
+    logger.info('数据库健康检查服务已启动');
   }
 
   public async stop(): Promise<void> {
-    logger.info("数据库健康检查服务已停止");
+    logger.info('数据库健康检查服务已停止');
   }
 
   public async checkHealth(): Promise<{
@@ -47,8 +47,8 @@ export class DatabaseHealthService {
         lastCheck: this.lastCheck,
         responseTime: Date.now() - startTime,
         details: {
-          message: "简化模式：数据库健康检查"
-        }
+          message: '简化模式：数据库健康检查',
+        },
       };
     } catch (unknownError: unknown) {
       const error = createErrorFromUnknown(unknownError, {
@@ -63,8 +63,8 @@ export class DatabaseHealthService {
         lastCheck: this.lastCheck,
         responseTime: Date.now() - startTime,
         details: {
-          error: error.message
-        }
+          error: error.message,
+        },
       };
     }
   }

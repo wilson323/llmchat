@@ -13,8 +13,8 @@ export const mockDatabase = {
       email: 'test@example.com',
       password_hash: 'hashed_password',
       created_at: new Date(),
-      updated_at: new Date()
-    }
+      updated_at: new Date(),
+    },
   ],
 
   // 模拟智能体数据
@@ -35,11 +35,11 @@ export const mockDatabase = {
           enabled: true,
           endpoint: 'same',
           statusEvents: false,
-          flowNodeStatus: false
-        }
+          flowNodeStatus: false,
+        },
       },
       created_at: new Date(),
-      updated_at: new Date()
-    }
-  ]
+      updated_at: new Date(),
+    },
+  ],
 };

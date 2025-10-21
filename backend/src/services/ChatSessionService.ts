@@ -72,7 +72,7 @@ export class ChatSessionService {
          (user_id, agent_id, title)
          VALUES ($1, $2, $3)
          RETURNING *`,
-        [userId, agentId, title]
+        [userId, agentId, title],
       );
 
       const session = this.mapRowToSession(result.rows[0]);
@@ -138,7 +138,7 @@ export class ChatSessionService {
       const result = await getPool().query(
         `SELECT * FROM chat_sessions
          WHERE id = $1 AND user_id = $2`,
-        [sessionId, userId]
+        [sessionId, userId],
       );
 
       if (result.rows.length === 0) {
@@ -170,7 +170,7 @@ export class ChatSessionService {
              message_count = message_count + 1,
              last_message_at = CURRENT_TIMESTAMP
          WHERE id = $2`,
-        [JSON.stringify(message), sessionId]
+        [JSON.stringify(message), sessionId],
       );
 
       logger.debug('Message added to session', {
@@ -206,7 +206,7 @@ export class ChatSessionService {
              message_count = message_count + $2,
              last_message_at = CURRENT_TIMESTAMP
          WHERE id = $3`,
-        [messagesJson, messages.length, sessionId]
+        [messagesJson, messages.length, sessionId],
       );
 
       logger.debug('Messages batch added to session', {
@@ -237,7 +237,7 @@ export class ChatSessionService {
          SET title = $1
          WHERE id = $2 AND user_id = $3
          RETURNING id`,
-        [title, sessionId, userId]
+        [title, sessionId, userId],
       );
 
       if (result.rows.length === 0) {
@@ -272,7 +272,7 @@ export class ChatSessionService {
          SET status = 'deleted'
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
-        [sessionId, userId]
+        [sessionId, userId],
       );
 
       if (result.rows.length === 0) {
@@ -306,7 +306,7 @@ export class ChatSessionService {
          SET status = 'archived'
          WHERE id = $1 AND user_id = $2
          RETURNING id`,
-        [sessionId, userId]
+        [sessionId, userId],
       );
 
       if (result.rows.length === 0) {
@@ -350,7 +350,7 @@ export class ChatSessionService {
            AND search_vector @@ plainto_tsquery('english', $2)
          ORDER BY rank DESC, updated_at DESC
          LIMIT $3`,
-        [userId, query, limit]
+        [userId, query, limit],
       );
 
       logger.info('Sessions searched', {
@@ -381,7 +381,7 @@ export class ChatSessionService {
     stats: {
       tokenUsage?: number;
       avgResponseTime?: number;
-    }
+    },
   ): Promise<void> {
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -408,7 +408,7 @@ export class ChatSessionService {
         `UPDATE chat_sessions
          SET ${updates.join(', ')}
          WHERE id = $${paramIndex}`,
-        values
+        values,
       );
     } catch (err) {
       logger.error('Failed to update session stats', {
@@ -442,7 +442,7 @@ export class ChatSessionService {
            COALESCE(SUM(token_usage), 0) as total_tokens
          FROM chat_sessions
          WHERE user_id = $1 AND status != 'deleted'`,
-        [userId]
+        [userId],
       );
 
       const row = result.rows[0];
@@ -493,4 +493,3 @@ export const chatSessionService = new ChatSessionService();
 
 // 默认导出
 export default chatSessionService;
-

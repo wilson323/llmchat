@@ -182,9 +182,9 @@ async function requireAuthenticatedUser(req: ExtendedRequest): Promise<AuthUser>
 /**
  * 扩展的请求接口，包含可选的 requestId
  */
-interface ExtendedRequest extends Omit<Request, 'requestId'> {
+type ExtendedRequest = Request & {
   requestId?: string;
-}
+};
 
 /**
  * 聊天控制器
@@ -1338,7 +1338,13 @@ export class ChatController {
         return;
       }
 
-      const { agentId, chatId, dataId, userGoodFeedback, userBadFeedback } = value as FeedbackRequest;
+      const { agentId, chatId, dataId, userGoodFeedback, userBadFeedback } = value as {
+        agentId: string;
+        chatId: string;
+        dataId: string;
+        userGoodFeedback?: boolean;
+        userBadFeedback?: boolean;
+      };
 
       const feedbackData: {
         chatId: string;

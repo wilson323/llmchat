@@ -3,10 +3,8 @@
  * 提供高效的Redis批量操作，减少网络往返次数，提升吞吐量
  */
 
-import Redis from 'ioredis';
 import logger from '@/utils/logger';
-import type { QueueJob, QueueOptions} from '@/types/queue';
-import { JobStatus, BackoffStrategy } from '@/types/queue';
+import { type QueueJob, type QueueOptions, BackoffStrategy } from '@/types/queue';
 import type RedisConnectionPool from '@/utils/redisConnectionPool';
 import { createErrorFromUnknown } from '@/types/errors';
 
@@ -78,7 +76,7 @@ export class BatchOperationService {
    */
   public async batchAddJobs(
     queueName: string,
-    operations: BatchAddOperation[]
+    operations: BatchAddOperation[],
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
     const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
@@ -101,7 +99,7 @@ export class BatchOperationService {
       failed.push({
         index: 0,
         error: error.message,
-        data: operations
+        data: operations,
       });
     }
 
@@ -112,14 +110,14 @@ export class BatchOperationService {
       successful: successful.length,
       failed: failed.length,
       duration,
-      opsPerSec: Math.round(operations.length / (duration / 1000))
+      opsPerSec: Math.round(operations.length / (duration / 1000)),
     });
 
     return {
       successful,
       failed,
       total: operations.length,
-      duration
+      duration,
     };
   }
 
@@ -130,7 +128,7 @@ export class BatchOperationService {
     queueName: string,
     operations: BatchAddOperation[],
     successful: Array<{ id?: string; result?: unknown; index: number }>,
-    failed: Array<{ index: number; error: string; data: unknown }>
+    failed: Array<{ index: number; error: string; data: unknown }>,
   ): Promise<void> {
     const redis = await this.connectionPool.acquire();
     try {
@@ -156,10 +154,10 @@ export class BatchOperationService {
                 removeOnComplete: operation.options?.removeOnComplete ?? true,
                 removeOnFail: operation.options?.removeOnFail ?? true,
                 backoff: operation.options?.backoff || BackoffStrategy.EXPONENTIAL,
-                metadata: operation.options?.metadata ?? {}
+                metadata: operation.options?.metadata ?? {},
               },
               createdAt: new Date(),
-              attemptsMade: 0
+              attemptsMade: 0,
             };
 
             // 存储任务数据
@@ -179,7 +177,7 @@ export class BatchOperationService {
                 delay: operation.delay,
                 createdAt: job.createdAt,
                 metadata: job.opts.metadata,
-                scheduledAt
+                scheduledAt,
               }));
             } else {
               const score = this.getScore(job.opts.priority!, job.createdAt);
@@ -193,7 +191,7 @@ export class BatchOperationService {
                 maxAttempts: job.opts.attempts!,
                 delay: 0,
                 createdAt: job.createdAt,
-                metadata: job.opts.metadata
+                metadata: job.opts.metadata,
               }));
             }
 
@@ -206,7 +204,7 @@ export class BatchOperationService {
             failed.push({
               index: globalIndex,
               error: error.message,
-              data: operation
+              data: operation,
             });
           }
         }
@@ -227,7 +225,7 @@ export class BatchOperationService {
                   failed.push({
                     index: failedOp.index,
                     error: `Pipeline error: ${result[0]}`,
-                    data: operations[failedOp.index]
+                    data: operations[failedOp.index],
                   });
                 }
               }
@@ -246,8 +244,8 @@ export class BatchOperationService {
   private async batchAddSequential(
     queueName: string,
     operations: BatchAddOperation[],
-    successful: Array<{ id?: string; result?: unknown; index: number }>,
-    failed: Array<{ index: number; error: string; data: unknown }>
+    _successful: Array<{ id?: string; result?: unknown; index: number }>,
+    _failed: Array<{ index: number; error: string; data: unknown }>,
   ): Promise<void> {
     // 这里可以调用QueueManager的addJob方法
     // 为了简化，这里只记录日志
@@ -259,7 +257,7 @@ export class BatchOperationService {
    */
   public async batchRemoveJobs(
     queueName: string,
-    jobIds: string[]
+    jobIds: string[],
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
     const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
@@ -308,7 +306,7 @@ export class BatchOperationService {
       failed.push({
         index: 0,
         error: error.message,
-        data: jobIds
+        data: jobIds,
       });
     }
 
@@ -318,7 +316,7 @@ export class BatchOperationService {
       successful,
       failed,
       total: jobIds.length,
-      duration
+      duration,
     };
   }
 
@@ -328,7 +326,7 @@ export class BatchOperationService {
   public async batchRetryJobs(
     queueName: string,
     jobIds: string[],
-    options: { resetAttempts?: boolean } = {}
+    options: { resetAttempts?: boolean } = {},
   ): Promise<BatchOperationResult> {
     const startTime = Date.now();
     const successful: Array<{ id?: string; result?: unknown; index: number }> = [];
@@ -391,14 +389,14 @@ export class BatchOperationService {
                   failed.push({
                     index: globalIndex,
                     error: `Parse error: ${parseError.message}`,
-                    data: { jobId: jobIds[globalIndex] || 'unknown' }
+                    data: { jobId: jobIds[globalIndex] || 'unknown' },
                   });
                 }
               } else if (result) {
                 failed.push({
                   index: globalIndex,
                   error: `Operation failed: ${result[0] as Error}`,
-                  data: { jobId: jobIds[globalIndex] || 'unknown' }
+                  data: { jobId: jobIds[globalIndex] || 'unknown' },
                 });
               }
           }
@@ -416,7 +414,7 @@ export class BatchOperationService {
       failed.push({
         index: 0,
         error: error.message,
-        data: jobIds
+        data: jobIds,
       });
     }
 
@@ -426,7 +424,7 @@ export class BatchOperationService {
       successful,
       failed,
       total: jobIds.length,
-      duration
+      duration,
     };
   }
 
@@ -452,7 +450,9 @@ export class BatchOperationService {
       if (results) {
         for (let i = 0; i < queueNames.length; i++) {
           const queueName = queueNames[i];
-          if (!queueName) continue; // Skip undefined queue names
+          if (!queueName) {
+continue;
+} // Skip undefined queue names
           const baseIndex = i * 5;
 
           const waitingResult = results[baseIndex];
@@ -466,7 +466,7 @@ export class BatchOperationService {
             active: activeResult && !activeResult[0] ? (activeResult[1] as number) : 0,
             completed: completedResult && !completedResult[0] ? (completedResult[1] as number) : 0,
             failed: failedResult && !failedResult[0] ? (failedResult[1] as number) : 0,
-            delayed: delayedResult && !delayedResult[0] ? (delayedResult[1] as number) : 0
+            delayed: delayedResult && !delayedResult[0] ? (delayedResult[1] as number) : 0,
           } as any;
         }
       }
@@ -483,7 +483,7 @@ export class BatchOperationService {
   public async batchCleanCompletedJobs(
     queueName: string,
     olderThanMs: number,
-    batchSize = 1000
+    batchSize = 1000,
   ): Promise<number> {
     const redis = await this.connectionPool.acquire();
     try {
@@ -498,7 +498,7 @@ export class BatchOperationService {
           cutoffTime,
           'LIMIT',
           0,
-          batchSize
+          batchSize,
         );
 
         if (expiredJobIds.length === 0) {
@@ -554,7 +554,7 @@ export class BatchOperationService {
     return {
       batchSize: this.batchSize,
       enablePipelining: this.enablePipelining,
-      enableTransactions: this.enableTransactions
+      enableTransactions: this.enableTransactions,
     };
   }
 

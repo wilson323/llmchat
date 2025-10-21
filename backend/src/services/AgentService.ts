@@ -46,12 +46,12 @@ export class AgentService {
       const agents = await this.configService.loadAgents();
 
       logger.info('[AgentService] 智能体同步完成', {
-        count: agents.length
+        count: agents.length,
       });
 
       return {
         synced: agents.length,
-        agents
+        agents,
       };
 
     } catch (unknownError: unknown) {
@@ -126,7 +126,7 @@ export class AgentService {
           id: agentId,
           status: 'error',
           lastCheck: new Date(),
-          errorMessage: 'Agent not found'
+          errorMessage: 'Agent not found',
         };
       }
 
@@ -135,7 +135,7 @@ export class AgentService {
         id: agentId,
         status: 'active',
         lastCheck: new Date(),
-        responseTime: 100
+        responseTime: 100,
       };
 
     } catch (unknownError: unknown) {
@@ -149,7 +149,7 @@ export class AgentService {
         id: agentId,
         status: 'error',
         lastCheck: new Date(),
-        errorMessage: error.message
+        errorMessage: error.message,
       };
     }
   }
@@ -161,5 +161,3 @@ export class AgentService {
     await this.configService.reloadAgents();
   }
 }
-
-

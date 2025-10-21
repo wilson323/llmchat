@@ -4,7 +4,9 @@ import { ProductPreviewController } from '@/controllers/ProductPreviewController
 const router: RouterType = Router();
 const controller = new ProductPreviewController();
 
-router.post('/generate', controller.generatePreview);
+router.post('/generate', (req, res, next) => {
+  controller.generatePreview(req, res, next).catch(next);
+});
 
 /**
  * GET /api/product-preview/status

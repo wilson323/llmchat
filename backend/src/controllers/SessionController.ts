@@ -8,13 +8,79 @@ import type {
   BatchOperationOptions,
   ExportOptions,
   EventQueryParams,
+  SessionEventType,
   ApiError,
 } from '@/types';
 import { ApiResponseHandler } from '@/utils/apiResponse';
 import { createErrorFromUnknown, AuthenticationError } from '@/types/errors';
 import type { JsonValue } from '@/types/dynamic';
 
-async function ensureAdminAuth(req: Request) {
+// ===== HTTP状态码常量 =====
+/** HTTP 错误请求状态码 */
+const HTTP_STATUS_BAD_REQUEST = 400;
+/** HTTP 禁止访问状态码 */
+const HTTP_STATUS_FORBIDDEN = 403;
+/** HTTP 内部服务器错误状态码 */
+const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+/** 默认页面大小 */
+const DEFAULT_PAGE_SIZE = 20;
+
+// ===== 会话事件类型常量 =====
+const SESSION_EVENT_UPDATED = 'updated';
+const SESSION_EVENT_DELETED = 'deleted';
+const SESSION_EVENT_EXPORTED = 'exported';
+
+// ===== 内容类型常量 =====
+const CONTENT_TYPE_JSON = 'application/json';
+const CONTENT_TYPE_CSV = 'text/csv';
+const CONTENT_TYPE_EXCEL = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+// ===== 类型定义 =====
+/** 验证结果类型 */
+interface ValidationResult<T = unknown> {
+  error?: Joi.ValidationError;
+  value: T;
+}
+
+/** 用户信息类型 */
+interface UserInfo {
+  userId: string;
+}
+
+/** 请求上下文类型 */
+interface RequestContext {
+  userId: string;
+  userAgent?: string;
+  ipAddress?: string;
+}
+
+/** 事件数据类型 */
+interface EventData extends Record<string, unknown> {
+  operation?: string;
+  tags?: string[];
+  reason?: string;
+  format?: string;
+  sessionCount?: string;
+  includeMessages?: boolean;
+  includeMetadata?: boolean;
+  filters?: unknown;
+  action?: string;
+}
+
+/** 请求体类型定义 */
+interface BatchOperationRequestBody {
+  operation: string;
+  format?: string;
+}
+
+/** 错误上下文类型 */
+interface ErrorContext {
+  agentId: string;
+  operation?: string;
+  format?: string;
+}
+
+function ensureAdminAuth(req: Request): UserInfo {
   const auth = req.headers['authorization'];
   const token = (auth ?? '').replace(/^Bearer\s+/i, '').trim();
   if (!token) {
@@ -39,7 +105,7 @@ async function ensureAdminAuth(req: Request) {
 
 function handleAdminAuthError(error: unknown, res: Response): boolean {
   if (error instanceof Error && error.message === 'UNAUTHORIZED') {
-    res.status(403).json({
+    res.status(HTTP_STATUS_FORBIDDEN).json({
       code: 'UNAUTHORIZED',
       message: '需要管理员权限',
       timestamp: new Date().toISOString(),
@@ -59,7 +125,7 @@ export class SessionController {
   // 验证schemas
   private readonly sessionListSchema = Joi.object({
     page: Joi.number().min(1).default(1),
-    pageSize: Joi.number().min(1).max(100).default(20),
+    pageSize: Joi.number().min(1).max(100).default(DEFAULT_PAGE_SIZE),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().optional(),
     tags: Joi.array().items(Joi.string()).optional(),
@@ -98,7 +164,7 @@ export class SessionController {
     endDate: Joi.date().iso().optional(),
     userId: Joi.string().optional(),
     page: Joi.number().min(1).default(1),
-    pageSize: Joi.number().min(1).max(100).default(20),
+    pageSize: Joi.number().min(1).max(100).default(DEFAULT_PAGE_SIZE),
     sortBy: Joi.string().valid('timestamp').default('timestamp'),
     sortOrder: Joi.string().valid('asc', 'desc').default('desc'),
   });
@@ -112,13 +178,20 @@ export class SessionController {
    * 获取增强版会话列表
    * GET /api/sessions/:agentId/enhanced
    */
-  listSessionsEnhanced = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  listSessionsEnhanced = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     const { agentId } = req.params;
     try {
-      const { error, value } = this.sessionListSchema.validate(req.query, { abortEarly: false });
+      const validationResult = this.sessionListSchema.validate(req.query, {
+        abortEarly: false,
+      }) as ValidationResult<SessionListParams>;
+      const { error, value } = validationResult;
 
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
           message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
@@ -127,7 +200,7 @@ export class SessionController {
       }
 
       if (!agentId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -135,7 +208,7 @@ export class SessionController {
         return;
       }
 
-      const result = await this.sessionService.listHistoriesEnhanced(agentId, value as SessionListParams);
+      const result = await this.sessionService.listHistoriesEnhanced(agentId, value);
 
       ApiResponseHandler.sendSuccess(res, result, {
         message: '获取会话列表成功',
@@ -163,7 +236,7 @@ export class SessionController {
         } as JsonValue;
       }
 
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -171,14 +244,21 @@ export class SessionController {
    * 批量操作会话
    * POST /api/sessions/:agentId/batch
    */
-  batchOperation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  batchOperation = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     try {
-      await ensureAdminAuth(req);
+      ensureAdminAuth(req);
       const { agentId } = req.params;
-      const { error, value } = this.batchOperationSchema.validate(req.body, { abortEarly: false });
+      const validationResult = this.batchOperationSchema.validate(req.body, {
+        abortEarly: false,
+      }) as ValidationResult<BatchOperationOptions>;
+      const { error, value } = validationResult;
 
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
           message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
@@ -187,7 +267,7 @@ export class SessionController {
       }
 
       if (!agentId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -195,27 +275,43 @@ export class SessionController {
         return;
       }
 
-      const user = await ensureAdminAuth(req);
+      const user = ensureAdminAuth(req);
       const userAgent = req.headers['user-agent'];
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const context = {
+      const ipAddress = req.ip ?? req.connection.remoteAddress;
+      const context: RequestContext = {
         userId: user.userId,
         ...(userAgent && { userAgent }),
         ...(ipAddress && { ipAddress }),
       };
 
       // 为每个会话记录操作开始事件
+      const eventData: EventData = {
+        operation: value.operation,
+        ...(value.tags && { tags: value.tags }),
+      };
+
+      // 映射操作名称到SessionEventType
+      const mapOperationToEventType = (operation: string): SessionEventType => {
+        switch (operation) {
+          case 'delete': return 'deleted';
+          case 'archive': return 'archived';
+          case 'addTags':
+          case 'removeTags': return 'tags_updated';
+          default: return 'updated';
+        }
+      };
+
       for (const sessionId of value.sessionIds) {
         await this.sessionService.recordEvent(
           agentId,
           sessionId,
-          value.operation,
-          { operation: value.operation, tags: value.tags } as any,
+          mapOperationToEventType(value.operation),
+          eventData,
           context,
         );
       }
 
-      const result = await this.sessionService.batchOperation(agentId, value as BatchOperationOptions);
+      const result = await this.sessionService.batchOperation(agentId, value);
 
       ApiResponseHandler.sendSuccess(res, result, {
         message: '批量操作完成',
@@ -226,16 +322,22 @@ export class SessionController {
         return;
       }
       const { agentId } = req.params;
+      const body = req.body as BatchOperationRequestBody;
+      const context: ErrorContext = {
+        agentId: agentId || 'unknown',
+        operation: typeof body?.operation === 'string' ? body.operation : 'unknown',
+      };
+
       const typedError = createErrorFromUnknown(unknownError, {
         component: 'SessionController',
         operation: 'batchOperation',
         url: req.originalUrl,
         method: req.method,
-        context: { agentId, operation: req.body.operation },
+        context,
       });
       logger.error('批量操作失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -243,14 +345,21 @@ export class SessionController {
    * 导出会话数据
    * POST /api/sessions/:agentId/export
    */
-  exportSessions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  exportSessions = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     try {
-      await ensureAdminAuth(req);
+      ensureAdminAuth(req);
       const { agentId } = req.params;
-      const { error, value } = this.exportOptionsSchema.validate(req.body, { abortEarly: false });
+      const validationResult = this.exportOptionsSchema.validate(req.body, {
+        abortEarly: false,
+      }) as ValidationResult<ExportOptions>;
+      const { error, value } = validationResult;
 
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
           message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
@@ -259,7 +368,7 @@ export class SessionController {
       }
 
       if (!agentId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -267,38 +376,51 @@ export class SessionController {
         return;
       }
 
-      const user = await ensureAdminAuth(req);
+      const user = ensureAdminAuth(req);
       const userAgent = req.headers['user-agent'];
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const context = {
+      const ipAddress = req.ip ?? req.connection.remoteAddress;
+      const context: RequestContext = {
         userId: user.userId,
         ...(userAgent && { userAgent }),
         ...(ipAddress && { ipAddress }),
       };
 
-      const result = await this.sessionService.exportSessions(agentId, value as ExportOptions);
+      const result = await this.sessionService.exportSessions(agentId, value);
 
       // 设置响应头
-      const contentType = value.format === 'json' ? 'application/json' :
-        value.format === 'csv' ? 'text/csv' :
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      let contentType: string;
+      switch (value.format) {
+        case 'json':
+          contentType = CONTENT_TYPE_JSON;
+          break;
+        case 'csv':
+          contentType = CONTENT_TYPE_CSV;
+          break;
+        case 'excel':
+          contentType = CONTENT_TYPE_EXCEL;
+          break;
+        default:
+          contentType = CONTENT_TYPE_JSON;
+      }
 
       res.setHeader('Content-Type', contentType);
       res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
       res.send(result.data);
 
       // 记录导出事件
+      const exportEventData: EventData = {
+        format: value.format,
+        sessionCount: 'unknown', // 从result中获取
+        ...(value.includeMessages !== undefined && { includeMessages: value.includeMessages }),
+        ...(value.includeMetadata !== undefined && { includeMetadata: value.includeMetadata }),
+        ...(value.filters && { filters: value.filters }),
+      };
+
       await this.sessionService.recordEvent(
-        agentId,
+        agentId || 'unknown',
         'export_operation',
-        'exported',
-        {
-          format: value.format,
-          sessionCount: 'unknown', // 从result中获取
-          includeMessages: value.includeMessages,
-          includeMetadata: value.includeMetadata,
-          filters: value.filters,
-        } as any,
+        SESSION_EVENT_EXPORTED,
+        exportEventData,
         context,
       );
     } catch (unknownError) {
@@ -306,16 +428,22 @@ export class SessionController {
         return;
       }
       const { agentId } = req.params;
+      const exportBody = req.body as BatchOperationRequestBody;
+      const exportContext: ErrorContext = {
+        agentId: agentId || 'unknown',
+        format: typeof exportBody?.format === 'string' ? exportBody.format : 'unknown',
+      };
+
       const typedError = createErrorFromUnknown(unknownError, {
         component: 'SessionController',
         operation: 'exportSessions',
         url: req.originalUrl,
         method: req.method,
-        context: { agentId, format: req.body.format },
+        context: exportContext,
       });
       logger.error('导出会话失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -323,13 +451,13 @@ export class SessionController {
    * 获取会话统计信息
    * GET /api/sessions/:agentId/stats
    */
-  getSessionStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSessionStats = async (req: Request, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { agentId } = req.params;
       const { startDate, endDate } = req.query;
 
       if (!agentId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -362,7 +490,7 @@ export class SessionController {
       });
       logger.error('获取会话统计失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -370,13 +498,20 @@ export class SessionController {
    * 查询会话事件
    * GET /api/sessions/:agentId/events
    */
-  queryEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  queryEvents = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     try {
       const { agentId } = req.params;
-      const { error, value } = this.eventQuerySchema.validate(req.query, { abortEarly: false });
+      const validationResult = this.eventQuerySchema.validate(req.query, {
+        abortEarly: false,
+      }) as ValidationResult<EventQueryParams>;
+      const { error, value } = validationResult;
 
       if (error) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'VALIDATION_ERROR',
           message: error.details.map((d) => d.message).join('; '),
           timestamp: new Date().toISOString(),
@@ -385,7 +520,7 @@ export class SessionController {
       }
 
       if (!agentId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_AGENT_ID',
           message: '智能体ID不能为空',
           timestamp: new Date().toISOString(),
@@ -393,10 +528,8 @@ export class SessionController {
         return;
       }
 
-      const result = await this.sessionService.queryEvents(agentId, {
-        ...value,
-        agentId,
-      } as EventQueryParams);
+      const queryParams = { ...value, agentId };
+      const result = await this.sessionService.queryEvents(agentId, queryParams);
 
       ApiResponseHandler.sendSuccess(res, result, {
         message: '查询会话事件成功',
@@ -413,7 +546,7 @@ export class SessionController {
       });
       logger.error('查询会话事件失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -421,12 +554,16 @@ export class SessionController {
    * 获取会话详情（原有功能的增强版）
    * GET /api/sessions/:agentId/:sessionId
    */
-  getSessionDetail = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSessionDetail = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     try {
       const { agentId, sessionId } = req.params;
 
       if (!agentId || !sessionId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_PARAMS',
           message: '智能体ID和会话ID不能为空',
           timestamp: new Date().toISOString(),
@@ -437,15 +574,20 @@ export class SessionController {
       const detail = await this.sessionService.getHistoryDetail(agentId, sessionId);
 
       // 记录访问事件
-      const user = await ensureAdminAuth(req).catch(() => ({ userId: undefined }));
-      const eventData = {
+      let user: UserInfo | { userId?: undefined };
+      try {
+        user = ensureAdminAuth(req);
+      } catch {
+        user = { userId: undefined };
+      }
+
+      const eventData: EventData = {
         action: 'view_detail',
       };
-      const requestContext = {} as Record<string, unknown>;
+      const requestContext: RequestContext = {
+        userId: user.userId ?? '',
+      };
 
-      if (user.userId) {
-        requestContext.userId = user.userId;
-      }
       if (req.headers['user-agent']) {
         requestContext.userAgent = req.headers['user-agent'];
       }
@@ -458,8 +600,8 @@ export class SessionController {
       await this.sessionService.recordEvent(
         agentId,
         sessionId,
-        'updated',
-        eventData as any,
+        SESSION_EVENT_UPDATED,
+        eventData,
         requestContext,
       );
 
@@ -478,7 +620,7 @@ export class SessionController {
       });
       logger.error('获取会话详情失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 
@@ -486,13 +628,17 @@ export class SessionController {
    * 删除单个会话
    * DELETE /api/sessions/:agentId/:sessionId
    */
-  deleteSession = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  deleteSession = async (
+    req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): Promise<void> => {
     try {
-      await ensureAdminAuth(req);
+      ensureAdminAuth(req);
       const { agentId, sessionId } = req.params;
 
       if (!agentId || !sessionId) {
-        res.status(400).json({
+        res.status(HTTP_STATUS_BAD_REQUEST).json({
           code: 'INVALID_PARAMS',
           message: '智能体ID和会话ID不能为空',
           timestamp: new Date().toISOString(),
@@ -500,21 +646,25 @@ export class SessionController {
         return;
       }
 
-      const user = await ensureAdminAuth(req);
+      const user = ensureAdminAuth(req);
       const userAgent = req.headers['user-agent'];
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const context = {
+      const ipAddress = req.ip ?? req.connection.remoteAddress;
+      const context: RequestContext = {
         userId: user.userId,
         ...(userAgent && { userAgent }),
         ...(ipAddress && { ipAddress }),
       };
 
       // 记录删除前的事件
+      const deleteEventData: EventData = {
+        reason: 'manual_delete',
+      };
+
       await this.sessionService.recordEvent(
         agentId,
         sessionId,
-        'deleted',
-        { reason: 'manual_delete' } as any,
+        SESSION_EVENT_DELETED,
+        deleteEventData,
         context,
       );
 
@@ -538,7 +688,7 @@ export class SessionController {
       });
       logger.error('删除会话失败', { error: typedError.message });
       const apiError = typedError.toApiError();
-      res.status(500).json(apiError);
+      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(apiError);
     }
   };
 }

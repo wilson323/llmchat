@@ -13,11 +13,8 @@
  * - 配置缓存避免重复读取
  */
 
-import * as dotenv from 'dotenv';
-import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
-import * as path from 'path';
-import { existsSync } from 'fs';
 import * as crypto from 'crypto';
+import { SystemError } from '@/types/errors';
 import { safeLogger } from '../utils/logSanitizer';
 
 export class EnvManager {
@@ -53,12 +50,15 @@ export class EnvManager {
       safeLogger.error('❌ 环境变量未加载，请确保 dotenv-loader.ts 已正确执行');
       safeLogger.error('📝 请在项目根目录创建 .env 文件，参考根目录下的 .env.example');
       safeLogger.error('💡 使用命令: cp .env.example .env');
-      process.exit(1);
+      throw new SystemError({
+        code: 'ENV_NOT_LOADED',
+        message: '环境变量未加载，请确保 .env 文件存在且已被 dotenv-loader.ts 正确执行',
+      });
     }
 
     // 兼容旧变量名：JWT_SECRET -> TOKEN_SECRET（仅加载阶段内存映射，不回写文件）
     if (!process.env.TOKEN_SECRET && process.env.JWT_SECRET) {
-      process.env.TOKEN_SECRET = process.env.JWT_SECRET as string;
+      process.env.TOKEN_SECRET = process.env.JWT_SECRET;
     }
 
     // 开发环境自动兜底：未设置 TOKEN_SECRET 时临时生成（仅开发环境）
@@ -124,13 +124,16 @@ export class EnvManager {
       });
     }
 
-    // 必需配置缺失则退出
+    // 必需配置缺失则抛出错误
     if (missing.length > 0) {
       safeLogger.error('❌ 缺少必需的环境变量', { variables: missing });
       safeLogger.error('📝 请在项目根目录的 .env 文件中设置这些变量');
       safeLogger.error('💡 参考根目录下的 .env.example 文件模板');
       safeLogger.error('🔧 使用命令: cp .env.example .env');
-      process.exit(1);
+      throw new SystemError({
+        code: 'MISSING_REQUIRED_ENV',
+        message: `缺少必需的环境变量: ${missing.join(', ')}`,
+      });
     }
 
     safeLogger.info('✅ All required environment variables validated');

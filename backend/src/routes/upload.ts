@@ -9,13 +9,28 @@
  * - GET /api/upload/:filename/info - 获取文件信息
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { uploadSingle, uploadMultiple, uploadDir } from '@/middleware/fileUpload';
 import { authenticateJWT } from '@/middleware/jwtAuth';
 import logger from '@/utils/logger';
+
+// HTTP状态常量
+const HTTP_STATUS = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+} as const;
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    username?: string;
+  };
+  requestId?: string;
+}
 
 const router: express.Router = express.Router();
 
@@ -26,17 +41,17 @@ const router: express.Router = express.Router();
  * 请求：multipart/form-data，字段名：file
  * 响应：{ code, data: { filename, originalName, size, mimetype, path } }
  */
-router.post('/single', authenticateJWT(), uploadSingle, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/single', authenticateJWT(), uploadSingle, (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         code: 'NO_FILE',
         message: 'No file uploaded',
         timestamp: new Date().toISOString(),
       });
     }
 
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     logger.info('File uploaded successfully', {
       filename: req.file.filename,
@@ -58,7 +73,7 @@ router.post('/single', authenticateJWT(), uploadSingle, async (req: Request, res
         uploadedBy: userId,
         uploadedAt: new Date().toISOString(),
       },
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -77,10 +92,10 @@ router.post('/single', authenticateJWT(), uploadSingle, async (req: Request, res
  * 请求：multipart/form-data，字段名：files
  * 响应：{ code, data: [{ filename, originalName, size, mimetype, path }] }
  */
-router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/multiple', authenticateJWT(), uploadMultiple, (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         code: 'NO_FILES',
         message: 'No files uploaded',
         timestamp: new Date().toISOString(),
@@ -88,7 +103,7 @@ router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request,
     }
 
     const files = req.files as Express.Multer.File[];
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     logger.info('Multiple files uploaded successfully', {
       count: files.length,
@@ -112,7 +127,7 @@ router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request,
         uploadedBy: userId,
         uploadedAt: new Date().toISOString(),
       },
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -128,18 +143,18 @@ router.post('/multiple', authenticateJWT(), uploadMultiple, async (req: Request,
  * 获取文件信息
  * GET /api/upload/:filename/info
  */
-router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:filename/info', authenticateJWT(), (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const {filename} = req.params;
+    const { filename } = req.params;
     if (!filename) {
-      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: 'BAD_REQUEST', message: 'Filename required' });
     }
     const filePath = path.join(uploadDir, filename);
 
     // 安全检查：防止路径遍历攻击
     const normalizedPath = path.normalize(filePath);
     if (!normalizedPath.startsWith(uploadDir)) {
-      return res.status(403).json({
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
         code: 'FORBIDDEN',
         message: 'Access denied',
         timestamp: new Date().toISOString(),
@@ -147,8 +162,8 @@ router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Respo
     }
 
     // 检查文件是否存在
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
+    if (!fs.promises.access(filePath).then(() => true).catch(() => false)) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         code: 'FILE_NOT_FOUND',
         message: 'File not found',
         timestamp: new Date().toISOString(),
@@ -169,7 +184,7 @@ router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Respo
         modifiedAt: stats.mtime,
         path: `/uploads/${filename}`,
       },
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -185,19 +200,19 @@ router.get('/:filename/info', authenticateJWT(), async (req: Request, res: Respo
  * 删除文件
  * DELETE /api/upload/:filename
  */
-router.delete('/:filename', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:filename', authenticateJWT(), (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const {filename} = req.params;
+    const { filename } = req.params;
     if (!filename) {
-      return res.status(400).json({ code: 'BAD_REQUEST', message: 'Filename required' });
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({ code: 'BAD_REQUEST', message: 'Filename required' });
     }
     const filePath = path.join(uploadDir, filename);
-    const userId = (req as any).user?.id;
+    const userId = req.user?.id;
 
     // 安全检查：防止路径遍历攻击
     const normalizedPath = path.normalize(filePath);
     if (!normalizedPath.startsWith(uploadDir)) {
-      return res.status(403).json({
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
         code: 'FORBIDDEN',
         message: 'Access denied',
         timestamp: new Date().toISOString(),
@@ -205,8 +220,8 @@ router.delete('/:filename', authenticateJWT(), async (req: Request, res: Respons
     }
 
     // 检查文件是否存在
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
+    if (!fs.promises.access(filePath).then(() => true).catch(() => false)) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         code: 'FILE_NOT_FOUND',
         message: 'File not found',
         timestamp: new Date().toISOString(),
@@ -230,7 +245,7 @@ router.delete('/:filename', authenticateJWT(), async (req: Request, res: Respons
         deletedBy: userId,
         deletedAt: new Date().toISOString(),
       },
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -247,7 +262,7 @@ router.delete('/:filename', authenticateJWT(), async (req: Request, res: Respons
  * 列出所有上传的文件
  * GET /api/upload/list
  */
-router.get('/list', authenticateJWT(), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/list', authenticateJWT(), (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const files = fs.readdirSync(uploadDir);
     const fileInfos = files.map(filename => {
@@ -272,7 +287,7 @@ router.get('/list', authenticateJWT(), async (req: Request, res: Response, next:
         total: fileInfos.length,
         totalSize: fileInfos.reduce((sum, f) => sum + f.size, 0),
       },
-      requestId: (req as any).requestId,
+      requestId: req.requestId,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -284,4 +299,3 @@ router.get('/list', authenticateJWT(), async (req: Request, res: Response, next:
 });
 
 export default router;
-

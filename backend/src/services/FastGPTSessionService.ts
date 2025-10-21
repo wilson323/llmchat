@@ -20,6 +20,14 @@ import { AdaptiveTtlPolicy } from '@/utils/adaptiveCache';
 import { SessionEventService } from './SessionEventService';
 import { createErrorFromUnknown } from '@/types/errors';
 
+// ===== 常量定义 =====
+/** 重试次数常量 */
+const MAX_RETRY_ATTEMPTS = 3;
+/** 调整间隔（毫秒） */
+const ADJUST_INTERVAL_MS = 45000;
+/** HTTP未找到状态码 */
+const HTTP_STATUS_NOT_FOUND = 404;
+
 interface RequestDescriptor {
   method: 'get' | 'post' | 'delete';
   path: string;
@@ -61,9 +69,9 @@ export class FastGPTSessionService {
     initialTtl: 5 * 1000,
     minTtl: 2 * 1000,
     maxTtl: 60 * 1000,
-    step: 3 * 1000,
+    step: MAX_RETRY_ATTEMPTS * 1000,
     sampleSize: 30,
-    adjustIntervalMs: 45 * 1000,
+    adjustIntervalMs: ADJUST_INTERVAL_MS,
   });
   private readonly historyEndpointBases = [
     '/api/core/chat/history',
@@ -203,7 +211,7 @@ export class FastGPTSessionService {
         lastError = error;
         // 若 404，尝试 /v1 回退
         const status = (error as any)?.response?.status;
-        if (status === 404) {
+        if (status === HTTP_STATUS_NOT_FOUND) {
           const v1Url = `${baseUrl}/v1${cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`}`;
           try {
             if (attempt.method === 'get') {
@@ -1147,4 +1155,3 @@ export class FastGPTSessionService {
 }
 
 export type { FastGPTChatHistorySummary };
-

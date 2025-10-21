@@ -20,7 +20,7 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit for security
     files: 1, // Only allow one file at a time
   },
-  fileFilter: async (req, file, cb) => {
+  fileFilter: (req, file, cb) => {
     try {
       // Basic MIME type check first
       if (!file.originalname.toLowerCase().endsWith('.dxf')) {
@@ -40,7 +40,7 @@ const upload = multer({
         generateHashes: true,
       };
 
-      const validation = await SecureUpload.validateFile(file, uploadConfig);
+      const validation = SecureUpload.validateFile(file, uploadConfig);
 
       if (!validation.isValid) {
         const errorMessage = validation.errors && validation.errors.length > 0
@@ -104,4 +104,3 @@ router.post('/:fileId/execute', authenticateJWT(), cadController.executeCadOpera
 router.get('/:fileId/export', authenticateJWT(), cadController.exportDxf);
 
 export default router;
-

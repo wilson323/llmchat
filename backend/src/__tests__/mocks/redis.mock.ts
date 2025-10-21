@@ -1,5 +1,5 @@
 /**
- * Redis!ßùa
+ * Redis!ï¿½ï¿½a
  */
 
 export const mockRedis = {
@@ -16,5 +16,5 @@ export const mockRedis = {
   zrange: jest.fn(),
   zcard: jest.fn(),
   llen: jest.fn(),
-  ping: jest.fn()
+  ping: jest.fn(),
 };

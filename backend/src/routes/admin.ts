@@ -19,20 +19,32 @@ const router: Router = Router();
  */
 
 // 配置健康状态监控
-router.get('/config/health', adminGuard, getConfigHealth);
+router.get('/config/health', adminGuard, (req, res, next) => {
+  getConfigHealth(req, res, next).catch(next);
+});
 
 // 配置快照对比
-router.get('/config/compare', adminGuard, compareConfigSnapshot);
+router.get('/config/compare', adminGuard, (req, res, next) => {
+  compareConfigSnapshot(req, res, next).catch(next);
+});
 
 // 清理废弃配置
-router.post('/config/cleanup', adminGuard, cleanupObsoleteConfigs);
+router.post('/config/cleanup', adminGuard, (req, res, next) => {
+  cleanupObsoleteConfigs(req, res, next).catch(next);
+});
 
 // 获取配置详情
-router.get('/config/details', adminGuard, getConfigDetails);
+router.get('/config/details', adminGuard, (req, res, next) => {
+  getConfigDetails(req, res, next).catch(next);
+});
 
 // 统计数据和指标
-router.get('/stats', adminGuard, getAdminStats);
-router.get('/metrics', adminGuard, getAdminMetrics);
+router.get('/stats', adminGuard, (req, res, next) => {
+  getAdminStats(req, res, next).catch(next);
+});
+router.get('/metrics', adminGuard, (req, res, next) => {
+  getAdminMetrics(req, res, next).catch(next);
+});
 
 // ✨ 新增：系统信息端点
 router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
@@ -74,7 +86,7 @@ router.get('/system-info', adminGuard, async (req: Request, res: Response) => {
       operation: 'getSystemInfo',
     });
     logger.error('Failed to get system info', error.toLogObject());
-    
+
     const apiError = error.toApiError();
     res.status(500).json(apiError);
   }
@@ -92,7 +104,7 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
       FROM users
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     // 搜索功能
     if (search && typeof search === 'string') {
@@ -109,7 +121,7 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
 
     // 获取总数
     const countResult = await pool.query('SELECT COUNT(*) as total FROM users');
-    const total = parseInt(countResult.rows[0]?.total || '0', 10);
+    const total = Number((countResult.rows[0] as { total?: string | number })?.total ?? 0);
 
     res.json({
       code: 'OK',
@@ -128,7 +140,7 @@ router.get('/users', adminGuard, async (req: Request, res: Response) => {
       operation: 'getUsers',
     });
     logger.error('Failed to get users', error.toLogObject());
-    
+
     const apiError = error.toApiError();
     res.status(500).json(apiError);
   }
@@ -146,7 +158,7 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
       FROM audit_logs
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     // 类型筛选
     if (type && typeof type === 'string') {
@@ -182,11 +194,10 @@ router.get('/audit', adminGuard, async (req: Request, res: Response) => {
       operation: 'getAuditLogs',
     });
     logger.error('Failed to get audit logs', error.toLogObject());
-    
+
     const apiError = error.toApiError();
     res.status(500).json(apiError);
   }
 });
 
 export default router;
-

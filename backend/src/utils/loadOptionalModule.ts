@@ -14,7 +14,7 @@ export async function loadOptionalModule<T>(moduleName: string): Promise<T | nul
     const module = await import(moduleName);
     return module.default || module;
   } catch (unknownError: unknown) {
-    const error = createErrorFromUnknown(unknownError, {
+    const _error = createErrorFromUnknown(unknownError, {
       component: 'loadOptionalModule',
       operation: 'loadOptionalModule',
     });

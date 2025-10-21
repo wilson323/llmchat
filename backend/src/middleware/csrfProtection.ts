@@ -4,19 +4,24 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { createErrorFromUnknown, SystemError, AuthenticationError } from '@/types/errors';
+import { createErrorFromUnknown } from '@/types/errors';
 import crypto from 'crypto';
 import logger from '@/utils/logger';
 
-const CSRF_TOKEN_LENGTH = 32;
-const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
-const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+// 常量定义
+const CSRF_CONSTANTS = {
+  TOKEN_LENGTH: 32,
+  COOKIE_NAME: 'XSRF-TOKEN',
+  HEADER_NAME: 'X-XSRF-TOKEN',
+  COOKIE_MAX_AGE: 86400000, // 24小时
+  HTTP_STATUS_FORBIDDEN: 403,
+} as const;
 
 /**
  * 生成 CSRF Token
  */
 function generateToken(): string {
-  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
+  return crypto.randomBytes(CSRF_CONSTANTS.TOKEN_LENGTH).toString('hex');
 }
 
 /**
@@ -64,7 +69,7 @@ export function csrfProtection(options: {
     sameSite?: 'strict' | 'lax' | 'none';
     maxAge?: number;
   };
-} = {}) {
+} = {}): (req: Request, res: Response, next: NextFunction) => void {
   const {
     ignoreMethods = ['GET', 'HEAD', 'OPTIONS'],
     ignorePaths = ['/health', '/api/auth/login'],
@@ -72,7 +77,7 @@ export function csrfProtection(options: {
       httpOnly: false, // 前端需要读取
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 86400000, // 24小时
+      maxAge: CSRF_CONSTANTS.COOKIE_MAX_AGE,
     },
   } = options;
 
@@ -80,10 +85,10 @@ export function csrfProtection(options: {
     // 跳过特定方法
     if (ignoreMethods.includes(req.method)) {
       // GET 请求仍需设置 cookie
-      let token = req.cookies?.[CSRF_COOKIE_NAME];
+      let token = req.cookies?.[CSRF_CONSTANTS.COOKIE_NAME] as string | undefined;
       if (!token) {
         token = generateToken();
-        res.cookie(CSRF_COOKIE_NAME, token, cookieOptions);
+        res.cookie(CSRF_CONSTANTS.COOKIE_NAME, token, cookieOptions);
       }
       return next();
     }
@@ -94,8 +99,8 @@ export function csrfProtection(options: {
     }
 
     // 验证 token
-    const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];
-    const headerToken = req.get(CSRF_HEADER_NAME);
+    const cookieToken = req.cookies?.[CSRF_CONSTANTS.COOKIE_NAME] as string | undefined;
+    const headerToken = req.get(CSRF_CONSTANTS.HEADER_NAME);
 
     if (!verifyToken(cookieToken, headerToken)) {
       logger.warn('CSRF token 验证失败', {
@@ -106,7 +111,7 @@ export function csrfProtection(options: {
         hasHeader: !!headerToken,
       });
 
-      res.status(403).json({
+      res.status(CSRF_CONSTANTS.HTTP_STATUS_FORBIDDEN).json({
         code: 'CSRF_TOKEN_INVALID',
         message: 'CSRF token 验证失败',
         timestamp: new Date().toISOString(),
@@ -116,7 +121,7 @@ export function csrfProtection(options: {
 
     // 验证成功，刷新 token
     const newToken = generateToken();
-    res.cookie(CSRF_COOKIE_NAME, newToken, cookieOptions);
+    res.cookie(CSRF_CONSTANTS.COOKIE_NAME, newToken, cookieOptions);
 
     next();
   };
@@ -128,11 +133,11 @@ export function csrfProtection(options: {
 export function getCsrfToken(req: Request, res: Response): void {
   const token = generateToken();
 
-  res.cookie(CSRF_COOKIE_NAME, token, {
+  res.cookie(CSRF_CONSTANTS.COOKIE_NAME, token, {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 86400000,
+    maxAge: CSRF_CONSTANTS.COOKIE_MAX_AGE,
   });
 
   res.json({
@@ -142,4 +147,3 @@ export function getCsrfToken(req: Request, res: Response): void {
     timestamp: new Date().toISOString(),
   });
 }
-

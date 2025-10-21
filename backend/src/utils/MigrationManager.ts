@@ -63,7 +63,7 @@ export class MigrationManager {
    */
   private async getExecutedMigrations(client: PoolClient): Promise<Set<number>> {
     const result = await client.query<{version: number}>(
-      'SELECT version FROM schema_migrations ORDER BY version'
+      'SELECT version FROM schema_migrations ORDER BY version',
     );
     return new Set(result.rows.map(r => r.version));
   }
@@ -106,7 +106,7 @@ export class MigrationManager {
         name,
         filepath,
         sql,
-        checksum
+        checksum,
       });
     }
 
@@ -118,7 +118,7 @@ export class MigrationManager {
    */
   private async executeMigration(
     client: PoolClient,
-    migration: MigrationFile
+    migration: MigrationFile,
   ): Promise<number> {
     const startTime = Date.now();
 
@@ -134,7 +134,7 @@ export class MigrationManager {
       await client.query(
         `INSERT INTO schema_migrations (version, name, execution_time_ms, checksum)
          VALUES ($1, $2, $3, $4)`,
-        [migration.version, migration.name, executionTime, migration.checksum]
+        [migration.version, migration.name, executionTime, migration.checksum],
       );
 
       logger.info(`[Migration] ✅ 迁移 ${migration.version} 完成 (${executionTime}ms)`);
@@ -196,7 +196,7 @@ export class MigrationManager {
       logger.info('[Migration] 🎉 迁移执行完成', {
         executed,
         skipped,
-        totalTimeMs: totalTime
+        totalTimeMs: totalTime,
       });
 
       return { executed, skipped, totalTime };
@@ -229,7 +229,7 @@ export class MigrationManager {
 
       // 获取已执行的迁移
       const result = await client.query<MigrationRecord>(
-        'SELECT * FROM schema_migrations ORDER BY version'
+        'SELECT * FROM schema_migrations ORDER BY version',
       );
       const executedVersions = new Set(result.rows.map(r => r.version));
 
@@ -239,7 +239,7 @@ export class MigrationManager {
 
       return {
         executed: result.rows,
-        pending
+        pending,
       };
     } finally {
       client.release();
@@ -256,7 +256,7 @@ export class MigrationManager {
       await this.ensureMigrationsTable(client);
 
       const result = await client.query<{version: number; checksum: string}>(
-        'SELECT version, checksum FROM schema_migrations ORDER BY version'
+        'SELECT version, checksum FROM schema_migrations ORDER BY version',
       );
 
       const migrations = await this.loadMigrationFiles();
@@ -284,5 +284,3 @@ export class MigrationManager {
 }
 
 export default MigrationManager;
-
-

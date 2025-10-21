@@ -3,10 +3,16 @@
  * 包含数据库和Redis状态检查
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { getPool } from '@/utils/db';
 import { authService } from '@/services/authInstance';
 import logger from '@/utils/logger';
+
+// HTTP状态常量
+const HTTP_STATUS = {
+  OK: 200,
+  SERVICE_UNAVAILABLE: 503,
+} as const;
 
 const router: Router = Router();
 
@@ -28,13 +34,13 @@ router.get('/', (req: Request, res: Response) => {
  * GET /health/detailed
  * 包含数据库和Redis连接状态
  */
-router.get('/detailed', async (req: Request, res: Response) => {
+router.get('/detailed', async (req: Request, res: Response, next: NextFunction) => {
   const healthStatus = {
-    status: 'ok',
+    status: 'ok' as const,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV ?? 'development',
+    version: process.env.npm_package_version ?? '1.0.0',
     memory: process.memoryUsage(),
     platform: process.platform,
     nodeVersion: process.version,
@@ -70,7 +76,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
 
   // 检查Redis连接
   try {
-    const redis = (authService as any).redis;
+    const redis = (authService as { redis?: { ping: () => Promise<string> } }).redis;
     if (redis) {
       // 检查Redis连接状态
       const pingResult = await redis.ping();
@@ -95,8 +101,12 @@ router.get('/detailed', async (req: Request, res: Response) => {
     healthStatus.status = 'degraded';
   }
 
-  const statusCode = healthStatus.status === 'ok' ? 200 : 503;
-  res.status(statusCode).json(healthStatus);
+  try {
+    const statusCode = healthStatus.status === 'ok' ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
+    res.status(statusCode).json(healthStatus);
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

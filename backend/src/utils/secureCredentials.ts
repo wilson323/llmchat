@@ -15,9 +15,24 @@ export interface EncryptedData {
   algorithm: string; // Encryption algorithm used
 }
 
+// 加密配置常量
+const CRYPTO_CONFIG = {
+  SALT_ROUNDS: 329_876, // NIST recommended
+  KEY_LENGTH: 32, // AES-256 key length in bytes
+  IV_LENGTH: 16, // CBC IV length in bytes
+  MIN_DATA_LENGTH_FOR_MASK: 8, // Minimum length for masking
+  DEFAULT_KEY_GENERATION_LENGTH: 32, // Default secure key length
+  MASK_PREFIX_LENGTH: 4, // Length of prefix/suffix for masking
+} as const;
+
 export class SecureCredentialsManager {
   private static readonly ALGORITHM = 'aes-256-cbc';
-  private static readonly SALT_ROUNDS = 329_876; // NIST recommended
+  private static readonly SALT_ROUNDS = CRYPTO_CONFIG.SALT_ROUNDS;
+  private static readonly KEY_LENGTH = CRYPTO_CONFIG.KEY_LENGTH;
+  private static readonly IV_LENGTH = CRYPTO_CONFIG.IV_LENGTH;
+  private static readonly MIN_DATA_LENGTH_FOR_MASK = CRYPTO_CONFIG.MIN_DATA_LENGTH_FOR_MASK;
+  private static readonly DEFAULT_KEY_GENERATION_LENGTH =
+    CRYPTO_CONFIG.DEFAULT_KEY_GENERATION_LENGTH;
 
   /**
    * Derives encryption key from environment variables using PBKDF2
@@ -38,7 +53,8 @@ export class SecureCredentialsManager {
     const saltInput = process.env.CREDENTIALS_SALT ?? 'llmchat-default-salt';
     const salt = crypto.createHash('sha256').update(saltInput).digest();
 
-    return crypto.pbkdf2Sync(combinedSecret, salt, this.SALT_ROUNDS, 32, 'sha256');
+    // eslint-disable-next-line no-sync -- Sync key derivation is required for security
+    return crypto.pbkdf2Sync(combinedSecret, salt, this.SALT_ROUNDS, this.KEY_LENGTH, 'sha256');
   }
 
   /**
@@ -47,7 +63,7 @@ export class SecureCredentialsManager {
   static encrypt(plaintext: string): EncryptedData {
     try {
       const key = this.deriveKey();
-      const iv = crypto.randomBytes(16); // CBC needs 16-byte IV
+      const iv = crypto.randomBytes(this.IV_LENGTH); // CBC needs 16-byte IV
 
       const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
 
@@ -129,22 +145,25 @@ export class SecureCredentialsManager {
   /**
    * Validates encrypted data integrity
    */
-  static validateEncryptedData(encryptedData: any): encryptedData is EncryptedData {
+  static validateEncryptedData(encryptedData: unknown): encryptedData is EncryptedData {
+    if (!encryptedData || typeof encryptedData !== 'object') {
+      return false;
+    }
+
+    const data = encryptedData as Record<string, unknown>;
     return (
-      encryptedData &&
-      typeof encryptedData === 'object' &&
-      typeof encryptedData.data === 'string' &&
-      typeof encryptedData.iv === 'string' &&
-      typeof encryptedData.algorithm === 'string' &&
-      encryptedData.data.length > 0 &&
-      encryptedData.iv.length > 0
+      typeof data.data === 'string' &&
+      typeof data.iv === 'string' &&
+      typeof data.algorithm === 'string' &&
+      data.data.length > 0 &&
+      data.iv.length > 0
     );
   }
 
   /**
    * Generates a secure random key for additional entropy
    */
-  static generateSecureKey(length = 32): string {
+  static generateSecureKey(length = this.DEFAULT_KEY_GENERATION_LENGTH): string {
     return crypto.randomBytes(length).toString('hex');
   }
 
@@ -169,9 +188,9 @@ export class SecureCredentialsManager {
    * Masks sensitive data for logging
    */
   static maskSensitiveData(data: string): string {
-    if (!data || data.length < 8) {
+    if (!data || data.length < this.MIN_DATA_LENGTH_FOR_MASK) {
       return '***';
     }
-    return data.substring(0, 4) + '***' + data.substring(data.length - 4);
+    return data.substring(0, CRYPTO_CONFIG.MASK_PREFIX_LENGTH) + '***' + data.substring(data.length - CRYPTO_CONFIG.MASK_PREFIX_LENGTH);
   }
 }

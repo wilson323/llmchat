@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import type { Pool } from 'pg';
-import { ValidationError, SystemError, createErrorFromUnknown } from '@/types/errors';
+import { SystemError, createErrorFromUnknown } from '@/types/errors';
 import logger from '@/utils/logger';
 import { getPool } from '@/utils/db';
 import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
@@ -49,7 +49,7 @@ export class TokenService {
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
-      lazyConnect: true // 延迟连接,避免测试环境启动失败
+      lazyConnect: true, // 延迟连接,避免测试环境启动失败
     };
 
     if (appRedisConfig.password) {
@@ -406,4 +406,3 @@ export class TokenService {
     logger.info('TokenService Redis connection closed', { component: 'TokenService' });
   }
 }
-

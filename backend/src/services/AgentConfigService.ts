@@ -5,7 +5,6 @@ import { withClient } from '@/utils/db';
 import { generateId } from '@/utils/helpers';
 import {
   deepReplaceEnvVariables,
-  validateRequiredEnvVars,
   containsUnresolvedPlaceholders,
 } from '@/utils/envHelper';
 import logger from '@/utils/logger';
@@ -128,7 +127,7 @@ export class AgentConfigService {
    */
   async getAgent(id: string): Promise<AgentConfig | null> {
     await this.ensureCache();
-    return this.agents.get(id) || null;
+    return this.agents.get(id) ?? null;
   }
 
   /**
@@ -228,7 +227,7 @@ export class AgentConfigService {
 
   async createAgent(input: AgentMutationInput): Promise<AgentConfig> {
     await this.ensureCache();
-    const id = input.id || generateId().replace(/-/g, '');
+    const id = input.id ?? generateId().replace(/-/g, '');
     const now = new Date().toISOString();
     const baseFeatures = this.ensureFeatureDefaults(input.features);
 
@@ -281,7 +280,7 @@ export class AgentConfigService {
     const results: AgentConfig[] = [];
     for (const input of inputs) {
       await this.ensureCache();
-      const id = input.id || generateId().replace(/-/g, '');
+      const id = input.id ?? generateId().replace(/-/g, '');
       const existed = await this.getAgent(id);
       if (existed) {
         await this.updateAgent(id, input as Partial<AgentConfig>);
@@ -318,7 +317,7 @@ export class AgentConfigService {
         .catch(async (error) => {
           if (this.isTransientDbError(error)) {
             logger.warn('[AgentConfigService] 数据库不可用，回退到文件加载', {
-              error: error instanceof Error ? error.message : error,
+              error: error instanceof Error ? error.message : String(error),
             });
             return this.loadAgentsFromFileOnly();
           }
@@ -376,12 +375,12 @@ export class AgentConfigService {
     try {
       const raw = await fs.readFile(this.configPath, 'utf-8');
       const sanitized = this.sanitizeNumericPlaceholders(raw);
-      const parsed = JSON.parse(sanitized);
-      const list = Array.isArray(parsed?.agents) ? parsed.agents : [];
+      const parsed: unknown = JSON.parse(sanitized);
+      const list = Array.isArray((parsed as { agents?: unknown }).agents) ? (parsed as { agents: unknown }).agents : [];
 
       // 对于示例智能体使用静默模式，不记录环境变量警告
       const replaced = deepReplaceEnvVariables(list, true) as Array<
-        Partial<AgentConfig> & Record<string, any>
+        Partial<AgentConfig> & Record<string, unknown>
       >;
 
       const map = new Map<string, AgentConfig>();
@@ -398,8 +397,8 @@ export class AgentConfigService {
           description: String(item.description ?? ''),
           endpoint: String(item.endpoint ?? ''),
           apiKey: String(item.apiKey ?? ''),
-          provider: (item.provider as AgentConfig['provider']) || 'custom',
-          model: String(item.model || 'unknown-model'),
+          provider: (item.provider as AgentConfig['provider']) ?? 'custom',
+          model: String(item.model ?? 'unknown-model'),
           capabilities: Array.isArray(item.capabilities)
             ? item.capabilities
             : [],
@@ -433,13 +432,10 @@ export class AgentConfigService {
         }
 
         if (item.rateLimit && typeof item.rateLimit === 'object') {
+          const rateLimit = item.rateLimit as { requestsPerMinute?: unknown; tokensPerMinute?: unknown };
           config.rateLimit = {
-            requestsPerMinute: Number(
-              (item.rateLimit as any).requestsPerMinute ?? '',
-            ),
-            tokensPerMinute: Number(
-              (item.rateLimit as any).tokensPerMinute ?? '',
-            ),
+            requestsPerMinute: Number(rateLimit.requestsPerMinute ?? 0),
+            tokensPerMinute: Number(rateLimit.tokensPerMinute ?? 0),
           };
         }
 
@@ -525,7 +521,7 @@ export class AgentConfigService {
 
   private mapRowToConfig(row: AgentDbRow): AgentConfig {
     const features = this.ensureFeatureDefaults(
-      typeof row.features === 'object' && row.features !== null ? row.features as AgentConfig['features'] : undefined
+      typeof row.features === 'object' && row.features !== null ? row.features as AgentConfig['features'] : undefined,
     );
     return {
       id: row.id,
@@ -552,9 +548,9 @@ export class AgentConfigService {
         : {}),
       ...(row.rate_limit && typeof row.rate_limit === 'object' ? {
         rateLimit: {
-          requestsPerMinute: (row.rate_limit as any).requestsPerMinute ?? '',
-          tokensPerMinute: (row.rate_limit as any).tokensPerMinute ?? ''
-        }
+          requestsPerMinute: Number((row.rate_limit as { requestsPerMinute?: unknown }).requestsPerMinute ?? 0),
+          tokensPerMinute: Number((row.rate_limit as { tokensPerMinute?: unknown }).tokensPerMinute ?? 0),
+        },
       } : {}),
     };
   }
@@ -607,7 +603,7 @@ export class AgentConfigService {
           config.provider,
           config.endpoint,
           config.apiKey,
-          config.appId || null,
+          config.appId ?? null,
           config.model,
           config.maxTokens ?? null,
           config.temperature ?? null,
@@ -660,7 +656,7 @@ export class AgentConfigService {
           config.provider,
           config.endpoint,
           config.apiKey,
-          config.appId || null,
+          config.appId ?? null,
           config.model,
           config.maxTokens ?? null,
           config.temperature ?? null,
@@ -682,9 +678,9 @@ export class AgentConfigService {
     try {
       const file = await fs.readFile(this.configPath, 'utf-8');
       const sanitized = this.sanitizeNumericPlaceholders(file);
-      const parsed = JSON.parse(sanitized);
-      let list: AgentConfig[] = Array.isArray(parsed?.agents)
-        ? parsed.agents
+      const parsed: unknown = JSON.parse(sanitized);
+      let list: AgentConfig[] = Array.isArray((parsed as { agents?: unknown }).agents)
+        ? (parsed as { agents: AgentConfig[] }).agents
         : [];
 
       // 🔐 安全增强：环境变量替换
@@ -791,8 +787,8 @@ export class AgentConfigService {
     try {
       const raw = await fs.readFile(this.configPath, 'utf-8');
       const sanitized = this.sanitizeNumericPlaceholders(raw);
-      const parsed = JSON.parse(sanitized);
-      fileConfigs = Array.isArray(parsed?.agents) ? parsed.agents : [];
+      const parsed: unknown = JSON.parse(sanitized);
+      fileConfigs = Array.isArray((parsed as { agents?: unknown }).agents) ? (parsed as { agents: AgentConfig[] }).agents : [];
 
       // 对于示例智能体使用静默模式，不记录环境变量警告
       fileConfigs = deepReplaceEnvVariables(fileConfigs, true);
@@ -1070,6 +1066,16 @@ export class AgentConfigService {
     existingId?: string,
     collection: Map<string, AgentConfig> = this.agents,
   ): config is AgentConfig {
+    return (
+      this.validateRequiredFields(config) &&
+      this.validateSecurityFields(config) &&
+      this.validateIdUniqueness(config, existingId, collection) &&
+      this.validateProvider(config) &&
+      this.validateEndpoint(config)
+    );
+  }
+
+  private validateRequiredFields(config: AgentConfig | Record<string, unknown>): boolean {
     const requiredFields = [
       'id',
       'name',
@@ -1081,54 +1087,54 @@ export class AgentConfigService {
     ];
 
     for (const field of requiredFields) {
-      const cfg = config as any;
+      const cfg = config as Record<string, unknown>;
       if (!cfg[field]) {
         logger.error('智能体配置缺少必需字段', { field });
         return false;
       }
     }
+    return true;
+  }
 
+  private validateSecurityFields(config: AgentConfig | Record<string, unknown>): boolean {
     // 🔐 安全检查：对于激活的智能体，确保没有未解析的环境变量占位符
     // 示例/未激活的智能体可以包含占位符
-    if (config.isActive) {
-      const cfg = config as any;
+    if ((config as { isActive?: boolean }).isActive) {
+      const cfg = config as Record<string, unknown>;
       const sensitiveFields = ['endpoint', 'apiKey', 'appId'];
       for (const field of sensitiveFields) {
+        const fieldValue = cfg[field];
         if (
-          cfg[field] &&
-          typeof cfg[field] === 'string' &&
-          containsUnresolvedPlaceholders(cfg[field])
+          fieldValue &&
+          typeof fieldValue === 'string' &&
+          containsUnresolvedPlaceholders(fieldValue)
         ) {
           logger.error('激活的智能体配置包含未解析的环境变量占位符', {
-            agentId: config.id,
+            agentId: (config as { id?: string }).id,
             field,
-            value: cfg[field],
+            value: fieldValue,
           });
           return false;
         }
       }
     }
+    return true;
+  }
 
-    const cfgId = (config as {id?: string}).id;
+  private validateIdUniqueness(
+    config: AgentConfig | Record<string, unknown>,
+    existingId: string | undefined,
+    collection: Map<string, AgentConfig>,
+  ): boolean {
+    const cfgId = (config as { id?: string }).id;
     if (cfgId && collection.has(cfgId) && cfgId !== existingId) {
       logger.error('智能体ID重复', { agentId: config.id });
       return false;
     }
+    return true;
+  }
 
-    if (config.provider === 'fastgpt') {
-      if (
-        !config.appId ||
-        typeof config.appId !== 'string' ||
-        !/^[a-fA-F0-9]{24}$/.test(config.appId)
-      ) {
-        logger.error(
-          'FastGPT 配置缺少有效的 appId（需要 24 位十六进制字符串）',
-          { agentId: config.id },
-        );
-        return false;
-      }
-    }
-
+  private validateProvider(config: AgentConfig | Record<string, unknown>): boolean {
     const validProviders = [
       'fastgpt',
       'openai',
@@ -1137,14 +1143,32 @@ export class AgentConfigService {
       'dashscope',
       'custom',
     ];
-    const cfgProvider = (config as {provider?: string}).provider;
+    const cfgProvider = (config as { provider?: string }).provider;
     if (!cfgProvider || !validProviders.includes(cfgProvider)) {
       logger.error('不支持的provider', { provider: config.provider });
       return false;
     }
 
+    if (cfgProvider === 'fastgpt') {
+      const cfgAppId = (config as { appId?: unknown }).appId;
+      if (
+        !cfgAppId ||
+        typeof cfgAppId !== 'string' ||
+        !/^[a-fA-F0-9]{24}$/.test(cfgAppId)
+      ) {
+        logger.error(
+          'FastGPT 配置缺少有效的 appId（需要 24 位十六进制字符串）',
+          { agentId: config.id },
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private validateEndpoint(config: AgentConfig | Record<string, unknown>): boolean {
     try {
-      const cfgEndpoint = (config as {endpoint?: string}).endpoint;
+      const cfgEndpoint = (config as { endpoint?: string }).endpoint;
       const endpointUrl = cfgEndpoint?.startsWith('http')
         ? config.endpoint
         : `https://${config.endpoint}`;
@@ -1153,7 +1177,6 @@ export class AgentConfigService {
       logger.error('无效的endpoint URL', { endpoint: config.endpoint });
       return false;
     }
-
     return true;
   }
 
@@ -1169,4 +1192,3 @@ export class AgentConfigService {
     };
   }
 }
-

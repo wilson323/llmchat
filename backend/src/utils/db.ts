@@ -9,6 +9,25 @@ import MigrationManager from './MigrationManager';
 import { AppConfig } from '@/config/AppConfig'; // ✅ 统一配置服务
 import { createErrorFromUnknown } from '@/types/errors';
 
+// ===== 常量定义 =====
+/** PostgreSQL默认端口 */
+const DEFAULT_POSTGRES_PORT = 5432;
+
+/** 数据库连接和配置常量 */
+const DB_CONFIG = {
+  DEFAULT_PORT: 5432,
+  CONNECTION_TIMEOUT: 5000,
+  KEEPALIVE_DELAY: 10000,
+  HEALTH_CHECK_INTERVAL: 180000, // 3分钟
+  POOL_STATUS_INTERVAL: 60000,   // 1分钟
+  SALT_ROUNDS: 12,
+  MAX_POOL_SIZE: 20,
+  MIN_POOL_SIZE: 2,
+  IDLE_TIMEOUT: 300000,
+  QUERY_TIMEOUT: 30000,
+  MAX_USES: 5000,
+} as const;
+
 export interface PgConfig {
   database?: {
     postgres?: {
@@ -125,7 +144,7 @@ export async function initDB(): Promise<void> {
     user: dbConfig.user,
     password: dbConfig.password,
     database: dbConfig.database,
-    ssl: dbConfig.ssl
+    ssl: dbConfig.ssl,
   };
 
   // 如果环境变量中的用户名或密码是默认值，尝试读取配置文件作为后备
@@ -149,66 +168,63 @@ export async function initDB(): Promise<void> {
   }
 
   const pg = normalizePostgresConfig(rawPg);
-  console.log('[DB] ========== 数据库配置详情 ==========');
-  console.log('[DB] Host:', pg.host);
-  console.log('[DB] Port:', pg.port);
-  console.log('[DB] User:', pg.user);
-  console.log('[DB] Password:', pg.password ? '***' : '(empty)');
-  console.log('[DB] Database:', pg.database);
-  console.log('[DB] SSL:', pg.ssl);
-  console.log('[DB] =====================================');
-  
-  logger.info(`[initDB] 数据库配置 - Host: ${pg.host}, Port: ${pg.port}, Database: ${pg.database}, User: ${pg.user}`);
+  logger.info('[initDB] 数据库配置详情', {
+    host: pg.host,
+    port: pg.port,
+    user: pg.user,
+    password: pg.password ? '***' : '(empty)',
+    database: pg.database,
+    ssl: pg.ssl,
+  });
 
   // 尝试连接目标数据库，如果不存在则自动创建
-  console.log(`[DB] 开始连接数据库...`);
   logger.info(`[initDB] 尝试连接到目标数据库 "${pg.database}"...`);
 
   // 先创建一个临时连接池测试目标数据库是否存在
-  console.log(`[DB] 创建临时连接池测试目标数据库...`);
+  logger.debug('[initDB] 创建临时连接池测试目标数据库...');
   const testPool = new Pool({
     host: pg.host,
-    port: pg.port ?? 5432,
+    port: pg.port ?? DEFAULT_POSTGRES_PORT,
     user: pg.user,
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: DB_CONFIG.CONNECTION_TIMEOUT,
   });
 
   let databaseExists = false;
   try {
-    console.log('[DB] 测试连接到目标数据库...');
+    logger.debug('[initDB] 测试连接到目标数据库...');
     const testClient = await testPool.connect();
-    console.log('[DB] ✓ 目标数据库存在且可连接');
+    logger.info('[initDB] ✓ 目标数据库存在且可连接');
     testClient.release();
     databaseExists = true;
   } catch (testError: any) {
-    console.log('[DB] 连接目标数据库失败');
-    console.log('[DB] 错误代码:', testError.code);
-    console.log('[DB] 错误消息:', testError.message);
-    
+    logger.debug('[initDB] 连接目标数据库失败', {
+      code: testError.code,
+      message: testError.message,
+    });
+
     // 错误码 3D000 表示数据库不存在
     if (testError.code === '3D000') {
-      console.log('[DB] ⚠️  数据库不存在，尝试自动创建...');
       logger.info(`[initDB] 数据库 "${pg.database}" 不存在，尝试创建...`);
-      
+
       // 连接到postgres默认数据库来创建目标数据库
-      console.log('[DB] 连接到postgres默认数据库...');
+      logger.debug('[initDB] 连接到postgres默认数据库...');
       const postgresPool = new Pool({
         host: pg.host,
-        port: pg.port ?? 5432,
+        port: pg.port ?? DEFAULT_POSTGRES_PORT,
         user: pg.user,
         password: pg.password,
         database: 'postgres',
         ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: DB_CONFIG.CONNECTION_TIMEOUT,
       });
 
       try {
         const postgresClient = await postgresPool.connect();
         console.log('[DB] ✓ 已连接到postgres数据库');
-        
+
         try {
           console.log(`[DB] 执行CREATE DATABASE "${pg.database}"...`);
           await postgresClient.query(`CREATE DATABASE "${pg.database}"`);
@@ -255,23 +271,23 @@ export async function initDB(): Promise<void> {
   logger.info(`[initDB] 连接到目标数据库 "${pg.database}"...`);
   pool = new Pool({
     host: pg.host,
-    port: pg.port ?? 5432,
+    port: pg.port ?? DB_CONFIG.DEFAULT_PORT,
     user: pg.user,
     password: pg.password,
     database: pg.database,
     ssl: pg.ssl ? { rejectUnauthorized: false } as any : undefined,
 
     // ✅ T006: 动态连接池配置（环境变量控制）
-    max: parseInt(process.env.DB_POOL_MAX || '20'),          // 最大连接数（优化为20，避免过多连接）
-    min: parseInt(process.env.DB_POOL_MIN || '2'),           // 最小连接数（优化为2）
-    idleTimeoutMillis: 300_000,      // 🔧 5分钟空闲超时（避免长时间空闲导致断开）
-    connectionTimeoutMillis: 10_000, // 10秒连接超时（远程数据库需要更长时间）
-    query_timeout: 30_000,           // 30秒查询超时（复杂查询需要更长时间）
-    maxUses: 5000,                   // 每个连接最多使用5000次后回收
+    max: parseInt(process.env.DB_POOL_MAX || String(DB_CONFIG.MAX_POOL_SIZE)),
+    min: parseInt(process.env.DB_POOL_MIN || String(DB_CONFIG.MIN_POOL_SIZE)),
+    idleTimeoutMillis: DB_CONFIG.IDLE_TIMEOUT,
+    connectionTimeoutMillis: DB_CONFIG.CONNECTION_TIMEOUT * 2, // 10秒连接超时
+    query_timeout: DB_CONFIG.QUERY_TIMEOUT,
+    maxUses: DB_CONFIG.MAX_USES,
 
     // 🔧 TCP Keepalive配置（防止远程服务器/防火墙关闭空闲连接）
-    keepAlive: true,                 // 启用TCP keepalive
-    keepAliveInitialDelayMillis: 10_000,  // 🔧 10秒后开始发送keepalive包（更频繁的心跳）
+    keepAlive: true,
+    keepAliveInitialDelayMillis: DB_CONFIG.KEEPALIVE_DELAY,
 
     // ✅ 应用标识
     application_name: 'llmchat-backend',
@@ -332,7 +348,7 @@ export async function initDB(): Promise<void> {
       error: err.message,
       stack: err.stack,
     });
-    
+
     // 🔧 如果是连接终止错误，尝试恢复连接池
     if (err.message.includes('Connection terminated') || err.message.includes('ECONNRESET')) {
       logger.warn('DB Pool: 检测到连接断开，连接池将自动创建新连接');
@@ -340,7 +356,7 @@ export async function initDB(): Promise<void> {
     }
   });
 
-  // ✅ T006: 定期报告连接池状态（每分钟）
+  // ✅ T006: 定期报告连接池状态
   setInterval(() => {
     if (pool && pool.totalCount > 0) {
       logger.info('DB Pool Status', {
@@ -349,9 +365,9 @@ export async function initDB(): Promise<void> {
         waiting: pool.waitingCount,
       });
     }
-  }, 60000);
+  }, DB_CONFIG.POOL_STATUS_INTERVAL);
 
-  // 🔧 主动连接健康检查（每3分钟执行一次简单查询保持连接活跃）
+  // 🔧 主动连接健康检查（定期执行简单查询保持连接活跃）
   setInterval(async () => {
     if (pool) {
       try {
@@ -359,11 +375,11 @@ export async function initDB(): Promise<void> {
         logger.debug('DB Pool: 连接健康检查通过');
       } catch (err: unknown) {
         logger.warn('DB Pool: 健康检查失败，连接池将自动恢复', {
-          error: err instanceof Error ? err.message : String(err)
+          error: err instanceof Error ? err.message : String(err),
         });
       }
     }
-  }, 180_000); // 3分钟
+  }, DB_CONFIG.HEALTH_CHECK_INTERVAL);
 
   // 建表（若不存在）
   await withClient(async (client) => {
@@ -653,10 +669,9 @@ export async function initDB(): Promise<void> {
     if (count === 0) {
       // 🔧 修复：使用bcrypt而不是SHA-256，与AuthServiceV2保持一致
       const bcrypt = await import('bcrypt');
-      const SALT_ROUNDS = 12;
-      const passwordHash = await bcrypt.hash('admin', SALT_ROUNDS);
+      const passwordHash = await bcrypt.hash('admin', DB_CONFIG.SALT_ROUNDS);
       const randomSalt = crypto.randomBytes(16).toString('hex'); // 保持字段兼容性
-      
+
       await client.query(
         'INSERT INTO users(username, password_salt, password_hash, role, status) VALUES ($1,$2,$3,$4,$5)',
         ['admin', randomSalt, passwordHash, 'admin', 'active'],
@@ -687,7 +702,7 @@ export async function initDB(): Promise<void> {
     logger.info('✅ 数据库迁移完成', {
       executed: result.executed,
       skipped: result.skipped,
-      totalTimeMs: result.totalTime
+      totalTimeMs: result.totalTime,
     });
   } catch (unknownError: unknown) {
     const error = createErrorFromUnknown(unknownError, {
@@ -843,4 +858,3 @@ async function seedAgentsFromFile(): Promise<void> {
     logger.info(`✅ [seedAgentsFromFile] 智能体种子完成，共处理 ${resolvedAgents.length} 个智能体`);
   });
 }
-

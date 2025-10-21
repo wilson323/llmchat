@@ -6,6 +6,18 @@
 import { BaseError, createErrorFromUnknown } from '@/types/errors';
 import type { ApiError } from '@/types';
 
+// HTTP状态码常量
+const HTTP_STATUS_CODES = {
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  BAD_REQUEST: 400,
+  SERVICE_UNAVAILABLE: 503,
+  BAD_GATEWAY: 502,
+  NOT_FOUND: 404,
+  UNPROCESSABLE_ENTITY: 422,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
 /**
  * 类型守卫：检查是否为Error对象
  */
@@ -52,7 +64,7 @@ export function toEnhancedError(
     operation?: string;
     requestId?: string;
     userId?: string;
-  } = {}
+  } = {},
 ): BaseError {
   return createErrorFromUnknown(error, context);
 }
@@ -67,12 +79,12 @@ export function safeErrorHandler<T>(
     operation?: string;
     requestId?: string;
     userId?: string;
-  }
+  },
 ): { error: BaseError; fallback: T } {
   const enhancedError = toEnhancedError(error, context);
   return {
     error: enhancedError,
-    fallback: fallbackValue
+    fallback: fallbackValue,
   };
 }
 
@@ -86,23 +98,23 @@ export class ExpressErrorHandler {
   static getStatusCode(error: BaseError): number {
     switch (error.category) {
       case 'authentication':
-        return 401;
+        return HTTP_STATUS_CODES.UNAUTHORIZED;
       case 'authorization':
-        return 403;
+        return HTTP_STATUS_CODES.FORBIDDEN;
       case 'validation':
-        return 400;
+        return HTTP_STATUS_CODES.BAD_REQUEST;
       case 'network':
-        return 503;
+        return HTTP_STATUS_CODES.SERVICE_UNAVAILABLE;
       case 'external_service':
-        return 502;
+        return HTTP_STATUS_CODES.BAD_GATEWAY;
       case 'resource':
-        return 404;
+        return HTTP_STATUS_CODES.NOT_FOUND;
       case 'business_logic':
-        return 422;
+        return HTTP_STATUS_CODES.UNPROCESSABLE_ENTITY;
       case 'system':
-        return 500;
+        return HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR;
       default:
-        return 500;
+        return HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR;
     }
   }
 
@@ -118,7 +130,7 @@ export class ExpressErrorHandler {
    */
   static createErrorResponse(
     error: BaseError,
-    requestId?: string
+    requestId?: string,
   ): ApiError {
     const response = error.toApiError();
 

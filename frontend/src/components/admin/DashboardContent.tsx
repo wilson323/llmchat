@@ -10,7 +10,20 @@ import Card from '@/components/ui/Card';
 import { getDefaultConversationFilters, toIsoRangeFromInput } from '@/utils/dateUtils';
 import { toast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
-import { getConversationSeries, getAgentComparison, type ConversationSeriesDataset, type AgentComparisonDataset } from '@/services/analyticsApi';
+import AgentRankingChart from './AgentRankingChart';
+import ProviderPieChart from './ProviderPieChart';
+import ConversationTrendChart from './ConversationTrendChart';
+import ChinaHeatmapChart from './ChinaHeatmapChart';
+import { 
+  getConversationSeries, 
+  getAgentComparison, 
+  getProvinceHeatmap,
+  getSystemOverview,
+  type ConversationSeriesDataset, 
+  type AgentComparisonDataset,
+  type ProvinceHeatmapDataset,
+  type SystemOverviewData 
+} from '@/services/analyticsApi';
 import { listAgents, type AgentItem } from '@/services/agentsApi';
 import type { ConversationAnalyticsFilters } from '@/types';
 
@@ -20,12 +33,18 @@ interface DashboardAnalytics {
   setDateFilter: (key: 'startDate' | 'endDate', value: string) => void;
   setAgentId: (id: string) => void;
   refresh: () => Promise<void>;
+  overview: SystemOverviewData | null;
+  overviewLoading: boolean;
+  overviewError: string | null;
   series: ConversationSeriesDataset | null;
   seriesLoading: boolean;
   seriesError: string | null;
   comparison: AgentComparisonDataset | null;
   comparisonLoading: boolean;
   comparisonError: string | null;
+  heatmap: ProvinceHeatmapDataset | null;
+  heatmapLoading: boolean;
+  heatmapError: string | null;
   agents: AgentItem[];
   agentsLoading: boolean;
   agentsError: string | null;
@@ -37,12 +56,18 @@ interface DashboardAnalytics {
 function useDashboardConversationAnalytics(): DashboardAnalytics {
   const { t } = useI18n();
   const [filters, setFilters] = useState(getDefaultConversationFilters());
+  const [overview, setOverview] = useState<SystemOverviewData | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const [series, setSeries] = useState<ConversationSeriesDataset | null>(null);
   const [seriesLoading, setSeriesLoading] = useState(false);
   const [seriesError, setSeriesError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<AgentComparisonDataset | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
+  const [heatmap, setHeatmap] = useState<ProvinceHeatmapDataset | null>(null);
+  const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [heatmapError, setHeatmapError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [agentsError, setAgentsError] = useState<string | null>(null);
@@ -54,6 +79,24 @@ function useDashboardConversationAnalytics(): DashboardAnalytics {
       agentId: filters.agentId === 'all' ? null : filters.agentId,
     };
   }, [filters]);
+
+  const fetchOverview = useCallback(async () => {
+    try {
+      setOverviewLoading(true);
+      setOverviewError(null);
+      const data = await getSystemOverview();
+      setOverview(data);
+    } catch (err: unknown) {
+      let message = t('获取系统概览失败');
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      setOverviewError(message);
+      // 不显示toast，避免过多提示
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, [t]);
 
   const fetchSeries = useCallback(async () => {
     try {
@@ -98,6 +141,28 @@ function useDashboardConversationAnalytics(): DashboardAnalytics {
     }
   }, [normalizedRange.startIso, normalizedRange.endIso, t]);
 
+  const fetchHeatmap = useCallback(async () => {
+    try {
+      setHeatmapLoading(true);
+      setHeatmapError(null);
+      const data = await getProvinceHeatmap({
+        start: normalizedRange.startIso,
+        end: normalizedRange.endIso,
+        agentId: normalizedRange.agentId,
+      });
+      setHeatmap(data);
+    } catch (err: unknown) {
+      let message = t('获取地域分布失败');
+      if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message);
+      }
+      setHeatmapError(message);
+      // 不显示toast，避免过多提示
+    } finally {
+      setHeatmapLoading(false);
+    }
+  }, [normalizedRange.startIso, normalizedRange.endIso, normalizedRange.agentId, t]);
+
   const fetchAgents = useCallback(async () => {
     try {
       setAgentsLoading(true);
@@ -125,34 +190,39 @@ function useDashboardConversationAnalytics(): DashboardAnalytics {
   }, []);
 
   const refresh = useCallback(async () => {
-    await Promise.all([fetchSeries(), fetchComparison(), fetchAgents()]);
-  }, [fetchSeries, fetchComparison, fetchAgents]);
+    await Promise.all([fetchOverview(), fetchSeries(), fetchComparison(), fetchHeatmap(), fetchAgents()]);
+  }, [fetchOverview, fetchSeries, fetchComparison, fetchHeatmap, fetchAgents]);
 
-  // 初始数据加载 - 暂时禁用API调用，避免404错误
+  // 初始数据加载
   useEffect(() => {
-    // TODO: 后端实现analytics API后再启用
-    // void fetchSeries();
-    // void fetchComparison();
-    void fetchAgents(); // 仅获取智能体列表
-  }, [fetchAgents]);
+    void fetchOverview();
+    void fetchAgents();
+  }, [fetchOverview, fetchAgents]);
 
-  // 当筛选条件变化时重新获取数据 - 暂时禁用
-  // useEffect(() => {
-  //   void fetchSeries();
-  //   void fetchComparison();
-  // }, [fetchSeries, fetchComparison]);
+  // 当筛选条件变化时重新获取图表数据
+  useEffect(() => {
+    void fetchSeries();
+    void fetchComparison();
+    void fetchHeatmap();
+  }, [fetchSeries, fetchComparison, fetchHeatmap]);
 
   return {
     filters,
     setDateFilter,
     setAgentId,
     refresh,
+    overview,
+    overviewLoading,
+    overviewError,
     series,
     seriesLoading,
     seriesError,
     comparison,
     comparisonLoading,
     comparisonError,
+    heatmap,
+    heatmapLoading,
+    heatmapError,
     agents,
     agentsLoading,
     agentsError,
@@ -172,13 +242,17 @@ export default memo(function DashboardContent({ sidebarCollapsed }: { sidebarCol
 
       {/* 统计卡片网格 */}
       <div className="dashboard-grid">
-        {/* 对话趋势 */}
+        {/* 总会话数 */}
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">今日对话</p>
-              <p className="text-2xl font-bold text-blue-600">1,234</p>
-              <p className="text-xs text-green-600">+12% 较昨日</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">总会话数</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {analytics.overviewLoading ? '...' : analytics.overview?.total_sessions?.toLocaleString() || '0'}
+              </p>
+              <p className="text-xs text-gray-500">
+                今日: {analytics.overview?.sessions_today || 0}
+              </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,13 +262,17 @@ export default memo(function DashboardContent({ sidebarCollapsed }: { sidebarCol
           </div>
         </div>
 
-        {/* 活跃用户 */}
+        {/* 总用户数 */}
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">活跃用户</p>
-              <p className="text-2xl font-bold text-green-600">567</p>
-              <p className="text-xs text-green-600">+8% 较昨日</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">总用户数</p>
+              <p className="text-2xl font-bold text-green-600">
+                {analytics.overviewLoading ? '...' : analytics.overview?.total_users?.toLocaleString() || '0'}
+              </p>
+              <p className="text-xs text-gray-500">
+                1小时活跃: {analytics.overview?.active_sessions_1h || 0}
+              </p>
             </div>
             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,9 +286,13 @@ export default memo(function DashboardContent({ sidebarCollapsed }: { sidebarCol
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">智能体</p>
-              <p className="text-2xl font-bold text-purple-600">23</p>
-              <p className="text-xs text-gray-500">2个新增</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">智能体数量</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {analytics.overviewLoading ? '...' : analytics.overview?.total_agents || '0'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {analytics.agents.filter(a => a.isActive).length} 个活跃
+              </p>
             </div>
             <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,17 +302,21 @@ export default memo(function DashboardContent({ sidebarCollapsed }: { sidebarCol
           </div>
         </div>
 
-        {/* 系统状态 */}
+        {/* 消息总数（自研） */}
         <div className="stat-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">系统状态</p>
-              <p className="text-2xl font-bold text-green-600">正常</p>
-              <p className="text-xs text-gray-500">99.9% 可用性</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">消息数（自研）</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {analytics.overviewLoading ? '...' : analytics.overview?.self_hosted_messages?.toLocaleString() || '0'}
+              </p>
+              <p className="text-xs text-gray-500">
+                今日: {analytics.overview?.messages_today || 0}
+              </p>
             </div>
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
             </div>
           </div>
@@ -243,35 +329,44 @@ export default memo(function DashboardContent({ sidebarCollapsed }: { sidebarCol
         <div className="admin-card">
           <h3 className="text-lg font-semibold text-foreground mb-2">对话趋势</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">最近7天的对话数量变化</p>
-          <div className="chart-placeholder">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400">图表加载中...</p>
-              <p className="text-sm text-gray-500">即将显示对话趋势数据</p>
-            </div>
-          </div>
+          <ConversationTrendChart
+            data={analytics.series}
+            loading={analytics.seriesLoading}
+            error={analytics.seriesError}
+          />
         </div>
 
-        {/* 智能体对比 */}
+        {/* 智能体排行榜 */}
         <div className="admin-card">
-          <h3 className="text-lg font-semibold text-foreground mb-2">智能体对比</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">各智能体的使用情况对比</p>
-          <div className="chart-placeholder">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400">图表加载中...</p>
-              <p className="text-sm text-gray-500">即将显示智能体对比数据</p>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">智能体排行榜</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Top 5智能体使用情况</p>
+          <AgentRankingChart
+            data={analytics.overview?.top_agents || null}
+            loading={analytics.overviewLoading}
+            error={analytics.overviewError}
+          />
+        </div>
+
+        {/* 提供商分布 */}
+        <div className="admin-card">
+          <h3 className="text-lg font-semibold text-foreground mb-2">提供商分布</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">各提供商的会话占比</p>
+          <ProviderPieChart
+            data={analytics.overview?.provider_distribution || null}
+            loading={analytics.overviewLoading}
+            error={analytics.overviewError}
+          />
+        </div>
+
+        {/* 地域分布热力图 */}
+        <div className="admin-card">
+          <h3 className="text-lg font-semibold text-foreground mb-2">地域分布</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">用户地理位置热力图</p>
+          <ChinaHeatmapChart
+            data={analytics.heatmap}
+            loading={analytics.heatmapLoading}
+            error={analytics.heatmapError}
+          />
             </div>
           </div>
 

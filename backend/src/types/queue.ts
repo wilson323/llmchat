@@ -192,7 +192,7 @@ export const QUEUE_TYPES = {
   CLEANUP_TASKS: 'cleanup-tasks',
   AUDIT_LOGS: 'audit-logs',
   PERFORMANCE_METRICS: 'performance-metrics',
-  HEALTH_CHECKS: 'health-checks'
+  HEALTH_CHECKS: 'health-checks',
 } as const;
 
 export type QueueType = typeof QUEUE_TYPES[keyof typeof QUEUE_TYPES];
@@ -215,7 +215,7 @@ export const JOB_TYPES = {
   HEALTH_CHECK: 'health-check',
   SESSION_CLEANUP: 'session-cleanup',
   TOKEN_REFRESH: 'token-refresh',
-  PASSWORD_RESET: 'password-reset'
+  PASSWORD_RESET: 'password-reset',
 } as const;
 
 export type JobType = typeof JOB_TYPES[keyof typeof JOB_TYPES];

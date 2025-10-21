@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { createErrorFromUnknown } from '@/types/errors';
 import type {
   AgentConfig,
   ChatMessage,
@@ -23,7 +22,7 @@ import type {
   ReasoningPayload,
 } from '@/types/provider';
 import type { AgentConfigService } from './AgentConfigService';
-import { generateId, generateTimestamp, getErrorMessage } from '@/utils/helpers';
+import { generateId, generateTimestamp } from '@/utils/helpers';
 import { ChatLogService } from './ChatLogService';
 // import type { ProtectedRequestContext } from './ProtectionService'; // 已移除保护服务
 // import { getProtectionService } from './ProtectionService'; // 已移除保护服务
@@ -41,7 +40,7 @@ import {
   isToolEvent,
   isUsageEvent,
 } from '@/utils/fastgptEvents';
-import { ValidationError, ResourceError, ExternalServiceError } from '@/types/errors';
+import { createErrorFromUnknown, ValidationError, ResourceError, ExternalServiceError } from '@/types/errors';
 
 interface SSEParsedEvent {
   event: string;

@@ -4,6 +4,7 @@
  */
 
 import type { Request } from 'express';
+import type { AuthenticatedRequest } from '@/middleware/jwtAuth';
 import { LogSanitizer } from './logSanitizer';
 import { promises as fs } from 'fs';
 import { logger } from '@/utils/logger';
@@ -40,6 +41,15 @@ export class SecureUpload {
     '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.js', '.jar',
     '.php', '.asp', '.aspx', '.jsp', '.py', '.rb', '.sh', '.ps1',
   ];
+
+  // 文件签名常量 (File signature constants)
+  private static readonly PE_MAGIC_NUMBER_1 = 0x4D; // 'M' in PE header
+  private static readonly PE_MAGIC_NUMBER_2 = 0x5A; // 'Z' in PE header
+  private static readonly ELF_HEADER_SIZE = 4;
+  private static readonly ELF_MAGIC_0 = 0x7F; // ELF magic byte 0
+  private static readonly ELF_MAGIC_1 = 0x45; // 'E' in ELF header
+  private static readonly ELF_MAGIC_2 = 0x4C; // 'L' in ELF header
+  private static readonly ELF_MAGIC_3 = 0x46; // 'F' in ELF header
 
   static validateFile(
     file: Express.Multer.File,
@@ -127,6 +137,7 @@ export class SecureUpload {
     sanitized = sanitized.replace(/[<>:"|?*]/g, '_');
 
     // 移除控制字符 (除了换行符和制表符)
+    // eslint-disable-next-line no-control-regex
     sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '_');
 
     // 移除连续的下划线
@@ -149,7 +160,7 @@ export class SecureUpload {
 
   static validateUserAuth(req: Request): boolean {
     // 检查用户是否已认证
-    return !!(req as any).user?.id;
+    return !!(req as AuthenticatedRequest).user?.id;
   }
 
   static logUpload(filename: string, userId: string, success: boolean): void {
@@ -173,16 +184,16 @@ export class SecureUpload {
       const buffer = await fs.readFile(filePath);
 
       // 检查PE文件头 (Windows可执行文件)
-      if (buffer.length > 2 && buffer[0] === 0x4D && buffer[1] === 0x5A) {
+      if (buffer.length > 2 && buffer[0] === this.PE_MAGIC_NUMBER_1 && buffer[1] === this.PE_MAGIC_NUMBER_2) {
         return { safe: false, threat: 'PE executable detected' };
       }
 
       // 检查ELF文件头 (Linux可执行文件)
-      if (buffer.length > 4 &&
-          buffer[0] === 0x7F &&
-          buffer[1] === 0x45 &&
-          buffer[2] === 0x4C &&
-          buffer[3] === 0x46) {
+      if (buffer.length > this.ELF_HEADER_SIZE &&
+          buffer[0] === this.ELF_MAGIC_0 &&
+          buffer[1] === this.ELF_MAGIC_1 &&
+          buffer[2] === this.ELF_MAGIC_2 &&
+          buffer[3] === this.ELF_MAGIC_3) {
         return { safe: false, threat: 'ELF executable detected' };
       }
 

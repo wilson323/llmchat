@@ -1,6 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * 常用工具常量
+ */
+const CONSTANTS = {
+  BYTES_IN_KB: 1024,
+  FILE_SIZE_UNITS: ['Bytes', 'KB', 'MB', 'GB', 'TB'],
+  ELLIPSIS: '...',
+  MAX_ID_LENGTH: 16,
+  TRUNCATE_SUFFIX_LENGTH: 3,
+  TIMESTAMP_DIVISOR: 1000,
+} as const;
+
+/**
  * 生成唯一ID
  */
 export const generateId = (): string => {
@@ -11,7 +23,7 @@ export const generateId = (): string => {
  * 生成时间戳
  */
 export const generateTimestamp = (): number => {
-  return Math.floor(Date.now() / 1000);
+  return Math.floor(Date.now() / CONSTANTS.TIMESTAMP_DIVISOR);
 };
 
 /**
@@ -60,11 +72,11 @@ export const getErrorMessage = (error: unknown): string => {
 /**
  * 清理对象中的undefined值
  */
-export const cleanObject = <T extends Record<string, any>>(obj: T): Partial<T> => {
+export const cleanObject = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
   const cleaned: Partial<T> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      cleaned[key as keyof T] = value;
+    if (value !== undefined && value !== null) {
+      cleaned[key as keyof T] = value as T[keyof T];
     }
   }
   return cleaned;
@@ -80,7 +92,7 @@ export const deepClone = <T>(obj: T): T => {
 /**
  * 检查是否为空对象
  */
-export const isEmpty = (obj: any): boolean => {
+export const isEmpty = (obj: unknown): boolean => {
   if (obj === null) {
     return true;
   }
@@ -101,11 +113,9 @@ export const formatFileSize = (bytes: number): string => {
     return '0 Bytes';
   }
 
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const i = Math.floor(Math.log(bytes) / Math.log(CONSTANTS.BYTES_IN_KB));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(CONSTANTS.BYTES_IN_KB, i)).toFixed(2)) + ' ' + CONSTANTS.FILE_SIZE_UNITS[i];
 };
 
 /**
@@ -115,7 +125,7 @@ export const truncateString = (str: string, maxLength: number): string => {
   if (str.length <= maxLength) {
     return str;
   }
-  return str.slice(0, maxLength - 3) + '...';
+  return str.slice(0, maxLength - CONSTANTS.TRUNCATE_SUFFIX_LENGTH) + CONSTANTS.ELLIPSIS;
 };
 
 /**

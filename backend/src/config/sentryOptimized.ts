@@ -3,6 +3,11 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import type { Express } from 'express';
 import logger from '@/utils/logger';
 
+// 采样率常量
+const DEVELOPMENT_TRACES_SAMPLE_RATE = 0.05;
+const PRODUCTION_TRACES_SAMPLE_RATE = 0.1;
+const PROFILES_SAMPLE_RATE = 0.05;
+
 /**
  * 优化后的Sentry初始化
  *
@@ -12,7 +17,7 @@ import logger from '@/utils/logger';
  * - 批量传输（30个事件）
  * - 过滤低优先级事件
  */
-export function initSentryOptimized(app: Express): void {
+export function initSentryOptimized(_app: Express): void {
   const dsn = process.env.SENTRY_DSN;
 
   if (!dsn) {
@@ -35,11 +40,11 @@ export function initSentryOptimized(app: Express): void {
     ],
 
     // ✅ 采样率配置（降低发送频率）
-    tracesSampleRate: isProduction ? 0.1 : 0.05,  // 生产10%，开发5%
-    profilesSampleRate: 0.05,                      // 性能采样5%
+    tracesSampleRate: isProduction ? PRODUCTION_TRACES_SAMPLE_RATE : DEVELOPMENT_TRACES_SAMPLE_RATE,  // 生产10%，开发5%
+    profilesSampleRate: PROFILES_SAMPLE_RATE,                      // 性能采样5%
 
     // ✅ 过滤低优先级事件
-    beforeSend: async (event, hint) => {
+    beforeSend: (event, _hint) => {
       // 过滤info和debug级别
       if (event.level === 'info' || event.level === 'debug') {
         return null;
@@ -83,7 +88,6 @@ export function initSentryOptimized(app: Express): void {
 
   logger.info('Sentry: 已初始化（优化模式）', {
     environment: process.env.NODE_ENV,
-    tracesSampleRate: isProduction ? 0.1 : 0.05,
+    tracesSampleRate: isProduction ? PRODUCTION_TRACES_SAMPLE_RATE : DEVELOPMENT_TRACES_SAMPLE_RATE,
   });
 }
-

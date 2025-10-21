@@ -1,6 +1,5 @@
 import type { Response } from 'express';
-import type { ApiSuccessResponse, JsonObject, JsonValue} from '@/types/dynamic';
-import { DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
+import { type ApiSuccessResponse, type JsonObject, type JsonValue, DynamicTypeGuard, DynamicDataConverter } from '@/types/dynamic';
 import { createErrorFromUnknown } from '@/types/errors';
 
 interface PaginationMetadata {
@@ -30,6 +29,27 @@ type SendSuccessOptions = Exclude<Parameters<typeof ApiResponseHandler.sendSucce
  * - 性能监控
  * - 错误边界保护
  */
+// HTTP 状态码常量
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
+} as const;
+
+// 其他常量
+const _OTHER_CONSTANTS = {
+  BATCH_SLICE_DELIMITER: 3,
+  PARAMETER_INDEX: 3,
+} as const;
+
 export class ApiResponseHandler {
   private static readonly API_VERSION = '1.0.0';
 
@@ -51,7 +71,7 @@ export class ApiResponseHandler {
     const {
       message = 'success',
       code = 'OK',
-      statusCode = 200,
+      statusCode = HTTP_STATUS.OK,
       requestId,
       metadata,
       startTime,
@@ -181,7 +201,7 @@ export class ApiResponseHandler {
       res.setHeader('X-Error-ID', typedError.id);
     }
 
-    const statusCode = options.statusCode || this.getDefaultErrorStatusCode(typedError);
+    const statusCode = options.statusCode ?? this.getDefaultErrorStatusCode(typedError);
     res.status(statusCode).json(errorResponse);
   }
 
@@ -195,7 +215,7 @@ export class ApiResponseHandler {
   ): void {
     const nextOptions: SendSuccessOptions = {
       ...(options ?? {}),
-      statusCode: 201,
+      statusCode: HTTP_STATUS.CREATED,
     };
 
     if (!options?.code) {
@@ -226,7 +246,7 @@ export class ApiResponseHandler {
     if (options.requestId) {
       res.setHeader('X-Request-ID', options.requestId);
     }
-    res.status(204).end();
+    res.status(HTTP_STATUS.NO_CONTENT).end();
   }
 
   /**
@@ -249,7 +269,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 400 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.BAD_REQUEST });
   }
 
   /**
@@ -268,7 +288,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 401 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.UNAUTHORIZED });
   }
 
   /**
@@ -287,7 +307,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 403 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.FORBIDDEN });
   }
 
   /**
@@ -306,7 +326,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 404 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.NOT_FOUND });
   }
 
   /**
@@ -325,7 +345,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 405 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.METHOD_NOT_ALLOWED });
   }
 
   /**
@@ -344,7 +364,7 @@ export class ApiResponseHandler {
       },
     );
 
-    this.sendError(res, error, { ...options, statusCode: 409 });
+    this.sendError(res, error, { ...options, statusCode: HTTP_STATUS.CONFLICT });
   }
 
   /**
@@ -353,14 +373,8 @@ export class ApiResponseHandler {
   static safeJsonStringify(data: JsonValue): string {
     try {
       return JSON.stringify(data, null, 2);
-    } catch (unknownError: unknown) {
+    } catch {
       // 记录序列化错误
-      const error = createErrorFromUnknown(unknownError, {
-        component: 'ApiResponseHandler',
-        operation: 'safeJsonStringify',
-        context: { dataType: typeof data },
-      });
-
       return JSON.stringify({
         code: 'SERIALIZATION_ERROR',
         message: '数据序列化失败',
@@ -411,8 +425,8 @@ export class ApiResponseHandler {
     details?: JsonValue,
     options: { requestId?: string } = {},
   ): void {
-    const statusCode = status === 'healthy' ? 200 :
-      status === 'degraded' ? 200 : 503;
+    const statusCode = status === 'healthy' ? HTTP_STATUS.OK :
+      status === 'degraded' ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
 
     const data = {
       status,
@@ -431,50 +445,52 @@ export class ApiResponseHandler {
   /**
    * 获取默认错误状态码
    */
-  private static getDefaultErrorStatusCode(error: ReturnType<typeof createErrorFromUnknown>): number {
-    const {code} = error;
+  private static getDefaultErrorStatusCode(
+  error: ReturnType<typeof createErrorFromUnknown>,
+): number {
+    const { code } = error;
     const message = error.message.toLowerCase();
 
     // 客户端错误
     if (code === 'VALIDATION_ERROR') {
-      return 400;
+      return HTTP_STATUS.BAD_REQUEST;
     }
     if (code === 'UNAUTHORIZED') {
-      return 401;
+      return HTTP_STATUS.UNAUTHORIZED;
     }
     if (code === 'FORBIDDEN') {
-      return 403;
+      return HTTP_STATUS.FORBIDDEN;
     }
     if (code === 'NOT_FOUND') {
-      return 404;
+      return HTTP_STATUS.NOT_FOUND;
     }
     if (code === 'CONFLICT') {
-      return 409;
+      return HTTP_STATUS.CONFLICT;
     }
 
     // 服务器错误
     if (code === 'INTERNAL_SERVER_ERROR') {
-      return 500;
+      return HTTP_STATUS.INTERNAL_SERVER_ERROR;
     }
     if (code === 'SERVICE_UNAVAILABLE') {
-      return 503;
+      return HTTP_STATUS.SERVICE_UNAVAILABLE;
     }
 
     // 基于消息判断
     if (message.includes('not found')) {
-      return 404;
+      return HTTP_STATUS.NOT_FOUND;
     }
     if (message.includes('unauthorized')) {
-      return 401;
+      return HTTP_STATUS.UNAUTHORIZED;
     }
     if (message.includes('forbidden')) {
-      return 403;
+      return HTTP_STATUS.FORBIDDEN;
     }
     if (message.includes('validation')) {
-      return 400;
+      return HTTP_STATUS.BAD_REQUEST;
     }
 
-    return 500;
+    return HTTP_STATUS.INTERNAL_SERVER_ERROR;
   }
 }
 

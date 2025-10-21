@@ -14,6 +14,23 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
 
+// 日志配置常量
+const LOG_CONFIG = {
+  MAX_SIZE: '20m',
+  APP_FILES: '14d',
+  ERROR_FILES: '30d',
+  AUDIT_FILES: '90d',
+  AUDIT_MAX_SIZE: '50m',
+  TIMESTAMP_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+  CONSOLE_TIMESTAMP_FORMAT: 'HH:mm:ss',
+} as const;
+
+// HTTP状态码常量
+const HTTP_STATUS_CODES = {
+  INTERNAL_SERVER_ERROR: 500,
+  BAD_REQUEST: 400,
+} as const;
+
 // 日志目录
 const logDir = path.join(__dirname, '../../log');
 
@@ -26,7 +43,7 @@ if (!fs.existsSync(logDir)) {
  * 自定义日志格式 - JSON 结构化
  */
 const customFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({ format: LOG_CONFIG.TIMESTAMP_FORMAT }),
   winston.format.errors({ stack: true }),
   winston.format.metadata({ fillWith: ['service', 'component', 'environment'] }),
   winston.format.json(),
@@ -37,7 +54,7 @@ const customFormat = winston.format.combine(
  */
 const consoleFormat = winston.format.combine(
   winston.format.colorize(),
-  winston.format.timestamp({ format: 'HH:mm:ss' }),
+  winston.format.timestamp({ format: LOG_CONFIG.CONSOLE_TIMESTAMP_FORMAT }),
   winston.format.printf(({ timestamp, level, message, ...meta }) => {
     let metaStr = '';
     if (Object.keys(meta).length > 0) {
@@ -55,8 +72,8 @@ const consoleFormat = winston.format.combine(
 const appLogTransport = new DailyRotateFile({
   filename: path.join(logDir, 'app-%DATE%.log'),
   datePattern: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: '14d',
+  maxSize: LOG_CONFIG.MAX_SIZE,
+  maxFiles: LOG_CONFIG.APP_FILES,
   level: 'info',
 });
 
@@ -64,8 +81,8 @@ const appLogTransport = new DailyRotateFile({
 const errorLogTransport = new DailyRotateFile({
   filename: path.join(logDir, 'error-%DATE%.log'),
   datePattern: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: '30d',
+  maxSize: LOG_CONFIG.MAX_SIZE,
+  maxFiles: LOG_CONFIG.ERROR_FILES,
   level: 'error',
 });
 
@@ -73,8 +90,8 @@ const errorLogTransport = new DailyRotateFile({
 const auditLogTransport = new DailyRotateFile({
   filename: path.join(logDir, 'audit-%DATE%.log'),
   datePattern: 'YYYY-MM-DD',
-  maxSize: '50m',
-  maxFiles: '90d',
+  maxSize: LOG_CONFIG.AUDIT_MAX_SIZE,
+  maxFiles: LOG_CONFIG.AUDIT_FILES,
   level: 'warn',
 });
 
@@ -166,7 +183,7 @@ export function logHttpRequest(
   duration: number,
   metadata?: Record<string, unknown>,
 ): void {
-  const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+  const level = statusCode >= HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR ? 'error' : statusCode >= HTTP_STATUS_CODES.BAD_REQUEST ? 'warn' : 'info';
 
   logger.log(level, 'HTTP_REQUEST', {
     method,

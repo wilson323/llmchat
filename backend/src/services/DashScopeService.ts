@@ -5,13 +5,27 @@
  * 支持标准 OpenAI 兼容接口和 Function Calling
  */
 
-import type { AxiosInstance } from 'axios';
-import axios from 'axios';
-import type { ChatMessage, ChatOptions} from '@/types';
+import axios, { type AxiosInstance } from 'axios';
 import { createErrorFromUnknown } from '@/types/errors';
-import { ChatResponse } from '@/types';
+import type { ChatMessage, ChatOptions } from '@/types';
 import type { CadFunctionTool } from '@llmchat/shared-types';
 import logger from '@/utils/logger';
+
+// ==================== 常量定义 ====================
+
+const DEFAULT_MODEL = 'qwen-max';
+const DEFAULT_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+const DEFAULT_TIMEOUT = 60000;
+const DEFAULT_TEMPERATURE = 0.7;
+const DEFAULT_MAX_TOKENS = 8000;
+const HTTP_STATUS_UNAUTHORIZED = 401;
+const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
+const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+const HTTP_STATUS_BAD_GATEWAY = 502;
+const HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
+const STREAM_DATA_PREFIX = 'data: ';
+const STREAM_DONE_MARKER = '[DONE]';
+const SLICE_LENGTH = 6;
 
 export interface DashScopeConfig {
   apiKey: string;
@@ -76,9 +90,9 @@ export class DashScopeService {
 
   constructor(config: DashScopeConfig) {
     this.config = {
-      model: config.model || 'qwen-max',
-      baseURL: config.baseURL || 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-      timeout: config.timeout ?? 60000,
+      model: config.model ?? DEFAULT_MODEL,
+      baseURL: config.baseURL ?? DEFAULT_BASE_URL,
+      timeout: config.timeout ?? DEFAULT_TIMEOUT,
       apiKey: config.apiKey,
     };
 
@@ -108,8 +122,8 @@ export class DashScopeService {
       model: this.config.model,
       messages: this.transformMessages(messages),
       stream: false,
-      temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 8000,
+      temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
+      max_tokens: options?.maxTokens ?? DEFAULT_MAX_TOKENS,
     };
 
     // 添加工具定义（Function Calling）
@@ -158,8 +172,8 @@ export class DashScopeService {
       model: this.config.model,
       messages: this.transformMessages(messages),
       stream: true,
-      temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 8000,
+      temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
+      max_tokens: options?.maxTokens ?? DEFAULT_MAX_TOKENS,
     };
 
     // 添加工具定义
@@ -185,29 +199,30 @@ export class DashScopeService {
         const lines = chunk.toString().split('\n').filter((line: string) => line.trim());
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
+          if (line.startsWith(STREAM_DATA_PREFIX)) {
+            const data = line.slice(SLICE_LENGTH);
 
-            if (data === '[DONE]') {
+            if (data === STREAM_DONE_MARKER) {
               logger.info('[DashScopeService] 流式响应结束');
               return;
             }
 
             try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices[0]?.delta?.content;
+              const parsed: unknown = JSON.parse(data);
+              const parsedResponse = parsed as { choices?: Array<{ delta?: { content?: string; tool_calls?: unknown } }> };
+              const content = parsedResponse.choices?.[0]?.delta?.content;
 
               if (content) {
                 yield content;
               }
 
               // 处理 Function Calling
-              const toolCalls = parsed.choices[0]?.delta?.tool_calls;
+              const toolCalls = parsedResponse.choices?.[0]?.delta?.tool_calls;
               if (toolCalls) {
                 logger.debug('[DashScopeService] 收到工具调用', { toolCalls });
                 // 这里可以进一步处理工具调用
               }
-            } catch (parseError) {
+            } catch (parseError: unknown) {
               logger.warn('[DashScopeService] 解析流式数据失败', { data, parseError });
             }
           }
@@ -236,7 +251,7 @@ export class DashScopeService {
   /**
    * 错误处理
    */
-  private handleError(error: any): Error {
+  private handleError(error: unknown): Error {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const message = error.response?.data?.error?.message || error.message;
@@ -248,13 +263,13 @@ export class DashScopeService {
       });
 
       switch (status) {
-        case 401:
+        case HTTP_STATUS_UNAUTHORIZED:
           return new Error('DashScope API Key 无效或已过期');
-        case 429:
+        case HTTP_STATUS_TOO_MANY_REQUESTS:
           return new Error('DashScope API 请求频率超限，请稍后重试');
-        case 500:
-        case 502:
-        case 503:
+        case HTTP_STATUS_INTERNAL_SERVER_ERROR:
+        case HTTP_STATUS_BAD_GATEWAY:
+        case HTTP_STATUS_SERVICE_UNAVAILABLE:
           return new Error('DashScope 服务暂时不可用，请稍后重试');
         default:
           return new Error(`DashScope API 错误: ${message}`);
@@ -285,4 +300,3 @@ export class DashScopeService {
     }
   }
 }
-

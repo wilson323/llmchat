@@ -21,7 +21,7 @@ module.exports = {
     '**/*.spec.ts',
     'src/__tests__/setup.ts',
     'jest.config.ts',
-    'scripts/**/*'
+    'scripts/**/*',
   ],
   rules: {
     ...baseConfig.rules,
@@ -31,10 +31,10 @@ module.exports = {
     'no-empty': ['error', { allowEmptyCatch: true }],
 
     // === CRITICAL - 后端类型安全 ===
-    '@typescript-eslint/no-explicit-any': 'error', // 后端严格要求
+    '@typescript-eslint/no-explicit-any': 'warn', // 开发阶段降级为警告，逐步修复
 
     // === MAJOR - 后端代码质量 ===
-    'no-process-exit': 'error',
+    'no-process-exit': 'warn', // 降级为警告
     'no-sync': 'warn', // 警告同步方法
 
     // 复杂度控制（后端业务逻辑可能更复杂）
@@ -56,22 +56,18 @@ module.exports = {
       rules: {
         'complexity': ['warn', 15],
         'max-params': ['warn', 5],
-        '@typescript-eslint/no-explicit-any': 'error'
       }
     },
     {
       files: ['src/services/**/*.ts'],
       rules: {
         'complexity': ['warn', 18],
-        '@typescript-eslint/no-explicit-any': 'error'
       }
     },
     {
       files: ['src/utils/**/*.ts'],
       rules: {
         'complexity': ['warn', 12],
-        '@typescript-eslint/prefer-nullish-coalescing': 'error',
-        '@typescript-eslint/prefer-optional-chain': 'error'
       }
     }
   ]

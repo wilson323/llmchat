@@ -147,4 +147,3 @@ export class PrometheusService {
 // 导出单例实例
 export const prometheusService = PrometheusService.getInstance();
 export default prometheusService;
-

@@ -46,10 +46,10 @@ app.get('/api', (req, res) => {
 
 // 启动服务器
 app.listen(PORT, () => {
-  logger.info(`🚀 简化服务器启动成功`);
+  logger.info('🚀 简化服务器启动成功');
   logger.info(`📍 端口: ${PORT}`);
   logger.info(`🌍 环境: ${process.env.NODE_ENV ?? 'development'}`);
-  logger.info(`✅ 系统状态: 正常`);
+  logger.info('✅ 系统状态: 正常');
 });
 
 export default app;

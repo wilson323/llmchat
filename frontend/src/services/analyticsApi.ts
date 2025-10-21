@@ -109,3 +109,29 @@ export async function getAgentComparison(
   );
   return data.data;
 }
+
+// ==================== 系统概览 API ====================
+
+export interface SystemOverviewTopAgent {
+  agent_name: string;
+  provider: string;
+  sessions: number;
+}
+
+export interface SystemOverviewData {
+  total_agents: number;
+  total_sessions: number;
+  total_users: number;
+  sessions_today: number;
+  active_sessions_1h: number;
+  self_hosted_messages: number;
+  messages_today: number;
+  top_agents: SystemOverviewTopAgent[];
+  provider_distribution: Record<string, number>;
+  updated_at: string;
+}
+
+export async function getSystemOverview(): Promise<SystemOverviewData> {
+  const { data } = await api.get<{ data: SystemOverviewData }>('/admin/analytics/overview');
+  return data.data;
+}

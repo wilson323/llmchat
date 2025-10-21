@@ -8,8 +8,7 @@
  */
 
 import type { AuthService, AuthUser, LoginResult } from '@/services/AuthService';
-import type { AuthServiceV2} from '@/services/AuthServiceV2';
-import { getAuthService } from '@/services/AuthServiceV2';
+import type { AuthServiceV2 } from '@/services/AuthServiceV2';
 import logger from '@/utils/logger';
 import { authService, isAuthV2 } from '@/services/authInstance';
 
@@ -30,12 +29,13 @@ export interface IAuthServiceAdapter {
  * V1服务适配器
  */
 export class AuthServiceV1Adapter implements IAuthServiceAdapter {
+  // eslint-disable-next-line no-useless-constructor
   constructor(private readonly service: AuthService) {}
 
   async login(
     username: string,
     password: string,
-    ip?: string,
+    _ip?: string,
   ): Promise<LoginResult> {
     // V1不支持IP参数，忽略
     return this.service.login(username, password);
@@ -62,6 +62,7 @@ export class AuthServiceV1Adapter implements IAuthServiceAdapter {
  * V2服务适配器
  */
 export class AuthServiceV2Adapter implements IAuthServiceAdapter {
+  // eslint-disable-next-line no-useless-constructor
   constructor(private readonly service: AuthServiceV2) {}
 
   async login(

@@ -22,7 +22,9 @@ router.use(adminGuard());
  * @desc 获取系统概览数据
  * @access Admin
  */
-router.get('/overview', AnalyticsController.getSystemOverview);
+router.get('/overview', (req, res, next) => {
+  AnalyticsController.getSystemOverview(req, res, next).catch(next);
+});
 
 // ==================== 智能体统计 ====================
 /**
@@ -30,7 +32,9 @@ router.get('/overview', AnalyticsController.getSystemOverview);
  * @desc 获取智能体使用统计
  * @access Admin
  */
-router.get('/agents', AnalyticsController.getAgentStats);
+router.get('/agents', (req, res, next) => {
+  AnalyticsController.getAgentStats(req, res, next).catch(next);
+});
 
 // ==================== 趋势分析 ====================
 /**
@@ -39,7 +43,9 @@ router.get('/agents', AnalyticsController.getAgentStats);
  * @access Admin
  * @query {number} days - 查询天数（1-365，默认30）
  */
-router.get('/trends', AnalyticsController.getDailyTrends);
+router.get('/trends', (req, res, next) => {
+  AnalyticsController.getDailyTrends(req, res, next).catch(next);
+});
 
 // ==================== 地理分布 ====================
 /**
@@ -47,7 +53,9 @@ router.get('/trends', AnalyticsController.getDailyTrends);
  * @desc 获取地理分布数据
  * @access Admin
  */
-router.get('/geo', AnalyticsController.getGeoDistribution);
+router.get('/geo', (req, res, next) => {
+  AnalyticsController.getGeoDistribution(req, res, next).catch(next);
+});
 
 /**
  * @route GET /api/admin/analytics/province-heatmap
@@ -57,7 +65,9 @@ router.get('/geo', AnalyticsController.getGeoDistribution);
  * @query {string} end - 结束时间
  * @query {string} agentId - 智能体ID（可选）
  */
-router.get('/province-heatmap', AnalyticsController.getProvinceHeatmap);
+router.get('/province-heatmap', (req, res, next) => {
+  AnalyticsController.getProvinceHeatmap(req, res, next).catch(next);
+});
 
 // ==================== 对话分析 ====================
 /**
@@ -68,7 +78,9 @@ router.get('/province-heatmap', AnalyticsController.getProvinceHeatmap);
  * @query {string} end - 结束时间
  * @query {string} agentId - 智能体ID（可选）
  */
-router.get('/conversations/series', AnalyticsController.getConversationSeries);
+router.get('/conversations/series', (req, res, next) => {
+  AnalyticsController.getConversationSeries(req, res, next).catch(next);
+});
 
 /**
  * @route GET /api/admin/analytics/conversations/agents
@@ -77,6 +89,8 @@ router.get('/conversations/series', AnalyticsController.getConversationSeries);
  * @query {string} start - 开始时间
  * @query {string} end - 结束时间
  */
-router.get('/conversations/agents', AnalyticsController.getAgentComparison);
+router.get('/conversations/agents', (req, res, next) => {
+  AnalyticsController.getAgentComparison(req, res, next).catch(next);
+});
 
 export default router;

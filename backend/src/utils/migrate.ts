@@ -325,4 +325,3 @@ export class MigrationManager {
 export function createMigrationManager(pool: Pool, migrationsDir?: string): MigrationManager {
   return new MigrationManager(pool, migrationsDir);
 }
-

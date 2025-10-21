@@ -1257,4 +1257,3 @@ export function createErrorResponse(error: BaseError): {
     body: error.toApiError(),
   };
 }
-

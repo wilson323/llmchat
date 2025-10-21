@@ -18,9 +18,17 @@ export interface JWTPayload {
   exp?: number;
 }
 
+// JWT配置常量
+const JWT_CONFIG = {
+  MIN_SECRET_LENGTH: 32,
+  MILLISECONDS_MULTIPLIER: 1000,
+} as const;
+
 export class SecureJWT {
   private static readonly DEFAULT_ALGORITHM = 'HS256';
   private static readonly DEFAULT_EXPIRES_IN = '1h';
+  private static readonly MIN_SECRET_LENGTH = JWT_CONFIG.MIN_SECRET_LENGTH;
+  private static readonly MILLISECONDS_MULTIPLIER = JWT_CONFIG.MILLISECONDS_MULTIPLIER;
 
   static getConfig(): {
     secret: string;
@@ -30,7 +38,7 @@ export class SecureJWT {
     audience: string;
     } {
     const secret = process.env.TOKEN_SECRET;
-    if (!secret || secret.length < 32) {
+    if (!secret || secret.length < this.MIN_SECRET_LENGTH) {
       throw new Error('TOKEN_SECRET must be at least 32 characters long');
     }
 
@@ -48,7 +56,7 @@ export class SecureJWT {
     const config = this.getConfig();
 
     try {
-      if (config.secret.length < 32) {
+      if (config.secret.length < this.MIN_SECRET_LENGTH) {
         errors.push('TOKEN_SECRET must be at least 32 characters long');
       }
 
@@ -80,12 +88,8 @@ export class SecureJWT {
       issuer: config.issuer,
       audience: config.audience,
       algorithm: config.algorithm as jwt.Algorithm,
+      expiresIn: config.expiresIn as any,
     };
-
-    // expiresIn is handled separately to avoid type issues
-    if (config.expiresIn) {
-      (options as any).expiresIn = config.expiresIn;
-    }
 
     return jwt.sign(payload, config.secret, options);
   }
@@ -151,7 +155,7 @@ export class SecureJWT {
         return true;
       }
 
-      return Date.now() >= decoded.exp * 1000;
+      return Date.now() >= decoded.exp * this.MILLISECONDS_MULTIPLIER;
     } catch {
       return true;
     }

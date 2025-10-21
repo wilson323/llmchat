@@ -30,6 +30,8 @@ export class CodeQualityChecker {
   private static instance: CodeQualityChecker;
   private isEnabled: boolean = true;
 
+  // 私有构造函数确保单例模式 - 只能通过getInstance()创建实例
+  // eslint-disable-next-line no-useless-constructor
   private constructor() {}
 
   public static getInstance(): CodeQualityChecker {
@@ -67,13 +69,13 @@ export class CodeQualityChecker {
         errors: issues.filter(i => i.type === 'error').length,
         warnings: issues.filter(i => i.type === 'warning').length,
         info: issues.filter(i => i.type === 'info').length,
-        issues
+        issues,
       };
 
       logger.info('Code quality check completed', {
         total: report.totalIssues,
         errors: report.errors,
-        warnings: report.warnings
+        warnings: report.warnings,
       });
 
       return report;
@@ -95,7 +97,7 @@ export class CodeQualityChecker {
       'package.json',
       'tsconfig.json',
       '.env.example',
-      'README.md'
+      'README.md',
     ];
 
     // 简化实现：假设关键文件都存在
@@ -103,7 +105,7 @@ export class CodeQualityChecker {
       issues.push({
         type: 'info',
         message: `Essential file found: ${file}`,
-        file
+        file,
       });
     });
   }
@@ -116,14 +118,14 @@ export class CodeQualityChecker {
       'backend/package.json',
       'backend/tsconfig.json',
       'frontend/package.json',
-      'frontend/tsconfig.json'
+      'frontend/tsconfig.json',
     ];
 
     configFiles.forEach(file => {
       issues.push({
         type: 'info',
         message: `Configuration file found: ${file}`,
-        file
+        file,
       });
     });
   }
@@ -138,7 +140,7 @@ export class CodeQualityChecker {
       errors: 0,
       warnings: 0,
       info: 0,
-      issues: []
+      issues: [],
     };
   }
 
@@ -155,8 +157,8 @@ export class CodeQualityChecker {
       issues: [{
         type: 'error',
         message: `Quality check failed: ${error.message}`,
-        rule: 'quality-check-error'
-      }]
+        rule: 'quality-check-error',
+      }],
     };
   }
 
@@ -181,7 +183,7 @@ export class CodeQualityChecker {
   public getHealthStatus(): { status: string; message: string } {
     return {
       status: this.isEnabled ? 'healthy' : 'disabled',
-      message: this.isEnabled ? 'Code quality checker is running' : 'Code quality checker is disabled'
+      message: this.isEnabled ? 'Code quality checker is running' : 'Code quality checker is disabled',
     };
   }
 }

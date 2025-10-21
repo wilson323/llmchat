@@ -9,7 +9,7 @@ import { ChatProxyService } from './ChatProxyService';
 import { ChatSessionService } from './ChatSessionService';
 import type { AgentConfigService } from './AgentConfigService';
 import { createErrorFromUnknown } from '@/types/errors';
-import type { AgentConfig, ChatResponse as APIChatResponse } from '@/types';
+import type { ChatResponse as APIChatResponse } from '@/types';
 import logger from '@/utils/logger';
 
 export interface ChatMessage {
@@ -45,7 +45,7 @@ export class ChatService {
   private readonly sessionService: ChatSessionService;
 
   constructor(
-    private readonly agentService: AgentConfigService
+    private readonly agentService: AgentConfigService,
   ) {
     this.chatProxy = new ChatProxyService(agentService);
     this.sessionService = new ChatSessionService();
@@ -55,7 +55,7 @@ export class ChatService {
    * 处理消息
    */
   async processMessage(options: ProcessMessageOptions): Promise<ChatResponse> {
-    const { sessionId, message, userId, agentId, stream = false, attachments } = options;
+    const { sessionId, message, userId, agentId, stream: _stream = false, attachments } = options;
 
     try {
       logger.info('[ChatService] 处理消息', {
@@ -63,34 +63,29 @@ export class ChatService {
         userId,
         agentId,
         messageLength: message.length,
-        hasAttachments: !!attachments?.length
+        hasAttachments: !!attachments?.length,
       });
-
-      // 构建消息历史 (简化版)
-      const messages: ChatMessage[] = [
-        { role: 'user', content: message }
-      ];
 
       // 调用代理服务
       const response: APIChatResponse = await this.chatProxy.sendMessage(
         agentId,
-        messages.map(m => ({ role: m.role, content: m.content }))
+        [{ role: 'user', content: message }],
       );
 
       // 从 OpenAI 格式响应中提取内容
-      const content = response.choices?.[0]?.message?.content || 'AI response';
+      const content = response.choices?.[0]?.message?.content ?? 'AI response';
 
       // 保存消息到会话 (模拟)
       const result: ChatResponse = {
         content,
         messageId: `msg-${Date.now()}`,
         sessionId,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       logger.info('[ChatService] 消息处理完成', {
         sessionId,
-        responseLength: result.content.length
+        responseLength: result.content.length,
       });
 
       return result;
@@ -110,7 +105,7 @@ export class ChatService {
    */
   async processStreamMessage(
     options: ProcessMessageOptions,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<void> {
     const { sessionId, message, userId, agentId } = options;
 
@@ -118,7 +113,7 @@ export class ChatService {
       logger.info('[ChatService] 流式处理消息', { sessionId, userId, agentId });
 
       const messages: ChatMessage[] = [
-        { role: 'user', content: message }
+        { role: 'user', content: message },
       ];
 
       await this.chatProxy.sendStreamMessage(
@@ -127,7 +122,7 @@ export class ChatService {
         onChunk,
         (status) => {
           logger.debug('[ChatService] Stream status:', status);
-        }
+        },
       );
 
     } catch (unknownError: unknown) {
@@ -187,6 +182,7 @@ export class ChatService {
     try {
       logger.info('[ChatService] 清除缓存', { sessionId });
       // 实际实现应该清除Redis缓存
+      // 暂时不做任何操作
     } catch (unknownError: unknown) {
       const error = createErrorFromUnknown(unknownError, {
         component: 'ChatService',
@@ -205,10 +201,6 @@ export class ChatService {
 
     try {
       logger.info('[ChatService] 流式响应生成器', { sessionId, userId, agentId });
-
-      const messages: ChatMessage[] = [
-        { role: 'user', content: message }
-      ];
 
       // 模拟流式响应
       const chunks = ['Hello', ' ', 'from', ' ', 'AI'];
@@ -238,8 +230,7 @@ export class ChatService {
   }): Promise<ChatResponse> {
     return this.processMessage({
       ...options,
-      userId: options.userId || 'system'
+      userId: options.userId ?? 'system',
     });
   }
 }
-

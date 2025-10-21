@@ -1,7 +1,38 @@
 // 基础测试工具
+interface MockUser {
+  id: string;
+  username: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface MockAgent {
+  id: string;
+  name: string;
+  provider: string;
+  endpoint: string;
+  apiKey: string;
+  features: {
+    supportsChatId: boolean;
+    supportsStream: boolean;
+    supportsDetail: boolean;
+    supportsFiles: boolean;
+    supportsImages: boolean;
+    streamingConfig: {
+      enabled: boolean;
+      endpoint: string;
+      statusEvents: boolean;
+      flowNodeStatus: boolean;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TestUtils {
-  createMockUser: () => any;
-  createMockAgent: () => any;
+  createMockUser: () => MockUser;
+  createMockAgent: () => MockAgent;
   cleanupTestData: () => Promise<void>;
 }
 
@@ -11,7 +42,7 @@ export const testUtils: TestUtils = {
     username: 'testuser',
     email: 'test@example.com',
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   }),
 
   createMockAgent: () => ({
@@ -30,14 +61,14 @@ export const testUtils: TestUtils = {
         enabled: true,
         endpoint: 'same',
         statusEvents: false,
-        flowNodeStatus: false
-      }
+        flowNodeStatus: false,
+      },
     },
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   }),
 
   cleanupTestData: async () => {
     // 清理测试数据
-  }
+  },
 };

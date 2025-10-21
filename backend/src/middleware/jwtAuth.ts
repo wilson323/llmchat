@@ -9,6 +9,12 @@ import { SecureJWT } from '@/utils/secureJwt';
 import { safeLogger } from '@/utils/logSanitizer';
 import { createErrorFromUnknown } from '@/types/errors';
 
+// HTTP 状态码常量
+const HTTP_STATUS = {
+  UNAUTHORIZED: 401,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
@@ -21,8 +27,12 @@ export interface AuthenticatedRequest extends Request {
  * JWT 认证中间件
  * 从 Authorization header 中提取并验证 JWT token
  */
-export function authenticateJWT() {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export function authenticateJWT(): (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => void {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       const authHeader = req.headers.authorization;
 
@@ -34,7 +44,7 @@ export function authenticateJWT() {
           userAgent: req.get('User-Agent'),
         });
 
-        res.status(401).json({
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           code: 'AUTHENTICATION_REQUIRED',
           message: '请提供有效的认证令牌',
@@ -45,7 +55,7 @@ export function authenticateJWT() {
       const token = authHeader.substring(7); // 移除 "Bearer " 前缀
 
       // 检查令牌是否已撤销
-      const isRevoked = await SecureJWT.isTokenRevoked(token);
+      const isRevoked = SecureJWT.isTokenRevoked(token);
       if (isRevoked) {
         safeLogger.warn('JWT token 已被撤销', {
           component: 'jwtAuth',
@@ -53,7 +63,7 @@ export function authenticateJWT() {
           ip: req.ip,
         });
 
-        res.status(401).json({
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           code: 'TOKEN_REVOKED',
           message: '认证令牌已被撤销，请重新登录',
@@ -66,9 +76,9 @@ export function authenticateJWT() {
 
       // 将用户信息附加到请求对象
       (req as AuthenticatedRequest).user = {
-        id: (decoded.sub || decoded.userId) ?? '',
-        username: decoded.username || 'user',
-        role: (decoded.role as 'user' | 'admin') || 'user',
+        id: (decoded.sub ?? decoded.userId) ?? '',
+        username: decoded.username ?? 'user',
+        role: (decoded.role as 'user' | 'admin') ?? 'user',
       };
 
       safeLogger.info('JWT 认证成功', {
@@ -91,7 +101,7 @@ export function authenticateJWT() {
           expiredAt: unknownError.expiredAt,
         });
 
-        res.status(401).json({
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           code: 'TOKEN_EXPIRED',
           message: '认证令牌已过期，请重新登录',
@@ -107,7 +117,7 @@ export function authenticateJWT() {
           error: unknownError.message,
         });
 
-        res.status(401).json({
+        res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
           code: 'INVALID_TOKEN',
           message: '无效的认证令牌',
@@ -121,7 +131,7 @@ export function authenticateJWT() {
       });
       safeLogger.error('JWT 认证失败', error.toLogObject());
 
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         ...error.toApiError(),
       });
@@ -129,4 +139,3 @@ export function authenticateJWT() {
     }
   };
 }
-
