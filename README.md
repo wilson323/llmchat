@@ -144,17 +144,24 @@ llmchat/
 
 ## 📚 项目文档
 
-### 文档组织
+### 文档体系
+- **项目宪法**: [CONSTITUTION.md](CONSTITUTION.md) - 管理原则和开发指南
+- **AI助手配置**: [CLAUDE.md](CLAUDE.md) - AI开发规范和技术细节
+- **质量体系**: [QUALITY_SYSTEM_GUIDE.md](QUALITY_SYSTEM_GUIDE.md) - 质量保障机制
+- **文档索引**: [DOCUMENT_INDEX.md](DOCUMENT_INDEX.md) - 完整文档导航
+
+### 技术文档
 - **核心文档**: 位于 `docs/` 目录
 - **归档文档**: 历史报告归档在 `docs/archive/`
 - **故障排除**: 专题文档在 `docs/troubleshooting/`
+- **项目分析**: [全局一致性分析](docs/GLOBAL_CONSISTENCY_ANALYSIS.md) ⭐⭐⭐⭐⭐
 - **详细索引**: 查看 [docs/README.md](docs/README.md)
 
 ### 必读文档
-1. **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - 开发规范和最佳实践
-2. **[docs/CODE_REVIEW_GUIDE.md](docs/CODE_REVIEW_GUIDE.md)** - 代码审查指南
-3. **[docs/CONFIG_QUICK_START.md](docs/CONFIG_QUICK_START.md)** - 快速配置指南
-4. **[docs/QUICK_START_GUIDE.md](docs/QUICK_START_GUIDE.md)** - 项目快速启动
+1. **[CONSTITUTION.md](CONSTITUTION.md)** - 项目宪法（管理原则）⭐⭐⭐⭐⭐
+2. **[CLAUDE.md](CLAUDE.md)** - AI助手开发规范 ⭐⭐⭐⭐⭐
+3. **[docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)** - 开发规范 ⭐⭐⭐⭐⭐
+4. **[docs/CODE_REVIEW_GUIDE.md](docs/CODE_REVIEW_GUIDE.md)** - 代码审查 ⭐⭐⭐⭐
 
 ## 根级脚本说明
 

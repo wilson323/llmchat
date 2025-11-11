@@ -1,4 +1,0 @@
-﻿
-> @llmchat/backend@1.0.0 lint F:\ss\aa\sssss\llmchat\backend
-> eslint src/**/*.ts "src/controllers/ChatController.ts" "--format" "json"
-

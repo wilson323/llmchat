@@ -2,109 +2,104 @@
 
 本目录包含LLMChat项目的所有技术文档和开发指南。文档按功能和重要性组织，便于快速查找和参考。
 
+> 📖 **文档总览**: 查看 [../DOCUMENT_INDEX.md](../DOCUMENT_INDEX.md) 获取完整的文档导航
+
 ## 📚 核心文档
 
-### 快速开始
-- **[CONFIG_QUICK_START.md](CONFIG_QUICK_START.md)** - 快速配置指南
-- **[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)** - 项目快速启动指南
-
 ### 开发规范
-- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - 完整开发规范和最佳实践
-- **[CODE_REVIEW_GUIDE.md](CODE_REVIEW_GUIDE.md)** - 代码审查完整指南
-- **[CODE_QUALITY_STANDARDS.md](CODE_QUALITY_STANDARDS.md)** - 代码质量标准
+- **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - 完整开发规范和最佳实践 ⭐⭐⭐⭐⭐
+- **[CODE_REVIEW_GUIDE.md](CODE_REVIEW_GUIDE.md)** - 代码审查完整指南 ⭐⭐⭐⭐
+- **[CODE_QUALITY_STANDARDS.md](CODE_QUALITY_STANDARDS.md)** - 代码质量标准 ⭐⭐⭐⭐
 
-### 项目文档
-- **[PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md)** - 项目规格说明
-- **[AGENTS_ARCHITECTURE.md](AGENTS_ARCHITECTURE.md)** - 智能体架构设计
-- **[AGENT_GUIDE.md](AGENT_GUIDE.md)** - 智能体使用指南
-- **[TASK_LIST.md](TASK_LIST.md)** - 项目任务列表
+### 部署和安全
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - 部署指南 ⭐⭐⭐⭐
+- **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - 安全指南 ⭐⭐⭐⭐⭐
 
-### 质量保证
-- **[QUALITY_SYSTEM_GUIDE.md](QUALITY_SYSTEM_GUIDE.md)** - 质量体系指南
-- **[QUALITY_ASSURANCE_IMPLEMENTATION_COMPLETE.md](QUALITY_ASSURANCE_IMPLEMENTATION_COMPLETE.md)** - 质量保证实施完成报告
+### 项目分析
+- **[GLOBAL_CONSISTENCY_ANALYSIS.md](GLOBAL_CONSISTENCY_ANALYSIS.md)** - 全局一致性深度分析 ⭐⭐⭐⭐⭐
 
-### 测试文档
-- **[QUICK_TEST_GUIDE.md](QUICK_TEST_GUIDE.md)** - 快速测试指南
-- **[TEST-LOGIN-FLOW.md](TEST-LOGIN-FLOW.md)** - 登录流程测试
+### 架构文档
+- **[PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md)** - 项目规格说明 ⭐⭐⭐⭐
+- **[AGENTS_ARCHITECTURE.md](AGENTS_ARCHITECTURE.md)** - 智能体架构设计 ⭐⭐⭐⭐
+- **[AGENT_GUIDE.md](AGENT_GUIDE.md)** - 智能体使用指南 ⭐⭐⭐
+- **[DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md)** - 数据库迁移指南 ⭐⭐⭐⭐
+- **[ARCHITECTURE_DATA_STORAGE.md](ARCHITECTURE_DATA_STORAGE.md)** - 数据存储架构 ⭐⭐⭐⭐
+
+### API文档
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - API接口文档 ⭐⭐⭐⭐
+
+### 用户文档
+- **[USER_GUIDE.md](USER_GUIDE.md)** - 用户使用指南 ⭐⭐⭐
 
 ### 故障排除
-- **[troubleshooting/BACKEND_STARTUP_DIAGNOSTIC.md](troubleshooting/BACKEND_STARTUP_DIAGNOSTIC.md)** - 后端启动诊断
-- **[TROUBLESHOOTING-WINDOWS.md](TROUBLESHOOTING-WINDOWS.md)** - Windows环境故障排除
-
-### 性能优化
-- **[FRONTEND_PERFORMANCE_OPTIMIZATION.md](FRONTEND_PERFORMANCE_OPTIMIZATION.md)** - 前端性能优化
+- **[troubleshooting/](troubleshooting/)** - 故障排除专题文档
 
 ## 📂 文档分类
 
-### 按功能分类
-
-#### 开发相关
-- 开发规范和最佳实践
-- 代码审查指南
-- 质量标准
-
-#### 配置相关
-- 快速配置指南
-- 环境配置说明
-
-#### 测试相关
-- 测试策略
-- 测试指南
-- 登录流程测试
-
-#### 架构相关
-- 项目规格
-- 智能体架构
-- 系统设计
-
 ### 按重要性分类
 
-#### 必读文档（P0）
-1. DEVELOPMENT_GUIDE.md - 开发必读
-2. CODE_REVIEW_GUIDE.md - 代码审查必读
-3. CONFIG_QUICK_START.md - 配置必读
-4. QUICK_START_GUIDE.md - 启动必读
+#### 必读文档（P0）⭐⭐⭐⭐⭐
+1. **[../CONSTITUTION.md](../CONSTITUTION.md)** - 项目宪法（管理原则）
+2. **[../CLAUDE.md](../CLAUDE.md)** - AI助手开发规范
+3. **[DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** - 开发规范
+4. **[CODE_REVIEW_GUIDE.md](CODE_REVIEW_GUIDE.md)** - 代码审查
 
-#### 重要文档（P1）
-1. CODE_QUALITY_STANDARDS.md
-2. PROJECT_SPECIFICATION.md
-3. AGENTS_ARCHITECTURE.md
-4. QUALITY_SYSTEM_GUIDE.md
+#### 重要文档（P1）⭐⭐⭐⭐
+1. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - 部署指南
+2. **[SECURITY_GUIDE.md](SECURITY_GUIDE.md)** - 安全指南
+3. **[CODE_QUALITY_STANDARDS.md](CODE_QUALITY_STANDARDS.md)** - 质量标准
+4. **[PROJECT_SPECIFICATION.md](PROJECT_SPECIFICATION.md)** - 项目规格
+5. **[AGENTS_ARCHITECTURE.md](AGENTS_ARCHITECTURE.md)** - 智能体架构
+6. **[DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md)** - 数据库迁移
 
-#### 参考文档（P2）
-1. 故障排除文档
-2. 性能优化文档
-3. 其他技术文档
+#### 参考文档（P2）⭐⭐⭐
+1. **[AGENT_GUIDE.md](AGENT_GUIDE.md)** - 智能体使用
+2. **[USER_GUIDE.md](USER_GUIDE.md)** - 用户指南
+3. **[troubleshooting/](troubleshooting/)** - 故障排除
+4. **[archive/](archive/)** - 历史归档
 
 ## 📦 归档文档
 
 历史文档和已完成阶段的报告归档在 `archive/` 目录中：
 
-### archive/2025-phase2/
-此目录包含2025年Phase 2阶段的所有完成报告：
-- 配置统一相关文档
-- 执行报告和完成总结
-- E2E测试相关报告
-- Phase完成报告（P0, P1, P2）
-- 代码审计和清理日志
-- ESLint优化相关报告
+### archive/2025-11/ ✅ 最新归档
+**归档内容**:
+- 各阶段完成报告（PHASE系列）
+- P0任务报告和执行总结
+- TypeScript修复报告
+- 优化和性能分析报告
+- 已整合的安全、测试、配置文档
+- 临时执行指令和状态报告
+
+**归档日期**: 2025-11-11
+
+### archive/2025-10/
+**归档内容**: Phase 2阶段的历史报告
+
+### archive/frontend-docs/
+**归档内容**: TypeScript修复过程文档
 
 **归档策略**: 
-- 已完成阶段的报告定期归档
-- 保持主文档目录整洁
-- 归档文档按年份和阶段组织
-- 重要历史参考文档保留可访问性
+- ✅ 已完成阶段的报告立即归档
+- ✅ 保持根目录和docs目录整洁
+- ✅ 归档文档按年月组织
+- ✅ 重要历史文档保留可访问性
+- ✅ 内容已整合的文档及时归档
 
 ## 🔍 文档搜索指南
 
 ### 如何快速找到所需文档？
 
-1. **开发问题** → 查看 `DEVELOPMENT_GUIDE.md`
-2. **代码审查** → 查看 `CODE_REVIEW_GUIDE.md`
-3. **配置问题** → 查看 `CONFIG_QUICK_START.md`
-4. **启动问题** → 查看 `QUICK_START_GUIDE.md`
-5. **故障排除** → 查看 `troubleshooting/` 目录
-6. **历史报告** → 查看 `archive/` 目录
+1. **项目原则** → 查看 `../CONSTITUTION.md`
+2. **AI开发配置** → 查看 `../CLAUDE.md`
+3. **项目说明** → 查看 `../README.md`
+4. **质量体系** → 查看 `../QUALITY_SYSTEM_GUIDE.md`
+5. **开发问题** → 查看 `DEVELOPMENT_GUIDE.md`
+6. **代码审查** → 查看 `CODE_REVIEW_GUIDE.md`
+7. **部署运维** → 查看 `DEPLOYMENT_GUIDE.md`
+8. **安全规范** → 查看 `SECURITY_GUIDE.md`
+9. **故障排除** → 查看 `troubleshooting/` 目录
+10. **历史报告** → 查看 `archive/` 目录
 
 ### 关键词索引
 
