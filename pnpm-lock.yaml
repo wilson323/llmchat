@@ -437,6 +437,9 @@ importers:
       eslint-config-prettier:
         specifier: ^9.1.0
         version: 9.1.2(eslint@9.38.0)
+      eslint-plugin-prettier:
+        specifier: ^5.2.0
+        version: 5.5.4(eslint-config-prettier@9.1.2)(eslint@9.38.0)(prettier@3.6.2)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.22)
