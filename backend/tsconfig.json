@@ -27,6 +27,8 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     // "types": ["node", "jest"], // 🔧 移除types限制，允许加载src/types/express.d.ts等自定义类型定义
     "typeRoots": ["./node_modules/@types", "./src/types"], // 🔧 明确指定类型定义查找路径
     "baseUrl": ".",
