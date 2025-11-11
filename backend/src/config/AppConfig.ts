@@ -28,6 +28,8 @@ export class AppConfig {
     const host = process.env.REDIS_HOST;
     const port = process.env.REDIS_PORT;
 
+    const password = process.env.REDIS_PASSWORD;
+
     if (!host) {
       throw new SystemError({
         message: 'REDIS_HOST 未配置，请检查根目录 .env 文件',
@@ -44,15 +46,27 @@ export class AppConfig {
       });
     }
 
-    return {
+    const redisConfig: {
+      host: string;
+      port: number;
+      password?: string;
+      db: number;
+      maxRetries: number;
+      connectTimeout: number;
+      commandTimeout: number;
+    } = {
       host,
       port: parseInt(port, 10),
-      password: process.env.REDIS_PASSWORD ?? undefined,
       db: parseInt(process.env.REDIS_DB ?? '0', 10),
       maxRetries: parseInt(process.env.REDIS_MAX_RETRIES ?? '3', 10),
       connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT ?? '10000', 10),
       commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT ?? '5000', 10),
     };
+    if (password !== undefined) {
+      redisConfig.password = password;
+    }
+
+    return redisConfig;
   }
 
   /**

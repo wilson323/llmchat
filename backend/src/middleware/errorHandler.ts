@@ -6,6 +6,9 @@ import { type JsonValue, SafeAccess } from '@/types/dynamic';
 
 // HTTP 状态码常量
 const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
   BAD_REQUEST: 400,
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
@@ -69,6 +72,9 @@ const ERROR_CODES = {
   SERVICE_DEGRADED: 'SERVICE_DEGRADED',
   GATEWAY_TIMEOUT: 'GATEWAY_TIMEOUT',
   UPSTREAM_TIMEOUT: 'UPSTREAM_TIMEOUT',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  REDIS_ERROR: 'REDIS_ERROR',
+  CRITICAL_SYSTEM_ERROR: 'CRITICAL_SYSTEM_ERROR',
 } as const;
 
 // 扩展 Request 类型以包含 requestId 和 user
