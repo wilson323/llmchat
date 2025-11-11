@@ -68,15 +68,29 @@ export class MessageConverter {
         }
         currentPair.HUMAN = message.content;
         currentPair.timestamp = message.timestamp;
-        currentPair.attachments = message.attachments;
-        currentPair.voiceNote = message.voiceNote;
+        // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+        if (message.attachments !== undefined) {
+          currentPair.attachments = message.attachments;
+        }
+        if (message.voiceNote !== undefined && message.voiceNote !== null) {
+          currentPair.voiceNote = message.voiceNote;
+        }
       } else if (message.role === 'assistant') {
         currentPair.AI = message.content;
         currentPair.id = message.metadata?.responseChatItemId || message.id;
-        currentPair.interactive = message.metadata?.interactive;
-        currentPair.reasoning = message.metadata?.reasoning;
-        currentPair.events = message.metadata?.events;
-        currentPair.status = message.status;
+        // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+        if (message.metadata?.interactive !== undefined) {
+          currentPair.interactive = message.metadata.interactive;
+        }
+        if (message.metadata?.reasoning !== undefined) {
+          currentPair.reasoning = message.metadata.reasoning;
+        }
+        if (message.metadata?.events !== undefined) {
+          currentPair.events = message.metadata.events;
+        }
+        if (message.status !== undefined) {
+          currentPair.status = message.status;
+        }
       }
     }
 
@@ -103,40 +117,64 @@ export class MessageConverter {
 
       // 添加用户消息
       if (simpleMessage.HUMAN) {
-        result.push({
+        const userMessage: StandardMessage = {
           id: `${sessionId}-${index}-user`,
           role: 'user',
           content: simpleMessage.HUMAN,
           timestamp,
-          attachments: simpleMessage.attachments,
-          voiceNote: simpleMessage.voiceNote,
           metadata: {
             agentId,
             sessionId,
-            messageId: simpleMessage.id,
             source: 'user_input'
           }
-        });
+        };
+        
+        // 只在值存在时赋值可选属性
+        if (simpleMessage.attachments !== undefined) {
+          userMessage.attachments = simpleMessage.attachments;
+        }
+        if (simpleMessage.voiceNote !== undefined && simpleMessage.voiceNote !== null) {
+          userMessage.voiceNote = simpleMessage.voiceNote;
+        }
+        if (simpleMessage.id !== undefined) {
+          userMessage.metadata!.messageId = simpleMessage.id;
+        }
+        
+        result.push(userMessage);
       }
 
       // 添加AI消息
       if (simpleMessage.AI) {
-        result.push({
+        const aiMessage: StandardMessage = {
           id: simpleMessage.id || `${sessionId}-${index}-assistant`,
           role: 'assistant',
           content: simpleMessage.AI,
           timestamp,
-          status: simpleMessage.status,
           metadata: {
             agentId,
             sessionId,
-            responseChatItemId: simpleMessage.id,
-            interactive: simpleMessage.interactive,
-            reasoning: simpleMessage.reasoning,
-            events: simpleMessage.events,
             source: 'ai_generation'
           }
-        });
+        };
+        
+        // 只在值存在时赋值可选属性
+        if (simpleMessage.status !== undefined) {
+          aiMessage.status = simpleMessage.status;
+        }
+        if (simpleMessage.id !== undefined) {
+          aiMessage.metadata!.responseChatItemId = simpleMessage.id;
+        }
+        if (simpleMessage.interactive !== undefined) {
+          aiMessage.metadata!.interactive = simpleMessage.interactive;
+        }
+        if (simpleMessage.reasoning !== undefined) {
+          aiMessage.metadata!.reasoning = simpleMessage.reasoning;
+        }
+        if (simpleMessage.events !== undefined) {
+          aiMessage.metadata!.events = simpleMessage.events;
+        }
+        
+        result.push(aiMessage);
       }
     }
 
@@ -301,21 +339,35 @@ export class AgentConverter {
    * @returns 简化的Agent信息
    */
   static toAgent(config: AgentConfig): Agent {
-    return {
+    const agent: Agent = {
       id: config.id,
       name: config.name,
       description: config.description,
-      avatar: config.avatar,
       model: config.model,
       status: config.status,
       capabilities: config.capabilities,
       provider: config.provider,
-      isActive: config.isActive,
-      workspaceType: config.workspaceType,
-      lastChecked: config.lastChecked,
-      responseTime: config.responseTime,
-      error: config.error
+      isActive: config.isActive
     };
+    
+    // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+    if (config.avatar !== undefined) {
+      agent.avatar = config.avatar;
+    }
+    if (config.workspaceType !== undefined) {
+      agent.workspaceType = config.workspaceType;
+    }
+    if (config.lastChecked !== undefined) {
+      agent.lastChecked = config.lastChecked;
+    }
+    if (config.responseTime !== undefined) {
+      agent.responseTime = config.responseTime;
+    }
+    if (config.error !== undefined) {
+      agent.error = config.error;
+    }
+    
+    return agent;
   }
 
   /**
@@ -362,21 +414,35 @@ export class AgentConverter {
     }
 
     const agent = data as Record<string, unknown>;
-    return {
+    const result: Agent = {
       id: TypeSafeConverter.toString(agent.id),
       name: TypeSafeConverter.toString(agent.name),
       description: TypeSafeConverter.toString(agent.description),
-      avatar: agent.avatar ? TypeSafeConverter.toString(agent.avatar) : undefined,
       model: TypeSafeConverter.toString(agent.model),
       status: (agent.status as AgentStatus) || 'inactive',
       capabilities: Array.isArray(agent.capabilities) ? agent.capabilities as AgentCapability[] : [],
       provider: (agent.provider as ProviderType) || 'custom',
-      isActive: TypeSafeConverter.toBoolean(agent.isActive, true),
-      workspaceType: agent.workspaceType as WorkspaceType,
-      lastChecked: agent.lastChecked ? TypeSafeConverter.toString(agent.lastChecked) : undefined,
-      responseTime: agent.responseTime ? TypeSafeConverter.toNumber(agent.responseTime) : undefined,
-      error: agent.error ? TypeSafeConverter.toString(agent.error) : undefined
+      isActive: TypeSafeConverter.toBoolean(agent.isActive, true)
     };
+    
+    // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+    if (agent.avatar) {
+      result.avatar = TypeSafeConverter.toString(agent.avatar);
+    }
+    if (agent.workspaceType) {
+      result.workspaceType = agent.workspaceType as WorkspaceType;
+    }
+    if (agent.lastChecked) {
+      result.lastChecked = TypeSafeConverter.toString(agent.lastChecked);
+    }
+    if (agent.responseTime !== undefined && agent.responseTime !== null) {
+      result.responseTime = TypeSafeConverter.toNumber(agent.responseTime);
+    }
+    if (agent.error) {
+      result.error = TypeSafeConverter.toString(agent.error);
+    }
+    
+    return result;
   }
 
   /**
@@ -423,30 +489,42 @@ export class SessionConverter {
 
     const data = session as Record<string, unknown>;
 
-    return {
+    const result: ChatSession = {
       id: TypeSafeConverter.toString(data.id),
       title: TypeSafeConverter.toString(data.title),
       agentId: TypeSafeConverter.toString(data.agentId),
-      userId: data.userId ? TypeSafeConverter.toString(data.userId) : undefined,
-      messages: Array.isArray(data.messages) ?
-        data.messages.filter((msg: unknown) => TypeSafeConverter.toStandardMessage(msg as any)) as StandardMessage[] :
-        undefined,
-      simpleMessages: Array.isArray(data.simpleMessages) ?
-        data.simpleMessages.filter((msg: unknown) => TypeSafeConverter.toSimpleMessage(msg as any)) as SimpleMessage[] :
-        undefined,
       createdAt: this.normalizeDate(data.createdAt) || new Date(),
       updatedAt: this.normalizeDate(data.updatedAt) || new Date(),
       status: (data.status as SessionStatus) || 'active',
       type: (data.type as SessionType) || 'chat',
-      lastAccessedAt: data.lastAccessedAt ? TypeSafeConverter.toNumber(data.lastAccessedAt) : undefined,
-      messageCount: data.messageCount ? TypeSafeConverter.toNumber(data.messageCount) : undefined,
       isPinned: TypeSafeConverter.toBoolean(data.isPinned, false),
-      tags: Array.isArray(data.tags) ? data.tags.map(tag => TypeSafeConverter.toString(tag)) : undefined,
       isArchived: TypeSafeConverter.toBoolean(data.isArchived, false),
       metadata: data.metadata as any,
       settings: data.settings as any,
       sharing: data.sharing as any
     };
+    
+    // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+    if (data.userId) {
+      result.userId = TypeSafeConverter.toString(data.userId);
+    }
+    if (Array.isArray(data.messages)) {
+      result.messages = data.messages.filter((msg: unknown) => TypeSafeConverter.toStandardMessage(msg as any)) as StandardMessage[];
+    }
+    if (Array.isArray(data.simpleMessages)) {
+      result.simpleMessages = data.simpleMessages.filter((msg: unknown) => TypeSafeConverter.toSimpleMessage(msg as any)) as SimpleMessage[];
+    }
+    if (data.lastAccessedAt !== undefined && data.lastAccessedAt !== null) {
+      result.lastAccessedAt = TypeSafeConverter.toNumber(data.lastAccessedAt);
+    }
+    if (data.messageCount !== undefined && data.messageCount !== null) {
+      result.messageCount = TypeSafeConverter.toNumber(data.messageCount);
+    }
+    if (Array.isArray(data.tags)) {
+      result.tags = data.tags.map(tag => TypeSafeConverter.toString(tag));
+    }
+    
+    return result;
   }
 
   /**
@@ -513,15 +591,27 @@ export class SessionConverter {
       }
     }
 
-    return {
+    const stats: {
+      messageCount: number;
+      userMessageCount: number;
+      aiMessageCount: number;
+      totalTokens?: number;
+      averageResponseTime?: number;
+    } = {
       messageCount: messages.length,
       userMessageCount: userMessages.length,
-      aiMessageCount: aiMessages.length,
-      totalTokens: totalTokens || undefined,
-      averageResponseTime: responseTimes.length > 0
-        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-        : undefined
+      aiMessageCount: aiMessages.length
     };
+    
+    // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+    if (totalTokens > 0) {
+      stats.totalTokens = totalTokens;
+    }
+    if (responseTimes.length > 0) {
+      stats.averageResponseTime = responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
+    }
+    
+    return stats;
   }
 
   /**
@@ -542,11 +632,15 @@ export class SessionConverter {
 
     // 对每个智能体的会话按更新时间排序
     for (const agentId of Object.keys(grouped)) {
-      grouped[agentId].sort((a, b) => {
-        const aTime = typeof a.updatedAt === 'number' ? a.updatedAt : new Date(a.updatedAt).getTime();
-        const bTime = typeof b.updatedAt === 'number' ? b.updatedAt : new Date(b.updatedAt).getTime();
-        return bTime - aTime; // 降序排列
-      });
+      const sessions = grouped[agentId];
+      // noUncheckedIndexedAccess要求检查undefined，但我们知道这个key存在
+      if (sessions) {
+        sessions.sort((a, b) => {
+          const aTime = typeof a.updatedAt === 'number' ? a.updatedAt : new Date(a.updatedAt).getTime();
+          const bTime = typeof b.updatedAt === 'number' ? b.updatedAt : new Date(b.updatedAt).getTime();
+          return bTime - aTime; // 降序排列
+        });
+      }
     }
 
     return grouped;
@@ -573,29 +667,55 @@ export class UserConverter {
 
     const user = data as Record<string, unknown>;
 
-    return {
+    const result: User = {
       id: TypeSafeConverter.toString(user.id),
       username: TypeSafeConverter.toString(user.username),
       email: TypeSafeConverter.toString(user.email),
-      displayName: user.displayName ? TypeSafeConverter.toString(user.displayName) : undefined,
-      avatar: user.avatar ? TypeSafeConverter.toString(user.avatar) : undefined,
       role: (user.role as UserRole) || 'user',
       status: (user.status as UserStatus) || 'active',
-      permissions: Array.isArray(user.permissions) ? user.permissions as Permission[] : undefined,
       createdAt: TypeSafeConverter.toString(user.createdAt),
       updatedAt: TypeSafeConverter.toString(user.updatedAt),
-      lastLoginAt: user.lastLoginAt ? TypeSafeConverter.toString(user.lastLoginAt) : undefined,
-      lastLoginIp: user.lastLoginIp ? TypeSafeConverter.toString(user.lastLoginIp) : undefined,
       authProvider: (user.authProvider as AuthProvider) || 'local',
-      externalId: user.externalId ? TypeSafeConverter.toString(user.externalId) : undefined,
       emailVerified: TypeSafeConverter.toBoolean(user.emailVerified, false),
-      phoneVerified: user.phoneVerified ? TypeSafeConverter.toBoolean(user.phoneVerified) : undefined,
-      phoneNumber: user.phoneNumber ? TypeSafeConverter.toString(user.phoneNumber) : undefined,
-      timezone: user.timezone ? TypeSafeConverter.toString(user.timezone) : undefined,
-      language: user.language ? TypeSafeConverter.toString(user.language) : undefined,
-      tags: Array.isArray(user.tags) ? user.tags.map(tag => TypeSafeConverter.toString(tag)) : undefined,
       metadata: user.metadata as any
     };
+    
+    // 只在值存在时赋值可选属性（exactOptionalPropertyTypes: true）
+    if (user.displayName) {
+      result.displayName = TypeSafeConverter.toString(user.displayName);
+    }
+    if (user.avatar) {
+      result.avatar = TypeSafeConverter.toString(user.avatar);
+    }
+    if (Array.isArray(user.permissions)) {
+      result.permissions = user.permissions as Permission[];
+    }
+    if (user.lastLoginAt) {
+      result.lastLoginAt = TypeSafeConverter.toString(user.lastLoginAt);
+    }
+    if (user.lastLoginIp) {
+      result.lastLoginIp = TypeSafeConverter.toString(user.lastLoginIp);
+    }
+    if (user.externalId) {
+      result.externalId = TypeSafeConverter.toString(user.externalId);
+    }
+    if (user.phoneVerified !== undefined && user.phoneVerified !== null) {
+      result.phoneVerified = TypeSafeConverter.toBoolean(user.phoneVerified);
+    }
+    if (user.phoneNumber) {
+      result.phoneNumber = TypeSafeConverter.toString(user.phoneNumber);
+    }
+    if (user.timezone) {
+      result.timezone = TypeSafeConverter.toString(user.timezone);
+    }
+    if (user.language) {
+      result.language = TypeSafeConverter.toString(user.language);
+    }
+    if (Array.isArray(user.tags)) {
+      result.tags = user.tags.map(tag => TypeSafeConverter.toString(tag));
+    }
+    
+    return result;
   }
 
   /**

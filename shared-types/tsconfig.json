@@ -8,9 +8,20 @@
     "declarationMap": true,
     "rootDir": "./src",
     "outDir": "./dist",
+    // 严格模式配置 - 与Backend保持一致
     "strict": true,
-    "exactOptionalPropertyTypes": false,
-    "skipLibCheck": true
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
