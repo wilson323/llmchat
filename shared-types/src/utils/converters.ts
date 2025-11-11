@@ -19,10 +19,6 @@ import type {
   SimpleMessage,
   MessageRole,
   MessageStatus,
-  AttachmentMetadata,
-  VoiceNoteMetadata,
-  InteractiveData,
-  ReasoningState,
 
   // Session相关
   ChatSession,
@@ -872,7 +868,7 @@ export class UniversalConverter {
   /**
    * JSON替换函数，处理特殊值
    */
-  private static jsonReplacer(key: string, value: unknown): unknown {
+  private static jsonReplacer(_key: string, value: unknown): unknown {
     if (value instanceof Date) {
       return value.toISOString();
     }

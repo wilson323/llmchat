@@ -5,9 +5,7 @@
  */
 
 import type { JsonValue, JsonObject } from '../index';
-import type { Agent } from './agent';
 import type { StandardMessage, SimpleMessage } from './message';
-import type { MessageStatus } from './message';
 
 // ============================================================================
 // 基础类型定义

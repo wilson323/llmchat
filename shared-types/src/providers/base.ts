@@ -2,7 +2,7 @@
  * 基础提供商类型定义
  */
 
-import type { JsonValue, AgentFeatures, MessageStatus } from '../index';
+import type { JsonValue } from '../index';
 
 // ============================================================================
 // 基础提供商接口
@@ -375,7 +375,7 @@ export class ProviderUtils {
   /**
    * 计算令牌数量（估算）
    */
-  static estimateTokens(text: string, model: string = 'gpt-3.5-turbo'): number {
+  static estimateTokens(text: string, _model: string = 'gpt-3.5-turbo'): number {
     // 简单的令牌估算：大约每4个字符一个令牌
     // 实际实现应该使用具体的tokenizer
     return Math.ceil(text.length / 4);

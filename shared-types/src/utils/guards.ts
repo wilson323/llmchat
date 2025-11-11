@@ -41,7 +41,6 @@ import type {
   // 基础类型
   JsonValue,
   JsonObject,
-  UnknownValue,
 } from '../index';
 
 // ============================================================================

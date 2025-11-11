@@ -4,7 +4,7 @@
  * 提供统一的用户类型定义，支持认证、授权和用户管理
  */
 
-import type { JsonValue, JsonObject } from '../index';
+import type { JsonValue } from '../index';
 import type { SessionStatistics } from './session';
 
 // ============================================================================
