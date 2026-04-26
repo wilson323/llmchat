@@ -26,8 +26,6 @@ export type {
   ApiResponsePayload,
   ExternalServiceResponse,
   PaginationParams,
-  DateRangeParams,
-  SearchFilterParams,
   QueryParams,
   FastGPTEventPayload,
   FastGPTReasoningData,

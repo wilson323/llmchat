@@ -117,7 +117,7 @@ app.use(helmet({
 }));
 
 // 响应头优化中间件
-app.use((req, res, next) => {
+app.use((_req, res, next) => {
   // 移除不必要的安全头
   res.removeHeader('X-XSS-Protection');
 
