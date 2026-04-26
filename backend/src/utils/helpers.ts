@@ -132,7 +132,7 @@ export const truncateString = (str: string, maxLength: number): string => {
  * 转换为驼峰命名
  */
 export const toCamelCase = (str: string): string => {
-  return str.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+  return str.replace(/_([a-z])/g, (_match, letter) => letter.toUpperCase());
 };
 
 /**

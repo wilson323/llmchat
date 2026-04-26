@@ -14,13 +14,15 @@ const HTTP_STATUS = {
   SERVICE_UNAVAILABLE: 503,
 } as const;
 
+type HealthState = 'ok' | 'degraded';
+
 const router: Router = Router();
 
 /**
  * 基础健康检查端点
  * GET /health
  */
-router.get('/', (req: Request, res: Response) => {
+router.get('/', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -34,9 +36,9 @@ router.get('/', (req: Request, res: Response) => {
  * GET /health/detailed
  * 包含数据库和Redis连接状态
  */
-router.get('/detailed', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/detailed', async (_req: Request, res: Response, next: NextFunction) => {
   const healthStatus = {
-    status: 'ok' as const,
+    status: 'ok' as HealthState,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV ?? 'development',

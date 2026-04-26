@@ -21,7 +21,7 @@ const router: Router = Router();
  *
  * 返回Prometheus格式的监控指标
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     // 获取metrics数据
     const metrics = await prometheusService.getMetrics();
